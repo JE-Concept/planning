@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "je-planning"
+  },
+  "targets": {
+    "je-planning": {
+      "hosting": {
+        "app": ["je-planning"]
+      }
+    }
+  }
+}

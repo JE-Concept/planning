@@ -1,0 +1,107 @@
+rules_version = '2';
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║ JE Planning — Firestore security rules                                   ║
+// ║                                                                          ║
+// ║ One shared workspace: every active profile reads and writes the planning.║
+// ║ Not shared: member administration (admins only), your own time entries   ║
+// ║ (you edit yours, admins edit all) and the Canva tokens (server only).    ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profilePath() {
+      return /databases/$(database)/documents/profiles/$(request.auth.uid);
+    }
+
+    // A profile only exists once `ensureProfile` accepted the e-mail address,
+    // so "has a profile" is the membership check.
+    function isMember() {
+      return signedIn()
+        && exists(profilePath())
+        && get(profilePath()).data.active == true;
+    }
+
+    function isAdmin() {
+      return isMember() && get(profilePath()).data.role in ['owner', 'admin'];
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ── People ────────────────────────────────────────────────────────────
+
+    match /profiles/{uid} {
+      allow read: if isMember() || (signedIn() && request.auth.uid == uid);
+
+      // You may polish your own card, but never your own role or access.
+      allow update: if isAdmin()
+        || (signedIn() && request.auth.uid == uid
+            && changedKeys().hasOnly(['fullName', 'avatarUrl', 'prefs', 'updatedAt']));
+
+      allow create, delete: if isAdmin();
+    }
+
+    match /invites/{email} {
+      allow read, write: if isAdmin();
+    }
+
+    match /config/{doc} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    // ── The workspace itself ──────────────────────────────────────────────
+
+    match /brands/{id}      { allow read: if isMember(); allow write: if isMember(); }
+    match /spaces/{id}      { allow read: if isMember(); allow write: if isMember(); }
+    match /folders/{id}     { allow read: if isMember(); allow write: if isMember(); }
+    match /lists/{id}       { allow read: if isMember(); allow write: if isMember(); }
+    match /tags/{id}        { allow read: if isMember(); allow write: if isMember(); }
+    match /tasks/{id}       { allow read: if isMember(); allow write: if isMember(); }
+    match /comments/{id}    { allow read: if isMember(); allow write: if isMember(); }
+    match /attachments/{id} { allow read: if isMember(); allow write: if isMember(); }
+    match /goals/{id}       { allow read: if isMember(); allow write: if isMember(); }
+    match /goalUpdates/{id} { allow read: if isMember(); allow write: if isMember(); }
+    match /socialPosts/{id} { allow read: if isMember(); allow write: if isMember(); }
+
+    match /activity/{id} {
+      allow read:   if isMember();
+      allow create: if isMember();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Time tracking: everyone sees the numbers, you own your own rows ────
+
+    match /timeEntries/{id} {
+      allow read: if isMember();
+      allow create: if isMember()
+        && (request.resource.data.profileId == request.auth.uid || isAdmin());
+      allow update, delete: if isMember()
+        && (resource.data.profileId == request.auth.uid || isAdmin());
+    }
+
+    // The running timer is keyed by uid, which is what makes "one timer per
+    // person" true by construction instead of by convention.
+    match /runningTimers/{uid} {
+      allow read: if isMember();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // ── Canva OAuth: the browser never touches these ───────────────────────
+
+    match /canvaConnections/{uid}  { allow read, write: if false; }
+    match /canvaOauthStates/{state} { allow read, write: if false; }
+
+    // Anything not named above stays closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
