@@ -5,14 +5,17 @@
  *   node scripts/make-icons.mjs
  *
  * Waarom met de hand: een geïnstalleerde app heeft PNG's nodig — iOS leest geen
- * SVG voor het beginscherm en de manifest-iconen moeten raster zijn. Op deze
- * machine staat geen ImageMagick, geen rsvg, geen sharp, en een merk-icoon is
- * te klein om daar een build-afhankelijkheid voor binnen te halen. Het icoon is
- * ook maar drie afgeronde balken (hetzelfde teken als de favicon), dus dat
- * rasteren we zelf: vier keer bemonsterd voor gladde randen, daarna deflate en
- * de drie chunks die een PNG nodig heeft.
+ * SVG voor het beginscherm — en op deze machine staat geen ImageMagick, geen
+ * rsvg en geen sharp. Het merk is geen foto maar een letterteken, dus het wordt
+ * hier uit rechthoeken en ringen opgebouwd en vier keer bemonsterd voor gladde
+ * randen. Daarna deflate en de drie chunks die een PNG nodig heeft.
  *
- * De maskable variant houdt 20% rand vrij: Android snijdt er een cirkel of een
+ * Het teken: de JE-monogram van JE Concept, in de huisletter nagebouwd — dikke
+ * stammen, dunne dwarsstreken, zoals de Playfair Display van het logo. Eronder
+ * de drie balken die ook de favicon zijn. Een echt logobestand bestaat niet;
+ * het merk ís die twee letters.
+ *
+ * De maskable variant houdt rand vrij: Android snijdt er een cirkel of een
  * druppel uit, en wat in die rand staat is weg.
  */
 
@@ -23,61 +26,121 @@ import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-const NAVY = [17, 37, 80] // #112550 — dezelfde kleur als de themekleur
-const BALKEN = [
-  { x: 6 / 32, y: 8 / 32, w: 5.5 / 32, h: 16 / 32, kleur: [51, 119, 255] },
-  { x: 13.25 / 32, y: 8 / 32, w: 5.5 / 32, h: 10 / 32, kleur: [142, 190, 255] },
-  { x: 20.5 / 32, y: 8 / 32, w: 5.5 / 32, h: 13 / 32, kleur: [217, 232, 255] },
+const NAVY = [17, 37, 80] // #112550 — ook de themekleur van de app
+const WIT = [255, 255, 255]
+const BALKKLEUREN = [
+  [51, 119, 255], // #3377FF
+  [142, 190, 255], // #8EBEFF
+  [217, 232, 255], // #D9E8FF
 ]
 
-/** Hoeveel van deze pixel binnen de afgeronde rechthoek valt, 0…1. */
-function dekking(px, py, { x, y, w, h, r }, monsters = 4) {
+// ─── Vormen ─────────────────────────────────────────────────────────────────
+//
+// Alles staat in een eenheidsvierkant (0…1). Het tekenen schaalt dat naar de
+// gevraagde maat, zodat 180 en 512 hetzelfde beeld geven.
+
+const rect = (x, y, w, h, r = 0) => ({ type: 'rect', x, y, w, h, r })
+
+/** Een stuk van een ring — de bocht onderaan de J. */
+const boog = (cx, cy, buiten, binnen) => ({ type: 'boog', cx, cy, buiten, binnen })
+
+function raakt(vorm, x, y) {
+  if (vorm.type === 'rect') {
+    if (x < vorm.x || x > vorm.x + vorm.w || y < vorm.y || y > vorm.y + vorm.h) return false
+    if (!vorm.r) return true
+    // Alleen in de hoeken is het geen rechthoek meer.
+    const dx = Math.max(vorm.x + vorm.r - x, x - (vorm.x + vorm.w - vorm.r), 0)
+    const dy = Math.max(vorm.y + vorm.r - y, y - (vorm.y + vorm.h - vorm.r), 0)
+    return dx * dx + dy * dy <= vorm.r * vorm.r
+  }
+
+  // De onderste helft van de ring: dat is precies de bocht van de J.
+  const dx = x - vorm.cx
+  const dy = y - vorm.cy
+  if (dy < 0) return false
+  const d = Math.hypot(dx, dy)
+  return d <= vorm.buiten && d >= vorm.binnen
+}
+
+/** Hoeveel van deze pixel binnen de vormen valt, 0…1. */
+function dekking(vormen, px, py, schaal, monsters = 4) {
   let raak = 0
   for (let sy = 0; sy < monsters; sy += 1) {
     for (let sx = 0; sx < monsters; sx += 1) {
-      const mx = px + (sx + 0.5) / monsters
-      const my = py + (sy + 0.5) / monsters
-      if (mx < x || mx > x + w || my < y || my > y + h) continue
-
-      // Alleen in de hoeken is het geen rechthoek meer.
-      const dx = Math.max(x + r - mx, mx - (x + w - r), 0)
-      const dy = Math.max(y + r - my, my - (y + h - r), 0)
-      if (dx * dx + dy * dy <= r * r) raak += 1
+      const x = (px + (sx + 0.5) / monsters) / schaal
+      const y = (py + (sy + 0.5) / monsters) / schaal
+      if (vormen.some((v) => raakt(v, x, y))) raak += 1
     }
   }
   return raak / (monsters * monsters)
+}
+
+// ─── Het teken ──────────────────────────────────────────────────────────────
+
+const STAM = 0.075 // dikte van een stam
+const DWARS = 0.038 // dikte van een dwarsstreek — het contrast van een didone
+
+/** De J en de E, plus de drie balken eronder. */
+function monogram({ dx, dy }) {
+  const v = (x, y, w, h, r) => rect(x + dx, y + dy, w, h, r)
+  const b = (cx, cy, buiten, binnen) => boog(cx + dx, cy + dy, buiten, binnen)
+
+  // De J: stam tot op de bocht, en de bocht eindigt op dezelfde lijn als de E.
+  const bocht = 0.115
+  const j = [
+    v(0.3, 0.26, STAM, 0.545 - 0.26),
+    b(0.375 - bocht, 0.66 - bocht, bocht, bocht - STAM),
+    v(0.2475, 0.26, 0.18, 0.024, 0.008), // schreef bovenaan
+  ]
+
+  // De E: de armen beginnen ín de stam, anders laat hun afronding een keep
+  // achter op de plek waar ze samenkomen.
+  const e = [
+    v(0.46, 0.26, STAM, 0.4), // stam
+    v(0.46, 0.26, 0.205, DWARS + 0.004, 0.006), // bovenarm
+    v(0.46, 0.44, 0.165, DWARS - 0.006, 0.006), // middenarm, dunner
+    v(0.46, 0.622 - 0.004, 0.215, DWARS + 0.004, 0.006), // onderarm, de breedste
+  ]
+
+  // De balken staan onder het teken en dus in het midden van het vlak zelf,
+  // niet mee verschoven met de letters.
+  const balken = BALKKLEUREN.map((kleur, i) => ({
+    kleur,
+    vormen: [rect(0.5 - 0.1475 + i * 0.115, 0.745 + dy, 0.09, 0.042, 0.021)],
+  }))
+
+  return [{ kleur: WIT, vormen: [...j, ...e] }, ...balken]
 }
 
 function meng(onder, boven, alfa) {
   return onder.map((c, i) => Math.round(c * (1 - alfa) + boven[i] * alfa))
 }
 
-function teken(maat, { padding = 0, radius = 0.22, achtergrond = NAVY } = {}) {
+/**
+ * Het vlak loopt altijd tot de rand; alleen het teken krimpt.
+ *
+ * Dat is het hele punt van een maskable icoon: Android snijdt er zelf een vorm
+ * uit, dus de achtergrond moet doorlopen tot in de hoeken — anders staat daar
+ * niets zodra het masker ruimer is dan gedacht — terwijl het teken binnen de
+ * veilige 80% moet blijven.
+ */
+function teken(maat, { padding = 0, radius = 0.22 } = {}) {
   const pixels = Buffer.alloc(maat * maat * 4)
-  const binnen = maat * (1 - 2 * padding)
-  const start = maat * padding
+  const schaal = maat * (1 - 2 * padding)
+  const rand = maat * padding
 
-  const vormen = [
-    { x: start, y: start, w: binnen, h: binnen, r: binnen * radius, kleur: achtergrond },
-    ...BALKEN.map((b) => ({
-      x: start + b.x * binnen,
-      y: start + b.y * binnen,
-      w: b.w * binnen,
-      h: b.h * binnen,
-      r: (1.6 / 32) * binnen,
-      kleur: b.kleur,
-    })),
-  ]
+  const vlak = { kleur: NAVY, vormen: [rect(0, 0, 1, 1, radius)] }
+  const lagen = monogram({ dx: 0.1025, dy: -0.025 })
 
   for (let y = 0; y < maat; y += 1) {
     for (let x = 0; x < maat; x += 1) {
-      let kleur = achtergrond
-      let alfa = 0
+      let kleur = NAVY
+      let alfa = dekking(vlak.vormen, x, y, maat)
 
-      for (const vorm of vormen) {
-        const d = dekking(x, y, vorm)
+      for (const laag of lagen) {
+        const d = dekking(laag.vormen, x - rand, y - rand, schaal)
         if (d === 0) continue
-        kleur = alfa === 0 ? vorm.kleur : meng(kleur, vorm.kleur, d)
+        kleur = alfa === 0 ? laag.kleur : meng(kleur, laag.kleur, d)
         alfa = Math.max(alfa, d)
       }
 
@@ -143,8 +206,9 @@ function png(maat, pixels) {
 const ICONEN = [
   { naam: 'icon-192.png', maat: 192 },
   { naam: 'icon-512.png', maat: 512 },
-  // Android snijdt hier een vorm uit; alles binnen 80% blijft zeker staan.
-  { naam: 'maskable-512.png', maat: 512, padding: 0.1, radius: 0.5 },
+  // Android snijdt hier zelf een vorm uit: het vlak loopt door tot de rand,
+  // het teken blijft binnen de veilige 80%.
+  { naam: 'maskable-512.png', maat: 512, padding: 0.1, radius: 0 },
   // iOS zet zijn eigen afronding op het beginschermicoon, dus vierkant aan.
   { naam: 'apple-touch-icon.png', maat: 180, radius: 0 },
 ]
@@ -152,7 +216,6 @@ const ICONEN = [
 mkdirSync(join(root, 'public/icons'), { recursive: true })
 
 for (const { naam, maat, ...opties } of ICONEN) {
-  const bestand = join(root, 'public/icons', naam)
-  writeFileSync(bestand, png(maat, teken(maat, opties)))
+  writeFileSync(join(root, 'public/icons', naam), png(maat, teken(maat, opties)))
   console.log(`${naam.padEnd(22)} ${maat}×${maat}`)
 }

@@ -17,7 +17,7 @@ if (rol === 'personeel' || rol === 'staff') {
   updateDoc(doc(null, 'profiles', 'u-jasper'), { role: 'staff', fullName: 'Lotte Vrijsen' })
 }
 
-console.info('JE Planning — demomodus: gegevens staan in het geheugen, niets wordt bewaard.')
+console.info('JE Plan — demomodus: gegevens staan in het geheugen, niets wordt bewaard.')
 
 // Eerlijk zichtbaar maken dat dit voorbeeldgegevens zijn.
 addEventListener('DOMContentLoaded', () => {

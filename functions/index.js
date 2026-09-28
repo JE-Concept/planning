@@ -63,7 +63,7 @@ export const ensureProfile = onCall({ region: REGION }, async (request) => {
 
   if (!invite.exists && !allowedDomains.includes(domain)) {
     logger.warn('Toegang geweigerd', { email })
-    throw new HttpsError('permission-denied', `${email} heeft geen toegang tot JE Planning.`)
+    throw new HttpsError('permission-denied', `${email} heeft geen toegang tot JE Plan.`)
   }
 
   // Somebody has to own an empty workspace, or nobody can ever invite anybody.

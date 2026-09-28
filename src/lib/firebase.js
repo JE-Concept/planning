@@ -24,7 +24,7 @@ if (!isConfigured) {
   // A missing key is a deploy mistake, not a state to design around — the login
   // screen says so plainly instead of leaving somebody on a blank page.
   console.error(
-    'JE Planning: de VITE_FIREBASE_* variabelen ontbreken. ' +
+    'JE Plan: de VITE_FIREBASE_* variabelen ontbreken. ' +
       'Zet ze in .env.local (lokaal) of in de Firebase Hosting build-omgeving.'
   )
 }

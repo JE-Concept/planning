@@ -9,7 +9,7 @@
 
 ## Wat dit is en wat het niet is
 
-JE Planning is een **losstaande** applicatie. Ze deelt **niets** met het Cue/JE Concept-platform:
+JE Plan is een **losstaande** applicatie. Ze deelt **niets** met het Cue/JE Concept-platform:
 een eigen Firebase-project, eigen Firestore, eigen login, eigen factuur. Dat is een bewuste keuze
 van Jasper (samenvoegen kan later; uit elkaar trekken achteraf is veel duurder).
 

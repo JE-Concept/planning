@@ -53,7 +53,7 @@ export default function Sidebar({ onNavigate, counts = {} }) {
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-600 text-xs font-bold text-white">
           JE
         </span>
-        <span className="text-sm font-semibold text-white">Planning</span>
+        <span className="text-sm font-semibold text-white">Plan</span>
       </NavLink>
 
       <ul className="space-y-0.5">

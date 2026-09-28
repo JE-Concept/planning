@@ -52,7 +52,7 @@ export async function registreerServiceWorker() {
     registratie = await navigator.serviceWorker.register(`/sw.js?${query}`, { scope: '/' })
     return registratie
   } catch (err) {
-    console.warn('JE Planning: service worker niet geregistreerd', err)
+    console.warn('JE Plan: service worker niet geregistreerd', err)
     return null
   }
 }

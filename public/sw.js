@@ -1,5 +1,5 @@
 /**
- * De service worker van JE Planning. Eén stuk, met twee taken.
+ * De service worker van JE Plan. Eén stuk, met twee taken.
  *
  * 1. De app draaien als geïnstalleerde app: de schil komt uit de cache wanneer
  *    het netwerk traag of weg is, zodat er geen witte pagina staat op een
@@ -122,7 +122,7 @@ if (config.apiKey && config.projectId) {
   } catch (err) {
     // Geen meldingen is vervelend; een service worker die niet installeert en
     // daarmee ook de schil uit de cache haalt, is erger.
-    console.warn('JE Planning: meldingen niet geladen', err)
+    console.warn('JE Plan: meldingen niet geladen', err)
   }
 }
 

@@ -1,6 +1,6 @@
-# JE Planning — planning.jeconcept.be
+# JE Plan — planning.jeconcept.be
 
-Interne planningstool voor JE Concept, als vervanger van ClickUp. Vier onderdelen:
+Interne planningstool voor JE Concept, als vervanger van ClickUp. De app heet **JE Plan**; de repo en het Firebase-project houden hun naam (`planning`, `je-planning`), want die staan in te veel geheimen en URL's om er iets mee op te schieten. Vier onderdelen:
 
 - **Kanban** — borden per lijst, slepen tussen kolommen, groeperen op status, persoon of prioriteit, filters, lijstweergave, subtaken, reacties.
 - **Social media kalender** — maandkalender over alle merken heen (JE Concept, Bar Vue, Meer — Het Vinne, Feestbeest, Maison Folie, Wintermoods). Per post een link naar het ontwerp, een **review** (vragen, goedkeuren, aanpassing vragen) met een logboek van elke beslissing, en posts kunnen aan een **project** hangen.
@@ -190,7 +190,9 @@ Aanzetten gebeurt per toestel, in het accountmenu. Eerst moet het certificaat er
 2. Die sleutel als GitHub-secret **`VITE_FIREBASE_VAPID_KEY`** zetten (Settings → Secrets and variables → Actions).
 3. Opnieuw uitrollen. Zonder de sleutel bouwt en draait alles gewoon, maar blijft de knop *Meldingen aanzetten* uitgeschakeld — een knop die niets doet is erger dan een knop die zegt dat hij nog niet klaar is.
 
-De iconen staan in `public/icons/` en worden gemaakt met `node scripts/make-icons.mjs` — zonder beeldbibliotheek, omdat het merkteken drie balken is en dat geen build-afhankelijkheid waard is.
+De iconen staan in `public/icons/` en worden gemaakt met `node scripts/make-icons.mjs`: het JE-monogram, in de huisletter nagebouwd uit rechthoeken en een boog — dikke stammen, dunne dwarsstreken — met daaronder de drie balken van de favicon. Een echt logobestand bestaat niet; het merk ís die twee letters. Het gaat zonder beeldbibliotheek, want een letterteken uit acht vormen is geen build-afhankelijkheid waard.
+
+De favicon blijft de drie balken alleen: op 16 pixels valt een schreefletter uit elkaar.
 
 ---
 
@@ -211,7 +213,7 @@ Wat meekomt: ruimtes, mappen, lijsten, kolommen (inclusief het type open/bezig/a
 
 Elk geïmporteerd document krijgt een vast id (`cu-task-86cbh9v0p`), dus **het script mag zo vaak draaien als je wil**: een tweede run werkt bij wat veranderd is in plaats van te dupliceren. Dat is ook de bedoelde werkwijze — een paar drooglopen, een echte import, en op de ochtend van de overstap nog een laatste bijwerking.
 
-**Toewijzingen** worden gekoppeld op e-mailadres. Wie nog nooit in JE Planning is aangemeld, heeft nog geen profiel; het script laat die taken zonder toegewezene en zet die mensen onderaan in de rapportage. Laat hen aanmelden en draai opnieuw.
+**Toewijzingen** worden gekoppeld op e-mailadres. Wie nog nooit in JE Plan is aangemeld, heeft nog geen profiel; het script laat die taken zonder toegewezene en zet die mensen onderaan in de rapportage. Laat hen aanmelden en draai opnieuw.
 
 ---
 

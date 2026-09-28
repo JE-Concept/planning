@@ -21,7 +21,7 @@ export default function Login() {
             JE
           </span>
           <div>
-            <p className="font-display text-lg font-extrabold text-ink-900">JE Planning</p>
+            <p className="font-display text-lg font-extrabold text-ink-900">JE Plan</p>
             <p className="text-xs text-ink-500">Interne planning voor JE Concept</p>
           </div>
         </div>
@@ -38,7 +38,7 @@ export default function Login() {
           <div className="mt-6 space-y-3">
             <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">
               {user?.email ? <strong>{user.email}</strong> : 'Dit account'} heeft geen toegang tot
-              JE Planning. Vraag een beheerder om een uitnodiging.
+              JE Plan. Vraag een beheerder om een uitnodiging.
             </p>
 
             {/*
