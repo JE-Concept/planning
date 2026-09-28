@@ -31,14 +31,11 @@ service cloud.firestore {
       return get(profilePath()).data.role;
     }
 
-    // Personeel heeft een beperkte login: de openings- en sluitingslijst, en
+    // De planningsgebruikers: iedereen met een profiel behalve personeel.
+    //
+    // Personeel heeft een beperkte login — de openings- en sluitingslijst, en
     // verder niets. Dat onderscheid staat hier en niet alleen in de interface,
     // want een verborgen knop is geen beveiliging.
-    function isStaff() {
-      return isMember() && role() == 'staff';
-    }
-
-    /** De planningsgebruikers: iedereen met een profiel behalve personeel. */
     function isTeam() {
       return isMember() && role() != 'staff';
     }
