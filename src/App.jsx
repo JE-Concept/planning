@@ -26,10 +26,27 @@ function Loading() {
 }
 
 function Authenticated() {
-  const { state } = useAuth()
+  const { state, isStaff } = useAuth()
 
   if (state === 'loading') return <Loading />
   if (state !== 'ready') return <Login />
+
+  // Personeel heeft één scherm. De rules weigeren de rest sowieso; dit zorgt
+  // dat ze er niet op stuiten in plaats van een lege pagina met foutmeldingen.
+  if (isStaff) {
+    return (
+      <WorkspaceProvider>
+        <AppShell>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/openen-sluiten" element={<Checklists />} />
+              <Route path="*" element={<Navigate to="/openen-sluiten" replace />} />
+            </Routes>
+          </Suspense>
+        </AppShell>
+      </WorkspaceProvider>
+    )
+  }
 
   return (
     <WorkspaceProvider>

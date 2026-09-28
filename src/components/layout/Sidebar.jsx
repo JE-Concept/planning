@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '@lib/cn'
 import { Dot } from '@ui/index'
+import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 
 const MAIN = [
@@ -24,7 +25,10 @@ function itemClass({ isActive }) {
 
 export default function Sidebar({ onNavigate }) {
   const { spaces, boards, folderById } = useWorkspace()
+  const { isStaff } = useAuth()
   const [collapsed, setCollapsed] = useState({})
+
+  const main = isStaff ? MAIN.filter((item) => item.to === '/openen-sluiten') : MAIN
 
   // Boards hang under their space; a space with no boards is noise in a
   // sidebar, so it only appears once it has one.
@@ -52,7 +56,7 @@ export default function Sidebar({ onNavigate }) {
       </NavLink>
 
       <ul className="space-y-0.5">
-        {MAIN.map((item) => (
+        {main.map((item) => (
           <li key={item.to}>
             <NavLink to={item.to} end={item.end} className={itemClass} onClick={onNavigate}>
               <span aria-hidden="true" className="w-4 text-center text-ink-400">
@@ -65,7 +69,7 @@ export default function Sidebar({ onNavigate }) {
       </ul>
 
       <div className="space-y-3">
-        {grouped.map(({ space, lists }) => (
+        {(isStaff ? [] : grouped).map(({ space, lists }) => (
           <div key={space.id}>
             <button
               type="button"
@@ -102,12 +106,14 @@ export default function Sidebar({ onNavigate }) {
       </div>
 
       <div className="mt-auto">
+        {isStaff ? null : (
         <NavLink to="/instellingen" className={itemClass} onClick={onNavigate}>
           <span aria-hidden="true" className="w-4 text-center text-ink-400">
             ⚙
           </span>
           Instellingen
         </NavLink>
+        )}
       </div>
     </nav>
   )

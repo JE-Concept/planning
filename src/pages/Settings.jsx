@@ -69,6 +69,7 @@ const ROLES = [
   { key: 'owner', label: 'Eigenaar' },
   { key: 'admin', label: 'Beheerder' },
   { key: 'member', label: 'Lid' },
+  { key: 'staff', label: 'Personeel — alleen openen & sluiten' },
   { key: 'guest', label: 'Gast' },
 ]
 

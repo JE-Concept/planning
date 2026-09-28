@@ -7,7 +7,7 @@ import Sidebar from './Sidebar'
 import TimerWidget from './TimerWidget'
 
 export default function AppShell({ children }) {
-  const { profile, logOut } = useAuth()
+  const { profile, logOut, isStaff } = useAuth()
   const { loading } = useWorkspace()
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -52,7 +52,10 @@ export default function AppShell({ children }) {
 
           <div className="flex-1" />
 
-          <TimerWidget />
+          {/* Personeel registreert geen uren in dit tool, en mag de lopende
+              timers niet lezen — de widget zou dus enkel een rechtenfout
+              opleveren. */}
+          {isStaff ? null : <TimerWidget />}
 
           <div className="relative">
             <button

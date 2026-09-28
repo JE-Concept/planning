@@ -27,8 +27,24 @@ service cloud.firestore {
         && get(profilePath()).data.active == true;
     }
 
+    function role() {
+      return get(profilePath()).data.role;
+    }
+
+    // Personeel heeft een beperkte login: de openings- en sluitingslijst, en
+    // verder niets. Dat onderscheid staat hier en niet alleen in de interface,
+    // want een verborgen knop is geen beveiliging.
+    function isStaff() {
+      return isMember() && role() == 'staff';
+    }
+
+    /** De planningsgebruikers: iedereen met een profiel behalve personeel. */
+    function isTeam() {
+      return isMember() && role() != 'staff';
+    }
+
     function isAdmin() {
-      return isMember() && get(profilePath()).data.role in ['owner', 'admin'];
+      return isMember() && role() in ['owner', 'admin'];
     }
 
     function changedKeys() {
@@ -59,17 +75,17 @@ service cloud.firestore {
 
     // ── The workspace itself ──────────────────────────────────────────────
 
-    match /brands/{id}      { allow read: if isMember(); allow write: if isMember(); }
-    match /spaces/{id}      { allow read: if isMember(); allow write: if isMember(); }
-    match /folders/{id}     { allow read: if isMember(); allow write: if isMember(); }
-    match /lists/{id}       { allow read: if isMember(); allow write: if isMember(); }
-    match /tags/{id}        { allow read: if isMember(); allow write: if isMember(); }
-    match /tasks/{id}       { allow read: if isMember(); allow write: if isMember(); }
-    match /comments/{id}    { allow read: if isMember(); allow write: if isMember(); }
-    match /attachments/{id} { allow read: if isMember(); allow write: if isMember(); }
-    match /goals/{id}       { allow read: if isMember(); allow write: if isMember(); }
-    match /goalUpdates/{id} { allow read: if isMember(); allow write: if isMember(); }
-    match /socialPosts/{id} { allow read: if isMember(); allow write: if isMember(); }
+    match /brands/{id}      { allow read: if isTeam(); allow write: if isTeam(); }
+    match /spaces/{id}      { allow read: if isTeam(); allow write: if isTeam(); }
+    match /folders/{id}     { allow read: if isTeam(); allow write: if isTeam(); }
+    match /lists/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
+    match /tags/{id}        { allow read: if isTeam(); allow write: if isTeam(); }
+    match /tasks/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
+    match /comments/{id}    { allow read: if isTeam(); allow write: if isTeam(); }
+    match /attachments/{id} { allow read: if isTeam(); allow write: if isTeam(); }
+    match /goals/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
+    match /goalUpdates/{id} { allow read: if isTeam(); allow write: if isTeam(); }
+    match /socialPosts/{id} { allow read: if isTeam(); allow write: if isTeam(); }
 
     // De lijsten zelf zijn beleid — die maakt een beheerder. De dagelijkse
     // runs zijn werk, en dat doet iedereen; niemand wist er een.
@@ -87,32 +103,32 @@ service cloud.firestore {
     // The review log is written by the reviewer and read by
     // everyone; nobody edits a decision after the fact, they add the next one.
     match /postReviews/{id} {
-      allow read:   if isMember();
-      allow create: if isMember();
+      allow read:   if isTeam();
+      allow create: if isTeam();
       allow update: if false;
       allow delete: if isAdmin();
     }
 
     match /activity/{id} {
-      allow read:   if isMember();
-      allow create: if isMember();
+      allow read:   if isTeam();
+      allow create: if isTeam();
       allow update, delete: if isAdmin();
     }
 
     // ── Time tracking: everyone sees the numbers, you own your own rows ────
 
     match /timeEntries/{id} {
-      allow read: if isMember();
-      allow create: if isMember()
+      allow read: if isTeam();
+      allow create: if isTeam()
         && (request.resource.data.profileId == request.auth.uid || isAdmin());
-      allow update, delete: if isMember()
+      allow update, delete: if isTeam()
         && (resource.data.profileId == request.auth.uid || isAdmin());
     }
 
     // The running timer is keyed by uid, which is what makes "one timer per
     // person" true by construction instead of by convention.
     match /runningTimers/{uid} {
-      allow read: if isMember();
+      allow read: if isTeam();
       allow write: if signedIn() && request.auth.uid == uid;
     }
 

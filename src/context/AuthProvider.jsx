@@ -103,6 +103,8 @@ export function AuthProvider({ children }) {
       logOut,
       uid: user?.uid ?? null,
       isAdmin: profile?.role === 'owner' || profile?.role === 'admin',
+      /** Personeel: alleen de openings- en sluitingslijst, verder niets. */
+      isStaff: profile?.role === 'staff',
     }),
     [state, user, profile, error, signIn, logOut]
   )

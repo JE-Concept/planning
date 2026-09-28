@@ -16,6 +16,9 @@ const MENSEN = [
   ['u-elke',     'elke@kenjeklanten.be',      'Elke Motmans',      'admin',  true],
   ['u-anneleen', 'anneleen@kenjeklanten.be',  'Anneleen Coenen',   'admin',  true],
   ['u-charish',  'charish.talento@gmail.com', 'Charish',           'member', true],
+  // Zaalpersoneel: beperkte login, enkel de openings- en sluitingslijst.
+  ['u-lotte',    'lotte@barvue.be',           'Lotte Vrijsen',     'staff',  true],
+  ['u-sam',      'sam@barvue.be',             'Sam Deckers',       'staff',  true],
   // Vertrokken, maar hun werk staat er nog — dus gearchiveerd, niet verwijderd.
   ['u-maxine',   'maxine@jeconcept.be',       'Maxine Vanbrabant', 'member', false],
   ['u-aicha',    'aicha@jeconcept.be',        'Aïcha Van Roy',     'member', false],
@@ -335,18 +338,18 @@ seedDoc('checklistRuns', `openen_${vandaag}`, {
   checklistId: 'openen', checklistKey: 'openen', checklistName: 'Openen van de bistro',
   brandId: null, day: vandaag, date: new Date(`${vandaag}T12:00:00`), weekend: false,
   totalCount: 20, doneCount: 7,
-  participants: ['u-charish', 'u-elke'],
+  participants: ['u-lotte', 'u-sam'],
   items: Object.fromEntries([
-    afgevinkt('sleutel', 'u-charish', 'Charish Vanoppen', '08:12'),
-    afgevinkt('alarm', 'u-charish', 'Charish Vanoppen', '08:13'),
-    afgevinkt('licht-binnen', 'u-charish', 'Charish Vanoppen', '08:14'),
-    afgevinkt('apparatuur-aan', 'u-elke', 'Elke Vandeweyer', '08:31'),
-    afgevinkt('houdbaarheid', 'u-elke', 'Elke Vandeweyer', '08:40'),
-    afgevinkt('koeling-keuken', 'u-elke', 'Elke Vandeweyer', '08:42'),
-    afgevinkt('koeling-bar', 'u-charish', 'Charish Vanoppen', '08:55'),
+    afgevinkt('sleutel', 'u-lotte', 'Lotte Vrijsen', '08:12'),
+    afgevinkt('alarm', 'u-lotte', 'Lotte Vrijsen', '08:13'),
+    afgevinkt('licht-binnen', 'u-lotte', 'Lotte Vrijsen', '08:14'),
+    afgevinkt('apparatuur-aan', 'u-sam', 'Sam Deckers', '08:31'),
+    afgevinkt('houdbaarheid', 'u-sam', 'Sam Deckers', '08:40'),
+    afgevinkt('koeling-keuken', 'u-sam', 'Sam Deckers', '08:42'),
+    afgevinkt('koeling-bar', 'u-lotte', 'Lotte Vrijsen', '08:55'),
   ]),
   notes: 'Melkschuimer maakt een raar geluid — techniekers gebeld voor donderdag.',
-  notesById: 'u-charish', notesByName: 'Charish Vanoppen', notesAt: new Date(`${vandaag}T09:02:00`),
+  notesById: 'u-lotte', notesByName: 'Lotte Vrijsen', notesAt: new Date(`${vandaag}T09:02:00`),
   updatedAt: NU,
 })
 

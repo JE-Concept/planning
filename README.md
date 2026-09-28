@@ -4,7 +4,7 @@ Interne planningstool voor JE Concept, als vervanger van ClickUp. Vier onderdele
 
 - **Kanban** — borden per lijst, slepen tussen kolommen, groeperen op status, persoon of prioriteit, filters, lijstweergave, subtaken, reacties.
 - **Social media kalender** — maandkalender over alle merken heen (JE Concept, Bar Vue, Meer — Het Vinne, Feestbeest, Maison Folie, Wintermoods). Per post een link naar het ontwerp, een **review** (vragen, goedkeuren, aanpassing vragen) met een logboek van elke beslissing, en posts kunnen aan een **project** hangen.
-- **Openen & sluiten** — de dagelijkse checklist van de bistro, één lijst per dag waar het hele team in afvinkt. Bij elk vinkje staat wie het zette en wanneer; weekendpunten tellen alleen in het weekend mee; toegangscodes staan achter een klik.
+- **Openen & sluiten** — de dagelijkse checklist van de bistro, één lijst per dag waar het hele team in afvinkt. Zaalpersoneel krijgt een **beperkte login** die alleen deze lijst ziet. Bij elk vinkje staat wie het zette en wanneer; weekendpunten tellen alleen in het weekend mee; toegangscodes staan achter een klik.
 - **Timetracking** — één timer in de bovenbalk, handmatige registraties, weekoverzicht, rapport per persoon / lijst / merk / dag, CSV-export.
 - **Goals** — doelen met meetbare resultaten (aantal, bedrag, percentage, ja-nee, of automatisch het aantal afgewerkte taken van een lijst), met voortgang en check-in-geschiedenis.
 
@@ -124,6 +124,20 @@ Wat er openstaat, staat op het dashboard onder **Wacht op review**, en op de kal
 ### Posts aan projecten
 
 Een post kan aan een taak hangen. Dat is wat de vraag *"wat gaat er buiten voor Blum?"* beantwoordbaar maakt naast *"wat gaat er deze week buiten?"*: de kalender filtert op project, de kaart toont het project, en het takenpaneel toont onderaan de posts die eraan hangen, met hun reviewstatus. De titel en de lijst van de taak reizen mee op de post — Firestore heeft geen join, en een kalendercel kan niet per kaart een taak gaan lezen.
+
+---
+
+## Rollen
+
+| Rol | Ziet |
+|---|---|
+| `owner` / `admin` | alles, plus het beheer van mensen en lijsten |
+| `member` | de volledige planning |
+| `staff` | **alleen** openen & sluiten |
+
+Personeel is geen verborgen menu-item maar een eigen rol in de beveiligingsregels: `isTeam()` sluit `staff` uit, en elke planningscollectie hangt daaraan. De interface laat de rest weg omdat de database ze toch weigert — een verborgen knop is geen beveiliging. De app vraagt voor personeel ook geen borden, merken of timers meer op, anders vult hun scherm zich met rechtenfouten in plaats van met een lijst.
+
+Uitnodigen gaat via *Instellingen → Team*, met **Personeel — alleen openen & sluiten** als rol.
 
 ---
 

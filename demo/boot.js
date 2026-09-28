@@ -2,6 +2,20 @@
  * Start van de demobuild: vult de in-memory database.
  */
 import './seed.js'
+import { doc, updateDoc } from './firestore.js'
+
+/**
+ * `?rol=personeel` laat de demo zien wat zaalpersoneel te zien krijgt: één
+ * scherm, geen borden, geen instellingen. In de echte tool komt die rol uit
+ * het profiel; hier is het een schakelaar, zodat beide kanten te bekijken zijn
+ * zonder twee accounts.
+ */
+const rol = new URLSearchParams(location.search).get('rol')
+if (rol === 'personeel' || rol === 'staff') {
+  // Geen await: de in-memory schrijver heeft geen asynchrone body, dus dit is
+  // rond voor main.jsx verder gaat — en top-level await mag hier niet.
+  updateDoc(doc(null, 'profiles', 'u-jasper'), { role: 'staff', fullName: 'Lotte Vrijsen' })
+}
 
 console.info('JE Planning — demomodus: gegevens staan in het geheugen, niets wordt bewaard.')
 

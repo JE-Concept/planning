@@ -11,7 +11,7 @@ const WorkspaceContext = createContext(null)
  * subscription per collection costs far less than re-reading them per view.
  */
 export function WorkspaceProvider({ children }) {
-  const { state } = useAuth()
+  const { state, isStaff } = useAuth()
   const [data, setData] = useState({
     profiles: [],
     brands: [],
@@ -25,7 +25,12 @@ export function WorkspaceProvider({ children }) {
   useEffect(() => {
     if (state !== 'ready') return undefined
 
-    const pending = new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags'])
+    // Personeel mag alleen de profielen lezen — de rest van de werkruimte is
+    // voor hen gesloten. Die abonnementen dan toch openen levert een scherm vol
+    // rechtenfouten op in plaats van een lijst.
+    const pending = isStaff
+      ? new Set(['profiles'])
+      : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags'])
     const settle = (key) => {
       pending.delete(key)
       if (pending.size === 0) setLoading(false)
@@ -39,15 +44,19 @@ export function WorkspaceProvider({ children }) {
 
     const unsubscribers = [
       subscribe('profiles', query(col(COL.profiles), orderBy('email'))),
-      subscribe('brands', query(col(COL.brands), orderBy('position'))),
-      subscribe('spaces', query(col(COL.spaces), orderBy('position'))),
-      subscribe('folders', query(col(COL.folders), orderBy('position'))),
-      subscribe('lists', query(col(COL.lists), orderBy('position'))),
-      subscribe('tags', query(col(COL.tags), orderBy('name'))),
+      ...(isStaff
+        ? []
+        : [
+            subscribe('brands', query(col(COL.brands), orderBy('position'))),
+            subscribe('spaces', query(col(COL.spaces), orderBy('position'))),
+            subscribe('folders', query(col(COL.folders), orderBy('position'))),
+            subscribe('lists', query(col(COL.lists), orderBy('position'))),
+            subscribe('tags', query(col(COL.tags), orderBy('name'))),
+          ]),
     ]
 
     return () => unsubscribers.forEach((stop) => stop())
-  }, [state])
+  }, [state, isStaff])
 
   const value = useMemo(() => {
     const byId = (items) => Object.fromEntries(items.map((i) => [i.id, i]))
