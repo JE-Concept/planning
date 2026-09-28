@@ -61,8 +61,16 @@ jobs:
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
 
-      # Hosting, rules, indexes and functions ship together: a board that
-      # queries a field before its index exists is a broken board.
+      # De functions hebben hun eigen node_modules. Zonder deze install vindt
+      # de CLI firebase-functions niet, mislukt het parsen van de triggers, en
+      # landt ensureProfile niet — waarna niemand meer kan inloggen.
+      - name: Functions-afhankelijkheden
+        if: env.HAS_CREDENTIALS == 'true'
+        run: cd functions && npm install --no-audit --no-fund
+
+      # Rules, indexes, functions, basisgegevens en de applicatie horen bij
+      # elkaar: een bord dat zoekt op een veld waarvoor nog geen index bestaat
+      # is een kapot bord, en een lijst zonder basisgegevens is een leeg scherm.
       - name: Deploy
         if: env.HAS_CREDENTIALS == 'true'
         env:
@@ -74,8 +82,11 @@ jobs:
           # projectnaam; hier hangen we hem aan het project dat echt draait.
           npx --yes firebase-tools@13 target:apply hosting app "$FIREBASE_PROJECT" \
             --project "$FIREBASE_PROJECT" --non-interactive
-          npx --yes firebase-tools@13 deploy \
-            --project "$FIREBASE_PROJECT" \
-            --only hosting,firestore,storage,functions \
-            --non-interactive
-          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only firestore:rules,firestore:indexes,storage
+          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions
+          node scripts/seed.mjs
+          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting
+
+      - name: Sleutel opruimen
+        if: always()
+        run: rm -f "${{ github.workspace }}/service-account.json"

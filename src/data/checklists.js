@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   arrayUnion,
-  increment,
   onSnapshot,
   orderBy,
   query,
@@ -10,7 +9,6 @@ import {
   where,
 } from 'firebase/firestore'
 import { COL, col, fromQuery, ref } from '@lib/collections'
-import { dayKey } from '@lib/dates'
 import { isWeekend, requiredItems, runId } from '@lib/checklist-templates'
 
 export { isWeekend, requiredItems, runId }
@@ -70,32 +68,17 @@ export function useRunsForDay(day) {
   )
 }
 
-/** De laatste dagen, voor het overzicht "is er gisteren afgesloten?". */
-export function useRecentRuns(limitDays = 14) {
-  const [runs, setRuns] = useState([])
-
-  useEffect(() => {
-    const from = dayKey(new Date(Date.now() - limitDays * 86400000))
-    return onSnapshot(
-      query(col(COL.checklistRuns), where('day', '>=', from), orderBy('day', 'desc')),
-      (snap) => setRuns(fromQuery(snap)),
-      () => setRuns([])
-    )
-  }, [limitDays])
-
-  return runs
-}
-
 /**
  * Vinkt één punt aan of uit.
  *
  * `setDoc` met merge voegt diep samen, dus dit raakt alleen `items.<id>` en
- * laat de rest van de map staan. De teller loopt met `increment` mee, zodat
- * twee mensen die op hetzelfde moment afvinken allebei geteld worden.
+ * laat de rest van de map staan. De voortgang wordt uit die map gerekend en
+ * niet als getal bewaard: twee mensen die hetzelfde punt aanvinken zouden een
+ * opgeslagen teller laten wegdrijven, en een fout getal is erger dan geen.
  */
 export function toggleItem({ checklist, day, item, done, profile, weekend }) {
   const id = runId(checklist.id, day)
-  const [year, month, date] = day.split('-').map(Number)
+  const [year, month, dayOfMonth] = day.split('-').map(Number)
 
   return setDoc(
     ref(COL.checklistRuns, id),
@@ -105,10 +88,9 @@ export function toggleItem({ checklist, day, item, done, profile, weekend }) {
       checklistName: checklist.name,
       brandId: checklist.brandId ?? null,
       day,
-      date: new Date(year, month - 1, date, 12, 0, 0),
+      // Middag, zodat een tijdzoneverschuiving de datum nooit een dag verzet.
+      date: new Date(year, month - 1, dayOfMonth, 12, 0, 0),
       weekend: Boolean(weekend),
-      totalCount: requiredItems(checklist, { weekend }).length,
-      doneCount: increment(done ? 1 : -1),
       participants: arrayUnion(profile.id),
       items: {
         [item.id]: done
