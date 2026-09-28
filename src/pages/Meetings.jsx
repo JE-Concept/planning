@@ -139,14 +139,13 @@ export default function Meetings() {
  */
 function Agenda({ items }) {
   const { uid, isAdmin } = useAuth()
-  const { profiles, profileById } = useWorkspace()
+  const { profileById } = useWorkspace()
   const { items: besproken } = useAgenda('besproken')
   const toast = useToast()
   const [toonBesproken, setToonBesproken] = useState(false)
 
   const [titel, setTitel] = useState('')
   const [omschrijving, setOmschrijving] = useState('')
-  const [ownerId, setOwnerId] = useState(uid ?? '')
   const [minuten, setMinuten] = useState(10)
   const [busy, setBusy] = useState(false)
 
@@ -155,7 +154,7 @@ function Agenda({ items }) {
     if (!titel.trim()) return
     setBusy(true)
     try {
-      await addAgendaItem({ titel, omschrijving, ownerId, minuten, createdBy: uid })
+      await addAgendaItem({ titel, omschrijving, minuten, uid })
       setTitel('')
       setOmschrijving('')
       setMinuten(10)
@@ -187,19 +186,12 @@ function Agenda({ items }) {
             aria-label="Omschrijving"
           />
           <div className="flex flex-wrap items-end gap-3">
-            <Field label="Eigenaar" className="min-w-44 flex-1">
-              <Select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
-                <option value="">Niemand in het bijzonder</option>
-                {profiles
-                  .filter((p) => p.active !== false && p.role !== 'staff')
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.fullName || p.email}
-                    </option>
-                  ))}
-              </Select>
-            </Field>
-            <Field label="Verwachte tijd" className="w-32">
+            {/* Geen eigenaarskeuze: wie het punt zet, is de eigenaar. */}
+            <span className="flex items-center gap-1.5 text-xs text-ink-500">
+              <Avatar profile={profileById[uid]} size="xs" />
+              Jij bent de eigenaar
+            </span>
+            <Field label="Verwachte tijd" className="ml-auto w-32">
               <Select value={minuten} onChange={(e) => setMinuten(Number(e.target.value))}>
                 {[5, 10, 15, 20, 30, 45, 60].map((m) => (
                   <option key={m} value={m}>
@@ -246,14 +238,18 @@ function Agenda({ items }) {
                     </div>
 
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {owner ? (
-                        <span className="flex items-center gap-1.5 text-xs text-ink-600">
-                          <Avatar profile={owner} size="xs" />
-                          {owner.fullName || owner.email}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-ink-400">Geen eigenaar</span>
-                      )}
+                      <span className="flex items-center gap-1.5 text-xs text-ink-600">
+                        {owner ? (
+                          <>
+                            <Avatar profile={owner} size="xs" />
+                            {owner.fullName || owner.email}
+                          </>
+                        ) : (
+                          // Punten van voor "wie zet is eigenaar" kunnen er nog
+                          // zonder staan.
+                          <span className="text-ink-400">Geen eigenaar</span>
+                        )}
+                      </span>
 
                       <Button
                         variant="ghost"
@@ -263,7 +259,7 @@ function Agenda({ items }) {
                       >
                         Besproken
                       </Button>
-                      {item.createdBy === uid || isAdmin ? (
+                      {item.ownerId === uid || isAdmin ? (
                         <ConfirmButton
                           variant="ghost"
                           size="sm"

@@ -6,9 +6,12 @@ import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
  * De agenda van het teamoverleg.
  *
  * Iedereen in het team zet er punten op, niet alleen wie het overleg leidt —
- * anders komt op de agenda wat de voorzitter toevallig onthoudt. Elk punt heeft
- * een eigenaar, een omschrijving en een verwachte tijd; die tijd is wat een
- * agenda van een verlanglijst onderscheidt.
+ * anders komt op de agenda wat de voorzitter toevallig onthoudt. Wie een punt
+ * zet is meteen de eigenaar: iets op de agenda zetten voor een ander is hoe
+ * punten ontstaan waar niemand zich verantwoordelijk voor voelt.
+ *
+ * Verder een omschrijving en een verwachte tijd; die tijd is wat een agenda van
+ * een verlanglijst onderscheidt.
  *
  * Een besproken punt verdwijnt niet maar krijgt een datum. Wie een week later
  * vraagt "hebben we dat nu besproken?" wil het antwoord kunnen terugvinden.
@@ -33,17 +36,17 @@ export function useAgenda(status = 'open') {
   return { items, loading }
 }
 
-export function addAgendaItem({ titel, omschrijving, ownerId, minuten, createdBy }) {
+export function addAgendaItem({ titel, omschrijving, minuten, uid }) {
   const itemRef = newRef(COL.agendaItems)
   return setDoc(itemRef, {
     titel: titel.trim(),
     omschrijving: (omschrijving ?? '').trim(),
-    ownerId: ownerId || null,
+    ownerId: uid,
     minuten: Number(minuten) || 0,
     status: 'open',
     meetingId: null,
     besprokenOp: null,
-    createdBy,
+    createdBy: uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }).then(() => itemRef.id)

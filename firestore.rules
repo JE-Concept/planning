@@ -95,7 +95,7 @@ service cloud.firestore {
       allow read:          if isTeam();
       allow create, update: if isTeam();
       allow delete:        if isTeam()
-        && (resource.data.createdBy == request.auth.uid || isAdmin());
+        && (resource.data.ownerId == request.auth.uid || isAdmin());
     }
 
     match /meetings/{id} {

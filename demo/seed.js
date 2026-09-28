@@ -394,14 +394,14 @@ seedDoc('tasks', 't-overleg-1', {
 
 // De agenda van het volgende overleg, door drie verschillende mensen gezet.
 ;[
-  ['a1', 'Prijzen verhuurmateriaal herzien', 'De tarieven staan sinds 2024 stil terwijl transport duurder werd. Voorstel: 8% erbij vanaf november.', 'u-jasper', 15, 'u-jasper'],
-  ['a2', 'Weekendbezetting oktober', 'Drie zaterdagen met twee events tegelijk. Wie doet wat, en huren we bij?', 'u-anneleen', 20, 'u-anneleen'],
-  ['a3', 'Nieuwe leverancier dranken', 'Offerte binnen van Vandenberghe, 6% goedkoper maar levering enkel op dinsdag.', 'u-elke', 10, 'u-elke'],
-  ['a4', 'Feedback openingslijst', 'De keuken vindt de ochtendlijst te lang op stille dagen.', null, 10, 'u-charish'],
-].forEach(([id, titel, omschrijving, ownerId, minuten, createdBy], i) =>
+  ['a1', 'Prijzen verhuurmateriaal herzien', 'De tarieven staan sinds 2024 stil terwijl transport duurder werd. Voorstel: 8% erbij vanaf november.', 'u-jasper', 15],
+  ['a2', 'Weekendbezetting oktober', 'Drie zaterdagen met twee events tegelijk. Wie doet wat, en huren we bij?', 'u-anneleen', 20],
+  ['a3', 'Nieuwe leverancier dranken', 'Offerte binnen van Vandenberghe, 6% goedkoper maar levering enkel op dinsdag.', 'u-elke', 10],
+  ['a4', 'Feedback openingslijst', 'De keuken vindt de ochtendlijst te lang op stille dagen.', 'u-charish', 10],
+].forEach(([id, titel, omschrijving, wie, minuten], i) =>
   seedDoc('agendaItems', id, {
-    titel, omschrijving, ownerId, minuten, status: 'open',
-    meetingId: null, besprokenOp: null, createdBy,
+    titel, omschrijving, ownerId: wie, minuten, status: 'open',
+    meetingId: null, besprokenOp: null, createdBy: wie,
     createdAt: dag(-3 + i * 0.2), updatedAt: dag(-1),
   }))
 
