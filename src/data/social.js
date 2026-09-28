@@ -237,11 +237,22 @@ export function usePostsForTask(taskId) {
   return posts
 }
 
-/** Everything waiting on a review — all of them, or only mine. */
-export function useReviewQueue(reviewerId) {
+/**
+ * Alles wat op een review wacht — alles, of alleen het mijne.
+ *
+ * `enabled: false` slaat het abonnement over. Personeel mag socialPosts niet
+ * lezen, en een query die toch vertrekt levert daar een rechtenfout op in
+ * plaats van een leeg lijstje.
+ */
+export function useReviewQueue(reviewerId, { enabled = true } = {}) {
   const [posts, setPosts] = useState([])
 
   useEffect(() => {
+    if (!enabled) {
+      setPosts([])
+      return undefined
+    }
+
     const clauses = [where('reviewState', '==', 'requested')]
     if (reviewerId) clauses.push(where('reviewerId', '==', reviewerId))
 
@@ -250,7 +261,7 @@ export function useReviewQueue(reviewerId) {
       (snap) => setPosts(fromQuery(snap)),
       () => setPosts([])
     )
-  }, [reviewerId])
+  }, [reviewerId, enabled])
 
   return posts
 }

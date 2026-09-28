@@ -72,6 +72,29 @@ jobs:
               || echo "::error::Kon de binding niet zetten; de servicesleutel mist run.services.setIamPolicy."
           fi
 
+      - name: Wat zegt de functie zelf?
+        run: |
+          echo "── Runtime-service-account en haar rechten ──────────────────"
+          RUNTIME=$(gcloud functions describe ensureProfile --gen2 --region europe-west1 \
+            --project "$PROJECT" --format 'value(serviceConfig.serviceAccountEmail)' 2>/dev/null || true)
+          echo "  $RUNTIME"
+          if [ -n "$RUNTIME" ]; then
+            gcloud projects get-iam-policy "$PROJECT" --flatten 'bindings[].members' \
+              --filter "bindings.members:$RUNTIME" --format 'value(bindings.role)' || true
+            echo "  Ontbrekend recht toekennen…"
+            gcloud projects add-iam-policy-binding "$PROJECT" \
+              --member "serviceAccount:$RUNTIME" --role roles/datastore.user \
+              --condition=None --quiet >/dev/null && echo "  ✔ datastore.user staat er" || true
+          fi
+
+          echo
+          echo "── De laatste foutmeldingen van ensureProfile ───────────────"
+          gcloud logging read \
+            'resource.type="cloud_run_revision" AND resource.labels.service_name="ensureprofile" AND severity>=WARNING' \
+            --project "$PROJECT" --limit 25 --freshness 2h \
+            --format 'value(timestamp, severity, textPayload, jsonPayload.message)' \
+            || echo "  (geen logs gelezen — mist de sleutel logging.views.access?)"
+
       - name: Toegang, mensen en aanmeldmethodes
         run: node scripts/diagnose.mjs "${{ inputs.email }}"
 

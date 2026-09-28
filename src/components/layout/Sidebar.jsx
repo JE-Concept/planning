@@ -23,7 +23,7 @@ function itemClass({ isActive }) {
   )
 }
 
-export default function Sidebar({ onNavigate }) {
+export default function Sidebar({ onNavigate, counts = {} }) {
   const { spaces, boards, folderById } = useWorkspace()
   const { isStaff } = useAuth()
   const [collapsed, setCollapsed] = useState({})
@@ -62,7 +62,15 @@ export default function Sidebar({ onNavigate }) {
               <span aria-hidden="true" className="w-4 text-center text-ink-400">
                 {item.icon}
               </span>
-              {item.label}
+              <span className="flex-1 truncate">{item.label}</span>
+              {counts[item.to] ? (
+                <span
+                  className="shrink-0 text-xs font-semibold tabular-nums text-ink-400"
+                  aria-label={`${counts[item.to]} openstaand`}
+                >
+                  {counts[item.to]}
+                </span>
+              ) : null}
             </NavLink>
           </li>
         ))}

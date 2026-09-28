@@ -110,6 +110,26 @@ jobs:
             --region europe-west1 --project "$FIREBASE_PROJECT" \
             --member allUsers --role roles/run.invoker --quiet \
             || echo "::warning::Kon allUsers/run.invoker niet zetten op ensureprofile."
+
+          # De functie draait onder haar eigen runtime-service-account. Op een
+          # vers project krijgt die niet meer automatisch Editor, en zonder
+          # Firestore-recht crasht ensureProfile bij de eerste lees — wat bij de
+          # client aankomt als [functions/internal], niet als een weigering.
+          RUNTIME=$(gcloud functions describe ensureProfile --gen2 --region europe-west1 \
+            --project "$FIREBASE_PROJECT" --format 'value(serviceConfig.serviceAccountEmail)' 2>/dev/null || true)
+          if [ -n "$RUNTIME" ]; then
+            echo "Runtime-service-account: $RUNTIME"
+            gcloud projects add-iam-policy-binding "$FIREBASE_PROJECT" \
+              --member "serviceAccount:$RUNTIME" --role roles/datastore.user \
+              --condition=None --quiet >/dev/null \
+              && echo "  ✔ datastore.user toegekend" \
+              || echo "::warning::Kon datastore.user niet toekennen aan $RUNTIME."
+            gcloud projects add-iam-policy-binding "$FIREBASE_PROJECT" \
+              --member "serviceAccount:$RUNTIME" --role roles/firebaseauth.admin \
+              --condition=None --quiet >/dev/null || true
+          else
+            echo "::warning::Runtime-service-account van ensureProfile niet gevonden."
+          fi
           node scripts/seed.mjs
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting
 

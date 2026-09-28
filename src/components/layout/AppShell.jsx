@@ -3,12 +3,14 @@ import { useLocation } from 'react-router-dom'
 import { Avatar, Button, Spinner } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
+import { useNavCounts } from '@data/counts'
 import Sidebar from './Sidebar'
 import TimerWidget from './TimerWidget'
 
 export default function AppShell({ children }) {
   const { profile, logOut, isStaff } = useAuth()
   const { loading } = useWorkspace()
+  const counts = useNavCounts()
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const location = useLocation()
@@ -22,7 +24,7 @@ export default function AppShell({ children }) {
   return (
     <div className="flex h-full">
       <div className="hidden md:block">
-        <Sidebar />
+        <Sidebar counts={counts} />
       </div>
 
       {menuOpen ? (
@@ -33,7 +35,7 @@ export default function AppShell({ children }) {
             aria-hidden="true"
           />
           <div className="relative z-10">
-            <Sidebar onNavigate={() => setMenuOpen(false)} />
+            <Sidebar counts={counts} onNavigate={() => setMenuOpen(false)} />
           </div>
         </div>
       ) : null}
