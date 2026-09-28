@@ -75,7 +75,7 @@ const REQS = [
 ]
 
 seedDoc('lists', 'l-overview', {
-  spaceId: 's-je', folderId: null, brandId: null, name: 'Overview planning',
+  spaceId: 's-je', folderId: null, brandId: null, name: 'Events',
   description: 'Aanvraag → offerte → planning → facturatie. De hoofdpijplijn.',
   kind: 'tasks', position: 0, archived: false, statuses: OVERVIEW, createdAt: D('2025-02-01'),
 })
@@ -101,7 +101,7 @@ seedDoc('folders', 'f-platform', { spaceId: 's-je', name: 'Platform Development'
 let pos = 0
 function taak(id, listId, statuses, statusName, o = {}) {
   const s = statuses.find((x) => x.name === statusName)
-  const list = { 'l-overview': 'Overview planning', 'l-socials': 'Socials', 'l-reqs': 'Requirements' }[listId]
+  const list = { 'l-overview': 'Events', 'l-socials': 'Socials', 'l-reqs': 'Requirements' }[listId]
   seedDoc('tasks', id, {
     listId, listName: list, spaceId: 's-je', brandId: o.brandId ?? null,
     parentId: o.parentId ?? null,
@@ -218,7 +218,7 @@ function tijd(profileId, taskId, taskTitle, uren, omschrijving, dagenTerug, bill
   const eind = new Date(start.getTime() + uren * 3600000)
   const d = start.toISOString().slice(0, 10)
   seedDoc('timeEntries', `te-${te += 1}`, {
-    profileId, taskId, taskTitle, listId: 'l-overview', listName: 'Overview planning',
+    profileId, taskId, taskTitle, listId: 'l-overview', listName: 'Events',
     brandId: null, description: omschrijving, billable,
     startedAt: start, endedAt: eind, durationSeconds: Math.round(uren * 3600),
     day: d, month: maand, week: '2026-W40', createdAt: start,
@@ -238,7 +238,7 @@ tijd('u-jasper', 't-optimum', '20 m Pipe & Drape — Optimum Sorting — Opbouw'
 const loopt = new Date(NU.getTime() - 84 * 60000)
 seedDoc('runningTimers', 'u-jasper', {
   profileId: 'u-jasper', taskId: 't-trouw', taskTitle: 'Trouw Niels en Inez',
-  listId: 'l-overview', listName: 'Overview planning', brandId: null,
+  listId: 'l-overview', listName: 'Events', brandId: null,
   description: 'Offerte afwerken', startedAt: loopt, billable: true,
 })
 
@@ -255,7 +255,7 @@ function post(id, o) {
     channels: o.channels, scheduledAt: when, status: o.status,
     assigneeId: o.assigneeId ?? 'u-charish',
     source: 'manual',
-    taskId: o.taskId ?? null, taskTitle: o.taskTitle ?? null, taskListName: o.taskId ? 'Overview planning' : null,
+    taskId: o.taskId ?? null, taskTitle: o.taskTitle ?? null, taskListName: o.taskId ? 'Events' : null,
     reviewState: o.reviewState ?? 'none', reviewRound: o.reviewRound ?? 0,
     reviewerId: o.reviewerId ?? null, reviewNote: o.reviewNote ?? null,
     reviewRequestedAt: o.reviewState === 'requested' ? dag(-1) : null,
@@ -355,8 +355,8 @@ seedDoc('checklistRuns', `openen_${vandaag}`, {
 
 // ─── Teamoverleg ────────────────────────────────────────────────────────────
 seedDoc('lists', 'l-overleg', {
-  spaceId: 's-je', folderId: null, brandId: null, name: 'Overleg',
-  description: 'Verslagen van het teamoverleg, met de actiepunten eronder.',
+  spaceId: 's-je', folderId: null, brandId: null, name: 'Tasks',
+  description: 'Losse taken en de verslagen van het teamoverleg, met de actiepunten eronder.',
   kind: 'tasks', position: 3, archived: false,
   statuses: [
     { id: 'o1', name: 'opgenomen', color: '#8593a9', kind: 'open', position: 0 },
@@ -368,7 +368,7 @@ seedDoc('lists', 'l-overleg', {
 })
 
 seedDoc('tasks', 't-overleg-1', {
-  listId: 'l-overleg', listName: 'Overleg', spaceId: 's-je', brandId: null, parentId: null,
+  listId: 'l-overleg', listName: 'Tasks', spaceId: 's-je', brandId: null, parentId: null,
   title: 'Weekstart events — 21/09/2026', description: '',
   statusId: 'o3', statusName: 'nagelezen', statusColor: '#3db88b', statusKind: 'active',
   open: true, priority: null, startDate: null, dueDate: null,
@@ -383,7 +383,7 @@ seedDoc('tasks', 't-overleg-1', {
   ['Standenplan Haspengouw Culinair doorsturen naar de stad', 'u-anneleen', dag(4)],
 ].forEach(([titel, wie, deadline], i) =>
   seedDoc('tasks', `t-overleg-1-${i}`, {
-    listId: 'l-overleg', listName: 'Overleg', spaceId: 's-je', brandId: null,
+    listId: 'l-overleg', listName: 'Tasks', spaceId: 's-je', brandId: null,
     parentId: 't-overleg-1', title: titel, description: '',
     statusId: 'o3', statusName: 'nagelezen', statusColor: '#3db88b', statusKind: 'active',
     open: true, priority: null, startDate: null, dueDate: deadline,

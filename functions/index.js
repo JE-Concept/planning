@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { logger } from 'firebase-functions'
 
@@ -89,3 +90,56 @@ export const ensureProfile = onCall({ region: REGION }, async (request) => {
   logger.info('Profiel aangemaakt', { email, role })
   return { ok: true, role }
 })
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║ Een lijst hernoemen                                                      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+/**
+ * Trekt een nieuwe lijstnaam door naar alles wat er een kopie van bewaart.
+ *
+ * Firestore kan niet joinen, dus een taak draagt de naam van zijn lijst mee
+ * (net als zijn status). Dat is wat een bord snel houdt, maar het betekent ook
+ * dat hernoemen in Instellingen anders alleen de zijbalk verandert: op de taken
+ * zelf, in de tijdregistratie en in de kolom "project" bij een social post
+ * bleef de oude naam staan. Vandaar deze trigger — één keer per hernoeming,
+ * server-side, ongeacht wie het deed of waarvandaan (ook de seed).
+ *
+ * De schrijfacties gaan per 400 in een batch: Firestore staat er 500 toe, en
+ * een lijst met honderden taken loopt daar zo voorbij.
+ */
+export const spreadListRename = onDocumentUpdated(
+  { region: REGION, document: 'lists/{listId}' },
+  async (event) => {
+    const listId = event.params.listId
+    const oud = event.data?.before?.data()?.name ?? null
+    const nieuw = event.data?.after?.data()?.name ?? null
+    if (!nieuw || oud === nieuw) return
+
+    const doelen = [
+      { col: 'tasks', veld: 'listName', filter: ['listId', '==', listId] },
+      { col: 'timeEntries', veld: 'listName', filter: ['listId', '==', listId] },
+      { col: 'runningTimers', veld: 'listName', filter: ['listId', '==', listId] },
+      // Een social post verwijst naar de taak, niet naar de lijst; de naam van
+      // de lijst staat er los bij om het project in één regel te kunnen tonen.
+      { col: 'socialPosts', veld: 'taskListName', filter: ['taskListName', '==', oud] },
+    ]
+
+    let bijgewerkt = 0
+    for (const doel of doelen) {
+      if (doel.filter[0] === 'taskListName' && !oud) continue
+
+      const snap = await db.collection(doel.col).where(...doel.filter).get()
+      for (let i = 0; i < snap.docs.length; i += 400) {
+        const batch = db.batch()
+        snap.docs.slice(i, i + 400).forEach((doc) => {
+          batch.update(doc.ref, { [doel.veld]: nieuw })
+        })
+        await batch.commit()
+      }
+      bijgewerkt += snap.size
+    }
+
+    logger.info('Lijst hernoemd', { listId, oud, nieuw, bijgewerkt })
+  }
+)

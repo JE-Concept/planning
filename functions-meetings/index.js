@@ -15,7 +15,7 @@ import { summariseTranscript } from './summarise.js'
  * meeslepen, en dan kan niemand meer inloggen. Dat is hier één keer gebeurd.
  *
  * Wat waar landt:
- *   tasks/{id}          het overleg als taak op het bord Overleg
+ *   tasks/{id}          het overleg als taak op het takenbord
  *   tasks/{id} (sub)    elk actiepunt, met verantwoordelijke → staat in Mijn werk
  *   meetings/{taskId}   de samenvatting zelf, alleen leesbaar voor wie erin staat
  *
@@ -49,10 +49,19 @@ async function viewerIds() {
   return profiles.docs.filter((d) => ['owner', 'admin'].includes(d.data().role)).map((d) => d.id)
 }
 
-async function listStatus(naam) {
+/**
+ * Het bord waarop een overleg landt: zijn naam en de status die we willen.
+ *
+ * De naam komt uit Firestore en staat niet hier hardgecodeerd — het bord is in
+ * Instellingen te hernoemen, en een naam op twee plaatsen loopt uiteen.
+ */
+async function bord(statusNaam) {
   const list = await db.collection('lists').doc(LIST_ID).get()
   const statuses = list.data()?.statuses ?? []
-  return statuses.find((s) => s.name === naam) ?? statuses[0] ?? null
+  return {
+    naam: list.data()?.name ?? null,
+    status: statuses.find((s) => s.name === statusNaam) ?? statuses[0] ?? null,
+  }
 }
 
 /**
@@ -66,14 +75,14 @@ async function bewaarOverleg({ samenvatting, datum, bron, aangemaaktDoor }) {
     ...d.data(),
   }))
   const kijkers = await viewerIds()
-  const status = await listStatus('Samengevat')
+  const { naam: bordNaam, status } = await bord('samengevat')
 
   const taakRef = db.collection('tasks').doc()
   const batch = db.batch()
 
   batch.set(taakRef, {
     listId: LIST_ID,
-    listName: 'Overleg',
+    listName: bordNaam,
     spaceId: 'je-concept',
     brandId: null,
     parentId: null,
@@ -118,7 +127,7 @@ async function bewaarOverleg({ samenvatting, datum, bron, aangemaaktDoor }) {
 
     batch.set(db.collection('tasks').doc(), {
       listId: LIST_ID,
-      listName: 'Overleg',
+      listName: bordNaam,
       spaceId: 'je-concept',
       brandId: null,
       parentId: taakRef.id,

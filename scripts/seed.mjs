@@ -102,7 +102,7 @@ async function main() {
       spaceId: 'je-concept',
       folderId: null,
       brandId: null,
-      name: 'Overview planning',
+      name: 'Events',
       description: 'Aanvraag → offerte → planning → facturatie. De hoofdpijplijn.',
       kind: 'tasks',
       position: 1,
@@ -128,15 +128,15 @@ async function main() {
     { merge: true }
   )
 
-  // Het bord waarop de overlegverslagen landen.
+  // Het bord waarop de overlegverslagen en hun actiepunten landen.
   batch.set(
     db.collection('lists').doc('overleg'),
     {
       spaceId: 'je-concept',
       folderId: null,
       brandId: null,
-      name: 'Overleg',
-      description: 'Verslagen van het teamoverleg, met de actiepunten eronder.',
+      name: 'Tasks',
+      description: 'Losse taken en de verslagen van het teamoverleg, met de actiepunten eronder.',
       kind: 'tasks',
       position: 3,
       archived: false,
