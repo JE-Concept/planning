@@ -9,8 +9,9 @@ import {
   startOfMonth,
   WEEKDAYS,
 } from '@lib/dates'
-import { Badge, Button, EmptyState, Spinner } from '@ui/index'
+import { Badge, Button, EmptyState, Select, Spinner } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
+import CanvaImportModal from '@components/social/CanvaImportModal'
 import PostCard from '@components/social/PostCard'
 import PostDrawer from '@components/social/PostDrawer'
 import { useAuth } from '@context/AuthProvider'
@@ -38,6 +39,9 @@ export default function SocialCalendar() {
   const [month, setMonth] = useState(() => startOfMonth())
   const [view, setView] = useState('calendar')
   const [brandFilter, setBrandFilter] = useState([])
+  const [projectFilter, setProjectFilter] = useState('')
+  const [reviewOnly, setReviewOnly] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [openPostId, setOpenPostId] = useState(null)
   const [dragId, setDragId] = useState(null)
   const [overDay, setOverDay] = useState(null)
@@ -50,10 +54,28 @@ export default function SocialCalendar() {
   const { posts, loading } = useSocialPosts(range)
   const backlog = useUnscheduledPosts()
 
-  const shown = useMemo(
-    () => (brandFilter.length === 0 ? posts : posts.filter((p) => brandFilter.includes(p.brandId))),
-    [posts, brandFilter]
+  // The projects that actually have a post this month; a dropdown of every task
+  // in the workspace would be a wall of options nobody scrolls through.
+  const projects = useMemo(() => {
+    const map = new Map()
+    for (const post of [...posts, ...backlog]) {
+      if (post.taskId) map.set(post.taskId, post.taskTitle || 'Project')
+    }
+    return [...map].map(([id, title]) => ({ id, title })).sort((a, b) => a.title.localeCompare(b.title))
+  }, [posts, backlog])
+
+  const waitingForReview = useMemo(
+    () => posts.filter((p) => p.reviewState === 'requested').length,
+    [posts]
   )
+
+  const shown = useMemo(() => {
+    let out = posts
+    if (brandFilter.length > 0) out = out.filter((p) => brandFilter.includes(p.brandId))
+    if (projectFilter) out = out.filter((p) => p.taskId === projectFilter)
+    if (reviewOnly) out = out.filter((p) => p.reviewState === 'requested')
+    return out
+  }, [posts, brandFilter, projectFilter, reviewOnly])
 
   const byDay = useMemo(() => {
     const map = {}
@@ -124,6 +146,9 @@ export default function SocialCalendar() {
             <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, 1))} aria-label="Volgende maand">
               ›
             </Button>
+            <Button variant="secondary" onClick={() => setImporting(true)}>
+              Uit Canva
+            </Button>
             <Button variant="primary" onClick={() => addOn(new Date())}>
               + Post
             </Button>
@@ -149,8 +174,38 @@ export default function SocialCalendar() {
             </Badge>
           </button>
         ))}
-        {brandFilter.length > 0 ? (
-          <Button variant="ghost" size="sm" onClick={() => setBrandFilter([])}>
+        <span className="mx-1 h-4 w-px bg-ink-200" aria-hidden="true" />
+
+        <Select
+          value={projectFilter}
+          onChange={(e) => setProjectFilter(e.target.value)}
+          aria-label="Filter op project"
+          className="h-7 w-44 py-0 text-xs"
+        >
+          <option value="">Alle projecten</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.title}
+            </option>
+          ))}
+        </Select>
+
+        <button type="button" onClick={() => setReviewOnly((v) => !v)} aria-pressed={reviewOnly}>
+          <Badge color="#b660e0" subtle={!reviewOnly}>
+            Wacht op review ({waitingForReview})
+          </Badge>
+        </button>
+
+        {brandFilter.length > 0 || projectFilter || reviewOnly ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setBrandFilter([])
+              setProjectFilter('')
+              setReviewOnly(false)
+            }}
+          >
             Alles tonen
           </Button>
         ) : null}
@@ -276,6 +331,13 @@ export default function SocialCalendar() {
           </aside>
         </div>
       )}
+
+      <CanvaImportModal
+        open={importing}
+        onClose={() => setImporting(false)}
+        defaultBrandId={brandFilter[0] ?? brands[0]?.id}
+        defaultDate={null}
+      />
 
       {openPostId ? <PostDrawer postId={openPostId} onClose={() => setOpenPostId(null)} /> : null}
     </div>

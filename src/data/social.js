@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   deleteDoc,
   doc,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -33,6 +34,20 @@ export const POST_STATUSES = [
   { key: 'published', label: 'Gepubliceerd', color: '#008844' },
 ]
 
+/**
+ * Where a post stands in the review, which is not the same thing as its status.
+ * The status says what the post is; the review state says whose move it is.
+ */
+export const REVIEW_STATES = [
+  { key: 'none', label: 'Geen review', color: '#8593a9' },
+  { key: 'requested', label: 'Wacht op review', color: '#b660e0' },
+  { key: 'changes', label: 'Aanpassing gevraagd', color: '#e5484d' },
+  { key: 'approved', label: 'Goedgekeurd', color: '#3db88b' },
+]
+
+export const reviewMeta = (key) =>
+  REVIEW_STATES.find((r) => r.key === (key || 'none')) ?? REVIEW_STATES[0]
+
 export const statusMeta = (key) =>
   POST_STATUSES.find((s) => s.key === key) ?? POST_STATUSES[0]
 
@@ -50,8 +65,18 @@ export function createPost({ brandId, scheduledAt, title, createdBy, ...rest }) 
     channels: ['instagram'],
     scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
     status: 'idea',
+    source: 'manual',
     assigneeId: null,
     taskId: null,
+    taskTitle: null,
+    taskListName: null,
+    reviewState: 'none',
+    reviewRound: 0,
+    reviewerId: null,
+    reviewNote: null,
+    canvaThreadIds: [],
+    canvaCommentThreadId: null,
+    canvaComments: [],
     canvaDesignId: null,
     canvaEditUrl: null,
     canvaViewUrl: null,
@@ -77,6 +102,25 @@ export function deletePost(id) {
 
 export function movePostTo(id, date) {
   return updatePost(id, { scheduledAt: date ? new Date(date) : null })
+}
+
+/**
+ * Hangs a post on a project.
+ *
+ * The task's title and list travel with the post: a calendar cell has to say
+ * which project a post belongs to without reading the task, and Firestore has
+ * no join to do that for us.
+ */
+export function linkPostToTask(postId, task) {
+  return updatePost(postId, {
+    taskId: task?.id ?? null,
+    taskTitle: task?.title ?? null,
+    taskListName: task?.listName ?? null,
+  })
+}
+
+export function setReviewer(postId, reviewerId) {
+  return updatePost(postId, { reviewerId: reviewerId || null })
 }
 
 export function toggleChannel(post, key) {
@@ -129,6 +173,62 @@ export function useUnscheduledPosts() {
   )
 
   return posts
+}
+
+/** The posts hanging on one project — the social side of a task. */
+export function usePostsForTask(taskId) {
+  const [posts, setPosts] = useState([])
+
+  useEffect(() => {
+    if (!taskId) {
+      setPosts([])
+      return undefined
+    }
+    return onSnapshot(
+      query(col(COL.socialPosts), where('taskId', '==', taskId), orderBy('scheduledAt')),
+      (snap) => setPosts(fromQuery(snap)),
+      () => setPosts([])
+    )
+  }, [taskId])
+
+  return posts
+}
+
+/** Everything waiting on a review — all of them, or only mine. */
+export function useReviewQueue(reviewerId) {
+  const [posts, setPosts] = useState([])
+
+  useEffect(() => {
+    const clauses = [where('reviewState', '==', 'requested')]
+    if (reviewerId) clauses.push(where('reviewerId', '==', reviewerId))
+
+    return onSnapshot(
+      query(col(COL.socialPosts), ...clauses, limit(50)),
+      (snap) => setPosts(fromQuery(snap)),
+      () => setPosts([])
+    )
+  }, [reviewerId])
+
+  return posts
+}
+
+/** The decisions taken on one post, newest first. */
+export function usePostReviews(postId) {
+  const [reviews, setReviews] = useState([])
+
+  useEffect(() => {
+    if (!postId) {
+      setReviews([])
+      return undefined
+    }
+    return onSnapshot(
+      query(col(COL.postReviews), where('postId', '==', postId), orderBy('createdAt', 'desc')),
+      (snap) => setReviews(fromQuery(snap)),
+      () => setReviews([])
+    )
+  }, [postId])
+
+  return reviews
 }
 
 export function usePost(id) {

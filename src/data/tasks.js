@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   doc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -244,6 +245,43 @@ export function useMyTasks(uid) {
   }, [uid])
 
   return { tasks, loading }
+}
+
+/**
+ * Open tasks to pick from — the project a social post hangs on.
+ *
+ * Firestore has no text search, so the recent open tasks are subscribed once
+ * and filtered in the browser. A planning this size never has enough open work
+ * for that to be the wrong trade, and it keeps the picker instant.
+ */
+export function useTaskSearch(term, { max = 250 } = {}) {
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(
+    () =>
+      onSnapshot(
+        query(col(COL.tasks), where('open', '==', true), orderBy('updatedAt', 'desc'), limit(max)),
+        (snap) => {
+          setTasks(fromQuery(snap).filter((t) => !t.parentId))
+          setLoading(false)
+        },
+        () => setLoading(false)
+      ),
+    [max]
+  )
+
+  const results = useMemo(() => {
+    const needle = term.trim().toLowerCase()
+    if (!needle) return tasks.slice(0, 25)
+    return tasks
+      .filter((t) =>
+        `${t.title ?? ''} ${t.listName ?? ''}`.toLowerCase().includes(needle)
+      )
+      .slice(0, 25)
+  }, [tasks, term])
+
+  return { results, loading }
 }
 
 export { statusFields }

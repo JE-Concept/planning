@@ -1,10 +1,11 @@
 import { cn } from '@lib/cn'
 import { formatTime } from '@lib/dates'
-import { channelMeta, statusMeta } from '@data/social'
+import { channelMeta, reviewMeta, statusMeta } from '@data/social'
 
 /** A post as it appears in a calendar cell: brand colour, time, thumbnail, channels. */
 export default function PostCard({ post, brand, compact = false, dragging, onOpen, onDragStart, onDragEnd }) {
   const status = statusMeta(post.status)
+  const review = post.reviewState && post.reviewState !== 'none' ? reviewMeta(post.reviewState) : null
 
   return (
     <article
@@ -48,7 +49,21 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
             style={{ backgroundColor: status.color }}
           />
           <span className="truncate text-[11px] font-medium text-ink-800">{post.title}</span>
+          {review ? (
+            <span
+              aria-hidden="true"
+              title={review.label}
+              className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full ring-1 ring-white"
+              style={{ backgroundColor: review.color }}
+            />
+          ) : null}
         </div>
+
+        {post.taskTitle && !compact ? (
+          <p className="truncate text-[10px] text-ink-500" title={post.taskTitle}>
+            ▤ {post.taskTitle}
+          </p>
+        ) : null}
 
         {post.channels?.length ? (
           <div className="mt-0.5 flex flex-wrap gap-0.5">

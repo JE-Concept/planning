@@ -8,7 +8,7 @@ import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useMyTasks } from '@data/tasks'
-import { useSocialPosts, statusMeta } from '@data/social'
+import { useReviewQueue, useSocialPosts, statusMeta } from '@data/social'
 import { useTimeEntries } from '@data/time'
 import { useGoals, goalProgress } from '@data/goals'
 
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const { profileById, brandById } = useWorkspace()
 
   const { tasks, loading } = useMyTasks(uid)
+  const toReview = useReviewQueue()
   const week = useMemo(() => {
     const from = startOfWeek()
     return { from, to: addDays(from, 7) }
@@ -88,6 +89,46 @@ export default function Dashboard() {
           </section>
 
           <div className="space-y-4">
+            {toReview.length > 0 ? (
+              <section className="card p-4">
+                <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-600">
+                  Wacht op review
+                  <Badge color="#b660e0">{toReview.length}</Badge>
+                </h2>
+
+                <ul className="divide-y divide-ink-100">
+                  {toReview.slice(0, 6).map((post) => {
+                    const brand = brandById[post.brandId]
+                    const mine = post.reviewerId === uid
+
+                    return (
+                      <li key={post.id} className="flex items-center gap-2 py-1.5 text-sm">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: brand?.color ?? '#8593a9' }}
+                        />
+                        <span className="min-w-0 flex-1 truncate text-ink-800">{post.title}</span>
+                        {post.taskTitle ? (
+                          <span className="hidden max-w-28 shrink-0 truncate text-[11px] text-ink-400 sm:block">
+                            {post.taskTitle}
+                          </span>
+                        ) : null}
+                        {mine ? <Badge color="#b660e0">voor jou</Badge> : null}
+                      </li>
+                    )
+                  })}
+                </ul>
+
+                <Link
+                  to="/social"
+                  className="mt-3 inline-block text-xs font-medium text-accent-700 hover:underline"
+                >
+                  Nakijken →
+                </Link>
+              </section>
+            ) : null}
+
             <section className="card p-4">
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-600">
                 Social deze week

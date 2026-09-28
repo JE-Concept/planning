@@ -4,6 +4,7 @@
  * tool en niet als een testbestand.
  */
 import { seedDoc } from './firestore.js'
+import { demoVoorbeeld } from './canva-api.js'
 
 const D = (s) => new Date(s)
 const NU = D('2026-09-28T09:20:00')
@@ -238,24 +239,95 @@ seedDoc('runningTimers', 'u-jasper', {
   description: 'Offerte afwerken', startedAt: loopt, billable: true,
 })
 
-// ─── Social posts en goals ──────────────────────────────────────────────────
-;[
-  ['p1', 'meer', 'Herfstwandeling Het Vinne', 2, 'scheduled', ['instagram', 'facebook']],
-  ['p2', 'bar-vue', 'Nieuwe wijnkaart', 3, 'review', ['instagram']],
-  ['p3', 'je-concept', 'Haspengouw Culinair — terugblik', 4, 'approved', ['instagram', 'linkedin']],
-  ['p4', 'feestbeest', 'Slaapfeestje thema piraten', 6, 'design', ['instagram']],
-  ['p5', 'meer', 'Menu oktober', 8, 'draft', ['facebook']],
-  ['p6', 'je-concept', 'Vacature zaalmedewerker', 10, 'idea', ['linkedin']],
-].forEach(([id, brandId, title, over, status, channels]) => {
-  const when = dag(over); when.setHours(10, 0, 0, 0)
+// ─── Social posts ───────────────────────────────────────────────────────────
+//
+// Twee soorten: posts die hier zijn bedacht, en posts die uit Canva zijn
+// opgehaald. De tweede soort heeft een ontwerp, een reviewronde en — als de
+// review al liep — de reacties die in Canva staan.
+
+const ontwerp = (titel, kleur, formaat = '1080x1080') =>
+  demoVoorbeeld(titel, kleur, formaat)
+
+function post(id, o) {
+  const when = o.over == null ? null : (() => { const d = dag(o.over); d.setHours(o.uur ?? 10, 0, 0, 0); return d })()
   seedDoc('socialPosts', id, {
-    brandId, listId: 'l-socials', taskId: null, title, caption: '', hashtags: '',
-    channels, scheduledAt: when, status, assigneeId: 'u-charish',
-    canvaDesignId: null, canvaEditUrl: null, canvaThumbnailUrl: null, canvaSyncedAt: null,
-    assetUrl: null, publishedUrl: null, notes: '', createdBy: 'u-charish',
-    createdAt: dag(-5), updatedAt: dag(-1),
+    brandId: o.brandId, listId: 'l-socials', title: o.title,
+    caption: o.caption ?? '', hashtags: o.hashtags ?? '',
+    channels: o.channels, scheduledAt: when, status: o.status,
+    assigneeId: o.assigneeId ?? 'u-charish',
+    source: o.designId ? 'canva' : 'manual',
+    taskId: o.taskId ?? null, taskTitle: o.taskTitle ?? null, taskListName: o.taskId ? 'Overview planning' : null,
+    reviewState: o.reviewState ?? 'none', reviewRound: o.reviewRound ?? 0,
+    reviewerId: o.reviewerId ?? null, reviewNote: o.reviewNote ?? null,
+    reviewRequestedAt: o.reviewState === 'requested' ? dag(-1) : null,
+    reviewRequestedBy: o.reviewState === 'requested' ? 'u-charish' : null,
+    reviewedAt: o.reviewState === 'approved' || o.reviewState === 'changes' ? dag(-1) : null,
+    reviewedBy: o.reviewState === 'approved' || o.reviewState === 'changes' ? 'u-jasper' : null,
+    canvaDesignId: o.designId ?? null,
+    canvaEditUrl: o.designId ? `https://www.canva.com/design/${o.designId}/edit` : null,
+    canvaViewUrl: o.designId ? `https://www.canva.com/design/${o.designId}/view` : null,
+    canvaThumbnailUrl: o.designId ? ontwerp(o.title, o.kleur ?? '#1A3A6B', o.formaat) : null,
+    canvaTitle: o.designId ? o.title : null,
+    canvaSyncedAt: o.designId ? dag(-1) : null,
+    canvaThreadIds: o.comments?.length ? ['TH-demo-' + id] : [],
+    canvaCommentThreadId: o.comments?.length ? 'TH-demo-' + id : null,
+    canvaComments: (o.comments ?? []).map((c, i) => ({
+      id: `C-${id}-${i}`, threadId: 'TH-demo-' + id, isReply: i > 0,
+      authorName: c[0], message: c[1], createdAt: dag(-2 + i * 0.5), resolved: false,
+    })),
+    assetUrl: null, publishedUrl: o.publishedUrl ?? null, notes: o.notes ?? '',
+    createdBy: 'u-charish', createdAt: dag(-5), updatedAt: dag(-1),
   })
-})
+}
+
+post('p1', { brandId: 'meer', title: 'Herfstwandeling Het Vinne', over: 2, status: 'scheduled', channels: ['instagram', 'facebook'],
+  designId: 'DAF-vinne-wandel', kleur: '#3db88b', reviewState: 'approved', reviewRound: 1,
+  taskId: 't-vinne', taskTitle: 'Wandelzondag Vinne',
+  caption: 'Zondag wandelen door het Vinne, en achteraf iets warms op het terras. 🍂',
+  comments: [['Charish Vanoppen', 'Klaar om na te kijken — gevraagd door Charish Vanoppen.'],
+             ['Jasper Hansen', 'Goedgekeurd door Jasper Hansen.\nMooi, alleen de datum wat groter gezet.']] })
+
+post('p2', { brandId: 'bar-vue', title: 'Bar Vue cocktailweek', over: 3, status: 'review', channels: ['instagram'],
+  designId: 'DAF-barvue-cocktail', kleur: '#C9A84C', reviewState: 'requested', reviewRound: 2,
+  reviewerId: 'u-jasper', reviewNote: 'Tweede versie — logo staat nu links onder.',
+  comments: [['Charish Vanoppen', 'Klaar om na te kijken — gevraagd door Charish Vanoppen.'],
+             ['Jasper Hansen', 'Aanpassing gevraagd door Jasper Hansen.\nLogo valt weg tegen de foto.'],
+             ['Charish Vanoppen', 'Logo staat nu links onder, zoals afgesproken.']] })
+
+post('p3', { brandId: 'je-concept', title: 'Haspengouw Culinair sfeerbeeld', over: 4, status: 'approved', channels: ['instagram', 'linkedin'],
+  designId: 'DAF-je-haspengouw', kleur: '#1A3A6B', reviewState: 'approved', reviewRound: 1,
+  taskId: 't-haspengouw', taskTitle: 'Haspengouw Culinair — Grote Markt',
+  comments: [['Jasper Hansen', 'Goedgekeurd door Jasper Hansen.']] })
+
+post('p4', { brandId: 'feestbeest', title: 'Feestbeest verhuurmateriaal', over: 6, status: 'design', channels: ['instagram'],
+  designId: 'DAF-feest-verhuur', kleur: '#e5484d', reviewState: 'changes', reviewRound: 1,
+  reviewNote: 'Prijzen weglaten, die veranderen te vaak.',
+  comments: [['Jasper Hansen', 'Aanpassing gevraagd door Jasper Hansen.\nPrijzen weglaten, die veranderen te vaak.']] })
+
+post('p5', { brandId: 'meer', title: 'Menu oktober', over: 8, status: 'draft', channels: ['facebook'] })
+post('p6', { brandId: 'je-concept', title: 'Vacature zaalmedewerker', over: 10, status: 'idea', channels: ['linkedin'] })
+post('p7', { brandId: 'feestbeest', title: 'Trouw Niels en Inez — bedankt', over: null, status: 'idea', channels: ['instagram'],
+  taskId: 't-trouw', taskTitle: 'Trouw Niels en Inez',
+  notes: 'Pas na het weekend; foto’s komen van de fotograaf.' })
+
+// De beslissingen achter die reviews, zoals het logboek ze bewaart.
+;[
+  ['rv1', 'p1', 1, 'request', null, 'Charish Vanoppen', -3],
+  ['rv2', 'p1', 1, 'approve', 'Mooi, alleen de datum wat groter gezet.', 'Jasper Hansen', -2],
+  ['rv3', 'p2', 1, 'request', null, 'Charish Vanoppen', -4],
+  ['rv4', 'p2', 1, 'changes', 'Logo valt weg tegen de foto.', 'Jasper Hansen', -3],
+  ['rv5', 'p2', 2, 'request', 'Tweede versie — logo staat nu links onder.', 'Charish Vanoppen', -1],
+  ['rv6', 'p3', 1, 'approve', null, 'Jasper Hansen', -2],
+  ['rv7', 'p4', 1, 'changes', 'Prijzen weglaten, die veranderen te vaak.', 'Jasper Hansen', -2],
+].forEach(([id, postId, round, decision, note, authorName, over]) =>
+  seedDoc('postReviews', id, {
+    postId, round, decision, note, authorName,
+    authorId: authorName.startsWith('Jasper') ? 'u-jasper' : 'u-charish',
+    canvaCommentId: 'TH-demo-' + postId, pushedToCanva: true, canvaError: null,
+    createdAt: dag(over),
+  }))
+
+// ─── Goals ──────────────────────────────────────────────────────────────────
 
 seedDoc('goals', 'g1', {
   name: 'Omzet events Q4 2026', description: 'Vier bevestigde events per maand in het laatste kwartaal.',

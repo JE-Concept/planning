@@ -73,3 +73,50 @@ export function refreshDesign(postId) {
 export function exportDesign(postId, format = 'png') {
   return callApi('/canva/export', { method: 'POST', body: { postId, format } })
 }
+
+// ─── Canva as the source of the calendar ────────────────────────────────────
+
+/**
+ * What is in Canva right now — searched, or the contents of one folder.
+ * The server annotates each design with the post it already became, so the
+ * browser never offers the same design twice.
+ */
+export function browseDesigns({ query: q = '', folderId = '', continuation = '' } = {}) {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (folderId) params.set('folderId', folderId)
+  if (continuation) params.set('continuation', continuation)
+  return callApi(`/canva/browse${params.toString() ? `?${params}` : ''}`)
+}
+
+export function listCanvaFolders(parent = 'root') {
+  return callApi(`/canva/folders?parent=${encodeURIComponent(parent)}`)
+}
+
+/** Turns Canva designs into calendar posts. Importing twice is a no-op. */
+export function importDesigns({ designIds, brandId, scheduledAt, taskId }) {
+  return callApi('/canva/import', {
+    method: 'POST',
+    body: { designIds, brandId, scheduledAt: scheduledAt ?? null, taskId: taskId ?? null },
+  })
+}
+
+// ─── The review, and its road back ──────────────────────────────────────────
+
+/**
+ * Asks for a review, approves, or sends it back for changes.
+ *
+ * The decision is always stored here; pushing it onto the Canva design as a
+ * comment is best effort, so the answer says whether that half worked.
+ */
+export function reviewPost({ postId, action, note = '', reviewerId = null }) {
+  return callApi('/canva/review', {
+    method: 'POST',
+    body: { postId, action, note, reviewerId },
+  })
+}
+
+/** Pulls the replies the designer left on the design back into the post. */
+export function pullCanvaComments(postId) {
+  return callApi('/canva/comments', { method: 'POST', body: { postId } })
+}

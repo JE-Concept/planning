@@ -3,7 +3,7 @@
 Interne planningstool voor JE Concept, als vervanger van ClickUp. Vier onderdelen:
 
 - **Kanban** — borden per lijst, slepen tussen kolommen, groeperen op status, persoon of prioriteit, filters, lijstweergave, subtaken, reacties.
-- **Social media kalender** — maandkalender over alle merken heen (JE Concept, Bar Vue, Meer — Het Vinne, Feestbeest, Maison Folie, Wintermoods), met een **Canva Connect**-koppeling die ontwerpen aanmaakt, opent, ververst en exporteert.
+- **Social media kalender** — maandkalender over alle merken heen (JE Concept, Bar Vue, Meer — Het Vinne, Feestbeest, Maison Folie, Wintermoods). De ontwerpen komen **uit Canva**: bladeren door het Canva-account en importeren als post. Een post kan ter **review** gaan, en die beslissing vloeit terug naar Canva als reactie op het ontwerp — met de antwoorden van de ontwerper terug deze kant op. Posts kunnen aan een **project** hangen.
 - **Timetracking** — één timer in de bovenbalk, handmatige registraties, weekoverzicht, rapport per persoon / lijst / merk / dag, CSV-export.
 - **Goals** — doelen met meetbare resultaten (aantal, bedrag, percentage, ja-nee, of automatisch het aantal afgewerkte taken van een lijst), met voortgang en check-in-geschiedenis.
 
@@ -43,7 +43,8 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `timeEntries/{id}` | Draagt `day`, `week` en `month`. Daardoor is "uren van september" één indexquery in plaats van een range-scan met groeperen in de browser. |
 | `runningTimers/{uid}` | De lopende timer, **op uid gesleuteld**: "één timer per persoon" is zo een eigenschap van de data, geen afspraak. |
 | `goals/{id}` | Key results zitten in het goal-document (er zijn er een handvol, ze worden nooit apart opgevraagd). Check-ins staan los in `goalUpdates`, want die groeien oneindig. |
-| `socialPosts/{id}` | Inclusief de Canva-velden (`canvaDesignId`, edit-url, thumbnail). |
+| `socialPosts/{id}` | Inclusief de Canva-velden (`canvaDesignId`, edit-url, thumbnail), de reviewstand (`reviewState`, `reviewRound`, `reviewerId`), de draden waarin de review in Canva loopt (`canvaThreadIds`, `canvaComments`) en de kopie van het project (`taskId`, `taskTitle`, `taskListName`). |
+| `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde, en of de beslissing in Canva belandde. Wordt aangevuld, nooit gewijzigd. |
 | `canvaConnections/{uid}` | OAuth-tokens. **De rules verbieden elke toegang vanuit de browser**; alleen de Cloud Functions lezen ze. |
 
 ---
@@ -111,7 +112,7 @@ De koppeling gebeurt **per persoon**, met OAuth 2.0 en PKCE. De code verifier bl
 
 1. Maak een app aan op <https://www.canva.com/developers/integrations> (type: *Public* of *Team*).
 2. Zet als redirect-URL: `https://planning.jeconcept.be/api/canva/callback`
-3. Vink de scopes aan: `profile:read`, `design:meta:read`, `design:content:read`, `design:content:write`, `asset:read`, `brandtemplate:meta:read`, `brandtemplate:content:read`.
+3. Vink de scopes aan: `profile:read`, `design:meta:read`, `design:content:read`, `design:content:write`, `asset:read`, `brandtemplate:meta:read`, `brandtemplate:content:read`, `folder:read`, `comment:read`, `comment:write`.
 4. Zet de geheimen:
 
 ```bash
@@ -126,6 +127,24 @@ firebase deploy --only functions
 Daarna kan je per post een ontwerp **maken** (in het juiste formaat, of uit een merksjabloon), een **bestaand ontwerp koppelen** door de Canva-link te plakken, het **voorbeeld verversen** en **exporteren naar PNG**. Een geplande taak ververst elke ochtend de thumbnails van de posts van de komende zes weken — Canva-thumbnail-URL's zijn ondertekend en verlopen.
 
 Merksjablonen (`brand-templates`) zijn een Canva Enterprise-functie. Zonder Enterprise werkt alles behalve die ene knop; de app laat hem dan gewoon weg.
+
+### Canva als bron van de kalender
+
+De ontwerpen worden in Canva gemaakt — daar werkt het team al — dus vult de kalender zich door ze **op te halen** in plaats van ze hier opnieuw in te typen. **Uit Canva** op de kalender toont wat er in het Canva-account staat, gefilterd op map of op titel; een ontwerp dat al op de kalender staat wordt als zodanig getoond en niet nog eens aangeboden.
+
+Dat laatste hangt aan twee dingen tegelijk: een geïmporteerde post krijgt de deterministische id `canva-<designId>`, en de bladerlijst zoekt daarnaast op `canvaDesignId`, zodat ook een ontwerp dat iemand met de hand aan een post plakte niet opnieuw wordt aangeboden. Twee keer hetzelfde importeren levert dus één post op, niet twee.
+
+### De review, en de weg terug
+
+Een post kan **ter review gevraagd**, **goedgekeurd** of **teruggestuurd voor aanpassing** worden. Die beslissing wordt altijd eerst hier opgeslagen en daarna als **reactie op het Canva-ontwerp** gezet, zodat de ontwerper ze ziet waar die werkt. Lukt dat tweede niet — Canva plat, koppeling verlopen, scope vergeten — dan blijft de beslissing staan en zegt de melding dat ze niet in Canva is gezet. Een goedkeuring mag nooit verdwijnen omdat Canva even niet antwoordt.
+
+De andere richting werkt ook: **Reacties uit Canva halen** trekt de antwoorden in de draad terug in de post, en de ochtendtaak doet dat automatisch voor alles wat op review staat te wachten. Canva geeft alleen draden terug waarvan je de id kent, dus dit ziet de draad die deze tool zelf geopend heeft — niet losse opmerkingen die iemand elders op het ontwerp plaatste.
+
+Wat er openstaat, staat op het dashboard onder **Wacht op review**, en op de kalender achter de filter met dezelfde naam.
+
+### Posts aan projecten
+
+Een post kan aan een taak hangen. Dat is wat de vraag *"wat gaat er buiten voor Blum?"* beantwoordbaar maakt naast *"wat gaat er deze week buiten?"*: de kalender filtert op project, de kaart toont het project, en het takenpaneel toont onderaan de posts die eraan hangen, met hun reviewstatus. De titel en de lijst van de taak reizen mee op de post — Firestore heeft geen join, en een kalendercel kan niet per kaart een taak gaan lezen.
 
 ---
 
@@ -186,6 +205,7 @@ Handmatig: `npm run deploy`.
 Bewust buiten scope gehouden, in volgorde van wat het meest gevraagd zal worden:
 
 - **Automatisch publiceren** naar Instagram/Facebook. De kalender plant en keurt goed; posten gebeurt nog met de hand. Meta's Graph API kan dit, maar vraagt app-review en een gekoppelde bedrijfspagina.
+- **Losse Canva-opmerkingen lezen.** De review haalt de draad terug die deze tool zelf opende. Canva Connect geeft geen lijst van alle draden op een ontwerp, dus een opmerking die iemand rechtstreeks in Canva plaatst komt hier niet binnen.
 - **Terugkerende taken** en sjablonen voor een standaard-event.
 - **Notificaties** (e-mail of push) bij toewijzing of naderende deadline.
 - **Documenten/wiki**, zoals ClickUp Docs.

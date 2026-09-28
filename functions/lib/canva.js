@@ -20,6 +20,9 @@ export const SCOPES = [
   'asset:read',
   'brandtemplate:meta:read',
   'brandtemplate:content:read',
+  'folder:read',
+  'comment:read',
+  'comment:write',
 ].join(' ')
 
 const base64url = (buffer) => buffer.toString('base64url')
@@ -123,7 +126,88 @@ export function designToPost(design) {
     canvaEditUrl: design.urls?.edit_url ?? null,
     canvaViewUrl: design.urls?.view_url ?? null,
     canvaThumbnailUrl: design.thumbnail?.url ?? null,
+    canvaTitle: design.title ?? null,
+    canvaUpdatedAt: design.updated_at ? new Date(design.updated_at * 1000) : null,
     canvaSyncedAt: new Date(),
+  }
+}
+
+/**
+ * The post a design becomes.
+ *
+ * Deterministic, so importing the same design twice lands on the same document
+ * instead of quietly doubling the post. This is the whole idempotency story of
+ * the import: no query, no marker collection, just the id.
+ */
+export const postIdForDesign = (designId) => `canva-${designId}`
+
+/** The same design, flattened for the import browser. */
+export function designToCard(design) {
+  return {
+    id: design.id,
+    title: design.title || 'Zonder titel',
+    thumbnailUrl: design.thumbnail?.url ?? null,
+    editUrl: design.urls?.edit_url ?? null,
+    viewUrl: design.urls?.view_url ?? null,
+    pageCount: design.page_count ?? null,
+    updatedAt: design.updated_at ? design.updated_at * 1000 : null,
+  }
+}
+
+// ─── Comments: the road back from the calendar into the design ──────────────
+//
+// The review decision is written on the design itself, as a Canva comment, so
+// the designer sees it where they work instead of only in this tool. Canva can
+// only hand back a thread we know the id of, so every thread we open is kept on
+// the post — that is what makes the replies findable later.
+//
+// The comment routes are the one part of Connect this code cannot reach from
+// the build environment to re-check, so they are isolated here and every caller
+// treats a failure as "not pushed", never as "review failed".
+
+export function createCommentThread(accessToken, designId, message, assigneeId) {
+  return canvaFetch(accessToken, `/designs/${encodeURIComponent(designId)}/comments`, {
+    method: 'POST',
+    body: {
+      message_plaintext: message,
+      ...(assigneeId ? { assignee_id: assigneeId } : {}),
+    },
+  })
+}
+
+export function replyToCommentThread(accessToken, designId, threadId, message) {
+  return canvaFetch(
+    accessToken,
+    `/designs/${encodeURIComponent(designId)}/comments/${encodeURIComponent(threadId)}/replies`,
+    { method: 'POST', body: { message_plaintext: message } }
+  )
+}
+
+export function getCommentThread(accessToken, designId, threadId) {
+  return canvaFetch(
+    accessToken,
+    `/designs/${encodeURIComponent(designId)}/comments/${encodeURIComponent(threadId)}`
+  )
+}
+
+export function listCommentReplies(accessToken, designId, threadId, limit = 50) {
+  return canvaFetch(
+    accessToken,
+    `/designs/${encodeURIComponent(designId)}/comments/${encodeURIComponent(threadId)}/replies?limit=${limit}`
+  )
+}
+
+/** A Canva comment or reply → the shape the drawer renders. */
+export function commentToEntry(raw, { threadId, isReply = false } = {}) {
+  const author = raw.author ?? raw.created_by ?? {}
+  return {
+    id: raw.id,
+    threadId: threadId ?? raw.thread_id ?? raw.id,
+    isReply,
+    authorName: author.display_name || author.name || 'Canva',
+    message: raw.message_plaintext ?? raw.message ?? '',
+    createdAt: raw.created_at ? new Date(raw.created_at * 1000) : new Date(),
+    resolved: Boolean(raw.thread_type?.resolved ?? raw.resolved ?? false),
   }
 }
 

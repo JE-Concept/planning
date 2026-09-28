@@ -3,18 +3,16 @@
  * op die in de demo geen server hebben (de Canva-koppeling).
  */
 import './seed.js'
+import { canvaApi } from './canva-api.js'
 
 const echteFetch = globalThis.fetch.bind(globalThis)
 
 globalThis.fetch = async (input, init) => {
   const url = typeof input === 'string' ? input : input?.url ?? ''
-  if (url.startsWith('/api/')) {
-    // Canva heeft in de demo geen gekoppeld account; dat is een normale toestand,
-    // geen fout — de kalender toont dan gewoon de koppelknop.
-    return new Response(JSON.stringify({ connected: false }), {
-      status: 200, headers: { 'Content-Type': 'application/json' },
-    })
-  }
+  // De Cloud Function bestaat hier niet, dus antwoordt de nagespeelde Canva op
+  // dezelfde routes: ontwerpen ophalen, importeren, review en reacties werken
+  // in de demo dus echt, alleen zonder Canva erachter.
+  if (url.startsWith('/api/')) return canvaApi(url, init)
   return echteFetch(input, init)
 }
 

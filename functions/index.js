@@ -10,11 +10,18 @@ import {
   authorizeUrl,
   awaitJob,
   canvaFetch,
+  commentToEntry,
+  createCommentThread,
   createPkcePair,
+  designToCard,
   designToPost,
   exchangeCode,
+  getCommentThread,
+  listCommentReplies,
+  postIdForDesign,
   randomState,
   refreshTokens,
+  replyToCommentThread,
 } from './lib/canva.js'
 
 initializeApp()
@@ -167,6 +174,71 @@ async function postRef(postId) {
   const snap = await ref.get()
   if (!snap.exists) throw Object.assign(new Error('Post niet gevonden.'), { status: 404 })
   return { ref, post: snap.data() }
+}
+
+/**
+ * Writes a message on the Canva design.
+ *
+ * The first message of a post opens a thread and its id is kept; later rounds
+ * reply to that thread so the whole review reads as one conversation in Canva.
+ * Never throws: the caller decides what a failed push means, and for a review
+ * it means "saved here, not pushed there".
+ */
+async function pushCanvaComment(token, { designId, threadId, message }) {
+  if (threadId) {
+    const payload = await replyToCommentThread(token, designId, threadId, message)
+    const reply = payload.reply ?? payload.comment ?? payload
+    return { threadId, commentId: reply.id ?? null }
+  }
+  const payload = await createCommentThread(token, designId, message)
+  const thread = payload.thread ?? payload.comment ?? payload
+  return { threadId: thread.id ?? null, commentId: thread.id ?? null }
+}
+
+/** Pulls every thread this post opened, newest message last. */
+async function pullCanvaComments(token, post) {
+  const threadIds = post.canvaThreadIds?.length
+    ? post.canvaThreadIds
+    : post.canvaCommentThreadId
+      ? [post.canvaCommentThreadId]
+      : []
+
+  const entries = []
+  for (const threadId of threadIds) {
+    try {
+      const thread = await getCommentThread(token, post.canvaDesignId, threadId)
+      const root = thread.thread ?? thread.comment ?? thread
+      if (root?.id) entries.push(commentToEntry(root, { threadId }))
+
+      const replies = await listCommentReplies(token, post.canvaDesignId, threadId)
+      for (const raw of replies.items ?? []) {
+        entries.push(commentToEntry(raw, { threadId, isReply: true }))
+      }
+    } catch (err) {
+      logger.warn('Canva-thread niet gelezen', { threadId, message: err.message })
+    }
+  }
+
+  entries.sort((a, b) => a.createdAt - b.createdAt)
+  return entries.slice(-40)
+}
+
+const REVIEW_ACTIONS = {
+  request: {
+    reviewState: 'requested',
+    status: 'review',
+    line: (who, note) => `Klaar om na te kijken — gevraagd door ${who}.${note ? `\n${note}` : ''}`,
+  },
+  approve: {
+    reviewState: 'approved',
+    status: 'approved',
+    line: (who, note) => `Goedgekeurd door ${who}.${note ? `\n${note}` : ''}`,
+  },
+  changes: {
+    reviewState: 'changes',
+    status: 'design',
+    line: (who, note) => `Aanpassing gevraagd door ${who}.${note ? `\n${note}` : ''}`,
+  },
 }
 
 export const api = onRequest(
@@ -370,6 +442,225 @@ export const api = onRequest(
         return json(res, 200, { urls: finished.urls ?? [] })
       }
 
+      // ── Canva as the source: browse what is already in Canva ─────────────
+      if (path === '/canva/browse') {
+        const token = await accessTokenFor(uid, secrets)
+        const { q, folderId, continuation } = req.query
+        const params = new URLSearchParams({ limit: '30' })
+        if (continuation) params.set('continuation', String(continuation))
+
+        let designs = []
+        let next = null
+
+        if (folderId) {
+          params.set('item_types', 'design')
+          const payload = await canvaFetch(
+            token,
+            `/folders/${encodeURIComponent(String(folderId))}/items?${params}`
+          )
+          designs = (payload.items ?? []).map((item) => item.design).filter(Boolean)
+          next = payload.continuation ?? null
+        } else {
+          if (q) params.set('query', String(q))
+          params.set('sort_by', 'modified_descending')
+          const payload = await canvaFetch(token, `/designs?${params}`)
+          designs = payload.items ?? []
+          next = payload.continuation ?? null
+        }
+
+        const cards = designs.map(designToCard)
+
+        // A design already on the calendar is shown as such instead of being
+        // offered again. The lookup goes by `canvaDesignId` rather than by the
+        // deterministic id, because a design that was linked to a post by hand
+        // has that post's own id and must not be offered a second time either.
+        // One page is 30 designs, which is exactly what `in` takes.
+        if (cards.length > 0) {
+          const linked = await db
+            .collection('socialPosts')
+            .where('canvaDesignId', 'in', cards.map((c) => c.id))
+            .get()
+          const byDesign = new Map(linked.docs.map((d) => [d.data().canvaDesignId, d.id]))
+          cards.forEach((card) => {
+            card.postId = byDesign.get(card.id) ?? null
+          })
+        }
+
+        return json(res, 200, { items: cards, continuation: next })
+      }
+
+      if (path === '/canva/folders') {
+        const token = await accessTokenFor(uid, secrets)
+        const parent = req.query.parent ? String(req.query.parent) : 'root'
+        const payload = await canvaFetch(
+          token,
+          `/folders/${encodeURIComponent(parent)}/items?item_types=folder&limit=50`
+        )
+        return json(res, 200, {
+          items: (payload.items ?? [])
+            .map((item) => item.folder)
+            .filter(Boolean)
+            .map((f) => ({ id: f.id, name: f.name })),
+        })
+      }
+
+      if (path === '/canva/import' && req.method === 'POST') {
+        const { designIds = [], brandId, scheduledAt, taskId } = req.body ?? {}
+        if (!brandId) throw Object.assign(new Error('Kies eerst een merk.'), { status: 400 })
+        if (designIds.length === 0) {
+          throw Object.assign(new Error('Geen ontwerpen geselecteerd.'), { status: 400 })
+        }
+
+        const token = await accessTokenFor(uid, secrets)
+        const task = taskId ? await db.collection('tasks').doc(taskId).get() : null
+
+        let created = 0
+        let updated = 0
+
+        for (const designId of designIds) {
+          const payload = await canvaFetch(token, `/designs/${encodeURIComponent(designId)}`)
+          const design = payload.design
+
+          // Two ways this design can already be a post: it was imported before
+          // (deterministic id), or somebody pasted its link onto a post they
+          // made by hand. Either way we update that post instead of adding one.
+          const linked = await db
+            .collection('socialPosts')
+            .where('canvaDesignId', '==', designId)
+            .limit(1)
+            .get()
+          const ref = linked.empty
+            ? db.collection('socialPosts').doc(postIdForDesign(designId))
+            : linked.docs[0].ref
+          const snap = linked.empty ? await ref.get() : linked.docs[0]
+
+          if (snap.exists) {
+            await ref.set(
+              { ...designToPost(design), updatedAt: FieldValue.serverTimestamp() },
+              { merge: true }
+            )
+            updated += 1
+            continue
+          }
+
+          await ref.set({
+            ...designToPost(design),
+            source: 'canva',
+            brandId,
+            title: design.title || 'Uit Canva',
+            caption: '',
+            hashtags: '',
+            channels: ['instagram'],
+            scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+            status: 'design',
+            assigneeId: null,
+            taskId: task?.exists ? taskId : null,
+            taskTitle: task?.exists ? (task.data().title ?? null) : null,
+            taskListName: task?.exists ? (task.data().listName ?? null) : null,
+            reviewState: 'none',
+            reviewRound: 0,
+            reviewerId: null,
+            reviewNote: null,
+            canvaThreadIds: [],
+            canvaCommentThreadId: null,
+            canvaComments: [],
+            assetUrl: null,
+            publishedUrl: null,
+            notes: '',
+            createdBy: uid,
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          })
+          created += 1
+        }
+
+        return json(res, 200, { created, updated })
+      }
+
+      // ── The review, and its road back into Canva ─────────────────────────
+      if (path === '/canva/review' && req.method === 'POST') {
+        const { postId, action, note = '', reviewerId = null } = req.body ?? {}
+        const shape = REVIEW_ACTIONS[action]
+        if (!shape) throw Object.assign(new Error('Onbekende reviewactie.'), { status: 400 })
+
+        const { ref, post } = await postRef(postId)
+        const actor = (await db.collection('profiles').doc(uid).get()).data() ?? {}
+        const who = actor.fullName || actor.email || 'iemand'
+        const round = action === 'request' ? (post.reviewRound ?? 0) + 1 : (post.reviewRound ?? 1)
+
+        // Canva is told second: the decision must survive a Canva outage.
+        let pushed = null
+        let canvaError = null
+        if (post.canvaDesignId) {
+          try {
+            const token = await accessTokenFor(uid, secrets)
+            pushed = await pushCanvaComment(token, {
+              designId: post.canvaDesignId,
+              threadId: post.canvaCommentThreadId ?? null,
+              message: shape.line(who, note.trim()),
+            })
+          } catch (err) {
+            canvaError = err.message
+            logger.warn('Review niet naar Canva gestuurd', { postId, message: err.message })
+          }
+        }
+
+        const patch = {
+          reviewState: shape.reviewState,
+          status: shape.status,
+          reviewRound: round,
+          reviewNote: note.trim() || null,
+          updatedAt: FieldValue.serverTimestamp(),
+        }
+        if (action === 'request') {
+          patch.reviewerId = reviewerId
+          patch.reviewRequestedAt = FieldValue.serverTimestamp()
+          patch.reviewRequestedBy = uid
+          patch.reviewedAt = null
+          patch.reviewedBy = null
+        } else {
+          patch.reviewedAt = FieldValue.serverTimestamp()
+          patch.reviewedBy = uid
+        }
+        if (pushed?.threadId) {
+          patch.canvaCommentThreadId = pushed.threadId
+          patch.canvaThreadIds = FieldValue.arrayUnion(pushed.threadId)
+        }
+
+        await ref.set(patch, { merge: true })
+
+        await db.collection('postReviews').add({
+          postId,
+          round,
+          decision: action,
+          note: note.trim() || null,
+          authorId: uid,
+          authorName: who,
+          canvaCommentId: pushed?.commentId ?? null,
+          pushedToCanva: Boolean(pushed),
+          canvaError,
+          createdAt: FieldValue.serverTimestamp(),
+        })
+
+        return json(res, 200, { ok: true, pushedToCanva: Boolean(pushed), canvaError })
+      }
+
+      if (path === '/canva/comments' && req.method === 'POST') {
+        const { postId } = req.body ?? {}
+        const { ref, post } = await postRef(postId)
+        if (!post.canvaDesignId) {
+          throw Object.assign(new Error('Deze post heeft geen ontwerp.'), { status: 400 })
+        }
+
+        const token = await accessTokenFor(uid, secrets)
+        const comments = await pullCanvaComments(token, post)
+        await ref.set(
+          { canvaComments: comments, canvaCommentsSyncedAt: FieldValue.serverTimestamp() },
+          { merge: true }
+        )
+        return json(res, 200, { items: comments })
+      }
+
       return json(res, 404, { error: 'Onbekend endpoint.' })
     } catch (err) {
       const status = err.status ?? 500
@@ -429,17 +720,36 @@ export const canvaSync = onSchedule(
     }
 
     let refreshed = 0
+    let withComments = 0
     for (const doc of linked) {
+      const post = doc.data()
       try {
-        const payload = await canvaFetch(token, `/designs/${encodeURIComponent(doc.data().canvaDesignId)}`)
+        const payload = await canvaFetch(token, `/designs/${encodeURIComponent(post.canvaDesignId)}`)
         await doc.ref.set(designToPost(payload.design), { merge: true })
         refreshed += 1
       } catch (err) {
         logger.warn('Thumbnail verversen faalde', { post: doc.id, message: err.message })
       }
+
+      // A post that is out for review is the one place where somebody else's
+      // answer lives in Canva rather than here, so that is the one we pull back.
+      if (post.reviewState === 'requested' && (post.canvaThreadIds?.length || post.canvaCommentThreadId)) {
+        try {
+          const comments = await pullCanvaComments(token, post)
+          if (comments.length) {
+            await doc.ref.set(
+              { canvaComments: comments, canvaCommentsSyncedAt: FieldValue.serverTimestamp() },
+              { merge: true }
+            )
+            withComments += 1
+          }
+        } catch (err) {
+          logger.warn('Canva-reacties ophalen faalde', { post: doc.id, message: err.message })
+        }
+      }
     }
 
-    logger.info(`Canva-thumbnails ververst: ${refreshed}/${linked.length}`)
+    logger.info(`Canva-thumbnails ververst: ${refreshed}/${linked.length}, reacties: ${withComments}`)
   }
 )
 

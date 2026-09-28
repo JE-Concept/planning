@@ -71,6 +71,15 @@ service cloud.firestore {
     match /goalUpdates/{id} { allow read: if isMember(); allow write: if isMember(); }
     match /socialPosts/{id} { allow read: if isMember(); allow write: if isMember(); }
 
+    // The review log is written by the API (as the reviewer) and read by
+    // everyone; nobody edits a decision after the fact, they add the next one.
+    match /postReviews/{id} {
+      allow read:   if isMember();
+      allow create: if isMember();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
     match /activity/{id} {
       allow read:   if isMember();
       allow create: if isMember();

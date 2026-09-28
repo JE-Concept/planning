@@ -26,6 +26,7 @@ export const COL = {
   goals: 'goals',
   goalUpdates: 'goalUpdates',
   socialPosts: 'socialPosts',
+  postReviews: 'postReviews',
   activity: 'activity',
 }
 
@@ -52,6 +53,7 @@ const DATE_FIELDS = new Set([
   'createdAt', 'updatedAt', 'completedAt', 'dueDate', 'startDate',
   'startedAt', 'endedAt', 'scheduledAt', 'canvaSyncedAt',
   'canvaThumbnailExpiresAt', 'connectedAt', 'lastSeenAt',
+  'canvaUpdatedAt', 'canvaCommentsSyncedAt', 'reviewRequestedAt', 'reviewedAt',
 ])
 
 export function normalise(data) {

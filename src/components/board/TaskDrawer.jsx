@@ -26,6 +26,7 @@ import {
   useTask,
 } from '@data/tasks'
 import { addComment, deleteComment, useComments } from '@data/comments'
+import { channelMeta, reviewMeta, statusMeta, usePostsForTask } from '@data/social'
 import { addManualEntry, startTimer, stopTimer, useRunningTimer, useTaskTimeEntries, deleteEntry } from '@data/time'
 
 /** Saves on blur rather than on every keystroke: one write per edit, not per letter. */
@@ -247,9 +248,76 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 
         <TimeSection task={task} list={list} uid={uid} toast={toast} profileById={profileById} />
 
+        <SocialSection taskId={task.id} />
+
         <CommentSection taskId={task.id} profile={profile} />
       </div>
     </Drawer>
+  )
+}
+
+// ─── Social ─────────────────────────────────────────────────────────────────
+
+/**
+ * The posts hanging on this project.
+ *
+ * A wedding or an opening usually comes with a handful of posts, and the person
+ * looking at the task is the person who wants to know whether they are through
+ * review yet — so the calendar shows up here rather than only the other way.
+ */
+function SocialSection({ taskId }) {
+  const posts = usePostsForTask(taskId)
+
+  if (posts.length === 0) return null
+
+  return (
+    <section>
+      <h3 className="label">Social posts ({posts.length})</h3>
+      <ul className="space-y-1">
+        {posts.map((post) => {
+          const status = statusMeta(post.status)
+          const review = post.reviewState && post.reviewState !== 'none' ? reviewMeta(post.reviewState) : null
+
+          return (
+            <li
+              key={post.id}
+              className="flex items-center gap-2 rounded-xl border border-ink-200 px-3 py-2"
+            >
+              {post.canvaThumbnailUrl ? (
+                <img src={post.canvaThumbnailUrl} alt="" className="h-9 w-9 rounded-lg object-cover" />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: status.color }}
+                />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-ink-800">{post.title}</span>
+                <span className="block text-[11px] text-ink-500">
+                  {post.scheduledAt ? formatDateTime(post.scheduledAt) : 'nog niet ingepland'} ·{' '}
+                  {status.label}
+                </span>
+              </span>
+              <span className="flex shrink-0 gap-0.5" aria-hidden="true">
+                {post.channels?.map((key) => (
+                  <span
+                    key={key}
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: channelMeta(key).color }}
+                  />
+                ))}
+              </span>
+              {review ? (
+                <Badge color={review.color} subtle>
+                  {review.label}
+                </Badge>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
 

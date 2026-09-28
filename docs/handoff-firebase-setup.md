@@ -172,7 +172,10 @@ Alleen nodig voor de social media kalender.
 1. Maak een app op <https://www.canva.com/developers/integrations>
 2. Redirect-URL: `https://planning.jeconcept.be/api/canva/callback`
 3. Scopes: `profile:read`, `design:meta:read`, `design:content:read`, `design:content:write`,
-   `asset:read`, `brandtemplate:meta:read`, `brandtemplate:content:read`
+   `asset:read`, `brandtemplate:meta:read`, `brandtemplate:content:read`, `folder:read`,
+   `comment:read`, `comment:write`
+   (`folder:read` is nodig om de mappen van het team te tonen bij *Uit Canva*; `comment:*` om een
+   reviewbeslissing als reactie op het ontwerp te zetten en het antwoord terug te halen)
 4. ```bash
    npx firebase functions:secrets:set CANVA_CLIENT_ID
    npx firebase functions:secrets:set CANVA_CLIENT_SECRET
@@ -194,9 +197,8 @@ Alleen nodig voor de social media kalender.
 
 ---
 
-## Wat hierna nog komt
+## Zie ook
 
-Dit document zet de **huidige** codebase live. Op basis van de briefing van 15 september wordt het
-datamodel herzien: van generieke taken naar getypeerde `event`-dossiers met de negenstaps
-order-to-cash-pijplijn. Dat verandert de Firestore-collecties, niet deze opzet — het project, de
-login, het domein en de hosting blijven ongewijzigd.
+- **[`handover-claude-in-chrome.md`](handover-claude-in-chrome.md)** — hetzelfde browserwerk, maar
+  geschreven als opdracht die je in één keer aan Claude in Chrome kan geven.
+- **`scripts/go-live.sh`** — deel B als één commando, in de juiste volgorde en met leesbare fouten.

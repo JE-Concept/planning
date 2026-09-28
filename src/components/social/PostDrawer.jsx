@@ -13,9 +13,18 @@ import {
 } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { CHANNELS, POST_STATUSES, deletePost, toggleChannel, updatePost, usePost } from '@data/social'
+import {
+  CHANNELS,
+  POST_STATUSES,
+  deletePost,
+  toggleChannel,
+  updatePost,
+  usePost,
+} from '@data/social'
 import { addComment, deleteComment, useComments } from '@data/comments'
 import CanvaPanel from './CanvaPanel'
+import ProjectLink from './ProjectLink'
+import ReviewPanel from './ReviewPanel'
 
 export default function PostDrawer({ postId, onClose }) {
   const post = usePost(postId)
@@ -32,7 +41,13 @@ export default function PostDrawer({ postId, onClose }) {
       open
       onClose={onClose}
       title={post.title}
-      subtitle={brand ? `${brand.name} · ${formatDateTime(post.scheduledAt) || 'nog niet ingepland'}` : undefined}
+      subtitle={
+        brand
+          ? `${brand.name} · ${formatDateTime(post.scheduledAt) || 'nog niet ingepland'}${
+              post.source === 'canva' ? ' · uit Canva' : ''
+            }`
+          : undefined
+      }
       footer={
         <>
           <span className="text-xs text-ink-400">
@@ -128,10 +143,14 @@ export default function PostDrawer({ postId, onClose }) {
           </div>
         </section>
 
+        <ProjectLink post={post} />
+
         <section>
           <h3 className="label">Ontwerp</h3>
           <CanvaPanel post={post} />
         </section>
+
+        <ReviewPanel post={post} />
 
         <Field
           label="Caption"
