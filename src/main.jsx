@@ -10,8 +10,36 @@ import './index.css'
  * gewone build is de voorwaarde statisch onwaar en valt de import weg bij het
  * bundelen.
  */
+/**
+ * Eén adres, niet twee.
+ *
+ * Firebase blijft de site ook op <project>.web.app serveren naast het eigen
+ * domein. Dat is niet onschuldig: elk adres heeft zijn eigen aanmeldsessie, en
+ * de Canva-callback is op één host geregistreerd — wie op de verkeerde binnen-
+ * komt, logt apart in en krijgt de koppeling niet rond. Daarom stuurt de app
+ * zichzelf door naar het adres dat telt.
+ *
+ * Alleen actief als VITE_CANONICAL_HOST bij de build is meegegeven, want een
+ * omleiding naar een domein dat nog niet gekoppeld is, maakt de tool
+ * onbereikbaar in plaats van netjes.
+ */
+function redirectToCanonicalHost() {
+  const canonical = import.meta.env.VITE_CANONICAL_HOST
+  if (!canonical || window.location.hostname === canonical) return false
+  if (window.location.hostname === 'localhost') return false
+
+  const url = new URL(window.location.href)
+  url.hostname = canonical
+  url.protocol = 'https:'
+  url.port = ''
+  window.location.replace(url.toString())
+  return true
+}
+
 async function boot() {
   const demo = import.meta.env.MODE === 'demo'
+  if (!demo && redirectToCanonicalHost()) return
+
   if (demo) await import('../demo/boot.js')
 
   // De demobuild wordt onder een subpad gepubliceerd; een padgebaseerde router

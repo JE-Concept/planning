@@ -87,10 +87,15 @@ export const ensureProfile = onCall({ region: REGION }, async (request) => {
     throw new HttpsError('permission-denied', `${email} heeft geen toegang tot JE Planning.`)
   }
 
-  // The very first person through the door owns the workspace; without this
-  // nobody could ever invite anybody.
+  // Somebody has to own an empty workspace, or nobody can ever invite anybody.
+  // Which somebody is a named address, not whoever happens to sign in first:
+  // that race is how the wrong person ends up owning the planning, and it is
+  // not undoable from inside the app once it has happened.
+  const bootstrapOwner = (access.data()?.bootstrapOwnerEmail ?? '').toLowerCase()
   const anyProfile = await db.collection('profiles').limit(1).get()
-  const role = anyProfile.empty ? 'owner' : (invite.data()?.role ?? 'member')
+
+  const role = invite.data()?.role
+    ?? (anyProfile.empty && (!bootstrapOwner || bootstrapOwner === email) ? 'owner' : 'member')
 
   await profileRef.set({
     email,

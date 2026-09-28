@@ -64,7 +64,13 @@ async function main() {
 
   batch.set(
     db.collection('config').doc('access'),
-    { allowedDomains: ['jeconcept.be', 'kenjeklanten.be'], updatedAt: FieldValue.serverTimestamp() },
+    {
+      allowedDomains: ['jeconcept.be', 'kenjeklanten.be'],
+      // Wie de lege werkruimte mag claimen. Zonder dit wordt dat "wie het eerst
+      // inlogt", en dat is een race die je achteraf niet meer rechtzet.
+      bootstrapOwnerEmail: (process.env.OWNER_EMAIL ?? 'jasper@kenjeklanten.be').toLowerCase(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
     { merge: true }
   )
 

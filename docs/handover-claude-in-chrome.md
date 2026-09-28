@@ -148,10 +148,18 @@ en een fout die op een bug lijkt.
 
 Groen? Open **`https://<project-id>.web.app`**. Je zou het aanmeldscherm moeten zien.
 
-→ **Laat Jasper nu als eerste inloggen.** De eerste die binnenkomt wordt eigenaar van de
-werkruimte; zonder eigenaar kan niemand ooit iemand uitnodigen. Daarna komen `@jeconcept.be` en
-`@kenjeklanten.be` automatisch binnen, en heeft ieder ander een uitnodiging nodig via
-*Instellingen → Team*.
+Eigenaar van de werkruimte is `jasper@kenjeklanten.be` — dat adres staat als `bootstrapOwnerEmail`
+in `config/access`, dus wie er ook als eerste inlogt, de eigenaarsrol blijft voor hem. Wil je dat
+op een ander adres zetten, draai dan
+[Actions → Beheerder instellen](https://github.com/Kenjeklanten/planning/actions/workflows/admin.yml)
+met dat adres en rol `owner`; dat werkt ook voor iemand die nog nooit heeft ingelogd.
+
+`@jeconcept.be` en `@kenjeklanten.be` komen daarna automatisch binnen; ieder ander heeft een
+uitnodiging nodig via *Instellingen → Team*.
+
+⚠️ **Kies bij de eerste uitrol echt `alles`.** Met *alleen rules en indexes* of *alleen de
+applicatie* worden de Cloud Functions overgeslagen, en zonder die functies krijgt niemand een
+profiel — inloggen lukt dan niet en de foutmelding zegt alleen "geen toegang".
 
 ## 9. Het domein koppelen
 
@@ -173,6 +181,13 @@ Firebase toont **twee A-records**, en soms eerst een TXT-record ter verificatie.
 
 **d)** Terug in Firebase → **Verify**. Status **Connected** = klaar. Het certificaat duurt enkele
 minuten tot 24 uur.
+
+**e) Maak er het enige adres van.** Firebase blijft de site ook op `je-planning.web.app` serveren.
+Elk adres heeft zijn eigen aanmeldsessie, en de Canva-callback is op één host geregistreerd — wie
+op de verkeerde binnenkomt, logt apart in en krijgt de koppeling niet rond. Zet daarom, **pas als
+het domein op Connected staat**, het GitHub-geheim `VITE_CANONICAL_HOST` op
+`planning.jeconcept.be` en draai **Go live** met *alleen de applicatie*. Daarna stuurt `web.app`
+door naar het eigen domein, met pad en query intact.
 
 → noteer: **waar de DNS beheerd wordt, en de status in Firebase Hosting**
 

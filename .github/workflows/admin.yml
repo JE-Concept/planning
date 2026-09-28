@@ -1,0 +1,53 @@
+name: Beheerder instellen
+
+# Iemand eigenaar of beheerder maken zonder terminal — en zonder dat die
+# persoon al ingelogd hoeft te zijn. Bedoeld voor de eerste keer, en voor als
+# er niemand meer binnen kan om het via Instellingen te doen.
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: 'Firebase project-ID'
+        required: true
+        default: 'je-planning'
+        type: string
+      email:
+        description: 'E-mailadres'
+        required: true
+        type: string
+      role:
+        description: 'Rol'
+        required: true
+        default: 'owner'
+        type: choice
+        options: [owner, admin]
+
+jobs:
+  promote:
+    name: ${{ inputs.email }} → ${{ inputs.role }}
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Schrijf de servicesleutel
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          [ -n "$SA" ] || { echo "::error::FIREBASE_SERVICE_ACCOUNT ontbreekt."; exit 1; }
+          printf '%s' "$SA" > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Rol zetten
+        run: node scripts/make-admin.mjs "${{ inputs.email }}" "${{ inputs.role }}"
+
+      - name: Sleutel opruimen
+        if: always()
+        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
