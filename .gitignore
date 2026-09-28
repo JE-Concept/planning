@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-demo
+dist-pwa
 functions-meetings/node_modules/
 .env
 .env.local

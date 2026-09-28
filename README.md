@@ -47,6 +47,7 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `socialPosts/{id}` | Inclusief de link naar het ontwerp (`assetUrl`), de reviewstand (`reviewState`, `reviewRound`, `reviewerId`) en de kopie van het project (`taskId`, `taskTitle`, `taskListName`). |
 | `checklists/{id}` | De lijsten zelf (openen, sluiten), met secties en punten. Beheerders bewerken ze; `src/lib/checklist-templates.js` is de bron voor de seed. |
 | `checklistRuns/{id}` | Eén run per lijst per dag, met de vaste id `<lijst>_<jjjj-mm-dd>`. De stand staat in een map `items`, gesleuteld op punt-id. |
+| `pushTokens/{token}` | Eén rij per toestel dat meldingen wil, gesleuteld op het token. Je beheert en leest alleen je eigen rijen; versturen doet een Cloud Function. |
 | `automations/{id}` | De business rules: wanneer ze vuren en wat ze doen. Beheerders bewerken ze in Instellingen; uitvoeren doet een Cloud Function. |
 | `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde en met welke opmerking. Wordt aangevuld, nooit gewijzigd. |
 
@@ -168,6 +169,28 @@ Twee dingen die de trigger veilig houden, en die een test bewaakt:
 - De trigger schrijft haar eigen resultaat weg en wordt daardoor **opnieuw wakker**. Wat haar laat stoppen is dat de status dan niet veranderde en de patch leeg is. Zonder statuswissel wordt de regelcollectie niet eens gelezen.
 
 Een regel hangt aan de *naam* van een status, niet aan een id — dezelfde naam op twee borden betekent hier hetzelfde. De prijs daarvan is dat een kolom hernoemen de regel losmaakt, en dat zie je nergens gebeuren; daarom staat de waarschuwing (*deze status bestaat niet — de regel vuurt nooit*) naast de regel zelf. Het rekenwerk staat puur in `functions/automations.js`, zodat elke regel in een test na te rekenen is: dit is de enige code die ongevraagd andermans taken aanpast.
+
+---
+
+## Op de telefoon
+
+De tool is een app op je beginscherm, geen snelkoppeling: eigen icoon, eigen venster, geen adresbalk, en ze opent ook met één streepje bereik.
+
+**Installeren.** Android/Chrome zet zelf een balk onderaan; staat die er niet meer, dan staat er *Installeren op dit toestel* in het accountmenu rechtsboven. Op iPhone kan dat alleen via Safari: deelknop → *Zet op beginscherm*. Apple laat geen knop in de pagina toe.
+
+**Offline.** De service worker (`public/sw.js`) bewaart de schil en haalt hem uit de cache wanneer het netwerk wegvalt — een leeg scherm op een festivalterrein is erger dan een oud scherm. De gegevens zelf komen altijd van Firestore; die worden nooit gecachet, want een planning die stilstaat zonder dat iemand het ziet, is gevaarlijker dan een foutmelding.
+
+> Let op bij het aanpassen van de service worker: een kapotte versie blijft op het toestel van iedereen staan, ook na een goede deploy. De uitweg is `public/sw.js` vervangen door alleen `self.registration.unregister()` en dat uitrollen; elk toestel ruimt zichzelf dan op bij het volgende bezoek.
+
+**Meldingen.** Twee dingen sturen er een: je krijgt een taak toegewezen, en er wordt jou een review van een social post gevraagd. Nooit van je eigen klik — daarvoor schrijft de app `updatedBy` mee op elke taakwijziging.
+
+Aanzetten gebeurt per toestel, in het accountmenu. Eerst moet het certificaat er zijn:
+
+1. Firebase Console → **Project settings → Cloud Messaging → Web configuration → Generate key pair**.
+2. Die sleutel als GitHub-secret **`VITE_FIREBASE_VAPID_KEY`** zetten (Settings → Secrets and variables → Actions).
+3. Opnieuw uitrollen. Zonder de sleutel bouwt en draait alles gewoon, maar blijft de knop *Meldingen aanzetten* uitgeschakeld — een knop die niets doet is erger dan een knop die zegt dat hij nog niet klaar is.
+
+De iconen staan in `public/icons/` en worden gemaakt met `node scripts/make-icons.mjs` — zonder beeldbibliotheek, omdat het merkteken drie balken is en dat geen build-afhankelijkheid waard is.
 
 ---
 

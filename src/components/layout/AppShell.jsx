@@ -4,13 +4,17 @@ import { Avatar, Button, Spinner } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useNavCounts } from '@data/counts'
+import { useToast } from '@context/ToastProvider'
+import { luisterNaarMeldingen } from '@lib/push'
 import Sidebar from './Sidebar'
 import TimerWidget from './TimerWidget'
+import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
 
 export default function AppShell({ children }) {
   const { profile, logOut, isStaff } = useAuth()
   const { loading } = useWorkspace()
   const counts = useNavCounts()
+  const toast = useToast()
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const location = useLocation()
@@ -20,6 +24,19 @@ export default function AppShell({ children }) {
     setMenuOpen(false)
     setAccountOpen(false)
   }, [location.pathname])
+
+  // Een melding terwijl de app open staat toont de browser niet zelf — en een
+  // systeempopup met de app voor je neus is ook overdreven. Hier wordt het een
+  // toast, zodat je het wel ziet.
+  useEffect(() => {
+    let stop = () => {}
+    luisterNaarMeldingen(({ title, body }) => toast.success([title, body].filter(Boolean).join(' — ')))
+      .then((f) => {
+        stop = f
+      })
+      .catch(() => {})
+    return () => stop()
+  }, [toast])
 
   return (
     <div className="flex h-full">
@@ -81,6 +98,8 @@ export default function AppShell({ children }) {
                   </p>
                   <p className="truncate text-xs text-ink-500">{profile?.email}</p>
                 </div>
+                <InstallMenuItem />
+                <PushMenuItem />
                 <button
                   type="button"
                   role="menuitem"

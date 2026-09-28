@@ -13,7 +13,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
-import { db } from '@lib/firebase'
+import { auth, db } from '@lib/firebase'
 import { byPosition, needsRebalance, positionFor, rebalance } from '@lib/position'
 
 /**
@@ -22,6 +22,15 @@ import { byPosition, needsRebalance, positionFor, rebalance } from '@lib/positio
  * had to resolve those per card would read the list document once per row.
  * Every writer below refreshes the copies; nothing else may set them.
  */
+/**
+ * Wie de wijziging maakte.
+ *
+ * Staat op elke taakschrijving omdat de meldingen het nodig hebben: wie een
+ * taak naar zichzelf haalt, hoeft daar geen melding van te krijgen. Zonder dit
+ * trilt je telefoon van je eigen klik, en zo leren mensen meldingen uitzetten.
+ */
+const doorWie = () => auth.currentUser?.uid ?? null
+
 function statusFields(status) {
   if (!status) {
     return { statusId: null, statusName: null, statusColor: null, statusKind: null, open: true }
@@ -58,6 +67,8 @@ export function createTask({ list, status, title, ...rest }) {
     completedAt: null,
     trackedSeconds: 0,
     commentCount: 0,
+    createdBy: doorWie(),
+    updatedBy: doorWie(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     ...statusFields(status),
@@ -68,12 +79,13 @@ export function createTask({ list, status, title, ...rest }) {
 }
 
 export function updateTask(id, patch) {
-  return updateDoc(ref(COL.tasks, id), { ...patch, updatedAt: serverTimestamp() })
+  return updateDoc(ref(COL.tasks, id), { ...patch, updatedBy: doorWie(), updatedAt: serverTimestamp() })
 }
 
 export function setTaskStatus(id, status) {
   return updateDoc(ref(COL.tasks, id), {
     ...statusFields(status),
+    updatedBy: doorWie(),
     completedAt: status?.kind === 'done' || status?.kind === 'closed' ? new Date() : null,
     updatedAt: serverTimestamp(),
   })
@@ -86,6 +98,7 @@ export function setTaskList(id, list, status) {
     spaceId: list.spaceId ?? null,
     brandId: list.brandId ?? null,
     ...statusFields(status),
+    updatedBy: doorWie(),
     updatedAt: serverTimestamp(),
   })
 }
@@ -143,6 +156,7 @@ export async function moveTaskTo({ taskId, status, columnTasks, index }) {
 
   await updateDoc(ref(COL.tasks, taskId), {
     ...statusFields(status),
+    updatedBy: doorWie(),
     position,
     completedAt: status?.kind === 'done' || status?.kind === 'closed' ? new Date() : null,
     updatedAt: serverTimestamp(),

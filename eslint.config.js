@@ -27,4 +27,12 @@ export default [
       'react-refresh/only-export-components': 'off',
     },
   },
+  {
+    // De service worker draait niet in een pagina: geen window, wel self,
+    // caches en importScripts.
+    files: ['public/sw.js'],
+    languageOptions: {
+      globals: { ...globals.serviceworker, firebase: 'readonly' },
+    },
+  },
 ]

@@ -52,6 +52,14 @@ async function boot() {
       </Router>
     </StrictMode>
   )
+
+  // Na het renderen: de service worker mag het eerste scherm niet vertragen.
+  // Niet in de demo — die draait onder een subpad en zou een worker met een
+  // scope achterlaten die daar niet hoort.
+  if (!demo) {
+    const { registreerServiceWorker } = await import('./lib/push')
+    registreerServiceWorker()
+  }
 }
 
 boot()

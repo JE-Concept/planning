@@ -112,6 +112,15 @@ service account, **Edit principal → Add another role**:
 wordt alleen door deze twee workflows gebruikt. Wie het scherper wil, neemt de rechterkolom.
 Zonder **Service Usage Admin** komt geen enkele deploy voorbij de eerste stap.
 
+### 6d. De sleutel voor meldingen
+
+Nog steeds in **Project settings**, tabblad **Cloud Messaging**. Onderaan staat
+**Web configuration → Web Push certificates**. Klik **Generate key pair** en
+kopieer de sleutel die verschijnt (een lange reeks letters en cijfers).
+
+Dit is wat meldingen op de telefoon mogelijk maakt. Ontbreekt hij, dan werkt de
+tool gewoon, maar blijft de knop "Meldingen aanzetten" uitgeschakeld.
+
 ## 7. De geheimen in GitHub zetten
 
 Ga naar <https://github.com/Kenjeklanten/planning/settings/secrets/actions> →
@@ -127,8 +136,9 @@ Ga naar <https://github.com/Kenjeklanten/planning/settings/secrets/actions> →
 | `VITE_FIREBASE_STORAGE_BUCKET` | uit stap 6a |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | uit stap 6a |
 | `VITE_FIREBASE_APP_ID` | uit stap 6a |
+| `VITE_FIREBASE_VAPID_KEY` | zie stap 6d |
 
-Controleer dat er acht geheimen staan voor je verdergaat. Verwijder daarna het gedownloade
+Controleer dat er negen geheimen staan voor je verdergaat. Verwijder daarna het gedownloade
 JSON-bestand van stap 6b uit de downloadmap.
 
 ## 8. Uitrollen
@@ -209,6 +219,7 @@ door naar het eigen domein, met pad en query intact.
 | `De servicesleutel is geen geldige JSON` | er is maar een stuk van het bestand geplakt | opnieuw plakken, van `{` tot `}` |
 | `HTTP Error: 400, Billing account` | project staat nog op Spark | Blaze aanzetten (stap 2), dan opnieuw draaien |
 | `Permission denied to get service` / `403` op `serviceusage` | de service account mist **Service Usage Admin** | rollen toekennen (stap 6c), daarna opnieuw draaien |
+| `Permission denied while using the Eventarc Service Agent` | de allereerste Firestore-trigger van dit project; Google heeft een paar minuten nodig | niets doen — de uitrol probeert het drie keer. Blijft het staan, dan opnieuw draaien |
 | `Permission denied` bij functions of Firestore | de servicesleutel hoort bij een ander project | sleutel opnieuw genereren in het juiste project (stap 6b) |
 | Witte pagina, console zegt `VITE_FIREBASE_* ontbreken` | de geheimen stonden er nog niet tijdens de build | geheimen zetten, **Go live** opnieuw draaien met *alleen de applicatie* |
 | Borden traag of een index-fout in de console | indexes nog niet klaar | Firestore bouwt ze in de achtergrond af; enkele minuten wachten |

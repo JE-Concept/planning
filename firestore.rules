@@ -65,6 +65,20 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Meldingen: één rij per toestel, gesleuteld op het token zelf.
+    //
+    // Je beheert alleen je eigen toestellen. Lezen mag ook alleen je eigen rij:
+    // de lijst met tokens van de ploeg is niets voor in de browser — versturen
+    // doet een Cloud Function, die er met beheerdersrechten bij kan.
+    match /pushTokens/{token} {
+      allow read, delete: if isMember() && resource.data.profileId == request.auth.uid;
+      // Bij het schrijven telt de nieuwe eigenaar, niet de oude: meldt een
+      // collega zich aan op een toestel waar jij aan stond, dan neemt zij die
+      // rij over. Het token is het geheim van dat toestel — wie het heeft, ís
+      // dat toestel.
+      allow create, update: if isMember() && request.resource.data.profileId == request.auth.uid;
+    }
+
     match /config/{doc} {
       allow read: if isMember();
       allow write: if isAdmin();

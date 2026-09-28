@@ -14,10 +14,30 @@ set -uo pipefail
 
 PROJECT="$1"; shift
 
+POGINGEN=3
+WACHT=90
+
 log=$(mktemp)
-npx --yes firebase-tools@13 deploy --project "$PROJECT" --non-interactive "$@" 2>&1 | tee "$log"
-status=${PIPESTATUS[0]}
-[ "$status" -eq 0 ] && exit 0
+
+for poging in $(seq 1 "$POGINGEN"); do
+  npx --yes firebase-tools@13 deploy --project "$PROJECT" --non-interactive "$@" 2>&1 | tee "$log"
+  status=${PIPESTATUS[0]}
+  [ "$status" -eq 0 ] && exit 0
+
+  # De eerste Firestore-trigger in een project loopt vast op Eventarc: de
+  # service agent bestaat wel, maar zijn rechten zijn nog niet doorgesijpeld.
+  # Google zegt het zelf in de fout — "retry the deployment in a few minutes" —
+  # en dat is precies wat hier gebeurt, in plaats van een rode build die alleen
+  # betekent dat iemand op een knop moet drukken.
+  if grep -qi 'Eventarc Service Agent\|first time using 2nd gen' "$log" \
+     && [ "$poging" -lt "$POGINGEN" ]; then
+    echo "::warning::Eventarc is nog niet klaar met zichzelf (poging $poging van $POGINGEN). Over ${WACHT}s opnieuw." >&2
+    sleep "$WACHT"
+    continue
+  fi
+
+  break
+done
 
 if grep -q 'serviceusage.googleapis.com.*403\|Permission denied to get service' "$log"; then
   cat <<'MSG' >&2
@@ -30,6 +50,10 @@ if grep -q 'serviceusage.googleapis.com.*403\|Permission denied to get service' 
 ::error::"Cloud Scheduler Admin", "Eventarc Admin" en "Secret Manager Admin"
 ::error::nodig — of in één keer "Editor" naast "Firebase Admin".
 MSG
+elif grep -qi 'Eventarc Service Agent' "$log"; then
+  echo "::error::Eventarc weigert de trigger nog steeds na $POGINGEN pogingen." >&2
+  echo '::error::Kijk in Google Cloud → IAM (met "Door Google verstrekte roltoewijzingen opnemen" aan)' >&2
+  echo '::error::of service-…@gcp-sa-eventarc.iam.gserviceaccount.com de rol "Eventarc Service Agent" heeft.' >&2
 elif grep -qi 'cloudbilling.googleapis.com' "$log"; then
   echo '::error::De Cloud Billing API staat niet aan in dit project. Zet hem aan op' >&2
   echo "::error::https://console.cloud.google.com/apis/library/cloudbilling.googleapis.com?project=$PROJECT en draai opnieuw." >&2
