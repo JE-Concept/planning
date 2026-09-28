@@ -353,4 +353,56 @@ seedDoc('checklistRuns', `openen_${vandaag}`, {
   updatedAt: NU,
 })
 
+// ─── Teamoverleg ────────────────────────────────────────────────────────────
+seedDoc('lists', 'l-overleg', {
+  spaceId: 's-je', folderId: null, brandId: null, name: 'Overleg',
+  description: 'Verslagen van het teamoverleg, met de actiepunten eronder.',
+  kind: 'tasks', position: 3, archived: false,
+  statuses: [
+    { id: 'o1', name: 'opgenomen', color: '#8593a9', kind: 'open', position: 0 },
+    { id: 'o2', name: 'samengevat', color: '#3377ff', kind: 'active', position: 1 },
+    { id: 'o3', name: 'nagelezen', color: '#3db88b', kind: 'active', position: 2 },
+    { id: 'o4', name: 'afgerond', color: '#008844', kind: 'closed', position: 3 },
+  ],
+  createdAt: D('2026-01-10'),
+})
+
+seedDoc('tasks', 't-overleg-1', {
+  listId: 'l-overleg', listName: 'Overleg', spaceId: 's-je', brandId: null, parentId: null,
+  title: 'Weekstart events — 21/09/2026', description: '',
+  statusId: 'o3', statusName: 'nagelezen', statusColor: '#3db88b', statusKind: 'active',
+  open: true, priority: null, startDate: null, dueDate: null,
+  assignees: [], tags: [], position: 1024, archived: false, completedAt: null,
+  trackedSeconds: 0, commentCount: 0, meetingDate: '2026-09-21',
+  createdBy: 'u-jasper', createdAt: dag(-7), updatedAt: dag(-6),
+})
+
+;[
+  ['Drankenlijst Trouw Niels en Inez afwerken', 'u-elke', dag(2)],
+  ['Offerte Blum nakijken op de aangepaste aantallen', 'u-jasper', dag(1)],
+  ['Standenplan Haspengouw Culinair doorsturen naar de stad', 'u-anneleen', dag(4)],
+].forEach(([titel, wie, deadline], i) =>
+  seedDoc('tasks', `t-overleg-1-${i}`, {
+    listId: 'l-overleg', listName: 'Overleg', spaceId: 's-je', brandId: null,
+    parentId: 't-overleg-1', title: titel, description: '',
+    statusId: 'o3', statusName: 'nagelezen', statusColor: '#3db88b', statusKind: 'active',
+    open: true, priority: null, startDate: null, dueDate: deadline,
+    assignees: [wie], tags: [], position: 2048 + i, archived: false, completedAt: null,
+    trackedSeconds: 0, commentCount: 0, meetingId: 't-overleg-1',
+    createdBy: 'u-jasper', createdAt: dag(-7), updatedAt: dag(-6),
+  }))
+
+seedDoc('meetings', 't-overleg-1', {
+  taskId: 't-overleg-1', titel: 'Weekstart events', datum: '2026-09-21',
+  deelnemers: ['Jasper Hansen', 'Elke Motmans', 'Anneleen Coenen'],
+  samenvatting: [
+    { onderwerp: 'Trouw Niels en Inez', tekst: 'De offerte gaat deze week de deur uit. Het regenplan is bevestigd met de eigenaar; de drankenlijst moet nog afgewerkt worden voor de bestelling kan.' },
+    { onderwerp: 'Blum personeelsfeest', tekst: 'De klant verhoogde naar 220 personen. De offerte wordt herzien op aantallen, niet op formule.' },
+    { onderwerp: 'Haspengouw Culinair', tekst: 'Het standenplan is klaar maar moet nog naar de stad. Anneleen volgt op; deadline vrijdag.' },
+  ],
+  bron: null,
+  viewerIds: ['u-jasper', 'u-anneleen', 'u-maxine', 'u-elke'],
+  createdAt: dag(-7),
+})
+
 seedDoc('config', 'access', { allowedDomains: ['jeconcept.be', 'kenjeklanten.be'], updatedAt: NU })

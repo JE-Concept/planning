@@ -93,7 +93,7 @@ jobs:
         if: inputs.what == 'alles'
         run: |
           ( cd functions && npm install --no-audit --no-fund )
-          scripts/ci/deploy.sh "$PROJECT" --only functions
+          scripts/ci/deploy.sh "$PROJECT" --only functions:default
 
           # Een callable v2-functie draait op Cloud Run en moet publiek
           # aanroepbaar staan; de functie controleert zelf of je aangemeld bent.
@@ -129,6 +129,18 @@ jobs:
               --condition=None --quiet >/dev/null || true
           else
             echo "::warning::Runtime-service-account van ensureProfile niet gevonden."
+          fi
+
+          # De overlegfuncties staan in een eigen codebase omdat ze aan een
+          # geheim hangen. Ze worden apart uitgerold en mogen falen: zonder de
+          # Claude-sleutel werkt het samenvatten niet, maar inloggen wel — en
+          # dat is precies de volgorde die eerder omgekeerd lag.
+          if gcloud secrets describe ANTHROPIC_API_KEY --project "$PROJECT" >/dev/null 2>&1; then
+            ( cd functions-meetings && npm install --no-audit --no-fund )
+            scripts/ci/deploy.sh "$PROJECT" --only functions:meetings \
+              || echo "::warning::De overlegfuncties zijn niet uitgerold; de rest staat wel live."
+          else
+            echo "::warning::Geheim ANTHROPIC_API_KEY bestaat niet — overlegfuncties overgeslagen."
           fi
 
 

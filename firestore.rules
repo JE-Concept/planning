@@ -86,6 +86,14 @@ service cloud.firestore {
 
     // De lijsten zelf zijn beleid — die maakt een beheerder. De dagelijkse
     // runs zijn werk, en dat doet iedereen; niemand wist er een.
+    // Een overleg staat als taak op het bord — die titel ziet het team. De
+    // samenvatting zelf staat hier, en alleen wie erin genoemd is leest ze. De
+    // query in de app filtert op datzelfde veld, zodat ze ook echt slaagt.
+    match /meetings/{id} {
+      allow read:   if isMember() && request.auth.uid in resource.data.viewerIds;
+      allow write:  if isAdmin();
+    }
+
     match /checklists/{id} {
       allow read:  if isMember();
       allow write: if isAdmin();

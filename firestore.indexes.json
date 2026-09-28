@@ -353,6 +353,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "meetings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "viewerIds",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "datum",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

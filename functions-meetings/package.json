@@ -1,0 +1,12 @@
+{
+  "name": "je-planning-meetings",
+  "type": "module",
+  "private": true,
+  "engines": { "node": "22" },
+  "main": "index.js",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "firebase-admin": "^13.0.1",
+    "firebase-functions": "^6.1.1"
+  }
+}

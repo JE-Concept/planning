@@ -10,6 +10,7 @@ const MAIN = [
   { to: '/mijn-werk', label: 'Mijn werk', icon: '☑' },
   { to: '/social', label: 'Social kalender', icon: '▦' },
   { to: '/openen-sluiten', label: 'Openen & sluiten', icon: '☑' },
+  { to: '/overleg', label: 'Teamoverleg', icon: '✎' },
   { to: '/uren', label: 'Uren', icon: '⏱' },
   { to: '/goals', label: 'Goals', icon: '◎' },
 ]

@@ -25,6 +25,7 @@ export const COL = {
   runningTimers: 'runningTimers',
   goals: 'goals',
   goalUpdates: 'goalUpdates',
+  meetings: 'meetings',
   checklists: 'checklists',
   checklistRuns: 'checklistRuns',
   socialPosts: 'socialPosts',

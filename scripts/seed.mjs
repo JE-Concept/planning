@@ -70,6 +70,13 @@ async function main() {
       // Wie de lege werkruimte mag claimen. Zonder dit wordt dat "wie het eerst
       // inlogt", en dat is een race die je achteraf niet meer rechtzet.
       bootstrapOwnerEmail: (process.env.OWNER_EMAIL ?? 'jasper@kenjeklanten.be').toLowerCase(),
+      // Wie de samenvattingen van het teamoverleg mag lezen.
+      meetingViewers: [
+        'jasper@kenjeklanten.be',
+        'anneleen@kenjeklanten.be',
+        'maxine@jeconcept.be',
+        'elke@kenjeklanten.be',
+      ],
       updatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true }
@@ -117,6 +124,28 @@ async function main() {
       position: 2,
       archived: false,
       statuses: columns(SOCIAL_STATUSES),
+    },
+    { merge: true }
+  )
+
+  // Het bord waarop de overlegverslagen landen.
+  batch.set(
+    db.collection('lists').doc('overleg'),
+    {
+      spaceId: 'je-concept',
+      folderId: null,
+      brandId: null,
+      name: 'Overleg',
+      description: 'Verslagen van het teamoverleg, met de actiepunten eronder.',
+      kind: 'tasks',
+      position: 3,
+      archived: false,
+      statuses: columns([
+        ['opgenomen', '#8593a9', 'open'],
+        ['samengevat', '#3377ff', 'active'],
+        ['nagelezen', '#3db88b', 'active'],
+        ['afgerond', '#008844', 'closed'],
+      ]),
     },
     { merge: true }
   )

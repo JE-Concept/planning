@@ -98,7 +98,7 @@ jobs:
           npx --yes firebase-tools@13 target:apply hosting app "$FIREBASE_PROJECT" \
             --project "$FIREBASE_PROJECT" --non-interactive
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only firestore:rules,firestore:indexes,storage
-          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions
+          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions:default
 
           # Een callable v2-functie draait op Cloud Run en moet publiek
           # aanroepbaar staan; de functie controleert zelf of je aangemeld bent.
@@ -134,6 +134,18 @@ jobs:
               --condition=None --quiet >/dev/null || true
           else
             echo "::warning::Runtime-service-account van ensureProfile niet gevonden."
+          fi
+
+          # De overlegfuncties staan in een eigen codebase omdat ze aan een
+          # geheim hangen. Ze worden apart uitgerold en mogen falen: zonder de
+          # Claude-sleutel werkt het samenvatten niet, maar inloggen wel — en
+          # dat is precies de volgorde die eerder omgekeerd lag.
+          if gcloud secrets describe ANTHROPIC_API_KEY --project "$FIREBASE_PROJECT" >/dev/null 2>&1; then
+            ( cd functions-meetings && npm install --no-audit --no-fund )
+            scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions:meetings \
+              || echo "::warning::De overlegfuncties zijn niet uitgerold; de rest staat wel live."
+          else
+            echo "::warning::Geheim ANTHROPIC_API_KEY bestaat niet — overlegfuncties overgeslagen."
           fi
           node scripts/seed.mjs
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting

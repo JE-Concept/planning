@@ -1,6 +1,7 @@
 node_modules/
 dist/
-dist-demo/
+dist-demo
+functions-meetings/node_modules/
 .env
 .env.local
 .env.*.local
