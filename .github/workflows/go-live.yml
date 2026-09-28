@@ -1,0 +1,117 @@
+name: Go live
+
+# Alles wat een terminal zou vragen, met de knop "Run workflow" in de browser.
+#
+# Het bestaat omdat het live zetten anders vastloopt op de enige stap die een
+# browser niet kan: deployen. Wie de console kan bedienen kan nu ook deployen,
+# zonder ooit een terminal te openen.
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: 'Firebase project-ID (zie Project settings → General)'
+        required: true
+        type: string
+      what:
+        description: 'Wat uitrollen'
+        required: true
+        default: 'alles'
+        type: choice
+        options: [alles, 'alleen rules en indexes', 'alleen de applicatie']
+      seed:
+        description: 'Basisgegevens zetten (merken, toegangsdomeinen, de borden)'
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: go-live-${{ inputs.project_id }}
+  cancel-in-progress: false
+
+jobs:
+  live:
+    name: Uitrollen naar ${{ inputs.project_id }}
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: ${{ inputs.project_id }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Beter hier stoppen met een leesbare zin dan verderop met een 401.
+      - name: Controleer de geheimen
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        run: |
+          [ -n "$SA" ]  || { echo "::error::FIREBASE_SERVICE_ACCOUNT ontbreekt. Zie docs/handover-claude-in-chrome.md, stap 7."; exit 1; }
+          [ -n "$KEY" ] || { echo "::error::De VITE_FIREBASE_*-geheimen ontbreken. Zie stap 6 en 7."; exit 1; }
+
+      - name: Schrijf de servicesleutel
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$SA" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          node -e 'JSON.parse(require("fs").readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS,"utf8"))' \
+            || { echo "::error::De servicesleutel is geen geldige JSON. Plak het hele bestand, van { tot }."; exit 1; }
+
+      - run: npm ci --no-audit --no-fund
+
+      # Hosting draait op een target; die staat in .firebaserc vastgelegd op de
+      # naam van het oorspronkelijke project. Hier hangen we hem aan het project
+      # dat echt gebruikt wordt, zodat een afwijkende project-ID gewoon werkt.
+      - name: Koppel het hosting-target
+        run: npx --yes firebase-tools@13 target:apply hosting app "$PROJECT" --project "$PROJECT" --non-interactive
+
+      # Rules en indexes eerst: een bord dat zoekt op een veld waarvoor nog geen
+      # index bestaat geeft lege kolommen en een fout die op een bug lijkt.
+      - name: Rules, indexes en storage
+        if: inputs.what != 'alleen de applicatie'
+        run: npx --yes firebase-tools@13 deploy --project "$PROJECT" --only firestore:rules,firestore:indexes,storage --non-interactive
+
+      - name: Cloud Functions
+        if: inputs.what == 'alles'
+        run: |
+          ( cd functions && npm install --no-audit --no-fund )
+          npx --yes firebase-tools@13 deploy --project "$PROJECT" --only functions --non-interactive
+
+      - name: Basisgegevens
+        if: inputs.seed && inputs.what != 'alleen de applicatie'
+        run: node scripts/seed.mjs
+
+      - name: De applicatie bouwen
+        if: inputs.what != 'alleen rules en indexes'
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_APP_URL: https://planning.jeconcept.be
+        run: npm run build
+
+      - name: Publiceren
+        if: inputs.what != 'alleen rules en indexes'
+        run: npx --yes firebase-tools@13 deploy --project "$PROJECT" --only hosting --non-interactive
+
+      - name: Sleutel opruimen
+        if: always()
+        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Waar het nu staat
+        if: success()
+        run: |
+          {
+            echo "### Live"
+            echo ""
+            echo "- https://$PROJECT.web.app"
+            echo "- https://planning.jeconcept.be (zodra het domein gekoppeld is)"
+            echo ""
+            echo "De eerste die inlogt wordt eigenaar van de werkruimte. Doe dat zelf."
+          } >> "$GITHUB_STEP_SUMMARY"

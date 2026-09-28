@@ -133,9 +133,12 @@ Stuur exact dit door:
 
 ---
 
-# Deel B — terminalwerk (voor Jasper, niet voor de browser)
+# Deel B — uitrollen
 
-Dit kan Claude in Chrome niet doen. Vanaf een gekloonde `Kenjeklanten/planning`:
+Dit kan **ook zonder terminal**: zie [`handover-claude-in-chrome.md`](handover-claude-in-chrome.md)
+stap 7 en 8 — de geheimen in GitHub zetten en de workflow **Go live** draaien. Liever wel een
+terminal? Dan volstaat `./scripts/go-live.sh <project-id>`, of met de hand, vanaf een gekloonde
+`Kenjeklanten/planning`:
 
 ```bash
 npm install

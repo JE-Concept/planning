@@ -51,6 +51,11 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 
 ## Eenmalige opzet
 
+> **Zonder terminal:** [`docs/handover-claude-in-chrome.md`](docs/handover-claude-in-chrome.md) doet
+> hetzelfde volledig in de browser — console, GitHub-geheimen, en de workflow **Go live** die rules,
+> indexes, functions, basisgegevens en de applicatie in de juiste volgorde uitrolt.
+> Met terminal: `./scripts/go-live.sh <project-id>`.
+
 ### 1. Firebase-project
 
 ```bash

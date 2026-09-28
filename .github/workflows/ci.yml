@@ -68,6 +68,10 @@ jobs:
           FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
           printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+          # De hosting-target staat in .firebaserc op de oorspronkelijke
+          # projectnaam; hier hangen we hem aan het project dat echt draait.
+          npx --yes firebase-tools@13 target:apply hosting app "$FIREBASE_PROJECT" \
+            --project "$FIREBASE_PROJECT" --non-interactive
           npx --yes firebase-tools@13 deploy \
             --project "$FIREBASE_PROJECT" \
             --only hosting,firestore,storage,functions \
