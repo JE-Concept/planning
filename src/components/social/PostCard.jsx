@@ -28,15 +28,6 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
       )}
       style={{ borderLeft: `3px solid ${brand?.color ?? '#8593a9'}` }}
     >
-      {post.canvaThumbnailUrl && !compact ? (
-        <img
-          src={post.canvaThumbnailUrl}
-          alt=""
-          loading="lazy"
-          className="h-16 w-full bg-ink-100 object-cover"
-        />
-      ) : null}
-
       <div className="px-1.5 py-1">
         <div className="flex items-center gap-1">
           {post.scheduledAt ? (

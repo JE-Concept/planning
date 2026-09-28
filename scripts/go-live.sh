@@ -4,7 +4,7 @@
 #
 # De volgorde is niet willekeurig: rules en indexes eerst, want een applicatie
 # die deployt voor haar indexes bestaan geeft lege overzichten en fouten die
-# eruitzien als bugs. Functions daarna, omdat de Canva-routes erop rekenen. De
+# eruitzien als bugs. Functions daarna, omdat het aanmelden erop rekent. De
 # applicatie als laatste, zodat wie hem opent meteen iets werkends ziet.
 #
 #   ./scripts/go-live.sh <project-id>
@@ -33,7 +33,7 @@ stap "Beveiligingsregels, indexes en storage"
 npx firebase deploy --only firestore:rules,firestore:indexes,storage \
   || fout "Rules of indexes zijn niet gedeployed. Zonder indexes werkt geen enkel overzicht."
 
-stap "Cloud Functions (toegangscontrole en de Canva-koppeling)"
+stap "Cloud Functions (toegangscontrole)"
 ( cd functions && npm install )
 npx firebase deploy --only functions \
   || fout "Functions faalden. Staat het project op Blaze? Spark laat geen functions toe."

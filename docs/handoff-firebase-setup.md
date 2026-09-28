@@ -50,7 +50,7 @@ deel B en is voor Jasper op zijn eigen machine. Het browserwerk moet eerst.
 3. **Stel een budgetalarm in op €10/maand.** Dat is geen limiet maar een waarschuwing; bij dit
    gebruik (5 mensen, enkele duizenden documenten) blijft de rekening normaal op €0.
 
-Zonder Blaze kan je geen Cloud Functions deployen, en dan werkt de Canva-koppeling niet.
+Zonder Blaze kan je geen Cloud Functions deployen, en dan kan niemand aanmelden.
 
 ## A3. Zet Google-login aan
 
@@ -152,7 +152,7 @@ npx firebase target:apply hosting app <project-id>
 # 1. Beveiligingsregels en indexes eerst — zonder indexes werkt geen enkel overzicht
 npx firebase deploy --only firestore:rules,firestore:indexes,storage
 
-# 2. Cloud Functions (toegangscontrole + de Canva-koppeling)
+# 2. Cloud Functions (toegangscontrole)
 cd functions && npm install && cd ..
 npx firebase deploy --only functions
 
@@ -167,26 +167,6 @@ npm run build && npx firebase deploy --only hosting
 Meld daarna aan met Google. **De eerste persoon die binnenkomt wordt automatisch eigenaar** —
 anders kan niemand ooit iemand uitnodigen. `@jeconcept.be` en `@kenjeklanten.be` krijgen
 automatisch toegang; ieder ander heeft een uitnodiging nodig via *Instellingen → Team*.
-
-## Optioneel — de Canva-koppeling
-
-Alleen nodig voor de social media kalender.
-
-1. Maak een app op <https://www.canva.com/developers/integrations>
-2. Redirect-URL: `https://planning.jeconcept.be/api/canva/callback`
-3. Scopes: `profile:read`, `design:meta:read`, `design:content:read`, `design:content:write`,
-   `asset:read`, `brandtemplate:meta:read`, `brandtemplate:content:read`, `folder:read`,
-   `comment:read`, `comment:write`
-   (`folder:read` is nodig om de mappen van het team te tonen bij *Uit Canva*; `comment:*` om een
-   reviewbeslissing als reactie op het ontwerp te zetten en het antwoord terug te halen)
-4. ```bash
-   npx firebase functions:secrets:set CANVA_CLIENT_ID
-   npx firebase functions:secrets:set CANVA_CLIENT_SECRET
-   npx firebase functions:secrets:set CANVA_REDIRECT_URI
-   npx firebase deploy --only functions
-   ```
-
----
 
 ## Als er iets misgaat
 

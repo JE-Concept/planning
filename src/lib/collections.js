@@ -51,9 +51,8 @@ export function fromSnap(snap) {
 
 const DATE_FIELDS = new Set([
   'createdAt', 'updatedAt', 'completedAt', 'dueDate', 'startDate',
-  'startedAt', 'endedAt', 'scheduledAt', 'canvaSyncedAt',
-  'canvaThumbnailExpiresAt', 'connectedAt', 'lastSeenAt',
-  'canvaUpdatedAt', 'canvaCommentsSyncedAt', 'reviewRequestedAt', 'reviewedAt',
+  'startedAt', 'endedAt', 'scheduledAt', 'lastSeenAt',
+  'reviewRequestedAt', 'reviewedAt',
 ])
 
 export function normalise(data) {

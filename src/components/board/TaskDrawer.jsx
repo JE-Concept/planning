@@ -283,15 +283,11 @@ function SocialSection({ taskId }) {
               key={post.id}
               className="flex items-center gap-2 rounded-xl border border-ink-200 px-3 py-2"
             >
-              {post.canvaThumbnailUrl ? (
-                <img src={post.canvaThumbnailUrl} alt="" className="h-9 w-9 rounded-lg object-cover" />
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: status.color }}
-                />
-              )}
+              <span
+                aria-hidden="true"
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: status.color }}
+              />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm text-ink-800">{post.title}</span>
                 <span className="block text-[11px] text-ink-500">

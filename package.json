@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "JE Planning — interne planningstool voor JE Concept (Kanban, social media kalender met Canva, timetracking, goals)",
+  "description": "JE Planning — interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
   "engines": {
     "node": ">=20"
   },

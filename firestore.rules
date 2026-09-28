@@ -5,7 +5,7 @@ rules_version = '2';
 // ║                                                                          ║
 // ║ One shared workspace: every active profile reads and writes the planning.║
 // ║ Not shared: member administration (admins only), your own time entries   ║
-// ║ (you edit yours, admins edit all) and the Canva tokens (server only).    ║
+// ║ (you edit yours, admins edit all).                                       ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 service cloud.firestore {
@@ -71,7 +71,7 @@ service cloud.firestore {
     match /goalUpdates/{id} { allow read: if isMember(); allow write: if isMember(); }
     match /socialPosts/{id} { allow read: if isMember(); allow write: if isMember(); }
 
-    // The review log is written by the API (as the reviewer) and read by
+    // The review log is written by the reviewer and read by
     // everyone; nobody edits a decision after the fact, they add the next one.
     match /postReviews/{id} {
       allow read:   if isMember();
@@ -102,11 +102,6 @@ service cloud.firestore {
       allow read: if isMember();
       allow write: if signedIn() && request.auth.uid == uid;
     }
-
-    // ── Canva OAuth: the browser never touches these ───────────────────────
-
-    match /canvaConnections/{uid}  { allow read, write: if false; }
-    match /canvaOauthStates/{state} { allow read, write: if false; }
 
     // Anything not named above stays closed.
     match /{document=**} {

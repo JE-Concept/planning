@@ -49,34 +49,3 @@ if (import.meta.env.VITE_USE_EMULATORS === '1') {
 setPersistence(auth, browserLocalPersistence).catch(() => {
   /* Safari private mode falls back to in-memory persistence on its own. */
 })
-
-/** Base URL of the Cloud Functions API, rewritten by Hosting in production. */
-export const apiBase =
-  import.meta.env.VITE_USE_EMULATORS === '1'
-    ? `http://127.0.0.1:5001/${config.projectId}/europe-west1/api`
-    : '/api'
-
-/** Calls our own HTTPS function with the caller's Firebase ID token attached. */
-export async function callApi(path, { method = 'GET', body, signal } = {}) {
-  const user = auth.currentUser
-  if (!user) throw new Error('Niet aangemeld.')
-
-  const token = await user.getIdToken()
-  const response = await fetch(`${apiBase}${path}`, {
-    method,
-    signal,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-
-  const text = await response.text()
-  const payload = text ? JSON.parse(text) : null
-
-  if (!response.ok) {
-    throw new Error(payload?.error || `Onverwachte fout (${response.status}).`)
-  }
-  return payload
-}

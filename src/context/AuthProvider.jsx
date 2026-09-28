@@ -39,7 +39,14 @@ export function AuthProvider({ children }) {
         // domains, and only then writes the profile the rules look for.
         await httpsCallable(functions, 'ensureProfile')()
       } catch (err) {
-        setError(err?.message || 'Dit account heeft geen toegang tot JE Planning.')
+        // `functions/not-found` betekent dat ensureProfile niet is uitgerold —
+        // een uitrolfout, geen toegangsfout. Dat onderscheid hoort zichtbaar te
+        // zijn, anders zoekt iedereen naar een uitnodiging die niets oplost.
+        setError(
+          err?.code === 'functions/not-found'
+            ? 'De functie ensureProfile is niet uitgerold. Draai "Go live" met "alles".'
+            : `${err?.code ? `[${err.code}] ` : ''}${err?.message || 'Aanmelden is niet gelukt.'}`
+        )
         setProfile(null)
         setState('denied')
         return

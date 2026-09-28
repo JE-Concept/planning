@@ -26,8 +26,8 @@ knoppen in deze console een paar keer per jaar. De volgorde klopt, de labels mis
 
 **Geheimen:** de zes `VITE_FIREBASE_*`-waarden zijn publiek — ze staan straks gewoon in de
 JavaScript van de site, en de beveiliging zit in de Firestore-rules. De **servicesleutel** (stap 6)
-en de **Canva client secret** (stap 10) zijn dat niet. Plak die alleen in het GitHub-geheimenveld,
-nooit in een chat, een document of een commit.
+is dat niet. Plak die alleen in het GitHub-geheimenveld, nooit in een chat, een document of een
+commit.
 
 ---
 
@@ -183,44 +183,12 @@ Firebase toont **twee A-records**, en soms eerst een TXT-record ter verificatie.
 minuten tot 24 uur.
 
 **e) Maak er het enige adres van.** Firebase blijft de site ook op `je-planning.web.app` serveren.
-Elk adres heeft zijn eigen aanmeldsessie, en de Canva-callback is op één host geregistreerd — wie
-op de verkeerde binnenkomt, logt apart in en krijgt de koppeling niet rond. Zet daarom, **pas als
-het domein op Connected staat**, het GitHub-geheim `VITE_CANONICAL_HOST` op
+Elk adres heeft zijn eigen aanmeldsessie, dus wie op het verkeerde binnenkomt, logt apart in. Zet
+daarom, **pas als het domein op Connected staat**, het GitHub-geheim `VITE_CANONICAL_HOST` op
 `planning.jeconcept.be` en draai **Go live** met *alleen de applicatie*. Daarna stuurt `web.app`
 door naar het eigen domein, met pad en query intact.
 
 → noteer: **waar de DNS beheerd wordt, en de status in Firebase Hosting**
-
-## 10. Canva koppelen
-
-Nodig voor de social kalender: ontwerpen ophalen uit Canva, en een reviewbeslissing als reactie op
-het ontwerp zetten.
-
-**a)** <https://www.canva.com/developers/integrations> → nieuwe integratie **JE Planning**.
-
-- Redirect-URL: `https://planning.jeconcept.be/api/canva/callback`
-- Scopes: `profile:read`, `design:meta:read`, `design:content:read`, `design:content:write`,
-  `asset:read`, `brandtemplate:meta:read`, `brandtemplate:content:read`, `folder:read`,
-  `comment:read`, `comment:write`
-
-`folder:read` is nodig om de mappen van het team te tonen bij *Uit Canva*; `comment:read` en
-`comment:write` om de review heen en terug te laten lopen. Zonder die twee werkt de kalender wel,
-maar blijft de review binnen dit tool hangen.
-
-**b)** Noteer **Client ID** en **Client secret**. De secret zie je maar één keer.
-
-**c)** Zet ze als GitHub-geheimen (zelfde plek als stap 7): `CANVA_CLIENT_ID` en
-`CANVA_CLIENT_SECRET`.
-
-**d)** <https://github.com/Kenjeklanten/planning/actions/workflows/canva-secrets.yml> →
-**Run workflow** → project-ID invullen → **Run workflow**. Die zet de geheimen door naar Google
-Secret Manager en rolt de functions opnieuw uit; een nieuw geheim bereikt de functions namelijk pas
-bij een deploy.
-
-**e)** In de tool: *Instellingen → Canva* → **Canva koppelen**, en meld je aan met het
-Canva-account van JE Concept.
-
----
 
 ## Terugmelden aan Jasper
 
@@ -229,8 +197,7 @@ Canva-account van JE Concept.
 3. Staat **Blaze** aan, en staat het **budgetalarm** op €10?
 4. Staat de **Go live**-run op groen? Zo niet: de naam van de stap die faalde en de foutregel
 5. Waar de **DNS** van `jeconcept.be` beheerd wordt, en de status van het domein in Hosting
-6. De Canva **Client ID** — de **secret** staat alleen in het GitHub-geheim, nergens anders
-7. Bevestiging dat het gedownloade **servicesleutel-bestand verwijderd** is
+6. Bevestiging dat het gedownloade **servicesleutel-bestand verwijderd** is
 
 ---
 
@@ -247,7 +214,6 @@ Canva-account van JE Concept.
 | Borden traag of een index-fout in de console | indexes nog niet klaar | Firestore bouwt ze in de achtergrond af; enkele minuten wachten |
 | Domein blijft op *Needs setup* | Cloudflare-proxy staat aan | wolkje op grijs (stap 9c) |
 | `Dit account heeft geen toegang` na inloggen | e-maildomein staat niet in `config/access` | **Go live** draaien met *Basisgegevens zetten* aan, of laten uitnodigen |
-| Canva zegt `invalid_scope` | de app mist `folder:read` of `comment:*` | scopes aanvullen (stap 10a) en opnieuw koppelen |
 
 Draait **Go live** opnieuw? Dat mag altijd. Elke stap is herhaalbaar: de rules worden overschreven,
 de basisgegevens worden samengevoegd op vaste id's, en de applicatie wordt opnieuw gepubliceerd.

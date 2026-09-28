@@ -22,7 +22,6 @@ import {
   usePost,
 } from '@data/social'
 import { addComment, deleteComment, useComments } from '@data/comments'
-import CanvaPanel from './CanvaPanel'
 import ProjectLink from './ProjectLink'
 import ReviewPanel from './ReviewPanel'
 
@@ -43,9 +42,7 @@ export default function PostDrawer({ postId, onClose }) {
       title={post.title}
       subtitle={
         brand
-          ? `${brand.name} · ${formatDateTime(post.scheduledAt) || 'nog niet ingepland'}${
-              post.source === 'canva' ? ' · uit Canva' : ''
-            }`
+          ? `${brand.name} · ${formatDateTime(post.scheduledAt) || 'nog niet ingepland'}`
           : undefined
       }
       footer={
@@ -145,10 +142,23 @@ export default function PostDrawer({ postId, onClose }) {
 
         <ProjectLink post={post} />
 
-        <section>
-          <h3 className="label">Ontwerp</h3>
-          <CanvaPanel post={post} />
-        </section>
+        <Field
+          label="Link naar het ontwerp"
+          hint={
+            post.assetUrl ? (
+              <a href={post.assetUrl} target="_blank" rel="noreferrer" className="underline">
+                Ontwerp openen
+              </a>
+            ) : undefined
+          }
+        >
+          <Input
+            type="url"
+            defaultValue={post.assetUrl ?? ''}
+            onBlur={(e) => updatePost(post.id, { assetUrl: e.target.value.trim() || null })}
+            placeholder="https://…"
+          />
+        </Field>
 
         <ReviewPanel post={post} />
 

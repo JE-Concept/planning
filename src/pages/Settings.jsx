@@ -31,13 +31,11 @@ import {
   updateList,
   upsertTag,
 } from '@data/workspace'
-import { connectCanva, disconnectCanva, useCanvaStatus } from '@data/canva'
 
 const TABS = [
   { key: 'team', label: 'Team' },
   { key: 'structure', label: 'Ruimtes & lijsten' },
   { key: 'brands', label: 'Merken & labels' },
-  { key: 'canva', label: 'Canva' },
 ]
 
 export default function Settings() {
@@ -60,7 +58,6 @@ export default function Settings() {
         {tab === 'team' ? <TeamSettings isAdmin={isAdmin} /> : null}
         {tab === 'structure' ? <StructureSettings /> : null}
         {tab === 'brands' ? <BrandSettings /> : null}
-        {tab === 'canva' ? <CanvaSettings /> : null}
       </div>
     </div>
   )
@@ -477,66 +474,5 @@ function BrandSettings() {
         </form>
       </section>
     </div>
-  )
-}
-
-// ─── Canva ──────────────────────────────────────────────────────────────────
-
-function CanvaSettings() {
-  const canva = useCanvaStatus()
-  const toast = useToast()
-
-  if (canva.loading) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-ink-500">
-        <Spinner /> Canva controleren…
-      </div>
-    )
-  }
-
-  return (
-    <section className="card max-w-xl p-4">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">Canva-koppeling</h2>
-
-      {canva.connected ? (
-        <>
-          <p className="mt-2 text-sm text-ink-700">
-            Gekoppeld{canva.canvaUserId ? ` als ${canva.canvaUserId}` : ''}. Je kan ontwerpen maken
-            en openen vanuit de social kalender.
-          </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-3"
-            onClick={() =>
-              disconnectCanva()
-                .then(() => {
-                  toast.success('Canva losgekoppeld.')
-                  canva.refresh()
-                })
-                .catch((e) => toast.error(e.message))
-            }
-          >
-            Loskoppelen
-          </Button>
-        </>
-      ) : (
-        <>
-          <p className="mt-2 text-sm text-ink-700">
-            Koppel je Canva-account om ontwerpen rechtstreeks vanuit een post te maken, te openen
-            en te exporteren. De koppeling geldt per persoon.
-          </p>
-          <Button
-            variant="primary"
-            size="sm"
-            className="mt-3"
-            onClick={() => connectCanva('/instellingen').catch((e) => toast.error(e.message))}
-          >
-            Canva koppelen
-          </Button>
-          {canva.error ? <p className="mt-2 text-xs text-red-600">{canva.error}</p> : null}
-        </>
-      )}
-    </section>
   )
 }

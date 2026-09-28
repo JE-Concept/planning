@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { addDays, dayKey, monthGrid, startOfWeek, toLocalInput } from '../src/lib/dates'
-import { designIdFromUrl } from '../src/lib/canva-url'
 import { contrastColor, initials } from '../src/lib/format'
 
 describe('startOfWeek', () => {
@@ -54,21 +53,6 @@ describe('toLocalInput', () => {
   })
 })
 
-describe('designIdFromUrl', () => {
-  it('finds the id in an edit link', () => {
-    expect(designIdFromUrl('https://www.canva.com/design/DAFxYz-123/edit')).toBe('DAFxYz-123')
-  })
-
-  it('finds it in a view link with query parameters', () => {
-    expect(designIdFromUrl('https://www.canva.com/design/DAF999/view?utm=1')).toBe('DAF999')
-  })
-
-  it('returns nothing for anything else', () => {
-    expect(designIdFromUrl('https://example.com/design/DAF999')).toBeNull()
-    expect(designIdFromUrl('')).toBeNull()
-    expect(designIdFromUrl(null)).toBeNull()
-  })
-})
 
 describe('contrastColor', () => {
   it('puts dark text on a light badge and light text on a dark one', () => {

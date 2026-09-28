@@ -40,6 +40,20 @@ export default function Login() {
               {user?.email ? <strong>{user.email}</strong> : 'Dit account'} heeft geen toegang tot
               JE Planning. Vraag een beheerder om een uitnodiging.
             </p>
+
+            {/*
+              "Geen toegang" is maar één van de redenen waarom dit scherm
+              verschijnt: een functie die niet uitgerold is, een netwerkfout of
+              een geweigerde regel komen hier ook terecht. Zonder de echte
+              melding erbij lijkt elk van die gevallen op een ontbrekende
+              uitnodiging, en zoek je op de verkeerde plek.
+            */}
+            {error ? (
+              <details className="rounded-md bg-ink-50 px-3 py-2 text-xs text-ink-600">
+                <summary className="cursor-pointer font-semibold">Technische melding</summary>
+                <p className="mt-1.5 break-words font-mono text-[11px] text-ink-700">{error}</p>
+              </details>
+            ) : null}
             <Button variant="secondary" className="w-full" onClick={logOut}>
               Met een ander account aanmelden
             </Button>

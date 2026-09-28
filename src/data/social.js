@@ -10,6 +10,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
 import { db } from '@lib/firebase'
@@ -74,14 +75,6 @@ export function createPost({ brandId, scheduledAt, title, createdBy, ...rest }) 
     reviewRound: 0,
     reviewerId: null,
     reviewNote: null,
-    canvaThreadIds: [],
-    canvaCommentThreadId: null,
-    canvaComments: [],
-    canvaDesignId: null,
-    canvaEditUrl: null,
-    canvaViewUrl: null,
-    canvaThumbnailUrl: null,
-    canvaSyncedAt: null,
     assetUrl: null,
     publishedUrl: null,
     notes: '',
@@ -117,6 +110,56 @@ export function linkPostToTask(postId, task) {
     taskTitle: task?.title ?? null,
     taskListName: task?.listName ?? null,
   })
+}
+
+const REVIEW_ACTIONS = {
+  request: { reviewState: 'requested', status: 'review' },
+  approve: { reviewState: 'approved', status: 'approved' },
+  changes: { reviewState: 'changes', status: 'design' },
+}
+
+/**
+ * Asks for a review, approves, or sends a post back for changes.
+ *
+ * The post and the entry in the review log are written in one batch, so the
+ * state on the card and the history under it can never disagree.
+ */
+export async function reviewPost({ post, action, note = '', actor }) {
+  const shape = REVIEW_ACTIONS[action]
+  if (!shape) throw new Error('Onbekende reviewactie.')
+
+  const trimmed = note.trim() || null
+  const round = action === 'request' ? (post.reviewRound ?? 0) + 1 : (post.reviewRound || 1)
+
+  const patch = {
+    reviewState: shape.reviewState,
+    status: shape.status,
+    reviewRound: round,
+    reviewNote: trimmed,
+    updatedAt: serverTimestamp(),
+  }
+  if (action === 'request') {
+    patch.reviewRequestedAt = serverTimestamp()
+    patch.reviewRequestedBy = actor.id
+    patch.reviewedAt = null
+    patch.reviewedBy = null
+  } else {
+    patch.reviewedAt = serverTimestamp()
+    patch.reviewedBy = actor.id
+  }
+
+  const batch = writeBatch(db)
+  batch.update(ref(COL.socialPosts, post.id), patch)
+  batch.set(newRef(COL.postReviews), {
+    postId: post.id,
+    round,
+    decision: action,
+    note: trimmed,
+    authorId: actor.id,
+    authorName: actor.fullName || actor.email || 'iemand',
+    createdAt: serverTimestamp(),
+  })
+  await batch.commit()
 }
 
 export function setReviewer(postId, reviewerId) {

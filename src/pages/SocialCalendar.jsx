@@ -11,7 +11,6 @@ import {
 } from '@lib/dates'
 import { Badge, Button, EmptyState, Select, Spinner } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
-import CanvaImportModal from '@components/social/CanvaImportModal'
 import PostCard from '@components/social/PostCard'
 import PostDrawer from '@components/social/PostDrawer'
 import { useAuth } from '@context/AuthProvider'
@@ -41,7 +40,6 @@ export default function SocialCalendar() {
   const [brandFilter, setBrandFilter] = useState([])
   const [projectFilter, setProjectFilter] = useState('')
   const [reviewOnly, setReviewOnly] = useState(false)
-  const [importing, setImporting] = useState(false)
   const [openPostId, setOpenPostId] = useState(null)
   const [dragId, setDragId] = useState(null)
   const [overDay, setOverDay] = useState(null)
@@ -145,9 +143,6 @@ export default function SocialCalendar() {
             </Button>
             <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, 1))} aria-label="Volgende maand">
               ›
-            </Button>
-            <Button variant="secondary" onClick={() => setImporting(true)}>
-              Uit Canva
             </Button>
             <Button variant="primary" onClick={() => addOn(new Date())}>
               + Post
@@ -331,13 +326,6 @@ export default function SocialCalendar() {
           </aside>
         </div>
       )}
-
-      <CanvaImportModal
-        open={importing}
-        onClose={() => setImporting(false)}
-        defaultBrandId={brandFilter[0] ?? brands[0]?.id}
-        defaultDate={null}
-      />
 
       {openPostId ? <PostDrawer postId={openPostId} onClose={() => setOpenPostId(null)} /> : null}
     </div>

@@ -1,20 +1,7 @@
 /**
- * Start van de demobuild: vult de in-memory database en vangt de API-aanroepen
- * op die in de demo geen server hebben (de Canva-koppeling).
+ * Start van de demobuild: vult de in-memory database.
  */
 import './seed.js'
-import { canvaApi } from './canva-api.js'
-
-const echteFetch = globalThis.fetch.bind(globalThis)
-
-globalThis.fetch = async (input, init) => {
-  const url = typeof input === 'string' ? input : input?.url ?? ''
-  // De Cloud Function bestaat hier niet, dus antwoordt de nagespeelde Canva op
-  // dezelfde routes: ontwerpen ophalen, importeren, review en reacties werken
-  // in de demo dus echt, alleen zonder Canva erachter.
-  if (url.startsWith('/api/')) return canvaApi(url, init)
-  return echteFetch(input, init)
-}
 
 console.info('JE Planning — demomodus: gegevens staan in het geheugen, niets wordt bewaard.')
 

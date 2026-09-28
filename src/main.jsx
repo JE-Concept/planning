@@ -14,10 +14,9 @@ import './index.css'
  * Eén adres, niet twee.
  *
  * Firebase blijft de site ook op <project>.web.app serveren naast het eigen
- * domein. Dat is niet onschuldig: elk adres heeft zijn eigen aanmeldsessie, en
- * de Canva-callback is op één host geregistreerd — wie op de verkeerde binnen-
- * komt, logt apart in en krijgt de koppeling niet rond. Daarom stuurt de app
- * zichzelf door naar het adres dat telt.
+ * domein. Dat is niet onschuldig: elk adres heeft zijn eigen aanmeldsessie, dus
+ * wie op het verkeerde binnenkomt, logt apart in. Daarom stuurt de app zichzelf
+ * door naar het adres dat telt.
  *
  * Alleen actief als VITE_CANONICAL_HOST bij de build is meegegeven, want een
  * omleiding naar een domein dat nog niet gekoppeld is, maakt de tool
