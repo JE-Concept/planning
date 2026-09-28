@@ -5,7 +5,7 @@ export default function PageHeader({ title, subtitle, actions, tabs, className }
     <div className={cn('border-b border-ink-200 bg-white px-4 pt-4 sm:px-6', className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold text-ink-900">{title}</h1>
+          <h1 className="truncate font-display text-xl font-extrabold text-ink-900">{title}</h1>
           {subtitle ? <p className="mt-0.5 text-sm text-ink-500">{subtitle}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

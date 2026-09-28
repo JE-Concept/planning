@@ -165,7 +165,7 @@ function Stat({ label, value, tone }) {
       <p className="text-xs uppercase tracking-wide text-ink-500">{label}</p>
       <p
         className={cn(
-          'mt-0.5 text-2xl font-semibold tabular-nums',
+          'mt-0.5 font-display text-3xl font-extrabold tabular-nums',
           tone === 'bad' ? 'text-red-600' : 'text-ink-900'
         )}
       >

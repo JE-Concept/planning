@@ -4,7 +4,7 @@ import { cn } from '@lib/cn'
 const ToastContext = createContext(null)
 
 const TONES = {
-  info: 'bg-ink-900 text-white',
+  info: 'bg-navy-dark text-white',
   success: 'bg-emerald-600 text-white',
   error: 'bg-red-600 text-white',
 }

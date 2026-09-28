@@ -14,14 +14,14 @@ export default function Login() {
   const { state, signIn, error, logOut, user } = useAuth()
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-ink-900 px-4 py-12">
+    <div className="flex min-h-full items-center justify-center bg-gradient-navy px-4 py-12">
       <div className="w-full max-w-sm rounded-xl bg-white p-7 shadow-xl">
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-600 text-sm font-bold text-white">
             JE
           </span>
           <div>
-            <p className="text-sm font-semibold text-ink-900">JE Planning</p>
+            <p className="font-display text-lg font-extrabold text-ink-900">JE Planning</p>
             <p className="text-xs text-ink-500">Interne planning voor JE Concept</p>
           </div>
         </div>

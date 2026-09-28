@@ -5,6 +5,21 @@
 @layer base {
   :root {
     color-scheme: light;
+
+    /* Overgenomen uit je-concept/src/styles/tokens.css */
+    --ink: #0B1626;
+    --navy-dark: #112550;
+    --navy: #1A3A6B;
+    --navy-light: #243F75;
+    --powder: #4A7FC1;
+    --powder-light: #7AAAD6;
+    --sky: #B8D4F0;
+    --gold: #C9A84C;
+    --gold-soft: #E8D89C;
+    --bone: #FAF8F4;
+    --sand: #F5EFE3;
+
+    --gradient-navy: linear-gradient(135deg, #112550 0%, #1A3A6B 60%, #243F75 100%);
   }
 
   html,
@@ -40,18 +55,18 @@
 
 @layer components {
   .card {
-    @apply rounded-lg border border-ink-200 bg-white shadow-card;
+    @apply rounded-2xl border border-ink-200 bg-white shadow-card;
   }
 
   .field {
-    @apply w-full rounded-md border border-ink-200 bg-white px-3 py-2 text-sm
+    @apply w-full rounded-xl border border-ink-200 bg-white px-3 py-2 text-sm
            text-ink-900 placeholder:text-ink-400
            focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500
            disabled:bg-ink-50 disabled:text-ink-400;
   }
 
   .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500;
+    @apply mb-1 block text-xs font-bold uppercase tracking-wider text-ink-500;
   }
 
   /* Cards under the pointer should feel liftable, not merely draggable. */
@@ -66,5 +81,12 @@
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@layer utilities {
+  /* De donkere merkvlakken: zijbalk, inlogscherm, lege toestanden. */
+  .bg-gradient-navy {
+    background: var(--gradient-navy);
   }
 }

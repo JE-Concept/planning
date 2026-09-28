@@ -41,7 +41,7 @@ export default function Sidebar({ onNavigate }) {
   return (
     <nav
       aria-label="Hoofdnavigatie"
-      className="flex h-full w-60 shrink-0 flex-col gap-4 overflow-y-auto bg-ink-900 px-3 py-4"
+      className="flex h-full w-60 shrink-0 flex-col gap-4 overflow-y-auto bg-navy-dark px-3 py-4"
     >
       <NavLink to="/" onClick={onNavigate} className="flex items-center gap-2 px-2.5">
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-600 text-xs font-bold text-white">
