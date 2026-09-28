@@ -89,6 +89,15 @@ service cloud.firestore {
     // Een overleg staat als taak op het bord — die titel ziet het team. De
     // samenvatting zelf staat hier, en alleen wie erin genoemd is leest ze. De
     // query in de app filtert op datzelfde veld, zodat ze ook echt slaagt.
+    // De agenda is van het hele team: iedereen zet er punten op. Dat is het
+    // punt ervan — anders staat er alleen op wat de voorzitter onthield.
+    match /agendaItems/{id} {
+      allow read:          if isTeam();
+      allow create, update: if isTeam();
+      allow delete:        if isTeam()
+        && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
     match /meetings/{id} {
       allow read:   if isMember() && request.auth.uid in resource.data.viewerIds;
       allow write:  if isAdmin();

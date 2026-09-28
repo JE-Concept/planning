@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchAssignee } from '../functions-meetings/summarise.js'
+import { matchAssignee } from '../functions-meetings/match.js'
 
 /**
  * Wie een actiepunt krijgt, bepaalt of het gebeurt. Een verkeerde toewijzing

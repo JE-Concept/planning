@@ -392,6 +392,27 @@ seedDoc('tasks', 't-overleg-1', {
     createdBy: 'u-jasper', createdAt: dag(-7), updatedAt: dag(-6),
   }))
 
+// De agenda van het volgende overleg, door drie verschillende mensen gezet.
+;[
+  ['a1', 'Prijzen verhuurmateriaal herzien', 'De tarieven staan sinds 2024 stil terwijl transport duurder werd. Voorstel: 8% erbij vanaf november.', 'u-jasper', 15, 'u-jasper'],
+  ['a2', 'Weekendbezetting oktober', 'Drie zaterdagen met twee events tegelijk. Wie doet wat, en huren we bij?', 'u-anneleen', 20, 'u-anneleen'],
+  ['a3', 'Nieuwe leverancier dranken', 'Offerte binnen van Vandenberghe, 6% goedkoper maar levering enkel op dinsdag.', 'u-elke', 10, 'u-elke'],
+  ['a4', 'Feedback openingslijst', 'De keuken vindt de ochtendlijst te lang op stille dagen.', null, 10, 'u-charish'],
+].forEach(([id, titel, omschrijving, ownerId, minuten, createdBy], i) =>
+  seedDoc('agendaItems', id, {
+    titel, omschrijving, ownerId, minuten, status: 'open',
+    meetingId: null, besprokenOp: null, createdBy,
+    createdAt: dag(-3 + i * 0.2), updatedAt: dag(-1),
+  }))
+
+seedDoc('agendaItems', 'a0', {
+  titel: 'Kerstmenu Bar Vue vastleggen',
+  omschrijving: 'Besproken op 21/09; de kaart gaat naar de drukker.',
+  ownerId: 'u-elke', minuten: 15, status: 'besproken',
+  meetingId: 't-overleg-1', besprokenOp: dag(-7),
+  createdBy: 'u-elke', createdAt: dag(-10), updatedAt: dag(-7),
+})
+
 seedDoc('meetings', 't-overleg-1', {
   taskId: 't-overleg-1', titel: 'Weekstart events', datum: '2026-09-21',
   deelnemers: ['Jasper Hansen', 'Elke Motmans', 'Anneleen Coenen'],

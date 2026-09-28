@@ -3,7 +3,8 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import { logger } from 'firebase-functions'
-import { matchAssignee, summariseTranscript } from './summarise.js'
+import { matchAssignee } from './match.js'
+import { summariseTranscript } from './summarise.js'
 
 /**
  * Teamoverleg: van transcript naar een dossier met actiepunten.

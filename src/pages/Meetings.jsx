@@ -1,11 +1,32 @@
 import { useMemo, useState } from 'react'
+import { cn } from '@lib/cn'
 import { formatDate } from '@lib/dates'
-import { Avatar, Badge, Button, EmptyState, Modal, Spinner, Textarea } from '@ui/index'
-import PageHeader from '@components/layout/PageHeader'
+import {
+  Avatar,
+  Badge,
+  Button,
+  ConfirmButton,
+  EmptyState,
+  Field,
+  Input,
+  Modal,
+  Select,
+  Spinner,
+  Textarea,
+} from '@ui/index'
+import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { summariseMeeting, useMeetingTasks, useMeetings } from '@data/meetings'
+import {
+  addAgendaItem,
+  deleteAgendaItem,
+  markDiscussed,
+  reopenAgendaItem,
+  totalMinutes,
+  useAgenda,
+} from '@data/agenda'
 
 /**
  * Teamoverleg.
@@ -17,6 +38,8 @@ import { summariseMeeting, useMeetingTasks, useMeetings } from '@data/meetings'
 export default function Meetings() {
   const { uid, isAdmin } = useAuth()
   const { meetings, loading } = useMeetings(uid)
+  const { items: agenda } = useAgenda('open')
+  const [tab, setTab] = useState('agenda')
   const [open, setOpen] = useState(null)
   const [pasting, setPasting] = useState(false)
 
@@ -32,17 +55,36 @@ export default function Meetings() {
     <div className="flex h-full flex-col">
       <PageHeader
         title="Teamoverleg"
-        subtitle={`${meetings.length} ${meetings.length === 1 ? 'verslag' : 'verslagen'}`}
+        subtitle={
+          tab === 'agenda'
+            ? `${agenda.length} ${agenda.length === 1 ? 'punt' : 'punten'} · ${totalMinutes(agenda)} min gepland`
+            : `${meetings.length} ${meetings.length === 1 ? 'verslag' : 'verslagen'}`
+        }
         actions={
-          isAdmin ? (
+          tab === 'verslagen' && isAdmin ? (
             <Button variant="primary" onClick={() => setPasting(true)}>
               Transcript samenvatten
             </Button>
           ) : null
         }
+        tabs={
+          <>
+            <Tab active={tab === 'agenda'} onClick={() => setTab('agenda')}>
+              Agenda
+              {agenda.length ? (
+                <span className="ml-1.5 tabular-nums text-[11px] text-ink-400">{agenda.length}</span>
+              ) : null}
+            </Tab>
+            <Tab active={tab === 'verslagen'} onClick={() => setTab('verslagen')}>
+              Verslagen
+            </Tab>
+          </>
+        }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6">
+      {tab === 'agenda' ? <Agenda items={agenda} /> : null}
+
+      <div className={tab === 'agenda' ? 'hidden' : 'min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6'}>
         <div className="mx-auto max-w-3xl py-4">
           {meetings.length === 0 ? (
             <EmptyState
@@ -84,6 +126,195 @@ export default function Meetings() {
 
       {open ? <MeetingDetail meeting={open} onClose={() => setOpen(null)} /> : null}
       {pasting ? <PasteTranscript onClose={() => setPasting(false)} /> : null}
+    </div>
+  )
+}
+
+/**
+ * De agenda: wat er op het volgende overleg moet.
+ *
+ * Elk punt heeft een eigenaar en een verwachte tijd. Die tijd staat er niet om
+ * streng te zijn maar om zichtbaar te maken wanneer de agenda niet meer in een
+ * uur past — dat gesprek is makkelijker vooraf dan halverwege.
+ */
+function Agenda({ items }) {
+  const { uid, isAdmin } = useAuth()
+  const { profiles, profileById } = useWorkspace()
+  const { items: besproken } = useAgenda('besproken')
+  const toast = useToast()
+  const [toonBesproken, setToonBesproken] = useState(false)
+
+  const [titel, setTitel] = useState('')
+  const [omschrijving, setOmschrijving] = useState('')
+  const [ownerId, setOwnerId] = useState(uid ?? '')
+  const [minuten, setMinuten] = useState(10)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!titel.trim()) return
+    setBusy(true)
+    try {
+      await addAgendaItem({ titel, omschrijving, ownerId, minuten, createdBy: uid })
+      setTitel('')
+      setOmschrijving('')
+      setMinuten(10)
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const totaal = totalMinutes(items)
+
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6">
+      <div className="mx-auto max-w-3xl space-y-4 py-4">
+        <form onSubmit={submit} className="card space-y-3 p-4">
+          <h2 className="label mb-0">Punt toevoegen</h2>
+          <Input
+            value={titel}
+            onChange={(e) => setTitel(e.target.value)}
+            placeholder="Waarover gaat het?"
+            aria-label="Onderwerp"
+          />
+          <Textarea
+            rows={2}
+            value={omschrijving}
+            onChange={(e) => setOmschrijving(e.target.value)}
+            placeholder="Wat moet het overleg hierover weten of beslissen?"
+            aria-label="Omschrijving"
+          />
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Eigenaar" className="min-w-44 flex-1">
+              <Select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+                <option value="">Niemand in het bijzonder</option>
+                {profiles
+                  .filter((p) => p.active !== false && p.role !== 'staff')
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.fullName || p.email}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+            <Field label="Verwachte tijd" className="w-32">
+              <Select value={minuten} onChange={(e) => setMinuten(Number(e.target.value))}>
+                {[5, 10, 15, 20, 30, 45, 60].map((m) => (
+                  <option key={m} value={m}>
+                    {m} min
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Button type="submit" variant="primary" disabled={busy || !titel.trim()}>
+              Op de agenda
+            </Button>
+          </div>
+        </form>
+
+        {items.length === 0 ? (
+          <EmptyState
+            title="De agenda is leeg"
+            description="Iedereen kan hier een punt op zetten voor het volgende overleg."
+          />
+        ) : (
+          <>
+            <div className="flex items-center justify-between px-1">
+              <h2 className="label mb-0">Volgende overleg</h2>
+              <span className={cn('text-xs font-semibold tabular-nums', totaal > 60 ? 'text-amber-700' : 'text-ink-500')}>
+                {totaal} min{totaal > 60 ? ' — past niet in een uur' : ''}
+              </span>
+            </div>
+
+            <ul className="space-y-2">
+              {items.map((item) => {
+                const owner = item.ownerId ? profileById[item.ownerId] : null
+                return (
+                  <li key={item.id} className="card p-3.5">
+                    <div className="flex flex-wrap items-start gap-2">
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-ink-900">{item.titel}</span>
+                        {item.omschrijving ? (
+                          <span className="mt-0.5 block whitespace-pre-wrap text-sm text-ink-600">
+                            {item.omschrijving}
+                          </span>
+                        ) : null}
+                      </span>
+                      <Badge subtle>{item.minuten || 0} min</Badge>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {owner ? (
+                        <span className="flex items-center gap-1.5 text-xs text-ink-600">
+                          <Avatar profile={owner} size="xs" />
+                          {owner.fullName || owner.email}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-ink-400">Geen eigenaar</span>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto"
+                        onClick={() => markDiscussed(item.id).catch((e) => toast.error(e.message))}
+                      >
+                        Besproken
+                      </Button>
+                      {item.createdBy === uid || isAdmin ? (
+                        <ConfirmButton
+                          variant="ghost"
+                          size="sm"
+                          question="Dit punt verwijderen?"
+                          onConfirm={() => deleteAgendaItem(item.id).catch((e) => toast.error(e.message))}
+                        >
+                          Verwijderen
+                        </ConfirmButton>
+                      ) : null}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        )}
+
+        {besproken.length > 0 ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setToonBesproken((v) => !v)}
+              className="text-xs font-semibold text-ink-500 hover:text-ink-800"
+            >
+              {toonBesproken ? '▾' : '▸'} Al besproken ({besproken.length})
+            </button>
+            {toonBesproken ? (
+              <ul className="mt-2 space-y-1">
+                {besproken.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex flex-wrap items-center gap-2 rounded-xl bg-ink-50 px-3 py-2 text-sm"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-ink-600 line-through">{item.titel}</span>
+                    {item.besprokenOp ? (
+                      <span className="text-[11px] text-ink-500">{formatDate(item.besprokenOp)}</span>
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => reopenAgendaItem(item.id).catch((e) => toast.error(e.message))}
+                    >
+                      Terugzetten
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
