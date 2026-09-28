@@ -4,6 +4,7 @@
  * tool en niet als een testbestand.
  */
 import { seedDoc } from './firestore.js'
+import { CHECKLIST_TEMPLATES } from '../src/lib/checklist-templates.js'
 
 const D = (s) => new Date(s)
 const NU = D('2026-09-28T09:20:00')
@@ -313,6 +314,40 @@ seedDoc('goals', 'g1', {
     { id: 'kr2', name: 'Getekende offertes', kind: 'currency', startValue: 0, targetValue: 120000, currentValue: 46400, unit: '€', listId: null },
   ],
   createdAt: dag(-40), updatedAt: dag(-3),
+})
+
+// ─── Openen en sluiten ──────────────────────────────────────────────────────
+CHECKLIST_TEMPLATES.forEach((template, position) =>
+  seedDoc('checklists', template.id, {
+    key: template.key, name: template.name, kind: template.kind, brandId: null,
+    sections: template.sections, position, archived: false, updatedAt: NU,
+  }))
+
+// De ochtendlijst van vandaag, half afgewerkt door twee mensen — zo leest de
+// demo als een dienst die bezig is in plaats van als een leeg formulier.
+const vandaag = NU.toISOString().slice(0, 10)
+const afgevinkt = (id, wie, naam, uur) => [id, {
+  done: true, byId: wie, byName: naam,
+  at: new Date(`${vandaag}T${uur}:00`),
+}]
+
+seedDoc('checklistRuns', `openen_${vandaag}`, {
+  checklistId: 'openen', checklistKey: 'openen', checklistName: 'Openen van de bistro',
+  brandId: null, day: vandaag, date: new Date(`${vandaag}T12:00:00`), weekend: false,
+  totalCount: 20, doneCount: 7,
+  participants: ['u-charish', 'u-elke'],
+  items: Object.fromEntries([
+    afgevinkt('sleutel', 'u-charish', 'Charish Vanoppen', '08:12'),
+    afgevinkt('alarm', 'u-charish', 'Charish Vanoppen', '08:13'),
+    afgevinkt('licht-binnen', 'u-charish', 'Charish Vanoppen', '08:14'),
+    afgevinkt('apparatuur-aan', 'u-elke', 'Elke Vandeweyer', '08:31'),
+    afgevinkt('houdbaarheid', 'u-elke', 'Elke Vandeweyer', '08:40'),
+    afgevinkt('koeling-keuken', 'u-elke', 'Elke Vandeweyer', '08:42'),
+    afgevinkt('koeling-bar', 'u-charish', 'Charish Vanoppen', '08:55'),
+  ]),
+  notes: 'Melkschuimer maakt een raar geluid — techniekers gebeld voor donderdag.',
+  notesById: 'u-charish', notesByName: 'Charish Vanoppen', notesAt: new Date(`${vandaag}T09:02:00`),
+  updatedAt: NU,
 })
 
 seedDoc('config', 'access', { allowedDomains: ['jeconcept.be', 'kenjeklanten.be'], updatedAt: NU })

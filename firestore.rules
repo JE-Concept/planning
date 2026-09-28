@@ -71,6 +71,19 @@ service cloud.firestore {
     match /goalUpdates/{id} { allow read: if isMember(); allow write: if isMember(); }
     match /socialPosts/{id} { allow read: if isMember(); allow write: if isMember(); }
 
+    // De lijsten zelf zijn beleid — die maakt een beheerder. De dagelijkse
+    // runs zijn werk, en dat doet iedereen; niemand wist er een.
+    match /checklists/{id} {
+      allow read:  if isMember();
+      allow write: if isAdmin();
+    }
+
+    match /checklistRuns/{id} {
+      allow read:   if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+
     // The review log is written by the reviewer and read by
     // everyone; nobody edits a decision after the fact, they add the next one.
     match /postReviews/{id} {

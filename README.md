@@ -4,6 +4,7 @@ Interne planningstool voor JE Concept, als vervanger van ClickUp. Vier onderdele
 
 - **Kanban** — borden per lijst, slepen tussen kolommen, groeperen op status, persoon of prioriteit, filters, lijstweergave, subtaken, reacties.
 - **Social media kalender** — maandkalender over alle merken heen (JE Concept, Bar Vue, Meer — Het Vinne, Feestbeest, Maison Folie, Wintermoods). Per post een link naar het ontwerp, een **review** (vragen, goedkeuren, aanpassing vragen) met een logboek van elke beslissing, en posts kunnen aan een **project** hangen.
+- **Openen & sluiten** — de dagelijkse checklist van de bistro, één lijst per dag waar het hele team in afvinkt. Bij elk vinkje staat wie het zette en wanneer; weekendpunten tellen alleen in het weekend mee; toegangscodes staan achter een klik.
 - **Timetracking** — één timer in de bovenbalk, handmatige registraties, weekoverzicht, rapport per persoon / lijst / merk / dag, CSV-export.
 - **Goals** — doelen met meetbare resultaten (aantal, bedrag, percentage, ja-nee, of automatisch het aantal afgewerkte taken van een lijst), met voortgang en check-in-geschiedenis.
 
@@ -44,6 +45,8 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `runningTimers/{uid}` | De lopende timer, **op uid gesleuteld**: "één timer per persoon" is zo een eigenschap van de data, geen afspraak. |
 | `goals/{id}` | Key results zitten in het goal-document (er zijn er een handvol, ze worden nooit apart opgevraagd). Check-ins staan los in `goalUpdates`, want die groeien oneindig. |
 | `socialPosts/{id}` | Inclusief de link naar het ontwerp (`assetUrl`), de reviewstand (`reviewState`, `reviewRound`, `reviewerId`) en de kopie van het project (`taskId`, `taskTitle`, `taskListName`). |
+| `checklists/{id}` | De lijsten zelf (openen, sluiten), met secties en punten. Beheerders bewerken ze; `src/lib/checklist-templates.js` is de bron voor de seed. |
+| `checklistRuns/{id}` | Eén run per lijst per dag, met de vaste id `<lijst>_<jjjj-mm-dd>`. De stand staat in een map `items`, gesleuteld op punt-id. |
 | `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde en met welke opmerking. Wordt aangevuld, nooit gewijzigd. |
 
 ---
@@ -121,6 +124,20 @@ Wat er openstaat, staat op het dashboard onder **Wacht op review**, en op de kal
 ### Posts aan projecten
 
 Een post kan aan een taak hangen. Dat is wat de vraag *"wat gaat er buiten voor Blum?"* beantwoordbaar maakt naast *"wat gaat er deze week buiten?"*: de kalender filtert op project, de kaart toont het project, en het takenpaneel toont onderaan de posts die eraan hangen, met hun reviewstatus. De titel en de lijst van de taak reizen mee op de post — Firestore heeft geen join, en een kalendercel kan niet per kaart een taak gaan lezen.
+
+---
+
+## Openen en sluiten
+
+De papieren checklist hing aan de muur met bovenaan één naam. In de app is het één lijst per dag waar iedereen in afvinkt: wie later binnenkomt ziet wat de vorige al deed en pakt de rest op.
+
+Dat samen afvinken hangt aan twee keuzes. De run heeft een **vaste id** `<lijst>_<jjjj-mm-dd>`, dus wie de lijst opent opent dezelfde — geen zoeken, geen dubbele runs. En de stand staat in een **map** `items`, gesleuteld op punt-id, zodat een afvinking alleen zijn eigen sleutel schrijft; twee mensen die tegelijk een ander punt aanvinken overschrijven elkaar niet. Bij elk vinkje gaat de naam en het tijdstip mee, wat het papier niet kon.
+
+**Weekendpunten** (de toiletten) staan er ook doordeweeks, zoals op papier, maar tellen dan niet mee in de voortgang — anders staat de lijst nooit op 100%.
+
+**Toegangscodes** staan in het `hint`-veld met `secret: true`: de app toont ze pas na een klik, zodat ze niet zomaar op een scherm staan waar een gast op meekijkt. Een test bewaakt dat er nooit een code in een `label` sluipt, want dat staat altijd zichtbaar.
+
+De lijsten staan in `src/lib/checklist-templates.js` — één bron voor de seed én de demo. Daarna is de database leidend: een beheerder past ze aan in de app en de seed overschrijft dat niet (`merge`).
 
 ---
 

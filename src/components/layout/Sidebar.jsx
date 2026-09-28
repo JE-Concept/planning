@@ -8,6 +8,7 @@ const MAIN = [
   { to: '/', label: 'Vandaag', end: true, icon: '◴' },
   { to: '/mijn-werk', label: 'Mijn werk', icon: '☑' },
   { to: '/social', label: 'Social kalender', icon: '▦' },
+  { to: '/openen-sluiten', label: 'Openen & sluiten', icon: '☑' },
   { to: '/uren', label: 'Uren', icon: '⏱' },
   { to: '/goals', label: 'Goals', icon: '◎' },
 ]

@@ -353,6 +353,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "checklistRuns",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "checklistId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "day",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

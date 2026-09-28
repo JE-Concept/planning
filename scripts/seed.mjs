@@ -10,6 +10,7 @@
 import { readFileSync } from 'node:fs'
 import { applicationDefault, cert, initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { CHECKLIST_TEMPLATES } from '../src/lib/checklist-templates.js'
 
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
 initializeApp(
@@ -120,8 +121,27 @@ async function main() {
     { merge: true }
   )
 
+  // De openings- en sluitingslijst. Merge, zodat een aangepaste lijst niet bij
+  // elke seed terugvalt op de versie uit de repo.
+  CHECKLIST_TEMPLATES.forEach((template, position) => {
+    batch.set(
+      db.collection('checklists').doc(template.id),
+      {
+        key: template.key,
+        name: template.name,
+        kind: template.kind,
+        brandId: null,
+        sections: template.sections,
+        position,
+        archived: false,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    )
+  })
+
   await batch.commit()
-  console.log('Seed klaar: merken, toegangsdomeinen en de twee borden staan klaar.')
+  console.log('Seed klaar: merken, toegangsdomeinen, de twee borden en de dagelijkse lijsten staan klaar.')
 }
 
 main().catch((err) => {

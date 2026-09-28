@@ -12,6 +12,7 @@ const listeners = new Set()      // () => void, één per actief abonnement
 
 const SERVER_TS = Symbol('serverTimestamp')
 const INCREMENT = Symbol('increment')
+const ARRAY_UNION = Symbol('arrayUnion')
 
 export const seedDoc = (col, id, data) => store.set(`${col}/${id}`, { ...data })
 export const allDocs = () => store
@@ -21,12 +22,32 @@ function notify() {
   queueMicrotask(() => listeners.forEach((fn) => fn()))
 }
 
+const isPlainObject = (v) =>
+  v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && !v.__sentinel
+
 function resolveSentinels(patch, existing = {}) {
   const out = {}
   for (const [k, v] of Object.entries(patch)) {
     if (v && v.__sentinel === SERVER_TS) out[k] = new Date()
     else if (v && v.__sentinel === INCREMENT) out[k] = (Number(existing[k]) || 0) + v.by
-    else out[k] = v
+    else if (v && v.__sentinel === ARRAY_UNION) {
+      out[k] = [...new Set([...(Array.isArray(existing[k]) ? existing[k] : []), ...v.values])]
+    } else out[k] = v
+  }
+  return out
+}
+
+/**
+ * `setDoc` met merge voegt in Firestore *diep* samen: een map krijgt de nieuwe
+ * sleutels erbij en houdt de oude. Dat is geen detail — de afvinklijst schrijft
+ * per punt één sleutel in `items`, en met een ondiepe merge zou wie afvinkt de
+ * vinkjes van zijn collega's wissen. De demo moet zich hier dus net zo gedragen
+ * als de echte database, anders test ze iets anders dan wat live draait.
+ */
+function deepMerge(existing, patch) {
+  const out = { ...existing }
+  for (const [k, v] of Object.entries(patch)) {
+    out[k] = isPlainObject(v) && isPlainObject(existing?.[k]) ? deepMerge(existing[k], v) : v
   }
   return out
 }
@@ -142,8 +163,13 @@ export function onSnapshot(target, onNext, onError) {
 
 export async function setDoc(ref, data, options) {
   const path = pathOf(ref)
-  const existing = options?.merge ? store.get(path) ?? {} : {}
-  store.set(path, { ...existing, ...resolveSentinels(data, existing) })
+  if (!options?.merge) {
+    store.set(path, resolveSentinels(data))
+    notify()
+    return
+  }
+  const existing = store.get(path) ?? {}
+  store.set(path, deepMerge(existing, resolveSentinels(data, existing)))
   notify()
 }
 
@@ -172,6 +198,7 @@ export function writeBatch() {
 
 export const serverTimestamp = () => ({ __sentinel: SERVER_TS })
 export const increment = (by) => ({ __sentinel: INCREMENT, by })
+export const arrayUnion = (...values) => ({ __sentinel: ARRAY_UNION, values })
 
 // ─── Wat de app bij opstarten aanroept ──────────────────────────────────────
 

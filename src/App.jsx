@@ -11,6 +11,7 @@ const Dashboard      = lazy(() => import('@pages/Dashboard'))
 const MyWork         = lazy(() => import('@pages/MyWork'))
 const Board          = lazy(() => import('@pages/Board'))
 const SocialCalendar = lazy(() => import('@pages/SocialCalendar'))
+const Checklists     = lazy(() => import('@pages/Checklists'))
 const TimeTracking   = lazy(() => import('@pages/TimeTracking'))
 const Goals          = lazy(() => import('@pages/Goals'))
 const Settings       = lazy(() => import('@pages/Settings'))
@@ -39,6 +40,7 @@ function Authenticated() {
             <Route path="/mijn-werk" element={<MyWork />} />
             <Route path="/bord/:listId" element={<Board />} />
             <Route path="/social" element={<SocialCalendar />} />
+            <Route path="/openen-sluiten" element={<Checklists />} />
             <Route path="/uren" element={<TimeTracking />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/instellingen" element={<Settings />} />
