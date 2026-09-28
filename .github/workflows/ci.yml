@@ -99,6 +99,17 @@ jobs:
             --project "$FIREBASE_PROJECT" --non-interactive
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only firestore:rules,firestore:indexes,storage
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions
+
+          # Een callable v2-functie draait op Cloud Run en moet publiek
+          # aanroepbaar staan; de functie controleert zelf of je aangemeld bent.
+          # De CLI zet die binding bij het aanmaken, maar slaat ze over zodra ze
+          # de functie als "ongewijzigd" beschouwt — dus na een half mislukte
+          # eerste uitrol blijft ze ontbreken, en ziet de gebruiker een
+          # CORS-fout die in de app als "geen toegang" leest.
+          gcloud run services add-iam-policy-binding ensureprofile \
+            --region europe-west1 --project "$FIREBASE_PROJECT" \
+            --member allUsers --role roles/run.invoker --quiet \
+            || echo "::warning::Kon allUsers/run.invoker niet zetten op ensureprofile."
           node scripts/seed.mjs
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting
 

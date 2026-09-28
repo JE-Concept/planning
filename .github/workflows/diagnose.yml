@@ -1,0 +1,80 @@
+name: Inloggen nakijken
+
+# Waarom komt iemand niet binnen? Dit leest de echte toestand uit met de
+# servicesleutel — en repareert meteen het ding dat je van buitenaf niet ziet:
+# een callable v2-functie die niet publiek aanroepbaar staat. De functie
+# controleert zelf of je aangemeld bent; zonder die binding krijgt de browser
+# een CORS-fout die in de app als "geen toegang" leest.
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: 'Firebase project-ID'
+        required: true
+        default: 'je-planning'
+        type: string
+      email:
+        description: 'E-mailadres om na te kijken'
+        required: false
+        default: 'jasper@kenjeklanten.be'
+        type: string
+
+jobs:
+  kijk:
+    name: Nakijken en repareren
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: ${{ inputs.project_id }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+      FIREBASE_PROJECT: ${{ inputs.project_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Sleutel
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          [ -n "$SA" ] || { echo "::error::FIREBASE_SERVICE_ACCOUNT ontbreekt."; exit 1; }
+          printf '%s' "$SA" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Bestaat ensureProfile, en is ze aanroepbaar?
+        run: |
+          echo "── De functie ───────────────────────────────────────────────"
+          gcloud functions describe ensureProfile --gen2 --region europe-west1 \
+            --project "$PROJECT" --format 'value(state,serviceConfig.uri)' || \
+            echo "::error::ensureProfile bestaat niet in europe-west1."
+
+          echo
+          echo "── Wie mag ze aanroepen ─────────────────────────────────────"
+          # Een v2-callable draait op Cloud Run. Zonder allUsers als invoker
+          # blokkeert Google de aanroep voor de browser komt, en ziet de
+          # gebruiker een CORS-fout in plaats van een antwoord.
+          beleid=$(gcloud run services get-iam-policy ensureprofile \
+            --region europe-west1 --project "$PROJECT" --format json 2>/dev/null || echo '{}')
+          echo "$beleid"
+
+          if echo "$beleid" | grep -q '"allUsers"'; then
+            echo "  ✔ allUsers mag aanroepen."
+          else
+            echo "  ✗ allUsers mag NIET aanroepen — dat is de blokkade. Zetten…"
+            gcloud run services add-iam-policy-binding ensureprofile \
+              --region europe-west1 --project "$PROJECT" \
+              --member allUsers --role roles/run.invoker --quiet \
+              && echo "  ✔ Gezet. De functie controleert zelf of je aangemeld bent." \
+              || echo "::error::Kon de binding niet zetten; de servicesleutel mist run.services.setIamPolicy."
+          fi
+
+      - name: Toegang, mensen en aanmeldmethodes
+        run: node scripts/diagnose.mjs "${{ inputs.email }}"
+
+      - name: Sleutel opruimen
+        if: always()
+        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
