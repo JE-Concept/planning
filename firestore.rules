@@ -103,6 +103,14 @@ service cloud.firestore {
       allow write:  if isAdmin();
     }
 
+    // Business rules: het team ziet waarom een taak ineens van eigenaar wisselt,
+    // beheerders bepalen de regels. Uitvoeren doet een Cloud Function met
+    // beheerdersrechten, dus wat hier staat gaat alleen over het beheer.
+    match /automations/{id} {
+      allow read:  if isTeam();
+      allow write: if isAdmin();
+    }
+
     match /checklists/{id} {
       allow read:  if isMember();
       allow write: if isAdmin();

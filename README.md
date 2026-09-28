@@ -47,6 +47,7 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `socialPosts/{id}` | Inclusief de link naar het ontwerp (`assetUrl`), de reviewstand (`reviewState`, `reviewRound`, `reviewerId`) en de kopie van het project (`taskId`, `taskTitle`, `taskListName`). |
 | `checklists/{id}` | De lijsten zelf (openen, sluiten), met secties en punten. Beheerders bewerken ze; `src/lib/checklist-templates.js` is de bron voor de seed. |
 | `checklistRuns/{id}` | Eén run per lijst per dag, met de vaste id `<lijst>_<jjjj-mm-dd>`. De stand staat in een map `items`, gesleuteld op punt-id. |
+| `automations/{id}` | De business rules: wanneer ze vuren en wat ze doen. Beheerders bewerken ze in Instellingen; uitvoeren doet een Cloud Function. |
 | `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde en met welke opmerking. Wordt aangevuld, nooit gewijzigd. |
 
 ---
@@ -152,6 +153,21 @@ Dat samen afvinken hangt aan twee keuzes. De run heeft een **vaste id** `<lijst>
 **Toegangscodes** staan in het `hint`-veld met `secret: true`: de app toont ze pas na een klik, zodat ze niet zomaar op een scherm staan waar een gast op meekijkt. Een test bewaakt dat er nooit een code in een `label` sluipt, want dat staat altijd zichtbaar.
 
 De lijsten staan in `src/lib/checklist-templates.js` — één bron voor de seed én de demo. Daarna is de database leidend: een beheerder past ze aan in de app en de seed overschrijft dat niet (`merge`).
+
+---
+
+## Business rules
+
+Alles wat op *ready to invoice* komt is werk voor Elke, en voor niemand anders. Dat met de hand doortrekken werkt tot iemand het vergeet, en een taak die bij de verkeerde persoon blijft hangen wordt niet gefactureerd. In **Instellingen → Business rules** staat die afspraak als regel: *als* een taak in een status komt (of aangemaakt wordt), op één lijst of op alle, *dan* toewijzen, prioriteit zetten, een label plakken of een vervaldag zetten.
+
+De regels draaien **op de server**, in een trigger op elke taak die van status verandert. Dat is bewust: een taak verandert ook van status op het bord van een collega en vanuit de overlegfunctie, en een regel die alleen in de browser van wie ze instelde zou draaien, geldt dan niet. De wijziging komt een seconde later vanzelf binnen.
+
+Twee dingen die de trigger veilig houden, en die een test bewaakt:
+
+- Een statusregel vuurt **op het binnenkomen**, niet zolang de taak er staat. Wie na de wissel bewust iemand anders toewijst, ziet dat niet bij de volgende bewerking teruggedraaid.
+- De trigger schrijft haar eigen resultaat weg en wordt daardoor **opnieuw wakker**. Wat haar laat stoppen is dat de status dan niet veranderde en de patch leeg is. Zonder statuswissel wordt de regelcollectie niet eens gelezen.
+
+Een regel hangt aan de *naam* van een status, niet aan een id — dezelfde naam op twee borden betekent hier hetzelfde. De prijs daarvan is dat een kolom hernoemen de regel losmaakt, en dat zie je nergens gebeuren; daarom staat de waarschuwing (*deze status bestaat niet — de regel vuurt nooit*) naast de regel zelf. Het rekenwerk staat puur in `functions/automations.js`, zodat elke regel in een test na te rekenen is: dit is de enige code die ongevraagd andermans taken aanpast.
 
 ---
 

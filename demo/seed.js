@@ -426,4 +426,32 @@ seedDoc('meetings', 't-overleg-1', {
   createdAt: dag(-7),
 })
 
+// ─── Business rules ─────────────────────────────────────────────────────────
+// Uitvoeren doet de server; in de demo zie je de regels, ze veranderen hier
+// niets aan de taken.
+seedDoc('automations', 'ready-to-invoice', {
+  name: 'Facturatie is voor Elke',
+  enabled: true,
+  listId: 'l-overview',
+  trigger: { kind: 'status', status: 'ready to invoice' },
+  actions: [{ kind: 'assignees', mode: 'set', profileIds: ['u-elke'] }],
+  position: 0,
+  createdAt: dag(-30),
+  updatedAt: dag(-30),
+})
+
+seedDoc('automations', 'nieuwe-aanvraag', {
+  name: 'Nieuwe aanvraag krijgt een week',
+  enabled: true,
+  listId: 'l-overview',
+  trigger: { kind: 'status', status: 'request' },
+  actions: [
+    { kind: 'assignees', mode: 'add', profileIds: ['u-jasper'] },
+    { kind: 'dueInDays', value: 7 },
+  ],
+  position: 1,
+  createdAt: dag(-20),
+  updatedAt: dag(-20),
+})
+
 seedDoc('config', 'access', { allowedDomains: ['jeconcept.be', 'kenjeklanten.be'], updatedAt: NU })

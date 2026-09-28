@@ -31,6 +31,7 @@ export const COL = {
   checklistRuns: 'checklistRuns',
   socialPosts: 'socialPosts',
   postReviews: 'postReviews',
+  automations: 'automations',
   activity: 'activity',
 }
 

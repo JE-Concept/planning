@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore'
+import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { logger } from 'firebase-functions'
+import { planFor } from './automations.js'
 
 initializeApp()
 const db = getFirestore()
@@ -141,5 +142,54 @@ export const spreadListRename = onDocumentUpdated(
     }
 
     logger.info('Lijst hernoemd', { listId, oud, nieuw, bijgewerkt })
+  }
+)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║ Business rules                                                           ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+/**
+ * Past de regels uit Instellingen toe op een taak die van status verandert.
+ *
+ * Alleen op dat moment, en op een nieuwe taak — niet op elke schrijving. Dat
+ * houdt de trigger goedkoop (zonder statuswissel wordt de regelcollectie niet
+ * eens gelezen) en het is ook inhoudelijk het juiste moment: wie na de wissel
+ * bewust iemand anders toewijst, moet dat niet bij de volgende bewerking
+ * teruggedraaid zien worden.
+ *
+ * Deze functie schrijft de taak die haar wakker maakte. Dat maakt haar opnieuw
+ * wakker, met dezelfde status voor en na — en daar stopt het: de voorwaarde
+ * hieronder is dan niet meer waar.
+ */
+export const applyAutomations = onDocumentWritten(
+  { region: REGION, document: 'tasks/{taskId}' },
+  async (event) => {
+    const na = event.data?.after?.data()
+    if (!na) return
+
+    const voor = event.data?.before?.exists ? event.data.before.data() : null
+    const statusGewijzigd = !voor || (voor.statusName ?? null) !== (na.statusName ?? null)
+    if (!statusGewijzigd) return
+
+    const regels = await db.collection('automations').where('enabled', '==', true).get()
+    if (regels.empty) return
+
+    const { patch, fired } = planFor({
+      rules: regels.docs.map((d) => ({ id: d.id, ...d.data() })),
+      task: { id: event.params.taskId, ...na },
+      before: voor,
+      now: new Date(),
+    })
+
+    if (Object.keys(patch).length === 0) return
+
+    await event.data.after.ref.update({ ...patch, updatedAt: FieldValue.serverTimestamp() })
+    logger.info('Business rule toegepast', {
+      taskId: event.params.taskId,
+      status: na.statusName ?? null,
+      regels: fired,
+      velden: Object.keys(patch),
+    })
   }
 )

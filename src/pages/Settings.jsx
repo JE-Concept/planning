@@ -13,6 +13,7 @@ import {
   Spinner,
 } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
+import BusinessRules from '@components/settings/BusinessRules'
 import { AFDELINGEN } from '@lib/checklist-templates'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
@@ -38,6 +39,7 @@ const TABS = [
   { key: 'team', label: 'Team' },
   { key: 'structure', label: 'Ruimtes & lijsten' },
   { key: 'brands', label: 'Merken & labels' },
+  { key: 'rules', label: 'Business rules' },
 ]
 
 export default function Settings() {
@@ -60,6 +62,7 @@ export default function Settings() {
         {tab === 'team' ? <TeamSettings isAdmin={isAdmin} /> : null}
         {tab === 'structure' ? <StructureSettings /> : null}
         {tab === 'brands' ? <BrandSettings /> : null}
+        {tab === 'rules' ? <BusinessRules isAdmin={isAdmin} /> : null}
       </div>
     </div>
   )

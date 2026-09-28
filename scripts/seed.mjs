@@ -170,7 +170,45 @@ async function main() {
   })
 
   await batch.commit()
+  await seedFacturatieRegel()
   console.log('Seed klaar: merken, toegangsdomeinen, de twee borden en de dagelijkse lijsten staan klaar.')
+}
+
+/**
+ * De eerste business rule, en de reden dat ze bestaan: alles wat op "ready to
+ * invoice" komt is werk voor Elke en voor niemand anders.
+ *
+ * Eén keer, niet bij elke seed. Een regel die iemand bewust weggooide moet niet
+ * bij de volgende deploy terugkomen, dus staat er een vinkje in config/seeded.
+ * De regel verwijst naar een profiel-id, en dat is de Google-uid van Elke — die
+ * bestaat pas nadat ze één keer is ingelogd. Zolang dat niet zo is, slaan we
+ * over en zegt de seed dat ook.
+ */
+async function seedFacturatieRegel() {
+  const marker = db.collection('config').doc('seeded')
+  if ((await marker.get()).data()?.automationReadyToInvoice) return
+
+  const email = (process.env.INVOICING_EMAIL ?? 'elke@kenjeklanten.be').toLowerCase()
+  const profiel = await db.collection('profiles').where('email', '==', email).limit(1).get()
+
+  if (profiel.empty) {
+    console.log(`Business rule overgeslagen: ${email} heeft nog geen profiel. Zet de regel in Instellingen.`)
+    return
+  }
+
+  await db.collection('automations').doc('ready-to-invoice').set({
+    name: 'Facturatie is voor Elke',
+    enabled: true,
+    listId: 'overview-planning',
+    trigger: { kind: 'status', status: 'ready to invoice' },
+    actions: [{ kind: 'assignees', mode: 'set', profileIds: [profiel.docs[0].id] }],
+    position: 0,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  })
+
+  await marker.set({ automationReadyToInvoice: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+  console.log(`Business rule gezet: ready to invoice → ${email}.`)
 }
 
 main().catch((err) => {
