@@ -96,6 +96,22 @@ van de eerste `{` tot de laatste `}`.
 Dit bestand geeft volledige toegang tot het project. Het gaat zo meteen één keer in een
 GitHub-geheim en daarna verwijder je de download.
 
+**c) Geef die service account de juiste rollen.** Dit is de stap die het vaakst wordt overgeslagen,
+en de uitrol valt er meteen over met een kale `403` op `serviceusage.googleapis.com`. De sleutel
+hoort bij `firebase-adminsdk-…@<project>.iam.gserviceaccount.com`, en die mag standaard de
+Google-API's van het project niet eens uitlezen.
+
+Ga naar <https://console.cloud.google.com/iam-admin/iam> (juiste project bovenaan), zoek die
+service account, **Edit principal → Add another role**:
+
+| Snel | Precies |
+|---|---|
+| **Editor** naast de bestaande rollen | **Service Usage Admin**, **Cloud Functions Admin**, **Cloud Run Admin**, **Artifact Registry Administrator**, **Cloud Build Editor**, **Service Account User**, **Cloud Scheduler Admin**, **Eventarc Admin**, **Secret Manager Admin** |
+
+*Editor* is breder dan nodig, maar de sleutel staat alleen in de geheimen van jullie eigen repo en
+wordt alleen door deze twee workflows gebruikt. Wie het scherper wil, neemt de rechterkolom.
+Zonder **Service Usage Admin** komt geen enkele deploy voorbij de eerste stap.
+
 ## 7. De geheimen in GitHub zetten
 
 Ga naar <https://github.com/Kenjeklanten/planning/settings/secrets/actions> →
@@ -210,6 +226,7 @@ Canva-account van JE Concept.
 | `FIREBASE_SERVICE_ACCOUNT ontbreekt` | een geheim staat er niet of heet anders | stap 7 nalopen; hoofdlettergevoelig |
 | `De servicesleutel is geen geldige JSON` | er is maar een stuk van het bestand geplakt | opnieuw plakken, van `{` tot `}` |
 | `HTTP Error: 400, Billing account` | project staat nog op Spark | Blaze aanzetten (stap 2), dan opnieuw draaien |
+| `Permission denied to get service` / `403` op `serviceusage` | de service account mist **Service Usage Admin** | rollen toekennen (stap 6c), daarna opnieuw draaien |
 | `Permission denied` bij functions of Firestore | de servicesleutel hoort bij een ander project | sleutel opnieuw genereren in het juiste project (stap 6b) |
 | Witte pagina, console zegt `VITE_FIREBASE_* ontbreken` | de geheimen stonden er nog niet tijdens de build | geheimen zetten, **Go live** opnieuw draaien met *alleen de applicatie* |
 | Borden traag of een index-fout in de console | indexes nog niet klaar | Firestore bouwt ze in de achtergrond af; enkele minuten wachten |

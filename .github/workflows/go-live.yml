@@ -70,15 +70,22 @@ jobs:
 
       # Rules en indexes eerst: een bord dat zoekt op een veld waarvoor nog geen
       # index bestaat geeft lege kolommen en een fout die op een bug lijkt.
-      - name: Rules, indexes en storage
+      - name: Rules en indexes
         if: inputs.what != 'alleen de applicatie'
-        run: npx --yes firebase-tools@13 deploy --project "$PROJECT" --only firestore:rules,firestore:indexes,storage --non-interactive
+        run: scripts/ci/deploy.sh "$PROJECT" --only firestore:rules,firestore:indexes
+
+      # Apart van Firestore: de storage-deploy controleert eerst of de
+      # Storage-API aanstaat, en dat is de stap die als eerste over een
+      # ontbrekend IAM-recht valt. Zo blijven de rules en indexes wel staan.
+      - name: Storage-rules
+        if: inputs.what != 'alleen de applicatie'
+        run: scripts/ci/deploy.sh "$PROJECT" --only storage
 
       - name: Cloud Functions
         if: inputs.what == 'alles'
         run: |
           ( cd functions && npm install --no-audit --no-fund )
-          npx --yes firebase-tools@13 deploy --project "$PROJECT" --only functions --non-interactive
+          scripts/ci/deploy.sh "$PROJECT" --only functions
 
       - name: Basisgegevens
         if: inputs.seed && inputs.what != 'alleen de applicatie'
@@ -98,7 +105,7 @@ jobs:
 
       - name: Publiceren
         if: inputs.what != 'alleen rules en indexes'
-        run: npx --yes firebase-tools@13 deploy --project "$PROJECT" --only hosting --non-interactive
+        run: scripts/ci/deploy.sh "$PROJECT" --only hosting
 
       - name: Sleutel opruimen
         if: always()
