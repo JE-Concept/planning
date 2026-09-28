@@ -68,6 +68,21 @@ jobs:
         if: env.HAS_CREDENTIALS == 'true'
         run: cd functions && npm install --no-audit --no-fund
 
+      # De Firebase CLI vraagt het facturatieplan op voor ze functions
+      # uitrolt, en die API staat op een vers project niet aan. Ze zet run en
+      # eventarc wel zelf aan maar deze niet, dus doen we het hier — met de
+      # sleutel die er toch al is.
+      - name: Billing-API aanzetten
+        if: env.HAS_CREDENTIALS == 'true'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+          FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+          gcloud services enable cloudbilling.googleapis.com --project "$FIREBASE_PROJECT" --quiet \
+            || echo "::warning::cloudbilling.googleapis.com kon niet aangezet worden; zet hem handmatig aan in de Google Cloud console."
+
       # Rules, indexes, functions, basisgegevens en de applicatie horen bij
       # elkaar: een bord dat zoekt op een veld waarvoor nog geen index bestaat
       # is een kapot bord, en een lijst zonder basisgegevens is een leeg scherm.

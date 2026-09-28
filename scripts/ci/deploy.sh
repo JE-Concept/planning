@@ -30,7 +30,10 @@ if grep -q 'serviceusage.googleapis.com.*403\|Permission denied to get service' 
 ::error::"Cloud Scheduler Admin", "Eventarc Admin" en "Secret Manager Admin"
 ::error::nodig — of in één keer "Editor" naast "Firebase Admin".
 MSG
-elif grep -qi 'billing account\|Spark' "$log"; then
+elif grep -qi 'cloudbilling.googleapis.com' "$log"; then
+  echo '::error::De Cloud Billing API staat niet aan in dit project. Zet hem aan op' >&2
+  echo "::error::https://console.cloud.google.com/apis/library/cloudbilling.googleapis.com?project=$PROJECT en draai opnieuw." >&2
+elif grep -qi 'billing account\|Spark plan\|requires Blaze' "$log"; then
   echo '::error::Het project staat nog op het gratis Spark-plan. Zet Blaze aan (stap 2 van de handover) en draai opnieuw.' >&2
 fi
 

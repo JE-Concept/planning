@@ -68,6 +68,14 @@ jobs:
       - name: Koppel het hosting-target
         run: npx --yes firebase-tools@13 target:apply hosting app "$PROJECT" --project "$PROJECT" --non-interactive
 
+      # De Firebase CLI vraagt het facturatieplan op voor ze functions uitrolt,
+      # en die API staat op een vers project niet aan.
+      - name: Billing-API aanzetten
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+          gcloud services enable cloudbilling.googleapis.com --project "$PROJECT" --quiet \
+            || echo "::warning::cloudbilling.googleapis.com kon niet aangezet worden; zet hem handmatig aan in de Google Cloud console."
+
       # Rules en indexes eerst: een bord dat zoekt op een veld waarvoor nog geen
       # index bestaat geeft lege kolommen en een fout die op een bug lijkt.
       - name: Rules en indexes
