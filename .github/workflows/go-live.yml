@@ -118,7 +118,12 @@ jobs:
               --member "serviceAccount:$RUNTIME" --role roles/datastore.user \
               --condition=None --quiet >/dev/null \
               && echo "  ✔ datastore.user toegekend" \
-              || echo "::warning::Kon datastore.user niet toekennen aan $RUNTIME."
+              || { \
+                echo "::error::De servicesleutel mag geen rollen uitdelen (Editor kan dat niet)."; \
+                echo "::error::Kies één van twee, in https://console.cloud.google.com/iam-admin/iam :"; \
+                echo "::error::  A. geef firebase-adminsdk-…@ de rol \"Project IAM Admin\" — dan doet de uitrol dit voortaan zelf;"; \
+                echo "::error::  B. geef $RUNTIME de rol \"Cloud Datastore User\" — de eenmalige reparatie."; \
+              }
             gcloud projects add-iam-policy-binding "$PROJECT" \
               --member "serviceAccount:$RUNTIME" --role roles/firebaseauth.admin \
               --condition=None --quiet >/dev/null || true

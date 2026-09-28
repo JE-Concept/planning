@@ -9,9 +9,9 @@ import {
   where,
 } from 'firebase/firestore'
 import { COL, col, fromQuery, ref } from '@lib/collections'
-import { isWeekend, requiredItems, runId } from '@lib/checklist-templates'
+import { isWeekend, runId } from '@lib/checklist-templates'
 
-export { isWeekend, requiredItems, runId }
+export { isWeekend, runId }
 
 /**
  * Openen en sluiten, per dag, door meerdere mensen tegelijk.
@@ -76,7 +76,7 @@ export function useRunsForDay(day) {
  * niet als getal bewaard: twee mensen die hetzelfde punt aanvinken zouden een
  * opgeslagen teller laten wegdrijven, en een fout getal is erger dan geen.
  */
-export function toggleItem({ checklist, day, item, done, profile, weekend }) {
+export function toggleItem({ checklist, day, item, done, profile, scope }) {
   const id = runId(checklist.id, day)
   const [year, month, dayOfMonth] = day.split('-').map(Number)
 
@@ -90,7 +90,7 @@ export function toggleItem({ checklist, day, item, done, profile, weekend }) {
       day,
       // Middag, zodat een tijdzoneverschuiving de datum nooit een dag verzet.
       date: new Date(year, month - 1, dayOfMonth, 12, 0, 0),
-      weekend: Boolean(weekend),
+      weekend: Boolean(scope?.weekend),
       participants: arrayUnion(profile.id),
       items: {
         [item.id]: done

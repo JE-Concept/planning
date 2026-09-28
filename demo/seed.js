@@ -17,15 +17,15 @@ const MENSEN = [
   ['u-anneleen', 'anneleen@kenjeklanten.be',  'Anneleen Coenen',   'admin',  true],
   ['u-charish',  'charish.talento@gmail.com', 'Charish',           'member', true],
   // Zaalpersoneel: beperkte login, enkel de openings- en sluitingslijst.
-  ['u-lotte',    'lotte@barvue.be',           'Lotte Vrijsen',     'staff',  true],
-  ['u-sam',      'sam@barvue.be',             'Sam Deckers',       'staff',  true],
+  ['u-lotte',    'lotte@barvue.be',           'Lotte Vrijsen',     'staff',  true, 'zaal'],
+  ['u-sam',      'sam@barvue.be',             'Sam Deckers',       'staff',  true, 'keuken'],
   // Vertrokken, maar hun werk staat er nog — dus gearchiveerd, niet verwijderd.
   ['u-maxine',   'maxine@jeconcept.be',       'Maxine Vanbrabant', 'member', false],
   ['u-aicha',    'aicha@jeconcept.be',        'Aïcha Van Roy',     'member', false],
 ]
-MENSEN.forEach(([id, email, fullName, role, active], i) =>
+MENSEN.forEach(([id, email, fullName, role, active, afdeling], i) =>
   seedDoc('profiles', id, {
-    email, fullName, role, active, avatarUrl: null,
+    email, fullName, role, active, department: afdeling ?? null, avatarUrl: null,
     hourlyRate: role === 'member' ? 32 : 48,
     createdAt: D('2025-01-15'), updatedAt: NU, position: i,
   }))

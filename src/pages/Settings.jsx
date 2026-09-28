@@ -13,6 +13,7 @@ import {
   Spinner,
 } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
+import { AFDELINGEN } from '@lib/checklist-templates'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -26,6 +27,7 @@ import {
   revokeInvite,
   setHourlyRate,
   setMemberActive,
+  setMemberDepartment,
   setMemberRole,
   updateBrand,
   updateList,
@@ -137,6 +139,21 @@ function TeamSettings({ isAdmin }) {
                     {ROLES.map((r) => (
                       <option key={r.key} value={r.key}>
                         {r.label}
+                      </option>
+                    ))}
+                  </Select>
+                  {/* De afdeling bepaalt welke punten van de dagelijkse lijsten
+                      deze persoon te zien krijgt. */}
+                  <Select
+                    value={p.department ?? ''}
+                    onChange={(e) => setMemberDepartment(p.id, e.target.value)}
+                    className="h-8 w-36 text-xs"
+                    aria-label={`Afdeling van ${p.email}`}
+                  >
+                    <option value="">Geen afdeling</option>
+                    {AFDELINGEN.filter((a) => a.key !== 'iedereen').map((a) => (
+                      <option key={a.key} value={a.key}>
+                        {a.label}
                       </option>
                     ))}
                   </Select>

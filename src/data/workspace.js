@@ -143,6 +143,14 @@ export function setMemberRole(uid, role) {
   return updateDoc(ref(COL.profiles, uid), { role, updatedAt: serverTimestamp() })
 }
 
+/** Keuken, zaal of verantwoordelijke — bepaalt welke lijstpunten iemand ziet. */
+export function setMemberDepartment(uid, department) {
+  return updateDoc(ref(COL.profiles, uid), {
+    department: department || null,
+    updatedAt: serverTimestamp(),
+  })
+}
+
 export function setMemberActive(uid, active) {
   return updateDoc(ref(COL.profiles, uid), { active, updatedAt: serverTimestamp() })
 }

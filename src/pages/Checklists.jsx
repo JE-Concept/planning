@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { addDays, dayKey, formatDate, formatTime, isToday } from '@lib/dates'
-import { isWeekend, itemApplies, runProgress } from '@lib/checklist-templates'
+import { afdelingLabel, dueOn, repeatLabel, runProgress, visibleTo } from '@lib/checklist-templates'
 import { Avatar, Badge, Button, EmptyState, ProgressBar, Spinner, Textarea } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
@@ -26,7 +26,9 @@ export default function Checklists() {
 
   const date = useMemo(() => addDays(new Date(), offset), [offset])
   const day = dayKey(date)
-  const weekend = isWeekend(date)
+
+  // Twee filters op elk punt: valt het vandaag, en gaat het deze persoon aan.
+  const scope = useMemo(() => ({ date, person: profile }), [date, profile])
 
   const { byChecklist, loading: runsLoading } = useRunsForDay(day)
 
@@ -55,13 +57,15 @@ export default function Checklists() {
   }
 
   const run = byChecklist[current?.id]
-  const progress = runProgress(current, run, { weekend })
+  const progress = runProgress(current, run, scope)
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title="Openen en sluiten"
-        subtitle={`${formatDate(date)}${isToday(date) ? ' — vandaag' : ''}${weekend ? ' · weekend' : ''}`}
+        subtitle={`${formatDate(date)}${isToday(date) ? ' — vandaag' : ''}${
+          profile?.department ? ` · ${afdelingLabel(profile.department)}` : ''
+        }`}
         actions={
           <>
             <Button variant="secondary" onClick={() => setOffset((o) => o - 1)} aria-label="Vorige dag">
@@ -82,7 +86,7 @@ export default function Checklists() {
         }
         tabs={checklists.map((list) => {
           const listRun = byChecklist[list.id]
-          const p = runProgress(list, listRun, { weekend })
+          const p = runProgress(list, listRun, scope)
           return (
             <Tab key={list.id} active={current?.id === list.id} onClick={() => setActive(list.id)}>
               {list.name}
@@ -122,9 +126,9 @@ export default function Checklists() {
                 key={section.id}
                 section={section}
                 run={run}
-                weekend={weekend}
+                scope={scope}
                 onToggle={(item, done) =>
-                  toggleItem({ checklist: current, day, item, done, profile, weekend }).catch((err) =>
+                  toggleItem({ checklist: current, day, item, done, profile, scope }).catch((err) =>
                     toast.error(err.message)
                   )
                 }
@@ -188,8 +192,14 @@ export default function Checklists() {
   )
 }
 
-function Section({ section, run, weekend, onToggle }) {
-  const shown = section.items.filter((item) => itemApplies(item, { weekend }) || item.weekendOnly)
+function Section({ section, run, scope, onToggle }) {
+  // Wat vandaag niet valt, of niet voor deze persoon is, staat er helemaal niet
+  // — anders leest de lijst als een archief in plaats van als het werk van nu.
+  const shown = section.items.filter(
+    (item) => dueOn(item, scope.date) && visibleTo(item, scope.person)
+  )
+
+  if (shown.length === 0) return null
 
   return (
     <section className="card overflow-hidden">
@@ -198,20 +208,14 @@ function Section({ section, run, weekend, onToggle }) {
       </h2>
       <ul className="divide-y divide-ink-100">
         {shown.map((item) => (
-          <Item
-            key={item.id}
-            item={item}
-            state={run?.items?.[item.id]}
-            counts={itemApplies(item, { weekend })}
-            onToggle={onToggle}
-          />
+          <Item key={item.id} item={item} state={run?.items?.[item.id]} onToggle={onToggle} />
         ))}
       </ul>
     </section>
   )
 }
 
-function Item({ item, state, counts, onToggle }) {
+function Item({ item, state, onToggle }) {
   const [revealed, setRevealed] = useState(false)
   const done = Boolean(state?.done)
 
@@ -227,9 +231,9 @@ function Item({ item, state, counts, onToggle }) {
         <span className="min-w-0 flex-1">
           <span className={cn('block text-sm', done ? 'text-ink-500 line-through' : 'text-ink-900')}>
             {item.label}
-            {!counts ? (
+            {item.repeat && item.repeat.kind !== 'dagelijks' ? (
               <Badge color="#8593a9" subtle className="ml-2 align-middle">
-                weekend
+                {repeatLabel(item)}
               </Badge>
             ) : null}
           </span>

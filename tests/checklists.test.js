@@ -2,19 +2,39 @@ import { describe, expect, it } from 'vitest'
 import {
   CHECKLIST_TEMPLATES,
   CLOSING,
+  FAVV,
   OPENING,
+  POETSPLAN,
+  dueOn,
   isWeekend,
-  itemApplies,
+  repeatLabel,
   requiredItems,
   runId,
   runProgress,
+  visibleTo,
 } from '../src/lib/checklist-templates.js'
 
+const MAANDAG = new Date('2026-09-28T12:00:00')
+const ZATERDAG = new Date('2026-09-26T12:00:00')
+const EERSTE = new Date('2026-10-01T12:00:00')
+const BAAS = { role: 'owner' }
+
 describe('de lijsten zelf', () => {
-  it('heeft een openings- en een sluitingslijst', () => {
-    expect(CHECKLIST_TEMPLATES.map((c) => c.id)).toEqual(['openen', 'sluiten'])
+  it('heeft openen, sluiten, de FAVV-registraties en het poetsplan', () => {
+    expect(CHECKLIST_TEMPLATES.map((c) => c.id)).toEqual(['openen', 'sluiten', 'favv', 'poetsplan'])
     expect(OPENING.kind).toBe('open')
     expect(CLOSING.kind).toBe('close')
+    expect(FAVV.kind).toBe('register')
+    expect(POETSPLAN.kind).toBe('register')
+  })
+
+  it('zegt bij elk punt wie het ziet', () => {
+    const geldig = ['iedereen', 'verantwoordelijke', 'keuken', 'zaal']
+    for (const t of CHECKLIST_TEMPLATES) {
+      for (const item of t.sections.flatMap((s) => s.items)) {
+        expect(geldig).toContain(item.who ?? 'iedereen')
+      }
+    }
   })
 
   it('geeft elk punt een eigen id — de afvinkingen hangen eraan', () => {
@@ -35,23 +55,96 @@ describe('de lijsten zelf', () => {
   })
 })
 
-describe('weekendpunten', () => {
+describe('wanneer een punt valt', () => {
   it('herkent zaterdag en zondag', () => {
-    expect(isWeekend(new Date('2026-09-26T10:00:00'))).toBe(true) // zaterdag
-    expect(isWeekend(new Date('2026-09-27T10:00:00'))).toBe(true) // zondag
-    expect(isWeekend(new Date('2026-09-28T10:00:00'))).toBe(false) // maandag
+    expect(isWeekend(ZATERDAG)).toBe(true)
+    expect(isWeekend(MAANDAG)).toBe(false)
   })
 
-  it('tellen enkel mee in het weekend', () => {
-    const item = { id: 'x', label: 'Toiletten', weekendOnly: true }
-    expect(itemApplies(item, { weekend: true })).toBe(true)
-    expect(itemApplies(item, { weekend: false })).toBe(false)
+  it('laat een punt zonder herhaling elke dag gelden', () => {
+    expect(dueOn({ id: 'x' }, MAANDAG)).toBe(true)
+    expect(dueOn({ id: 'x', repeat: { kind: 'dagelijks' } }, ZATERDAG)).toBe(true)
   })
 
-  it('maken de lijst in het weekend langer dan doordeweeks', () => {
-    const week = requiredItems(CLOSING, { weekend: false }).length
-    const weekend = requiredItems(CLOSING, { weekend: true }).length
+  it('leest weekendOnly uit oudere lijsten als een weekendherhaling', () => {
+    const oud = { id: 'x', weekendOnly: true }
+    expect(dueOn(oud, ZATERDAG)).toBe(true)
+    expect(dueOn(oud, MAANDAG)).toBe(false)
+  })
+
+  it('legt wekelijks op één dag', () => {
+    const item = { id: 'x', repeat: { kind: 'wekelijks', days: [1] } }
+    expect(dueOn(item, MAANDAG)).toBe(true)
+    expect(dueOn(item, ZATERDAG)).toBe(false)
+  })
+
+  it('legt maandelijks op een dag van de maand', () => {
+    const item = { id: 'x', repeat: { kind: 'maandelijks', dayOfMonth: 1 } }
+    expect(dueOn(item, EERSTE)).toBe(true)
+    expect(dueOn(item, MAANDAG)).toBe(false)
+  })
+
+  it('schuift een maanddag die niet bestaat naar de laatste dag', () => {
+    // De 31e in februari zou elf maanden per jaar overgeslagen worden.
+    const item = { id: 'x', repeat: { kind: 'maandelijks', dayOfMonth: 31 } }
+    expect(dueOn(item, new Date('2026-02-28T12:00:00'))).toBe(true)
+    expect(dueOn(item, new Date('2026-02-27T12:00:00'))).toBe(false)
+    expect(dueOn(item, new Date('2026-03-31T12:00:00'))).toBe(true)
+  })
+
+  it('legt een kwartaalpunt op januari, april, juli en oktober', () => {
+    const item = { id: 'x', repeat: { kind: 'kwartaal', dayOfMonth: 1 } }
+    expect(dueOn(item, EERSTE)).toBe(true)
+    expect(dueOn(item, new Date('2026-11-01T12:00:00'))).toBe(false)
+  })
+
+  it('maakt de lijst in het weekend langer dan doordeweeks', () => {
+    const week = requiredItems(CLOSING, { date: MAANDAG, person: BAAS }).length
+    const weekend = requiredItems(CLOSING, { date: ZATERDAG, person: BAAS }).length
     expect(weekend).toBeGreaterThan(week)
+  })
+
+  it('beschrijft elke herhaling in gewone taal', () => {
+    expect(repeatLabel({ repeat: { kind: 'weekdag', days: [0, 6] } })).toBe('weekend')
+    expect(repeatLabel({ repeat: { kind: 'wekelijks', days: [1] } })).toBe('elke maandag')
+    expect(repeatLabel({ repeat: { kind: 'maandelijks', dayOfMonth: 1 } })).toBe('de 1e van de maand')
+    expect(repeatLabel({})).toBe('elke dag')
+  })
+})
+
+describe('wie ziet wat', () => {
+  const item = (who) => ({ id: 'x', who })
+
+  it('toont wat voor iedereen is aan iedereen', () => {
+    expect(visibleTo(item('iedereen'), { department: 'zaal' })).toBe(true)
+    expect(visibleTo({ id: 'x' }, { department: 'keuken' })).toBe(true)
+  })
+
+  it('houdt een keukentaak weg bij de zaal', () => {
+    expect(visibleTo(item('keuken'), { department: 'zaal' })).toBe(false)
+    expect(visibleTo(item('keuken'), { department: 'keuken' })).toBe(true)
+  })
+
+  it('laat de verantwoordelijke alles zien', () => {
+    expect(visibleTo(item('keuken'), { department: 'verantwoordelijke' })).toBe(true)
+    expect(visibleTo(item('zaal'), { department: 'verantwoordelijke' })).toBe(true)
+  })
+
+  it('laat beheerders alles zien, want zij beheren de lijsten', () => {
+    expect(visibleTo(item('keuken'), { role: 'owner' })).toBe(true)
+    expect(visibleTo(item('zaal'), { role: 'admin' })).toBe(true)
+  })
+
+  it('geeft wie geen afdeling heeft alleen wat voor iedereen is', () => {
+    expect(visibleTo(item('keuken'), { department: null })).toBe(false)
+    expect(visibleTo(item('iedereen'), { department: null })).toBe(true)
+  })
+
+  it('maakt de lijst korter voor wie maar één afdeling doet', () => {
+    const alles = requiredItems(OPENING, { date: MAANDAG, person: BAAS }).length
+    const keuken = requiredItems(OPENING, { date: MAANDAG, person: { department: 'keuken' } }).length
+    expect(keuken).toBeLessThan(alles)
+    expect(keuken).toBeGreaterThan(0)
   })
 })
 
@@ -59,7 +152,7 @@ describe('runProgress', () => {
   const run = (ids) => ({ items: Object.fromEntries(ids.map((id) => [id, { done: true }])) })
 
   it('is nul zonder run', () => {
-    const p = runProgress(OPENING, undefined, { weekend: false })
+    const p = runProgress(OPENING, undefined, { date: MAANDAG, person: BAAS })
     expect(p.done).toBe(0)
     expect(p.ratio).toBe(0)
     expect(p.total).toBeGreaterThan(0)
@@ -68,20 +161,20 @@ describe('runProgress', () => {
   it('telt alleen de punten die vandaag gelden', () => {
     // Een weekendpunt afvinken op een weekdag telt niet mee in de noemer,
     // anders staat de lijst nooit op 100%.
-    const p = runProgress(OPENING, run(['toiletten-open']), { weekend: false })
+    const p = runProgress(OPENING, run(['toiletten-open']), { date: MAANDAG, person: BAAS })
     expect(p.done).toBe(0)
-    expect(p.total).toBe(requiredItems(OPENING, { weekend: false }).length)
+    expect(p.total).toBe(requiredItems(OPENING, { date: MAANDAG, person: BAAS }).length)
   })
 
   it('komt op 1 als alles wat geldt afgevinkt is', () => {
-    const ids = requiredItems(OPENING, { weekend: false }).map((i) => i.id)
-    const p = runProgress(OPENING, run(ids), { weekend: false })
+    const ids = requiredItems(OPENING, { date: MAANDAG, person: BAAS }).map((i) => i.id)
+    const p = runProgress(OPENING, run(ids), { date: MAANDAG, person: BAAS })
     expect(p.done).toBe(p.total)
     expect(p.ratio).toBe(1)
   })
 
   it('negeert een uitgevinkt punt', () => {
-    const p = runProgress(OPENING, { items: { sleutel: { done: false } } }, { weekend: false })
+    const p = runProgress(OPENING, { items: { sleutel: { done: false } } }, { date: MAANDAG, person: BAAS })
     expect(p.done).toBe(0)
   })
 })
