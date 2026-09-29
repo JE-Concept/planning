@@ -63,8 +63,10 @@ export default function Tasks() {
 
   useEffect(() => {
     try {
-      const { zoek, ...rest } = opties
-      localStorage.setItem(BEWAARD, JSON.stringify(rest))
+      // De zoekterm hoort niet bij een voorkeur maar bij één keer zoeken.
+      const teBewaren = { ...opties, zoek: undefined }
+      delete teBewaren.zoek
+      localStorage.setItem(BEWAARD, JSON.stringify(teBewaren))
     } catch {
       /* Zonder opslag werkt alles, het wordt alleen niet onthouden. */
     }
