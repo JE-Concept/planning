@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { zetHuidigeTaal } from '../src/lib/i18n'
+import { zetLocale } from '../src/lib/dates'
 import {
   CHECKLIST_TEMPLATES,
   CLOSING,
   FAVV,
   OPENING,
   POETSPLAN,
+  afdelingLabel,
   dueOn,
   grensTekst,
   isWeekend,
@@ -279,5 +282,46 @@ describe('grensTekst', () => {
   })
   it('zwijgt over een veld zonder grens', () => {
     expect(grensTekst({ kind: 'getal' })).toBe('')
+  })
+})
+
+describe('in het Engels', () => {
+  // De dag- en maandnamen komen van `Intl` en volgen de opmaaktaal; de zinnen
+  // eromheen komen uit de catalogus en volgen de gekozen taal. Vandaar allebei.
+  afterEach(() => {
+    zetHuidigeTaal('nl')
+    zetLocale('nl-BE')
+  })
+
+  const engels = () => {
+    zetHuidigeTaal('en')
+    zetLocale('en-GB')
+  }
+
+  it('beschrijft de herhaling in het Engels', () => {
+    engels()
+    expect(repeatLabel({ repeat: { kind: 'wekelijks', days: [1] } })).toBe('every Monday')
+    expect(repeatLabel({ repeat: { kind: 'weekdag', days: [0, 6] } })).toBe('weekend')
+    expect(repeatLabel({ repeat: { kind: 'weekdag', days: [2, 4] } })).toBe('Tuesday, Thursday')
+    expect(repeatLabel({})).toBe('every day')
+  })
+
+  // Het rangtelwoord komt van `Intl.PluralRules`: 1st, 2nd, 3rd, 21st — waar het
+  // Nederlands overal een "e" zet.
+  it('kiest het juiste rangtelwoord bij een dag van de maand', () => {
+    engels()
+    expect(repeatLabel({ repeat: { kind: 'maandelijks', dayOfMonth: 1 } })).toBe('the 1st of the month')
+    expect(repeatLabel({ repeat: { kind: 'maandelijks', dayOfMonth: 3 } })).toBe('the 3rd of the month')
+    expect(repeatLabel({ repeat: { kind: 'maandelijks', dayOfMonth: 15 } })).toBe('the 15th of the month')
+    expect(repeatLabel({ repeat: { kind: 'kwartaal', dayOfMonth: 2 } })).toBe('every quarter, the 2nd')
+    expect(repeatLabel({ repeat: { kind: 'jaarlijks', month: 2, dayOfMonth: 1 } })).toBe('every year in March')
+  })
+
+  it('schrijft de grens en de afdeling in het Engels', () => {
+    engels()
+    expect(grensTekst({ kind: 'getal', max: 7, eenheid: '°C' })).toBe('max 7 °C')
+    expect(grensTekst({ kind: 'getal', min: 0, max: 7, eenheid: '°C' })).toBe('between 0 and 7 °C')
+    expect(afdelingLabel('zaal')).toBe('Front of house')
+    expect(afdelingLabel()).toBe('Everyone')
   })
 })

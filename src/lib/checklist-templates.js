@@ -16,6 +16,11 @@
  *   veld    vraagt naast het vinkje een waarde: een datum of een getal
  */
 
+// Met extensie, want `scripts/seed.mjs` leest dit bestand met kale Node en die
+// vult geen `.js` aan.
+import { huidigeLocaleVan } from './dates.js'
+import { tekst } from './i18n.js'
+
 export const OPENING = {
   id: 'openen',
   key: 'openen',
@@ -345,19 +350,31 @@ export function meetOordeel(veld, waarde) {
 /** De grens in één regel, zoals ze onder het invoerveld staat. */
 export function grensTekst(veld) {
   if (!veld || veld.kind !== 'getal') return ''
+  // De eenheid staat er los achter: "°C" is in beide talen hetzelfde, en zo
+  // hoeft ze niet in elke variant van de zin opnieuw.
   const eenheid = veld.eenheid ? ` ${veld.eenheid}` : ''
-  if (veld.min != null && veld.max != null) return `tussen ${veld.min} en ${veld.max}${eenheid}`
-  if (veld.max != null) return `max ${veld.max}${eenheid}`
-  if (veld.min != null) return `min ${veld.min}${eenheid}`
-  return veld.eenheid ? `in ${veld.eenheid}` : ''
+  if (veld.min != null && veld.max != null) {
+    return tekst('lijstlib.grens.tussen', { min: veld.min, max: veld.max }) + eenheid
+  }
+  if (veld.max != null) return tekst('lijstlib.grens.max', { waarde: veld.max }) + eenheid
+  if (veld.min != null) return tekst('lijstlib.grens.min', { waarde: veld.min }) + eenheid
+  return veld.eenheid ? tekst('lijstlib.grens.eenheid', { eenheid: veld.eenheid }) : ''
 }
 
-export const AFDELINGEN = [
-  { key: 'iedereen', label: 'Iedereen' },
-  { key: 'verantwoordelijke', label: 'Verantwoordelijke' },
-  { key: 'keuken', label: 'Keuken' },
-  { key: 'zaal', label: 'Zaal' },
-]
+/*
+  De sleutel ligt vast, de naam hangt aan de taal.
+
+  Daarom is `label` een getter: deze lijst wordt één keer gemaakt en op meerdere
+  schermen uitgelezen, en een vaste tekst zou na een taalwissel de oude blijven
+  tonen tot iemand de pagina herlaadt. Dezelfde afspraak als `PRIORITIES` in
+  `format.js`.
+*/
+export const AFDELINGEN = ['iedereen', 'verantwoordelijke', 'keuken', 'zaal'].map((key) => ({
+  key,
+  get label() {
+    return tekst(`lijstlib.afdeling.${key}`)
+  },
+}))
 
 export const afdelingLabel = (key) =>
   AFDELINGEN.find((a) => a.key === (key || 'iedereen'))?.label ?? key
@@ -458,27 +475,66 @@ export function dueOn(item, date) {
   }
 }
 
-const WEEKDAG_NAMEN = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
+/*
+  Dag- en maandnamen komen van `Intl`, niet uit een tabel hier.
+
+  Een eigen lijstje "zondag, maandag, …" zou bij een taalwissel Nederlands
+  blijven, en naast de namen van de kalenders komen te staan. `Intl` kent ze in
+  beide talen en `huidigeLocaleVan` zegt in welke we nu staan — dezelfde bron
+  waar `dates.js` zijn opmaak mee maakt.
+
+  Ze worden per taal één keer gemaakt en pas opnieuw wanneer de taal wisselt:
+  `Intl.DateTimeFormat` is duurder dan het lijkt, en `repeatLabel` staat op elke
+  regel van een lijst met tientallen punten.
+
+  4 januari 2026 is een zondag, dus `4 + dag` geeft precies de dag die JavaScript
+  met dat nummer bedoelt.
+*/
+let naamLocale = null
+let dagNamen = []
+let maandVorm = null
+let rangregels = null
+
+function namenVanNu() {
+  const locale = huidigeLocaleVan()
+  if (locale !== naamLocale) {
+    naamLocale = locale
+    const dagVorm = new Intl.DateTimeFormat(locale, { weekday: 'long' })
+    dagNamen = Array.from({ length: 7 }, (_, d) => dagVorm.format(new Date(2026, 0, 4 + d)))
+    maandVorm = new Intl.DateTimeFormat(locale, { month: 'long' })
+    rangregels = new Intl.PluralRules(locale, { type: 'ordinal' })
+  }
+  return { dagNamen, maandVorm, rangregels }
+}
+
+/** "1e" of "1st", "2e" of "2nd" — welke vorm het getal krijgt, weet `Intl`. */
+function rangtelwoord(getal) {
+  return tekst(`lijstlib.ordinaal_${namenVanNu().rangregels.select(getal)}`, { dag: getal })
+}
 
 /** De herhaling in één regel, zoals ze in de lijst en de editor leest. */
 export function repeatLabel(item) {
   const repeat = item.repeat ?? (item.weekendOnly ? { kind: 'weekdag', days: [0, 6] } : { kind: 'dagelijks' })
+  const { dagNamen: dagen, maandVorm: maand } = namenVanNu()
+
   switch (repeat.kind) {
     case 'weekdag': {
-      const dagen = (repeat.days ?? []).map((d) => WEEKDAG_NAMEN[d])
-      if (dagen.length === 2 && repeat.days.includes(0) && repeat.days.includes(6)) return 'weekend'
-      return dagen.join(', ') || 'geen dag gekozen'
+      const gekozen = repeat.days ?? []
+      if (gekozen.length === 2 && gekozen.includes(0) && gekozen.includes(6)) {
+        return tekst('lijstlib.herhaal.weekend')
+      }
+      return gekozen.map((d) => dagen[d]).join(', ') || tekst('lijstlib.herhaal.geen_dag')
     }
     case 'wekelijks':
-      return `elke ${WEEKDAG_NAMEN[repeat.days?.[0] ?? 1]}`
+      return tekst('lijstlib.herhaal.wekelijks', { dag: dagen[repeat.days?.[0] ?? 1] })
     case 'maandelijks':
-      return `de ${repeat.dayOfMonth ?? 1}e van de maand`
+      return tekst('lijstlib.herhaal.maandelijks', { dag: rangtelwoord(repeat.dayOfMonth ?? 1) })
     case 'kwartaal':
-      return `elk kwartaal, de ${repeat.dayOfMonth ?? 1}e`
+      return tekst('lijstlib.herhaal.kwartaal', { dag: rangtelwoord(repeat.dayOfMonth ?? 1) })
     case 'jaarlijks':
-      return `jaarlijks in ${new Intl.DateTimeFormat('nl-BE', { month: 'long' }).format(new Date(2026, repeat.month ?? 0, 1))}`
+      return tekst('lijstlib.herhaal.jaarlijks', { maand: maand.format(new Date(2026, repeat.month ?? 0, 1)) })
     default:
-      return 'elke dag'
+      return tekst('lijstlib.herhaal.dagelijks')
   }
 }
 

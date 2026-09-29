@@ -21,7 +21,19 @@
  * dan is het samenvoegen het werk.
  */
 
-const BESTANDEN = import.meta.glob('./taal/*.js', { eager: true })
+/*
+  `import.meta.glob` is een truc van Vite: bij het bouwen wordt de aanroep
+  vervangen door de bestanden zelf. Kale Node kent hem niet, en `scripts/seed.mjs`
+  leest via `checklist-templates.js` wél met kale Node mee. Die heeft geen
+  teksten nodig — hij schrijft gegevens weg — dus een lege catalogus is daar het
+  juiste antwoord, en geen reden om de seed te laten vallen.
+*/
+let BESTANDEN = {}
+try {
+  BESTANDEN = import.meta.glob('./taal/*.js', { eager: true })
+} catch {
+  BESTANDEN = {}
+}
 
 /**
  * Alles bij elkaar, met een waarschuwing wanneer twee bestanden dezelfde sleutel
