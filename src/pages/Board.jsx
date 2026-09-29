@@ -38,7 +38,7 @@ export default function Board() {
 
   const list = listById[listId]
   const statuses = useMemo(() => statusesOf(listId), [listId, statusesOf])
-  const { top, subtasks, loading } = useTasks(listId)
+  const { tasks, top, subtasks, loading } = useTasks(listId)
 
   const [view, setView] = useState('board')
   const [groupBy, setGroupBy] = useState('status')
@@ -52,6 +52,20 @@ export default function Board() {
   const openTask = useCallback((task) => setOpenTaskId(task.id), [])
 
   const tagsByName = useMemo(() => Object.fromEntries(tags.map((t) => [t.name, t])), [tags])
+
+  /**
+   * Hoeveel taken er in elke kolom staan — subtaken meegeteld.
+   *
+   * De kolomeditor heeft dit nodig om te kunnen zeggen wat er op het spel staat
+   * wanneer je een kolom weghaalt, en om de taken mee te verhuizen.
+   */
+  const statusCounts = useMemo(() => {
+    const counts = {}
+    for (const task of tasks) {
+      if (task.statusId) counts[task.statusId] = (counts[task.statusId] ?? 0) + 1
+    }
+    return counts
+  }, [tasks])
 
   const subtaskCounts = useMemo(() => {
     const counts = {}
@@ -323,7 +337,12 @@ export default function Board() {
       ) : null}
 
       {editingColumns ? (
-        <ColumnEditor list={list} statuses={statuses} onClose={() => setEditingColumns(false)} />
+        <ColumnEditor
+          list={list}
+          statuses={statuses}
+          counts={statusCounts}
+          onClose={() => setEditingColumns(false)}
+        />
       ) : null}
     </div>
   )

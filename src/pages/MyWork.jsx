@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { addDays, dayKey, isOverdue, relativeDay } from '@lib/dates'
+import { addDays, dayKey, isOverdue, relativeDay, startOfMonth } from '@lib/dates'
 import { formatDuration, priorityOf } from '@lib/format'
 import { Badge, EmptyState, Select, Spinner } from '@ui/index'
-import PageHeader from '@components/layout/PageHeader'
+import PageHeader, { Tab } from '@components/layout/PageHeader'
+import MonthCalendar from '@components/common/MonthCalendar'
 import TaskDrawer from '@components/board/TaskDrawer'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -22,6 +23,8 @@ export default function MyWork() {
   const { profiles, listById, tags } = useWorkspace()
   const [who, setWho] = useState(uid)
   const [openTaskId, setOpenTaskId] = useState(null)
+  const [view, setView] = useState('lijst')
+  const [month, setMonth] = useState(() => startOfMonth())
 
   const { tasks, loading } = useMyTasks(who)
   const tagsByName = useMemo(() => Object.fromEntries(tags.map((t) => [t.name, t])), [tags])
@@ -41,6 +44,18 @@ export default function MyWork() {
     return out
   }, [tasks])
 
+  // Dezelfde taken, op hun vervaldag. Wat geen datum heeft staat niet in een
+  // kalender thuis — dat blijft de lijst.
+  const perDag = useMemo(() => {
+    const map = {}
+    for (const task of tasks) {
+      if (!task.dueDate) continue
+      const sleutel = dayKey(task.dueDate)
+      ;(map[sleutel] ??= []).push(task)
+    }
+    return map
+  }, [tasks])
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
@@ -55,8 +70,40 @@ export default function MyWork() {
             ))}
           </Select>
         }
+        tabs={
+          <>
+            <Tab active={view === 'lijst'} onClick={() => setView('lijst')}>
+              Lijst
+            </Tab>
+            <Tab active={view === 'kalender'} onClick={() => setView('kalender')}>
+              Kalender
+            </Tab>
+          </>
+        }
       />
 
+      {view === 'kalender' ? (
+        <MonthCalendar
+          month={month}
+          onMonthChange={setMonth}
+          itemsByDay={perDag}
+          legenda={
+            <span className="text-xs text-ink-500">
+              {Object.values(perDag).flat().length} met datum · {buckets.someday.length} zonder
+            </span>
+          }
+          renderItem={(task) => (
+            <button
+              type="button"
+              onClick={() => setOpenTaskId(task.id)}
+              className="flex w-full items-center gap-1 rounded border-l-2 bg-white px-1 py-0.5 text-left text-[11px] text-ink-800 shadow-card hover:bg-ink-50"
+              style={{ borderLeftColor: task.statusColor ?? '#8593a9' }}
+            >
+              <span className="min-w-0 flex-1 truncate">{task.title}</span>
+            </button>
+          )}
+        />
+      ) : (
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         {loading ? (
           <div className="flex justify-center py-12">
@@ -127,6 +174,7 @@ export default function MyWork() {
           </div>
         )}
       </div>
+      )}
 
       {openTaskId ? <TaskDrawer taskId={openTaskId} onClose={() => setOpenTaskId(null)} /> : null}
     </div>

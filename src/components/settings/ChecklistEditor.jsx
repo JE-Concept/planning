@@ -3,6 +3,7 @@ import {
   AFDELINGEN,
   HERHALINGEN,
   WEEKDAGEN,
+  VELDSOORTEN,
   afdelingLabel,
   nieuwPuntId,
   repeatLabel,
@@ -396,6 +397,37 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
                   </option>
                 ))}
               </Select>
+            </Field>
+          ) : null}
+
+          <Field label="Vraagt een waarde" hint="Naast het vinkje, bijvoorbeeld een datum of een temperatuur.">
+            <Select
+              value={punt.veld?.kind ?? ''}
+              onChange={(e) =>
+                onWijzig({
+                  veld: e.target.value
+                    ? { kind: e.target.value, label: punt.veld?.label ?? 'Waarde' }
+                    : null,
+                })
+              }
+              disabled={!isAdmin}
+            >
+              {VELDSOORTEN.map((v) => (
+                <option key={v.kind} value={v.kind}>
+                  {v.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          {punt.veld ? (
+            <Field label="Wat vraagt het">
+              <Input
+                defaultValue={punt.veld.label ?? ''}
+                onBlur={(e) => onWijzig({ veld: { ...punt.veld, label: e.target.value } })}
+                placeholder="Laatst vervangen op"
+                disabled={!isAdmin}
+              />
             </Field>
           ) : null}
 

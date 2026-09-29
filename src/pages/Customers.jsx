@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { relativeDay } from '@lib/dates'
 import { Badge, Button, ConfirmButton, Drawer, Field, Input, Select, Spinner, Textarea } from '@ui/index'
 import PageHeader from '@components/layout/PageHeader'
 import Documents from '@components/common/Documents'
+import TaskDrawer from '@components/board/TaskDrawer'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
@@ -137,6 +137,7 @@ function KlantPaneel({ id, onClose, toast }) {
   const { brands } = useWorkspace()
   const klant = customers.find((c) => c.id === id)
   const { tasks } = useCustomerTasks(id)
+  const [openEvent, setOpenEvent] = useState(null)
 
   if (!klant) return null
 
@@ -321,13 +322,15 @@ function KlantPaneel({ id, onClose, toast }) {
             <ul className="mt-1 divide-y divide-ink-100">
               {tasks.map((taak) => (
                 <li key={taak.id} className="flex items-center gap-2 py-2">
-                  <Link
-                    to={`/bord/${taak.listId}`}
-                    onClick={onClose}
-                    className="min-w-0 flex-1 truncate text-sm text-ink-800 hover:underline"
+                  {/* Het event zelf open, niet het bord eromheen: wie hier
+                      klikt wil de fiche, niet de kolommen. */}
+                  <button
+                    type="button"
+                    onClick={() => setOpenEvent(taak.id)}
+                    className="min-w-0 flex-1 truncate text-left text-sm text-ink-800 hover:underline"
                   >
                     {taak.title}
-                  </Link>
+                  </button>
                   {taak.statusName ? (
                     <Badge color={taak.statusColor ?? '#8593a9'} subtle>
                       {taak.statusName}
@@ -341,6 +344,10 @@ function KlantPaneel({ id, onClose, toast }) {
             </ul>
           )}
         </section>
+
+        {openEvent ? (
+          <TaskDrawer taskId={openEvent} onClose={() => setOpenEvent(null)} />
+        ) : null}
 
         <Field label="Notities">
           <Textarea

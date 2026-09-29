@@ -4,6 +4,7 @@ import { daysUntil, formatDate, toDateInput } from '@lib/dates'
 import { formatCurrency, formatNumber } from '@lib/format'
 import {
   Avatar,
+  AvatarStack,
   Badge,
   Button,
   ConfirmButton,
@@ -54,7 +55,7 @@ function valueLabel(kr, value) {
 
 export default function Goals() {
   const { goals, loading } = useGoals()
-  const { brandById, profileById, profiles, brands } = useWorkspace()
+  const { profileById, profiles } = useWorkspace()
   const { uid } = useAuth()
   const toast = useToast()
 
@@ -116,8 +117,8 @@ export default function Goals() {
               <GoalCard
                 key={goal.id}
                 goal={goal}
-                brand={brandById[goal.brandId]}
                 owner={profileById[goal.ownerId]}
+                profileById={profileById}
                 onEdit={() => setEditing(goal)}
                 onCheckIn={(keyResultId, value, note) =>
                   checkIn({ goal, keyResultId, value, note, profileId: uid }).catch((e) =>
@@ -133,7 +134,6 @@ export default function Goals() {
       {creating ? (
         <GoalModal
           profiles={profiles}
-          brands={brands}
           uid={uid}
           onClose={() => setCreating(false)}
         />
@@ -143,7 +143,6 @@ export default function Goals() {
         <GoalModal
           goal={editing}
           profiles={profiles}
-          brands={brands}
           uid={uid}
           onClose={() => setEditing(null)}
         />
@@ -154,7 +153,7 @@ export default function Goals() {
 
 // ─── Card ───────────────────────────────────────────────────────────────────
 
-function GoalCard({ goal, brand, owner, onEdit, onCheckIn }) {
+function GoalCard({ goal, owner, onEdit, onCheckIn, profileById }) {
   const progress = goalProgress(goal)
   const left = daysUntil(goal.dueDate)
   const late = left < 0 && goal.status === 'active'
@@ -164,7 +163,6 @@ function GoalCard({ goal, brand, owner, onEdit, onCheckIn }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            {brand ? <Badge color={brand.color}>{brand.name}</Badge> : null}
             <Badge color={goal.status === 'achieved' ? '#008844' : '#8593a9'} subtle>
               {STATUS_LABELS[goal.status]}
             </Badge>
@@ -174,7 +172,15 @@ function GoalCard({ goal, brand, owner, onEdit, onCheckIn }) {
             <p className="mt-0.5 text-xs text-ink-500">{goal.description}</p>
           ) : null}
         </div>
-        {owner ? <Avatar profile={owner} size="sm" /> : null}
+        <div className="flex shrink-0 items-center gap-1">
+          {/* De uitvoerders staan naast de eigenaar: wie eraan trekt, en wie
+              erover rapporteert. */}
+          <AvatarStack
+            profiles={(goal.assignees ?? []).map((id) => profileById?.[id]).filter(Boolean)}
+            max={3}
+          />
+          {owner ? <Avatar profile={owner} size="sm" /> : null}
+        </div>
       </div>
 
       <div>
@@ -316,12 +322,12 @@ function Verloop({ kr }) {
 
 // ─── Create / edit ──────────────────────────────────────────────────────────
 
-function GoalModal({ goal, profiles, brands, uid, onClose }) {
+function GoalModal({ goal, profiles, uid, onClose }) {
   const toast = useToast()
   const { boards } = useWorkspace()
   const [name, setName] = useState(goal?.name ?? '')
   const [description, setDescription] = useState(goal?.description ?? '')
-  const [brandId, setBrandId] = useState(goal?.brandId ?? '')
+  const [assignees, setAssignees] = useState(goal?.assignees ?? [])
   const [ownerId, setOwnerId] = useState(goal?.ownerId ?? uid ?? '')
   const [dueDate, setDueDate] = useState(toDateInput(goal?.dueDate ?? endOfYear()))
   const [status, setStatus] = useState(goal?.status ?? 'active')
@@ -352,7 +358,7 @@ function GoalModal({ goal, profiles, brands, uid, onClose }) {
         await updateGoal(goal.id, {
           name: name.trim(),
           description,
-          brandId: brandId || null,
+          assignees,
           ownerId: ownerId || null,
           dueDate: new Date(dueDate),
           status,
@@ -362,7 +368,7 @@ function GoalModal({ goal, profiles, brands, uid, onClose }) {
         const id = await createGoal({
           name,
           description,
-          brandId: brandId || null,
+          assignees,
           ownerId: ownerId || null,
           dueDate: new Date(dueDate),
           status,
@@ -414,17 +420,33 @@ function GoalModal({ goal, profiles, brands, uid, onClose }) {
           <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
 
+        <Field label="Uitvoerders" hint="Wie er aan trekt. De eigenaar is wie erover rapporteert.">
+          <div className="flex flex-wrap gap-1.5">
+            {profiles
+              .filter((p) => p.active !== false && p.role !== 'staff')
+              .map((p) => {
+                const aan = assignees.includes(p.id)
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() =>
+                      setAssignees((all) =>
+                        aan ? all.filter((id) => id !== p.id) : [...all, p.id]
+                      )
+                    }
+                    title={p.fullName ?? p.email}
+                    aria-pressed={aan}
+                    className={`rounded-full ring-2 ${aan ? 'ring-accent-500' : 'ring-transparent opacity-50'}`}
+                  >
+                    <Avatar profile={p} size="sm" />
+                  </button>
+                )
+              })}
+          </div>
+        </Field>
+
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Merk">
-            <Select value={brandId} onChange={(e) => setBrandId(e.target.value)}>
-              <option value="">Alle merken</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
           <Field label="Eigenaar">
             <Select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
               <option value="">Niemand</option>

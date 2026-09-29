@@ -68,12 +68,6 @@ const SOCIALS = [
   st('planning', '#4A7FC1', 'active', 3),
   st('done', '#0F7A54', 'closed', 4),
 ]
-const REQS = [
-  st('to do', '#8A919C', 'open', 0),
-  st('on going', '#4A7FC1', 'active', 1),
-  st('complete', '#0F7A54', 'closed', 2),
-]
-
 seedDoc('lists', 'l-overview', {
   spaceId: 's-je', folderId: null, brandId: null, name: 'Events',
   description: 'Aanvraag → offerte → planning → facturatie. De hoofdpijplijn.',
@@ -84,12 +78,6 @@ seedDoc('lists', 'l-socials', {
   description: 'Contentproductie voor alle merken.',
   kind: 'social', position: 1, archived: false, statuses: SOCIALS, createdAt: D('2025-06-01'),
 })
-seedDoc('lists', 'l-reqs', {
-  spaceId: 's-je', folderId: 'f-platform', brandId: null, name: 'Requirements',
-  description: 'Backlog platformontwikkeling.',
-  kind: 'tasks', position: 2, archived: false, statuses: REQS, createdAt: D('2026-01-10'),
-})
-seedDoc('folders', 'f-platform', { spaceId: 's-je', name: 'Platform Development', position: 0, archived: false })
 
 // ─── Labels ─────────────────────────────────────────────────────────────────
 ;[['wintermoods', '#0EA5E9'], ['stvv', '#C2352C'], ['losse-events', '#1A3A6B'],
@@ -161,7 +149,7 @@ const LOGO =
 let pos = 0
 function taak(id, listId, statuses, statusName, o = {}) {
   const s = statuses.find((x) => x.name === statusName)
-  const list = { 'l-overview': 'Events', 'l-socials': 'Socials', 'l-reqs': 'Requirements' }[listId]
+  const list = { 'l-overview': 'Events', 'l-socials': 'Socials' }[listId]
   seedDoc('tasks', id, {
     listId, listName: list, spaceId: 's-je', brandId: o.brandId ?? null,
     parentId: o.parentId ?? null,
@@ -264,10 +252,6 @@ taak('t-soc-3', 'l-socials', SOCIALS, 'ready for review', { title: 'Bar Vue — 
 taak('t-soc-4', 'l-socials', SOCIALS, 'pending', { title: 'Feestbeest — verjaardagsformules', assignees: ['u-charish'], brandId: 'feestbeest' })
 taak('t-soc-5', 'l-socials', SOCIALS, 'done', { title: 'Terugblik Loonse Feesten', assignees: ['u-charish'] })
 
-// Requirements
-taak('t-req-1', 'l-reqs', REQS, 'on going', { title: 'Architecture — Multi-tenant SaaS platform', assignees: ['u-jasper'], priority: 1 })
-taak('t-req-2', 'l-reqs', REQS, 'to do', { title: 'Offertemotor — digitale handtekening', assignees: ['u-jasper'], priority: 2 })
-taak('t-req-3', 'l-reqs', REQS, 'complete', { title: 'Stripe Connect onboarding', assignees: ['u-jasper'] })
 
 // ─── Reacties ───────────────────────────────────────────────────────────────
 ;[
@@ -378,7 +362,8 @@ post('p7', { brandId: 'feestbeest', title: 'Trouw Niels en Inez — bedankt', ov
 
 seedDoc('goals', 'g1', {
   name: 'Omzet events Q4 2026', description: 'Vier bevestigde events per maand in het laatste kwartaal.',
-  brandId: null, ownerId: 'u-jasper', startDate: D('2026-10-01'), dueDate: D('2026-12-31'),
+  ownerId: 'u-jasper', assignees: ['u-elke', 'u-anneleen'],
+  startDate: D('2026-10-01'), dueDate: D('2026-12-31'),
   status: 'active', color: '#1A3A6B', position: 0,
   keyResults: [
     { id: 'kr1', name: 'Bevestigde events', kind: 'number', startValue: 0, targetValue: 12, currentValue: 5, unit: '', listId: null },
@@ -439,10 +424,9 @@ seedDoc('lists', 'l-overleg', {
   description: 'Losse taken en de verslagen van het teamoverleg, met de actiepunten eronder.',
   kind: 'tasks', position: 3, archived: false,
   statuses: [
-    { id: 'o1', name: 'opgenomen', color: '#8593a9', kind: 'open', position: 0 },
-    { id: 'o2', name: 'samengevat', color: '#3377ff', kind: 'active', position: 1 },
-    { id: 'o3', name: 'nagelezen', color: '#3db88b', kind: 'active', position: 2 },
-    { id: 'o4', name: 'afgerond', color: '#008844', kind: 'closed', position: 3 },
+    { id: 'o1', name: 'open', color: '#8593a9', kind: 'open', position: 0 },
+    { id: 'o2', name: 'on going', color: '#3377ff', kind: 'active', position: 1 },
+    { id: 'o3', name: 'closed', color: '#008844', kind: 'closed', position: 2 },
   ],
   createdAt: D('2026-01-10'),
 })
@@ -450,7 +434,7 @@ seedDoc('lists', 'l-overleg', {
 seedDoc('tasks', 't-overleg-1', {
   listId: 'l-overleg', listName: 'Tasks', spaceId: 's-je', brandId: null, parentId: null,
   title: 'Weekstart events — 21/09/2026', description: '',
-  statusId: 'o3', statusName: 'nagelezen', statusColor: '#3db88b', statusKind: 'active',
+  statusId: 'o2', statusName: 'on going', statusColor: '#3377ff', statusKind: 'active',
   open: true, priority: null, startDate: null, dueDate: null,
   assignees: [], tags: [], position: 1024, archived: false, completedAt: null,
   trackedSeconds: 0, commentCount: 0, meetingDate: '2026-09-21',
@@ -465,7 +449,7 @@ seedDoc('tasks', 't-overleg-1', {
   seedDoc('tasks', `t-overleg-1-${i}`, {
     listId: 'l-overleg', listName: 'Tasks', spaceId: 's-je', brandId: null,
     parentId: 't-overleg-1', title: titel, description: '',
-    statusId: 'o3', statusName: 'nagelezen', statusColor: '#3db88b', statusKind: 'active',
+    statusId: 'o2', statusName: 'on going', statusColor: '#3377ff', statusKind: 'active',
     open: true, priority: null, startDate: null, dueDate: deadline,
     assignees: [wie], tags: [], position: 2048 + i, archived: false, completedAt: null,
     trackedSeconds: 0, commentCount: 0, meetingId: 't-overleg-1',
@@ -534,4 +518,8 @@ seedDoc('automations', 'nieuwe-aanvraag', {
   updatedAt: dag(-20),
 })
 
-seedDoc('config', 'access', { allowedDomains: ['jeconcept.be', 'kenjeklanten.be'], updatedAt: NU })
+seedDoc('config', 'access', {
+  allowedDomains: ['jeconcept.be', 'kenjeklanten.be'],
+  socialOwnerEmail: 'charish.talento@gmail.com',
+  updatedAt: NU,
+})

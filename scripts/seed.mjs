@@ -97,6 +97,9 @@ async function main() {
       // Wie de lege werkruimte mag claimen. Zonder dit wordt dat "wie het eerst
       // inlogt", en dat is een race die je achteraf niet meer rechtzet.
       bootstrapOwnerEmail: (process.env.OWNER_EMAIL ?? 'jasper@kenjeklanten.be').toLowerCase(),
+      // Wie de social content maakt: onderwerpen op de kalender komen bij
+      // deze persoon terecht.
+      socialOwnerEmail: (process.env.SOCIAL_OWNER_EMAIL ?? 'charish.talento@gmail.com').toLowerCase(),
       // Wie de samenvattingen van het teamoverleg mag lezen.
       meetingViewers: [
         'jasper@kenjeklanten.be',
@@ -171,10 +174,9 @@ async function main() {
       position: 3,
       archived: false,
       statuses: columns([
-        ['opgenomen', '#8593a9', 'open'],
-        ['samengevat', '#3377ff', 'active'],
-        ['nagelezen', '#3db88b', 'active'],
-        ['afgerond', '#008844', 'closed'],
+        ['open', '#8593a9', 'open'],
+        ['on going', '#3377ff', 'active'],
+        ['closed', '#008844', 'closed'],
       ]),
     },
     'bord Tasks'

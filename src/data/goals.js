@@ -44,13 +44,14 @@ export function newKeyResult(overrides = {}) {
   }
 }
 
-export function createGoal({ name, dueDate, ownerId, brandId, ...rest }) {
+export function createGoal({ name, dueDate, ownerId, assignees, ...rest }) {
   const goalRef = newRef(COL.goals)
 
   return setDoc(goalRef, {
     name: name.trim(),
     description: '',
-    brandId: brandId ?? null,
+    // Wie het doel waarmaakt. Een merk zei niets over wie eraan trekt; dit wel.
+    assignees: assignees ?? [],
     ownerId: ownerId ?? null,
     startDate: new Date(),
     dueDate: new Date(dueDate),

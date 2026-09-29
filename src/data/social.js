@@ -55,6 +55,29 @@ export const statusMeta = (key) =>
 export const channelMeta = (key) =>
   CHANNELS.find((c) => c.key === key) ?? { key, label: key, color: '#8593a9' }
 
+/**
+ * Wie de social content maakt.
+ *
+ * Onderwerpen komen altijd bij dezelfde persoon terecht — dat is hoe dit team
+ * werkt. Het adres staat in config/access en niet in de code: iemand kan van
+ * rol wisselen, en dan hoort er geen uitrol aan te pas te komen.
+ */
+export function useSocialOwner() {
+  const [email, setEmail] = useState(null)
+
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, COL.config, 'access'),
+        (snap) => setEmail((snap.data()?.socialOwnerEmail ?? '').toLowerCase() || null),
+        () => setEmail(null)
+      ),
+    []
+  )
+
+  return email
+}
+
 export function createPost({ brandId, scheduledAt, title, createdBy, ...rest }) {
   const postRef = newRef(COL.socialPosts)
 

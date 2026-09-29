@@ -55,39 +55,57 @@ export function updateList(id, patch) {
 }
 
 /**
- * Board columns are stored on the list. Renaming one has to repair the copies
- * the tasks carry, otherwise the board would show the old name until each card
- * happened to be touched.
+ * De kolommen van een bord bewaren.
+ *
+ * Twee dingen tegelijk, en allebei om dezelfde reden: een taak draagt de naam,
+ * de kleur en het soort van zijn kolom mee. Wordt een kolom hernoemd, dan moet
+ * die kopie mee — anders staat op het bord de oude naam tot iemand de kaart
+ * toevallig aanraakt. En verdwijnt een kolom, dan verwijst de taak naar een
+ * status die niet meer bestaat: ze staat er nog, maar in geen enkele kolom, en
+ * dus nergens. Daarom komen de taken van een verdwenen kolom hier mee, naar de
+ * kolom die de gebruiker aanwees (`moves`).
  */
-export async function saveStatuses(listId, statuses) {
+export async function saveStatuses(listId, statuses, { moves = {} } = {}) {
   const clean = statuses.map((s, i) => ({ ...s, position: i }))
   await updateList(listId, { statuses: clean })
 
   const tasks = await getDocs(query(col(COL.tasks), where('listId', '==', listId)))
   const byId = Object.fromEntries(clean.map((s) => [s.id, s]))
 
-  const stale = tasks.docs.filter((snap) => {
+  const teDoen = []
+  for (const snap of tasks.docs) {
     const task = snap.data()
-    const status = byId[task.statusId]
-    return (
-      status &&
-      (task.statusName !== status.name ||
-        task.statusColor !== status.color ||
-        task.statusKind !== status.kind)
-    )
-  })
-  if (stale.length === 0) return
+    const doel = byId[task.statusId] ?? byId[moves[task.statusId]] ?? null
+
+    // Geen doel: de kolom is weg en er is niets aangewezen. De taak
+    // ongemoeid laten is dan het veiligst — ze blijft leesbaar in de
+    // lijstweergave en in Mijn werk.
+    if (!doel) continue
+
+    const gelijk =
+      task.statusId === doel.id &&
+      task.statusName === doel.name &&
+      task.statusColor === doel.color &&
+      task.statusKind === doel.kind
+    if (gelijk) continue
+
+    teDoen.push([snap.ref, task, doel])
+  }
+  if (teDoen.length === 0) return
 
   // Firestore caps a batch at 500 writes.
-  for (let i = 0; i < stale.length; i += 400) {
+  for (let i = 0; i < teDoen.length; i += 400) {
     const batch = writeBatch(db)
-    for (const snap of stale.slice(i, i + 400)) {
-      const status = byId[snap.data().statusId]
-      batch.update(snap.ref, {
-        statusName: status.name,
-        statusColor: status.color,
-        statusKind: status.kind,
-        open: status.kind !== 'done' && status.kind !== 'closed',
+    for (const [taskRef, task, doel] of teDoen.slice(i, i + 400)) {
+      const klaar = doel.kind === 'done' || doel.kind === 'closed'
+      batch.update(taskRef, {
+        statusId: doel.id,
+        statusName: doel.name,
+        statusColor: doel.color,
+        statusKind: doel.kind,
+        open: !klaar,
+        completedAt: klaar ? (task.completedAt ?? new Date()) : null,
+        updatedAt: serverTimestamp(),
       })
     }
     await batch.commit()

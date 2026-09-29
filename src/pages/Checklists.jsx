@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { addDays, dayKey, formatDate, formatTime, isToday } from '@lib/dates'
 import { afdelingLabel, dueOn, repeatLabel, runProgress, visibleTo } from '@lib/checklist-templates'
-import { Avatar, Badge, Button, EmptyState, ProgressBar, Spinner, Textarea } from '@ui/index'
+import { Avatar, Badge, Button, EmptyState, Input, ProgressBar, Spinner, Textarea } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
-import { useChecklists, useRunsForDay, closeRun, saveNotes, toggleItem } from '@data/checklists'
+import { useChecklists, useRunsForDay, closeRun, saveNotes, setItemValue, toggleItem } from '@data/checklists'
 
 /**
  * Openen en sluiten van de bistro.
@@ -132,6 +132,11 @@ export default function Checklists() {
                     toast.error(err.message)
                   )
                 }
+                onValue={(item, waarde) =>
+                  setItemValue({ checklist: current, day, item, waarde, profile }).catch((err) =>
+                    toast.error(err.message)
+                  )
+                }
               />
             ))}
 
@@ -192,7 +197,7 @@ export default function Checklists() {
   )
 }
 
-function Section({ section, run, scope, onToggle }) {
+function Section({ section, run, scope, onToggle, onValue }) {
   // Wat vandaag niet valt, of niet voor deze persoon is, staat er helemaal niet
   // — anders leest de lijst als een archief in plaats van als het werk van nu.
   const shown = section.items.filter(
@@ -208,14 +213,20 @@ function Section({ section, run, scope, onToggle }) {
       </h2>
       <ul className="divide-y divide-ink-100">
         {shown.map((item) => (
-          <Item key={item.id} item={item} state={run?.items?.[item.id]} onToggle={onToggle} />
+          <Item
+            key={item.id}
+            item={item}
+            state={run?.items?.[item.id]}
+            onToggle={onToggle}
+            onValue={onValue}
+          />
         ))}
       </ul>
     </section>
   )
 }
 
-function Item({ item, state, onToggle }) {
+function Item({ item, state, onToggle, onValue }) {
   const [revealed, setRevealed] = useState(false)
   const done = Boolean(state?.done)
 
@@ -259,6 +270,30 @@ function Item({ item, state, onToggle }) {
                 Code tonen
               </button>
             )
+          ) : null}
+
+          {/* Bij sommige punten is "afgevinkt" niet het hele antwoord: bij
+              frituurolie gaat het om wanneer ze vervangen is. */}
+          {item.veld ? (
+            <span
+              className="mt-1.5 flex flex-wrap items-center gap-2"
+              onClick={(e) => e.preventDefault()}
+            >
+              <span className="text-xs text-ink-600">{item.veld.label ?? 'Waarde'}</span>
+              <Input
+                type={item.veld.kind === 'getal' ? 'number' : 'date'}
+                step={item.veld.kind === 'getal' ? 'any' : undefined}
+                defaultValue={state?.waarde ?? ''}
+                onBlur={(e) => onValue(item, e.target.value)}
+                aria-label={`${item.veld.label ?? 'Waarde'} voor ${item.label}`}
+                className="h-8 max-w-[11rem] text-sm"
+              />
+              {state?.waardeByName ? (
+                <span className="text-[11px] text-ink-400">
+                  ingevuld door {state.waardeByName}
+                </span>
+              ) : null}
+            </span>
           ) : null}
 
           {done && state?.byName ? (

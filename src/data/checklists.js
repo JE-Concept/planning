@@ -116,6 +116,36 @@ export function toggleItem({ checklist, day, item, done, profile, scope }) {
 }
 
 /**
+ * De waarde die bij een punt hoort.
+ *
+ * Bij het beoordelen van frituurolie is "afgevinkt" niet het hele antwoord —
+ * wanneer ze vervangen is, is het antwoord. Zulke waarden staan naast het
+ * vinkje in dezelfde map, dus ze verhuizen mee met de dag en met wie het
+ * invulde.
+ */
+export function setItemValue({ checklist, day, item, waarde, profile }) {
+  return setDoc(
+    ref(COL.checklistRuns, runId(checklist.id, day)),
+    {
+      checklistId: checklist.id,
+      checklistName: checklist.name,
+      day,
+      participants: arrayUnion(profile.id),
+      items: {
+        [item.id]: {
+          waarde: waarde === '' ? null : waarde,
+          waardeById: profile.id,
+          waardeByName: profile.fullName || profile.email,
+          waardeAt: new Date(),
+        },
+      },
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  )
+}
+
+/**
  * De opmerking onderaan het papieren blad — bij sluiten ook wat naar de
  * volgende shift moet. Eén veld per dag, dus de laatste schrijver wint; de naam
  * erbij maakt zichtbaar wie dat was.

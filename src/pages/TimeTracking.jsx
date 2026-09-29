@@ -14,6 +14,7 @@ import {
   Spinner,
 } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
+import MonthCalendar from '@components/common/MonthCalendar'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -61,6 +62,9 @@ export default function TimeTracking() {
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]))
   }, [entries])
 
+  // Dezelfde registraties, gesleuteld op dag — zoals de kalender ze vraagt.
+  const entriesPerDag = useMemo(() => Object.fromEntries(byDay), [byDay])
+
   const byPerson = useMemo(() => groupBy(entries, (e) => e.profileId), [entries])
   const byList = useMemo(() => groupBy(entries, (e) => e.listId ?? 'zonder'), [entries])
   const byBrand = useMemo(() => groupBy(entries, (e) => e.brandId ?? 'zonder'), [entries])
@@ -107,6 +111,9 @@ export default function TimeTracking() {
             <Tab active={view === 'entries'} onClick={() => setView('entries')}>
               Registraties
             </Tab>
+            <Tab active={view === 'kalender'} onClick={() => setView('kalender')}>
+              Kalender
+            </Tab>
             <Tab active={view === 'report'} onClick={() => setView('report')}>
               Rapport
             </Tab>
@@ -114,6 +121,36 @@ export default function TimeTracking() {
         }
       />
 
+      {view === 'kalender' ? (
+        <MonthCalendar
+          month={startOfMonth(new Date(`${month}-01T12:00:00`))}
+          onMonthChange={(m) => setMonth(monthKey(m))}
+          itemsByDay={entriesPerDag}
+          legenda={<span className="text-xs text-ink-500">{formatDuration(total)} deze maand</span>}
+          renderDay={(dag, items) => {
+            const seconden = items.reduce((s, e) => s + (e.durationSeconds ?? 0), 0)
+            return seconden ? (
+              <span className="text-[11px] font-semibold tabular-nums text-ink-700">
+                {formatDuration(seconden)}
+              </span>
+            ) : null
+          }}
+          renderItem={(entry) => (
+            <button
+              type="button"
+              onClick={() => setEditing(entry)}
+              className="flex w-full items-center gap-1 rounded bg-white px-1 py-0.5 text-left text-[11px] shadow-card hover:bg-ink-50"
+            >
+              <span className="min-w-0 flex-1 truncate text-ink-800">
+                {entry.taskTitle || entry.description || 'Tijd'}
+              </span>
+              <span className="shrink-0 tabular-nums text-ink-400">
+                {formatDuration(entry.durationSeconds)}
+              </span>
+            </button>
+          )}
+        />
+      ) : (
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         {loading ? (
           <div className="flex justify-center py-12">
@@ -222,6 +259,7 @@ export default function TimeTracking() {
           </div>
         )}
       </div>
+      )}
 
       {adding ? <EntryModal uid={uid} onClose={() => setAdding(false)} /> : null}
       {editing ? <EntryModal entry={editing} uid={uid} onClose={() => setEditing(null)} /> : null}

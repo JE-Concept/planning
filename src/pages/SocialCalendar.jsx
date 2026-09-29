@@ -9,7 +9,7 @@ import {
   startOfMonth,
   WEEKDAYS,
 } from '@lib/dates'
-import { Badge, Button, EmptyState, Select, Spinner } from '@ui/index'
+import { Badge, Button, EmptyState, Input, Select, Spinner } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import PostCard from '@components/social/PostCard'
 import PostDrawer from '@components/social/PostDrawer'
@@ -22,6 +22,7 @@ import {
   createPost,
   movePostTo,
   updatePost,
+  useSocialOwner,
   useSocialPosts,
   useUnscheduledPosts,
 } from '@data/social'
@@ -32,7 +33,7 @@ import {
  * does Bar Vue do".
  */
 export default function SocialCalendar() {
-  const { brands, brandById } = useWorkspace()
+  const { brands, brandById, profiles } = useWorkspace()
   const { uid } = useAuth()
   const toast = useToast()
 
@@ -46,6 +47,15 @@ export default function SocialCalendar() {
   const [openPostId, setOpenPostId] = useState(null)
   const [dragId, setDragId] = useState(null)
   const [overDay, setOverDay] = useState(null)
+  const [onderwerp, setOnderwerp] = useState('')
+
+  // Onderwerpen komen altijd bij dezelfde persoon terecht; wie dat is, staat
+  // in de instellingen en niet in deze code.
+  const socialOwnerEmail = useSocialOwner()
+  const socialOwner = useMemo(
+    () => profiles.find((p) => (p.email ?? '').toLowerCase() === socialOwnerEmail) ?? null,
+    [profiles, socialOwnerEmail]
+  )
 
   const range = useMemo(() => {
     const weeks = monthGrid(month)
@@ -111,6 +121,38 @@ export default function SocialCalendar() {
     }
   }
 
+  /**
+   * Een onderwerp op de kalender zetten.
+   *
+   * Zonder datum: het is een idee, geen afspraak. Het landt in de lijst
+   * "zonder datum" ernaast en wordt een post zodra iemand het op een dag
+   * sleept.
+   */
+  const addOnderwerp = async (e) => {
+    e.preventDefault()
+    const titel = onderwerp.trim()
+    if (!titel) return
+
+    const brandId = brandFilter[0] ?? brands[0]?.id
+    if (!brandId) {
+      toast.error('Maak eerst een merk aan bij Instellingen.')
+      return
+    }
+
+    try {
+      await createPost({
+        brandId,
+        scheduledAt: null,
+        title: titel,
+        createdBy: uid,
+        assigneeId: socialOwner?.id ?? null,
+      })
+      setOnderwerp('')
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
   const addOn = async (date) => {
     const brandId = brandFilter[0] ?? brands[0]?.id
     if (!brandId) {
@@ -121,7 +163,13 @@ export default function SocialCalendar() {
     when.setHours(10, 0, 0, 0)
 
     try {
-      const id = await createPost({ brandId, scheduledAt: when, title: 'Nieuwe post', createdBy: uid })
+      const id = await createPost({
+        brandId,
+        scheduledAt: when,
+        title: 'Nieuwe post',
+        createdBy: uid,
+        assigneeId: socialOwner?.id ?? null,
+      })
       setOpenPostId(id)
     } catch (err) {
       toast.error(err.message)
@@ -315,6 +363,23 @@ export default function SocialCalendar() {
             <h2 className="px-1 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-600">
               Nog in te plannen ({backlog.length})
             </h2>
+
+            {/* Een onderwerp is een idee zonder datum. Het komt altijd bij
+                dezelfde persoon terecht; wie dat is staat in de instellingen. */}
+            <form onSubmit={addOnderwerp} className="mb-2 px-1">
+              <Input
+                value={onderwerp}
+                onChange={(e) => setOnderwerp(e.target.value)}
+                placeholder="Onderwerp toevoegen…"
+                aria-label="Onderwerp toevoegen"
+                className="h-8 text-sm"
+              />
+              {onderwerp.trim() ? (
+                <p className="mt-1 text-[11px] text-ink-500">
+                  Enter zet het bij {socialOwner ? socialOwner.fullName || socialOwner.email : 'niemand'}
+                </p>
+              ) : null}
+            </form>
             <div className="space-y-1.5">
               {backlog.map((post) => (
                 <PostCard

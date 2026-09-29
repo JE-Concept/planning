@@ -13,6 +13,7 @@
  *   secret  toegangscode — de app toont die pas na een klik
  *   who     wie het ziet: iedereen, verantwoordelijke, keuken of zaal
  *   repeat  wanneer het moet; ontbreekt = elke dag
+ *   veld    vraagt naast het vinkje een waarde: een datum of een getal
  */
 
 export const OPENING = {
@@ -208,7 +209,7 @@ export const FAVV = {
       title: 'Bereiding en bewaring',
       items: [
         { id: 'etikettering', label: 'Bereide gerechten geëtiketteerd met datum', who: 'keuken' },
-        { id: 'frituurolie', label: 'Frituurolie beoordeeld', hint: 'Kleur, geur en rook. Vervangen en genoteerd wanneer nodig.', who: 'keuken' },
+        { id: 'frituurolie', label: 'Frituurolie beoordeeld', hint: 'Kleur, geur en rook.', who: 'keuken', veld: { kind: 'datum', label: 'Laatst vervangen op' } },
         { id: 'kerntemperatuur', label: 'Kerntemperatuur van risicobereidingen gemeten', hint: 'Min 75 °C in de kern.', who: 'keuken' },
       ],
     },
@@ -303,6 +304,12 @@ export function isWeekend(date = new Date()) {
 }
 
 // ─── Wie ziet wat ───────────────────────────────────────────────────────────
+
+export const VELDSOORTEN = [
+  { kind: '', label: 'Geen — alleen afvinken' },
+  { kind: 'datum', label: 'Een datum' },
+  { kind: 'getal', label: 'Een getal' },
+]
 
 export const AFDELINGEN = [
   { key: 'iedereen', label: 'Iedereen' },

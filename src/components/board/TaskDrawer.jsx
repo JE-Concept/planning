@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatDate, formatDateTime, toLocalInput, fromLocalInput } from '@lib/dates'
+import { formatDate, formatDateTime, isOverdue, relativeDay, toLocalInput, fromLocalInput } from '@lib/dates'
 import { formatCurrency, formatDuration, PRIORITIES } from '@lib/format'
 import {
   Avatar,
@@ -433,9 +433,18 @@ function SocialSection({ taskId }) {
 
 // ─── Subtasks ───────────────────────────────────────────────────────────────
 
+/**
+ * Subtaken zijn gewone taken.
+ *
+ * Ze hebben dus ook hun eigen toewijzing, omschrijving en deadline — alleen was
+ * daar geen weg naartoe: de lijst toonde een vinkje en een titel. Een klik op
+ * de titel opent nu dezelfde fiche als voor een event, één laag erbovenop, en
+ * sluiten brengt je terug bij de hoofdtaak.
+ */
 function Subtasks({ task, subtasks, profileById }) {
   const { listById, statusesOf } = useWorkspace()
   const [title, setTitle] = useState('')
+  const [openSub, setOpenSub] = useState(null)
   const statuses = statusesOf(task.listId)
   const done = statuses.find((s) => s.kind === 'closed' || s.kind === 'done')
   const open = statuses.find((s) => s.kind === 'open') ?? statuses[0]
@@ -467,9 +476,24 @@ function Subtasks({ task, subtasks, profileById }) {
                 onChange={() => setTaskStatus(sub.id, finished ? open : done ?? open)}
                 className="h-4 w-4 rounded border-ink-300 text-accent-600 focus:ring-accent-500"
               />
-              <span className={`flex-1 text-sm ${finished ? 'text-ink-400 line-through' : 'text-ink-800'}`}>
+              <button
+                type="button"
+                onClick={() => setOpenSub(sub.id)}
+                className={`flex-1 truncate text-left text-sm hover:underline ${
+                  finished ? 'text-ink-400 line-through' : 'text-ink-800'
+                }`}
+              >
                 {sub.title}
-              </span>
+              </button>
+              {sub.dueDate ? (
+                <span
+                  className={`shrink-0 text-[11px] ${
+                    isOverdue(sub.dueDate) && !finished ? 'font-medium text-red-600' : 'text-ink-400'
+                  }`}
+                >
+                  {relativeDay(sub.dueDate.toDate?.() ?? sub.dueDate)}
+                </span>
+              ) : null}
               {(sub.assignees ?? []).slice(0, 1).map((assignee) => (
                 <Avatar key={assignee} profile={profileById[assignee]} size="xs" />
               ))}
@@ -498,6 +522,8 @@ function Subtasks({ task, subtasks, profileById }) {
           Toevoegen
         </Button>
       </form>
+
+      {openSub ? <TaskDrawer taskId={openSub} onClose={() => setOpenSub(null)} /> : null}
     </section>
   )
 }

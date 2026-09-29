@@ -187,7 +187,7 @@ await test('het socialbord toont de events vanaf ready to invoice', async () => 
   for (const kolom of ['Social content delivery', 'Social content ready', 'Social content posted']) {
     zouden(bevat(tekst, kolom), `kolom "${kolom}" ontbreekt`)
   }
-  zouden(!bevat(tekst, 'Stripe Connect'), 'een taak van een ander bord staat op het socialbord')
+  zouden(!bevat(tekst, 'Requirements'), 'het requirementsbord staat er nog')
   // Staat op "invoiced" met stand posted, en op "ready to invoice" met stand ready.
   zouden(tekst.includes('Astrid Odeurs'), 'een gefactureerd event ontbreekt op het bord')
   zouden(tekst.includes('Loonse Feesten'), 'een event met stand "ready" ontbreekt')
@@ -320,6 +320,66 @@ await test('de business rules staan in de instellingen', async () => {
   const tekst = await inhoud(page)
   zouden(tekst.includes('ready to invoice'), 'de facturatieregel ontbreekt')
   zouden(tekst.includes('wordt de enige toegewezene'), 'de regel wordt niet uitgelegd')
+  await page.close()
+})
+
+await test('Mijn werk en Uren hebben een kalender', async () => {
+  const werk = await tabblad('/mijn-werk')
+  await werk.getByRole('button', { name: 'Kalender' }).click()
+  await werk.waitForTimeout(900)
+  const wt = await inhoud(werk)
+  zouden(bevat(wt, 'ma'), 'geen weekdagen in de kalender')
+  zouden(bevat(wt, 'met datum'), 'geen telling van taken met datum')
+  zouden(werk.fouten.length === 0, `fouten: ${werk.fouten[0]}`)
+  await werk.close()
+
+  const uren = await tabblad('/uren')
+  await uren.getByRole('button', { name: 'Kalender' }).click()
+  await uren.waitForTimeout(900)
+  zouden(bevat(await inhoud(uren), 'deze maand'), 'geen maandtotaal op de urenkalender')
+  zouden(uren.fouten.length === 0, `fouten: ${uren.fouten[0]}`)
+  await uren.close()
+})
+
+await test('een punt kan om een datum vragen, en die blijft staan', async () => {
+  const page = await tabblad('/openen-sluiten')
+  await page.getByRole('button', { name: 'FAVV-registraties' }).click()
+  await page.waitForTimeout(900)
+
+  const veld = page.getByLabel(/Laatst vervangen op voor Frituurolie/)
+  zouden((await veld.count()) === 1, 'het datumveld bij de frituurolie ontbreekt')
+  await veld.fill('2026-09-27')
+  await veld.blur()
+  await page.waitForTimeout(700)
+  zouden(bevat(await inhoud(page), 'ingevuld door'), 'de ingevulde waarde wordt niet bewaard')
+  await page.close()
+})
+
+await test('een onderwerp op de socialkalender komt bij Charish', async () => {
+  const page = await tabblad('/social')
+  await page.getByRole('button', { name: 'Kalender' }).click()
+  await page.waitForTimeout(900)
+
+  const veld = page.getByLabel('Onderwerp toevoegen')
+  await veld.fill('Kerstmenu aankondigen')
+  zouden(bevat(await inhoud(page), 'Charish'), 'er staat niet bij wie het krijgt')
+  await veld.press('Enter')
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Kerstmenu aankondigen'), 'het onderwerp staat niet in de lijst')
+  await page.close()
+})
+
+await test('een subtaak opent zijn eigen fiche', async () => {
+  const page = await tabblad('/bord/l-overview')
+  await page.locator('main').getByText('Trouw Niels en Inez').first().click()
+  await page.waitForTimeout(900)
+  await page.getByRole('button', { name: 'Offerte afwerken en versturen' }).click()
+  await page.waitForTimeout(900)
+  const panelen = await page.getByRole('dialog').count()
+  zouden(panelen === 2, `verwacht twee panelen, kreeg er ${panelen}`)
+  const laatste = await page.getByRole('dialog').last().innerText()
+  zouden(bevat(laatste, 'Deadline'), 'de subtaak heeft geen eigen deadline-veld')
+  zouden(bevat(laatste, 'Toegewezen aan'), 'de subtaak heeft geen eigen toewijzing')
   await page.close()
 })
 
