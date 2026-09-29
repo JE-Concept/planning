@@ -11,7 +11,15 @@
  * CSS-waarde voor `aspect-ratio`. Die verhoudingen zijn wat de kanalen zelf
  * aanraden voor een gewone feedpost: Instagram toont staand beeld het grootst,
  * Facebook en LinkedIn liggend, TikTok schermvullend staand.
+ *
+ * De namen van de kanalen zijn merknamen en blijven in elke taal staan. Alleen
+ * de nieuwsbrief en de rij zonder kanaal hebben een tekst die vertaald wordt,
+ * en die wordt opgezocht op het moment van tekenen — deze lijst wordt één keer
+ * gemaakt en overal uitgelezen, dus een vaste tekst zou na een taalwissel de
+ * oude blijven tonen tot iemand de pagina herlaadt.
  */
+
+import { tekst } from './i18n'
 
 export const CHANNELS = [
   {
@@ -66,7 +74,9 @@ export const CHANNELS = [
   },
   {
     key: 'newsletter',
-    label: 'Nieuwsbrief',
+    get label() {
+      return tekst('formulelib.kanaal.nieuwsbrief')
+    },
     short: 'NB',
     color: '#f59e0b',
     ratio: '2 / 1',
@@ -85,7 +95,18 @@ export const CHANNELS = [
  */
 export const GEEN_KANAAL = 'geen'
 
-const GEEN = { key: GEEN_KANAAL, label: 'Nog geen kanaal', short: '—', color: '#8593a9', ratio: '1 / 1', ratioLabel: '1:1', captionMax: null, hashtagMax: null }
+const GEEN = {
+  key: GEEN_KANAAL,
+  get label() {
+    return tekst('formulelib.kanaal.geen')
+  },
+  short: '—',
+  color: '#8593a9',
+  ratio: '1 / 1',
+  ratioLabel: '1:1',
+  captionMax: null,
+  hashtagMax: null,
+}
 
 export const CHANNEL_KEYS = CHANNELS.map((c) => c.key)
 
@@ -95,7 +116,7 @@ export function channelMeta(key) {
   return (
     CHANNELS.find((c) => c.key === key) ?? {
       key,
-      label: key ?? 'Onbekend',
+      label: key ?? tekst('formulelib.kanaal.onbekend'),
       short: (key ?? '?').slice(0, 2).toUpperCase(),
       color: '#8593a9',
       ratio: '1 / 1',

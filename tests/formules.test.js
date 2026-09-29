@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { zetHuidigeTaal } from '../src/lib/i18n'
 import {
   bestelTekst,
   bestellijstVan,
@@ -235,5 +236,18 @@ describe('de tekst op de bestelbon', () => {
   it('zegt wat er nodig was zodra het afronden iets overhoudt', () => {
     expect(nodigTekst(regel(lijst, 'Pils'))).toBe('92,5 flesjes nodig')
     expect(nodigTekst(regel(lijst, 'Broodjes'))).toBe(null)
+  })
+
+  describe('in het Engels', () => {
+    afterEach(() => zetHuidigeTaal('nl'))
+
+    // De eenheid en de naam van de verpakking komen uit de formule en blijven
+    // dus staan zoals ze ingevuld zijn; alleen het woord ertussen gaat mee.
+    it('schrijft de bestelbon in de taal van de gebruiker', () => {
+      zetHuidigeTaal('en')
+      expect(bestelTekst(regel(lijst, 'Pils'))).toBe('4 × bak of 24 flesjes')
+      expect(bestelTekst(regel(lijst, 'Broodjes'))).toBe('74 stuks')
+      expect(nodigTekst(regel(lijst, 'Pils'))).toBe('92,5 flesjes needed')
+    })
   })
 })
