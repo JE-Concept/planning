@@ -8,19 +8,54 @@
  * wordt als `label` op de status in de lijst bewaard, de naam blijft staan.
  */
 
-export const PIPELINE = [
-  { key: 'request', label: 'Aanvraag', tone: 'neutral' },
-  { key: 'create offer', label: 'Offerte maken', tone: 'accent' },
-  { key: 'offer send', label: 'Offerte verstuurd', tone: 'accent' },
-  { key: 'offer accepted', label: 'Akkoord', tone: 'solid' },
-  { key: 'planning ongoing', label: 'Planning loopt', tone: 'accent' },
-  { key: 'planning ready', label: 'Planning klaar', tone: 'success' },
-  { key: 'ready to invoice', label: 'Te factureren', tone: 'warning' },
-  { key: 'invoiced', label: 'Gefactureerd', tone: 'neutral' },
-  { key: 'complete', label: 'Afgerond', tone: 'neutral' },
+/*
+  De naam die een status krijgt wanneer niemand er zelf een koos, is een getter:
+  zo wordt hij opgezocht op het moment van tekenen en neemt een taalwissel hem
+  mee. Een vaste waarde zou na het omzetten de oude taal blijven tonen tot
+  iemand de pagina herlaadt.
+
+  Het label dat een beheerder in Instellingen bewaart, wint hier altijd van —
+  zie `labelOf`. Dat is één naam voor het hele team, in welke taal ze ook
+  werken, en dat hoort zo: ze praten met elkaar over dezelfde kolom.
+*/
+import { tekst } from './i18n'
+
+const STAPPEN = [
+  { key: 'request', tone: 'neutral' },
+  { key: 'create offer', tone: 'accent' },
+  { key: 'offer send', tone: 'accent' },
+  { key: 'offer accepted', tone: 'solid' },
+  { key: 'planning ongoing', tone: 'accent' },
+  { key: 'planning ready', tone: 'success' },
+  { key: 'ready to invoice', tone: 'warning' },
+  { key: 'invoiced', tone: 'neutral' },
+  { key: 'complete', tone: 'neutral' },
 ]
 
-const BY_KEY = Object.fromEntries(PIPELINE.map((p, i) => [p.key, { ...p, index: i }]))
+export const PIPELINE = STAPPEN.map(({ key, tone }) => ({
+  key,
+  tone,
+  get label() {
+    return tekst(`pijplijn.${key}`)
+  },
+}))
+
+// Dezelfde stap, met zijn plaats in de rij erbij. Het label blijft een getter
+// en wordt hier dus niet uitgelezen — anders stond de taal van het moment van
+// laden erin vast.
+const BY_KEY = Object.fromEntries(
+  PIPELINE.map((p, i) => [
+    p.key,
+    {
+      key: p.key,
+      tone: p.tone,
+      index: i,
+      get label() {
+        return p.label
+      },
+    },
+  ])
+)
 
 /** De drie fasen waarin de lijstweergave de events groepeert. */
 export const PHASES = [

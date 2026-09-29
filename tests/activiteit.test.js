@@ -148,12 +148,15 @@ describe('beschrijf', () => {
 describe('beschrijf in het Engels', () => {
   afterEach(() => zetHuidigeTaal('nl'))
 
-  // Het statuslabel, de titel en de naam van een collega komen uit de database
-  // en blijven staan; alleen de zin eromheen wordt Engels.
-  it('schrijft de zin in het Engels en laat de namen staan', () => {
+  // De titel en de naam van een collega komen uit de database en blijven staan;
+  // alleen de zin eromheen wordt Engels. De status is het geval ertussenin: gaf
+  // een beheerder hem zelf een naam, dan staat die in de database en blijft ze
+  // staan — is dat niet gebeurd, dan is het de standaardnaam, en die volgt de
+  // taal net als de rest van het scherm.
+  it('schrijft de zin in het Engels en laat de namen uit de database staan', () => {
     zetHuidigeTaal('en')
     expect(beschrijf({ veld: 'status', van: 'create offer', naar: 'offer send' })).toBe(
-      'moved the status from Offerte maken to Offerte verstuurd'
+      'moved the status from Draw up quote to Quote sent'
     )
     expect(beschrijf({ veld: 'title', van: 'Trouw Niels', naar: 'Trouw Niels en Inez' })).toBe(
       'renamed “Trouw Niels” to “Trouw Niels en Inez”'

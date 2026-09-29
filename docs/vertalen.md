@@ -97,6 +97,18 @@ bruikbaar; een scherm vol `tasks.leeg` is dat niet.
   `{tijd}` en de andere niet. Dan staat er straks letterlijk `{tijd}` op het
   scherm.
 
+## Nakijken of er nog Nederlands staat
+
+```bash
+npm run build:demo && node scripts/taalcheck.mjs
+```
+
+Dat zet de tool op Engels, loopt elk scherm af en meldt de regels met Nederlandse
+woorden erin. Het is geen test en het hoeft niet op nul te staan: de namen van
+events, klanten en afvinkpunten komen uit de database en zijn Nederlands, en de
+FAVV-rapportage hoort dat te zijn. Wat je zoekt is een knop of een kop die nog
+niet om is.
+
 ## Datums, maanden en dagnamen
 
 Die volgen de gekozen taal vanzelf, via `zetLocale()` in `src/lib/dates.js`.
