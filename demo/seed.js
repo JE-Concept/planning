@@ -679,6 +679,77 @@ seedDoc('automations', 'nieuwe-aanvraag', {
   updatedAt: dag(-20),
 })
 
+// Een samengestelde regel en een beslissingstabel, zodat in de demo te zien is
+// waar het over gaat: de eerste twee hierboven staan er nog in de oude,
+// enkelvoudige vorm en worden gewoon meegelezen.
+seedDoc('automations', 'grote-aanvraag', {
+  name: 'Grote aanvraag meteen bij Jasper',
+  kind: 'rule',
+  entity: 'task',
+  enabled: true,
+  listId: 'l-overview',
+  trigger: { kind: 'changed', field: 'statusName' },
+  when: {
+    kind: 'all',
+    nodes: [
+      { kind: 'condition', field: 'statusName', op: 'is', value: 'request' },
+      {
+        kind: 'any',
+        nodes: [
+          { kind: 'condition', field: 'budget', op: 'gte', value: 10000 },
+          { kind: 'condition', field: 'pax', op: 'gt', value: 150 },
+        ],
+      },
+    ],
+  },
+  actions: [
+    { kind: 'assignees', mode: 'add', profileIds: ['u-jasper'] },
+    { kind: 'tag', value: 'opvolgen', date: { mode: 'relative', days: 3 } },
+  ],
+  position: 2,
+  createdAt: dag(-14),
+  updatedAt: dag(-14),
+})
+
+seedDoc('automations', 'offerte-tabel', {
+  name: 'Wie maakt de offerte',
+  kind: 'table',
+  entity: 'task',
+  enabled: true,
+  listId: 'l-overview',
+  trigger: { kind: 'changed', field: 'statusName' },
+  when: { kind: 'all', nodes: [{ kind: 'condition', field: 'statusName', op: 'is', value: 'create offer' }] },
+  inputs: [
+    { field: 'budget', op: 'gte' },
+    { field: 'eventType', op: 'is' },
+  ],
+  rows: [
+    { id: 'groot-huwelijk', label: 'groot huwelijk', cells: [10000, 'Huwelijk'],
+      actions: [{ kind: 'assignees', mode: 'set', profileIds: ['u-elke'] }, { kind: 'priority', value: 2 }] },
+    { id: 'groot', label: 'groot', cells: [10000, ''],
+      actions: [{ kind: 'assignees', mode: 'set', profileIds: ['u-jasper'] }] },
+    { id: 'de-rest', label: 'de rest', cells: ['', ''],
+      actions: [{ kind: 'priority', value: 3 }] },
+  ],
+  position: 3,
+  createdAt: dag(-10),
+  updatedAt: dag(-10),
+})
+
+// Het logboek van de server. In de demo staat het er vast in; echt wordt het
+// geschreven door de trigger die de regel toepaste.
+seedDoc('automationRuns', 'run-1', {
+  entity: 'task', collection: 'tasks', docId: 't-trouw', docTitle: 'Trouw Niels en Inez',
+  rules: [{ id: 'offerte-tabel', name: 'Wie maakt de offerte', kind: 'table', rowId: 'groot-huwelijk', rowLabel: 'groot huwelijk' }],
+  ruleIds: ['offerte-tabel'], fields: ['assignees', 'priority'], firedAt: dag(-2),
+})
+
+seedDoc('automationRuns', 'run-2', {
+  entity: 'task', collection: 'tasks', docId: 't-blum', docTitle: 'Blum België — 20-jarig bestaan',
+  rules: [{ id: 'grote-aanvraag', name: 'Grote aanvraag meteen bij Jasper', kind: 'rule', rowId: null, rowLabel: '' }],
+  ruleIds: ['grote-aanvraag'], fields: ['assignees', 'tags'], firedAt: dag(-1),
+})
+
 // ─── Vaste formules ─────────────────────────────────────────────────────────
 // De winter bbq aan 29,90 staat er echt in, zodat de browsertest een event uit
 // een formule kan aanmaken en de bestellijst kan narekenen.

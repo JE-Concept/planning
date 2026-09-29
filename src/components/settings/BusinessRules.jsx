@@ -1,18 +1,30 @@
 import { useMemo, useState } from 'react'
 import {
-  ACTIONS,
-  ASSIGNEE_MODES,
-  TRIGGERS,
+  ENTITIES,
   describeRule,
-  emptyAction,
   emptyRule,
+  emptyTable,
+  entityOf,
+  fieldOf,
+  fieldsFor,
   ruleWarnings,
+  toEditable,
+  triggersFor,
 } from '@lib/automations'
-import { PRIORITIES } from '@lib/format'
-import { Avatar, Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
+import { Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { createAutomation, deleteAutomation, updateAutomation, useAutomations } from '@data/automations'
+import {
+  createAutomation,
+  deleteAutomation,
+  updateAutomation,
+  useAutomationRuns,
+  useAutomations,
+} from '@data/automations'
+import ActionList from './rules/ActionList'
+import ConditionTree from './rules/ConditionTree'
+import DecisionTable from './rules/DecisionTable'
+import RuleRuns from './rules/RuleRuns'
 
 /**
  * Business rules beheren.
@@ -22,14 +34,21 @@ import { createAutomation, deleteAutomation, updateAutomation, useAutomations } 
  * wanneer een collega de kaart versleept of wanneer de overlegfunctie een taak
  * aanmaakt.
  *
+ * Er zijn nu twee vormen. Een losse regel — als dit, dan dat — en een
+ * beslissingstabel: de voorwaarden als kolommen, één rij per geval, van boven
+ * naar beneden gelezen tot er een rij past. Die tweede is er gekomen omdat tien
+ * losse regels die elkaar overschrijven niet meer na te lezen zijn door wie de
+ * zaak runt, en dat is precies het publiek van dit scherm.
+ *
  * Elke wijziging wordt meteen bewaard — er is geen bewaarknop, net zoals bij de
  * lijsten en de teamleden. Onder elke regel staat in gewone taal wat ze doet,
- * want een regel die ongevraagd andermans taken aanpast moet je kunnen nalezen
+ * want een regel die ongevraagd andermans werk aanpast moet je kunnen nalezen
  * zonder de velden te hoeven ontleden.
  */
 export default function BusinessRules({ isAdmin }) {
-  const { lists, profiles, profileById, listById, tags } = useWorkspace()
+  const { lists, profiles, brands, tags } = useWorkspace()
   const { rules, loading } = useAutomations()
+  const { runs } = useAutomationRuns()
   const toast = useToast()
   const [draft, setDraft] = useState(null)
 
@@ -37,6 +56,11 @@ export default function BusinessRules({ isAdmin }) {
   const team = useMemo(
     () => profiles.filter((p) => p.active !== false && p.role !== 'staff'),
     [profiles]
+  )
+
+  const context = useMemo(
+    () => ({ profiles: team, lists: taakLijsten, tags, brands }),
+    [team, taakLijsten, tags, brands]
   )
 
   const bewaar = async (e) => {
@@ -58,14 +82,13 @@ export default function BusinessRules({ isAdmin }) {
     )
   }
 
-  const context = { lists: taakLijsten, team, profileById, listById, tags }
-
   return (
     <div className="space-y-4">
       <p className="max-w-2xl text-sm text-ink-600">
-        Een regel doet iets met een taak op het moment dat die in een status komt — bijvoorbeeld:
-        alles wat op <em>ready to invoice</em> komt, wordt van Elke en van niemand anders. De regels
-        draaien op de server, dus ook wanneer iemand anders de kaart versleept.
+        Een regel doet iets op het moment dat er iets verandert — bijvoorbeeld: alles wat op{' '}
+        <em>ready to invoice</em> komt, wordt van Elke en van niemand anders. Het kan over taken en
+        events gaan, maar net zo goed over klanten, social posts, afvinklijsten, urenboekingen en
+        profielen. De regels draaien op de server, dus ook wanneer iemand anders de kaart versleept.
       </p>
 
       {rules.length === 0 ? (
@@ -77,9 +100,10 @@ export default function BusinessRules({ isAdmin }) {
           {rules.map((rule) => (
             <li key={rule.id} className="card p-4">
               <RuleEditor
-                rule={rule}
+                rule={toEditable(rule)}
                 readOnly={!isAdmin}
-                {...context}
+                context={context}
+                lists={taakLijsten}
                 onChange={(patch) => updateAutomation(rule.id, patch).catch((e) => toast.error(e.message))}
                 header={
                   isAdmin ? (
@@ -111,8 +135,16 @@ export default function BusinessRules({ isAdmin }) {
 
       {!isAdmin ? null : draft ? (
         <form onSubmit={bewaar} className="card space-y-3 border-accent-200 p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">Nieuwe regel</h2>
-          <RuleEditor rule={draft} {...context} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">
+            {draft.kind === 'table' ? 'Nieuwe beslissingstabel' : 'Nieuwe regel'}
+          </h2>
+          <RuleEditor
+            rule={draft}
+            nieuw
+            context={context}
+            lists={taakLijsten}
+            onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+          />
           <div className="flex gap-2">
             <Button
               type="submit"
@@ -128,30 +160,33 @@ export default function BusinessRules({ isAdmin }) {
           </div>
         </form>
       ) : (
-        <Button variant="secondary" size="sm" onClick={() => setDraft(emptyRule())}>
-          Nieuwe regel
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setDraft(emptyRule('task'))}>
+            Nieuwe regel
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setDraft(emptyTable('task'))}>
+            Nieuwe beslissingstabel
+          </Button>
+        </div>
       )}
+
+      <section className="card space-y-2 p-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">
+          Wat de regels deden
+        </h2>
+        <RuleRuns runs={runs} />
+      </section>
     </div>
   )
 }
 
-// ─── Eén regel ──────────────────────────────────────────────────────────────
+// ─── Eén regel of tabel ─────────────────────────────────────────────────────
 
-function RuleEditor({ rule, onChange, header, readOnly = false, lists, team, profileById, listById, tags }) {
-  const statusNamen = useMemo(() => {
-    const bron = rule.listId ? lists.filter((l) => l.id === rule.listId) : lists
-    const alle = bron.flatMap((l) => (l.statuses ?? []).map((s) => s.name))
-    return [...new Set(alle)]
-  }, [lists, rule.listId])
-
+function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, context, lists }) {
+  const entity = entityOf(rule.entity)
   const waarschuwingen = ruleWarnings(rule, { lists })
   const uit = rule.enabled === false
-
-  const zetActie = (index, patch) =>
-    onChange({
-      actions: (rule.actions ?? []).map((a, i) => (i === index ? { ...a, ...patch } : a)),
-    })
+  const opLijst = Boolean(fieldOf(entity, 'listId'))
 
   return (
     <div className={uit ? 'opacity-60' : undefined}>
@@ -166,18 +201,52 @@ function RuleEditor({ rule, onChange, header, readOnly = false, lists, team, pro
           disabled={readOnly}
           required
         />
+        {rule.kind === 'table' ? <Badge color="#7c3aed" subtle>tabel</Badge> : null}
         {uit ? <Badge color="#8593a9" subtle>uit</Badge> : null}
         {header}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
+        <Field label="Waarover">
+          {/* De entiteit ligt vast zodra de regel bestaat: haar velden, haar
+              acties en haar voorwaarden hangen er allemaal aan, en die stil
+              omzetten naar een andere collectie levert een regel op die niets
+              meer doet zonder dat iemand het ziet. */}
+          <Select
+            aria-label="Waarover gaat de regel"
+            value={rule.entity ?? 'task'}
+            disabled={readOnly || !nieuw}
+            onChange={(e) =>
+              onChange(
+                rule.kind === 'table'
+                  ? { ...emptyTable(e.target.value), name: rule.name }
+                  : { ...emptyRule(e.target.value), name: rule.name }
+              )
+            }
+          >
+            {ENTITIES.map((e) => (
+              <option key={e.key} value={e.key}>
+                {e.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
         <Field label="Als">
           <Select
-            value={rule.trigger?.kind ?? 'status'}
-            onChange={(e) => onChange({ trigger: { ...rule.trigger, kind: e.target.value } })}
+            aria-label="Aanleiding"
+            value={rule.trigger?.kind ?? 'changed'}
             disabled={readOnly}
+            onChange={(e) =>
+              onChange({
+                trigger:
+                  e.target.value === 'created'
+                    ? { kind: 'created', field: null }
+                    : { kind: 'changed', field: rule.trigger?.field ?? fieldsFor(entity)[0]?.key },
+              })
+            }
           >
-            {TRIGGERS.map((t) => (
+            {triggersFor(entity).map((t) => (
               <option key={t.kind} value={t.kind}>
                 {t.label}
               </option>
@@ -185,87 +254,78 @@ function RuleEditor({ rule, onChange, header, readOnly = false, lists, team, pro
           </Select>
         </Field>
 
-        <Field label="Op lijst">
-          <Select
-            value={rule.listId ?? ''}
-            onChange={(e) => onChange({ listId: e.target.value || null })}
-            disabled={readOnly}
-          >
-            <option value="">Elke lijst</option>
-            {lists.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        {rule.trigger?.kind === 'status' ? (
-          <Field label="Status">
+        {rule.trigger?.kind === 'changed' ? (
+          <Field label="Welk veld">
             <Select
-              value={rule.trigger?.status ?? ''}
-              onChange={(e) => onChange({ trigger: { ...rule.trigger, status: e.target.value } })}
+              aria-label="Veld dat wijzigt"
+              value={rule.trigger?.field ?? ''}
               disabled={readOnly}
+              onChange={(e) => onChange({ trigger: { kind: 'changed', field: e.target.value } })}
             >
-              <option value="">Kies een status…</option>
-              {statusNamen.map((naam) => (
-                <option key={naam} value={naam}>
-                  {naam}
+              {fieldsFor(entity).map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label}
                 </option>
               ))}
-              {rule.trigger?.status && !statusNamen.includes(rule.trigger.status) ? (
-                <option value={rule.trigger.status}>{rule.trigger.status} (bestaat niet meer)</option>
-              ) : null}
+            </Select>
+          </Field>
+        ) : null}
+
+        {opLijst ? (
+          <Field label="Op lijst">
+            <Select
+              aria-label="Op lijst"
+              value={rule.listId ?? ''}
+              disabled={readOnly}
+              onChange={(e) => onChange({ listId: e.target.value || null })}
+            >
+              <option value="">Elke lijst</option>
+              {lists.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
             </Select>
           </Field>
         ) : null}
       </div>
 
       <div className="mt-3 space-y-2">
-        <span className="label">Dan</span>
-        {(rule.actions ?? []).map((action, i) => (
-          <div key={i} className="flex flex-wrap items-end gap-2 rounded-lg bg-ink-50 px-3 py-2">
-            <ActionEditor
-              action={action}
-              readOnly={readOnly}
-              team={team}
-              tags={tags}
-              onChange={(patch) => zetActie(i, patch)}
-            />
-            {readOnly ? null : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto text-ink-400"
-                onClick={() => onChange({ actions: rule.actions.filter((_, j) => j !== i) })}
-              >
-                Weg
-              </Button>
-            )}
-          </div>
-        ))}
+        <span className="label">Alleen als</span>
+        <ConditionTree
+          node={rule.when}
+          entity={entity}
+          context={context}
+          readOnly={readOnly}
+          onChange={(when) => onChange({ when })}
+        />
+      </div>
 
-        {readOnly ? null : (
-          <Select
-            value=""
-            aria-label="Actie toevoegen"
-            className="max-w-[16rem]"
-            onChange={(e) =>
-              e.target.value &&
-              onChange({ actions: [...(rule.actions ?? []), emptyAction(e.target.value)] })
-            }
-          >
-            <option value="">Actie toevoegen…</option>
-            {ACTIONS.map((a) => (
-              <option key={a.kind} value={a.kind}>
-                {a.label}
-              </option>
-            ))}
-          </Select>
+      <div className="mt-3 space-y-2">
+        <span className="label">Dan</span>
+        {rule.kind === 'table' ? (
+          <DecisionTable
+            rule={rule}
+            entity={entity}
+            context={context}
+            readOnly={readOnly}
+            onChange={onChange}
+          />
+        ) : (
+          <ActionList
+            entity={entity}
+            context={context}
+            readOnly={readOnly}
+            actions={rule.actions ?? []}
+            onChange={(actions) => onChange({ actions })}
+          />
         )}
       </div>
 
-      <p className="mt-3 text-sm text-ink-600">{describeRule(rule, { profileById, listById })}</p>
+      {/* Eigen klasse, zodat de browsertest de zin kan aanwijzen: de tekst van
+          een keuzelijst telt mee in `innerText` en dan is niet te zien of de
+          uitleg klopt of dat er toevallig een optie zo heet. */}
+      <p className="je-regel-uitleg mt-3 text-sm text-ink-600">{describeRule(rule, context)}</p>
       {waarschuwingen.map((w) => (
         <p key={w} className="mt-1 text-xs font-semibold text-amber-700">
           {w}
@@ -273,106 +333,4 @@ function RuleEditor({ rule, onChange, header, readOnly = false, lists, team, pro
       ))}
     </div>
   )
-}
-
-// ─── Eén actie ──────────────────────────────────────────────────────────────
-
-function ActionEditor({ action, onChange, readOnly, team, tags }) {
-  switch (action.kind) {
-    case 'assignees':
-      return (
-        <>
-          <Field label="Wie" className="min-w-[10rem]">
-            <div className="flex flex-wrap gap-1">
-              {team.map((p) => {
-                const aan = (action.profileIds ?? []).includes(p.id)
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() =>
-                      onChange({
-                        profileIds: aan
-                          ? action.profileIds.filter((id) => id !== p.id)
-                          : [...(action.profileIds ?? []), p.id],
-                      })
-                    }
-                    title={p.fullName ?? p.email}
-                    className={`rounded-full ring-2 ${aan ? 'ring-accent-500' : 'ring-transparent opacity-50'}`}
-                  >
-                    <Avatar profile={p} size="sm" />
-                  </button>
-                )
-              })}
-            </div>
-          </Field>
-          <Field label="En">
-            <Select
-              value={action.mode ?? 'set'}
-              onChange={(e) => onChange({ mode: e.target.value })}
-              disabled={readOnly}
-            >
-              {ASSIGNEE_MODES.map((m) => (
-                <option key={m.mode} value={m.mode}>
-                  {m.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </>
-      )
-
-    case 'priority':
-      return (
-        <Field label="Prioriteit">
-          <Select
-            value={action.value ?? ''}
-            onChange={(e) => onChange({ value: e.target.value === '' ? null : Number(e.target.value) })}
-            disabled={readOnly}
-          >
-            <option value="">Geen</option>
-            {PRIORITIES.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      )
-
-    case 'tag':
-      return (
-        <Field label="Label">
-          <Select
-            value={action.value ?? ''}
-            onChange={(e) => onChange({ value: e.target.value })}
-            disabled={readOnly}
-          >
-            <option value="">Kies een label…</option>
-            {tags.map((t) => (
-              <option key={t.id} value={t.name}>
-                {t.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      )
-
-    case 'dueInDays':
-      return (
-        <Field label="Vervaldag over (dagen)" hint="0 is vandaag, om 17.00">
-          <Input
-            type="number"
-            value={action.value ?? 0}
-            onChange={(e) => onChange({ value: Number(e.target.value) })}
-            disabled={readOnly}
-            className="max-w-[7rem]"
-          />
-        </Field>
-      )
-
-    default:
-      return <span className="text-sm text-ink-500">Onbekende actie.</span>
-  }
 }

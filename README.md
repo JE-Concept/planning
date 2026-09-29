@@ -51,7 +51,8 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `checklistRuns/{id}` | Eén run per lijst per dag, met de vaste id `<lijst>_<jjjj-mm-dd>`. De stand staat in een map `items`, gesleuteld op punt-id. |
 | `pushTokens/{token}` | Eén rij per toestel dat meldingen wil, gesleuteld op het token. Je beheert en leest alleen je eigen rijen; versturen doet een Cloud Function. |
 | `formules/{id}` | Vaste formules (winter bbq aan 29,90) met hun vragen (`opties`), de antwoorden erbij (`keuzes`) en de `bestelregels` die eruit volgen. Lezen: team, schrijven: beheerders. `src/lib/formule-templates.js` is de bron voor de seed en de demo; het rekenwerk staat in `src/lib/formules.js`. |
-| `automations/{id}` | De business rules: wanneer ze vuren en wat ze doen. Beheerders bewerken ze in Instellingen; uitvoeren doet een Cloud Function. |
+| `automations/{id}` | De business rules: op welke entiteit ze staan, wanneer ze vuren, onder welke voorwaarden en wat ze doen — een losse regel of een beslissingstabel. Beheerders bewerken ze in Instellingen; uitvoeren doet een Cloud Function. |
+| `automationRuns/{id}` | Het logboek van de regels: welke regel vuurde, op welk document, en bij een tabel op welke rij. Alleen de server schrijft erin. |
 | `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde en met welke opmerking. Wordt aangevuld, nooit gewijzigd. |
 
 ---
@@ -206,16 +207,31 @@ De tabs **Kalender** en **Posts** zijn de contentkalender zoals die was: posts p
 
 ## Business rules
 
-Alles wat op *ready to invoice* komt is werk voor Elke, en voor niemand anders. Dat met de hand doortrekken werkt tot iemand het vergeet, en een taak die bij de verkeerde persoon blijft hangen wordt niet gefactureerd. In **Instellingen → Business rules** staat die afspraak als regel: *als* een taak in een status komt (of aangemaakt wordt), op één lijst of op alle, *dan* toewijzen, prioriteit zetten, een label plakken of een vervaldag zetten.
+Alles wat op *ready to invoice* komt is werk voor Elke, en voor niemand anders. Dat met de hand doortrekken werkt tot iemand het vergeet, en een taak die bij de verkeerde persoon blijft hangen wordt niet gefactureerd. In **Instellingen → Business rules** staat die afspraak als regel: *als* er iets wijzigt (of iets aangemaakt wordt), *alleen als* de voorwaarden kloppen, *dan* dit.
 
-De regels draaien **op de server**, in een trigger op elke taak die van status verandert. Dat is bewust: een taak verandert ook van status op het bord van een collega en vanuit de overlegfunctie, en een regel die alleen in de browser van wie ze instelde zou draaien, geldt dan niet. De wijziging komt een seconde later vanzelf binnen.
+**Waarover.** Niet alleen taken en events: ook klanten, social posts, afvinklijsten, urenboekingen en profielen. Wat er per entiteit bestaat — de velden waar je een voorwaarde op kunt zetten en de acties die uitgevoerd worden — staat op één plek, in `functions/rule-schema.js`. Het beheerscherm bouwt zichzelf daaruit op, zodat een actie niet wél te kiezen kan zijn en níét uitgevoerd worden.
 
-Twee dingen die de trigger veilig houden, en die een test bewaakt:
+**Voorwaarden.** Een boom van EN, OF en GEEN, met groepen die in elkaar mogen zitten, en vergelijkingen die bij het soort veld passen: tekst bevat of is, getal groter dan, datum voor of na, lijst bevat, leeg of ingevuld. *Een aanvraag boven de 10 000 euro óf met meer dan 150 gasten* is één regel.
 
-- Een statusregel vuurt **op het binnenkomen**, niet zolang de taak er staat. Wie na de wissel bewust iemand anders toewijst, ziet dat niet bij de volgende bewerking teruggedraaid.
-- De trigger schrijft haar eigen resultaat weg en wordt daardoor **opnieuw wakker**. Wat haar laat stoppen is dat de status dan niet veranderde en de patch leeg is. Zonder statuswissel wordt de regelcollectie niet eens gelezen.
+**Beslissingstabellen.** In de geest van [GoRules](https://gorules.io/): in plaats van tien losse als-dan-regels die elkaar overschrijven zet je één tabel met de voorwaarden als kolommen en één rij per geval, van boven naar beneden gelezen tot er een rij past. Een lege cel betekent "maakt niet uit". Dat leest als een tabel op papier — en dat is het punt: wie de zaak runt moet kunnen nalezen wat er gebeurt, zonder programmeur.
 
-Een regel hangt aan de *naam* van een status, niet aan een id — dezelfde naam op twee borden betekent hier hetzelfde. De prijs daarvan is dat een kolom hernoemen de regel losmaakt, en dat zie je nergens gebeuren; daarom staat de waarschuwing (*deze status bestaat niet — de regel vuurt nooit*) naast de regel zelf. Het rekenwerk staat puur in `functions/automations.js`, zodat elke regel in een test na te rekenen is: dit is de enige code die ongevraagd andermans taken aanpast.
+**Datums, vast of relatief.** Een vervaldag, een startdag of een publicatiemoment kan "+3 dagen vanaf vandaag" zijn of een dag op de kalender. Hetzelfde geldt in een voorwaarde (*vervalt binnen een week*), en een label kan de datum meedragen — *opvolgen 02-10*.
+
+**Uitlegbaar.** Elke keer dat een regel iets wijzigt, schrijft de server een rij in `automationRuns`: welke regel, op welk document, welke velden, en bij een tabel welke rij. Onderaan het beheerscherm staat dat logboek. Een regel draait met beheerdersrechten en verandert werk van collega's — dan hoort achteraf na te lezen te zijn welke regel dat was.
+
+De regels draaien **op de server**, in een trigger per collectie. Dat is bewust: een taak verandert ook van status op het bord van een collega en vanuit de overlegfunctie, en een regel die alleen in de browser van wie ze instelde zou draaien, geldt dan niet. De wijziging komt een seconde later vanzelf binnen.
+
+**Wat een regel niet mag.** De motor voert alleen uit wat in `rule-schema.js` als actie beschreven staat. Bij een profiel is dat de afdeling, en verder niets: `role`, `active` en `email` staan er bewust niet bij, want een regel die een rol kan zetten is een regel die zichzelf meer rechten geeft. Op welke collectie een regel mag staan, grenst `firestore.rules` af; wie een regel mag schrijven is een beheerder.
+
+Drie dingen die de trigger veilig houden, en die een test bewaakt:
+
+- Een regel vuurt **op het binnenkomen** van de wijziging, niet zolang de waarde er staat. Wie na de wissel bewust iemand anders toewijst, ziet dat niet bij de volgende bewerking teruggedraaid.
+- De trigger schrijft haar eigen resultaat weg en wordt daardoor **opnieuw wakker**. Wat haar laat stoppen is de lege patch: wat al zo staat, wordt niet geschreven. Daarnaast ondertekent ze haar eigen schrijfbeurt met `ruleStamp` en herkent ze die terug voor er één regel gelezen is.
+- Veranderde er niets waar een regel iets over kan zeggen, dan wordt de regelcollectie niet eens gelezen.
+
+**De bestaande regels.** Die staan er nog in de oude, enkelvoudige vorm in (`{ kind: 'status', status: '…' }` plus een `listId`) en worden gewoon zo gelezen: bij het lezen omgezet naar wat ze altijd al betekenden, niet gemigreerd. Pas wanneer iemand zo'n regel bewerkt en bewaart, staat de nieuwe vorm erin. Er is geen moment waarop een regel stilvalt omdat een migratie nog moest lopen.
+
+Een regel hangt aan de *naam* van een status, niet aan een id — dezelfde naam op twee borden betekent hier hetzelfde. De prijs daarvan is dat een kolom hernoemen de regel losmaakt, en dat zie je nergens gebeuren; daarom staat de waarschuwing (*deze status bestaat niet — de regel vuurt nooit*) naast de regel zelf. Het rekenwerk staat puur in `functions/automations.js` en `functions/rule-schema.js`, zodat elke regel in een test na te rekenen is: dit is de enige code die ongevraagd andermans werk aanpast.
 
 ---
 
