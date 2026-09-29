@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { addDays, dayKey, formatDate, formatTime, isToday } from '@lib/dates'
 import { afdelingLabel, dueOn, grensTekst, meetOordeel, repeatLabel, runProgress, visibleTo } from '@lib/checklist-templates'
+import { herhalingVan, volgendeKeer } from '@lib/checklist-herhaling'
 import { Avatar, Badge, Button, EmptyState, Input, ProgressBar, Spinner, Textarea } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
@@ -140,6 +141,8 @@ export default function Checklists() {
               />
             ))}
 
+            <Binnenkort checklist={current} scope={scope} />
+
             <section className="card p-4">
               <h2 className="label">
                 {current.kind === 'close' ? 'Over te dragen aan de volgende shift' : 'Opmerkingen'}
@@ -194,6 +197,50 @@ export default function Checklists() {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Wat er niet vandaag moet, maar er wel bij hoort.
+ *
+ * Het poetsplan leek alleen dagelijkse punten te kennen: de friteuse is voor
+ * maandag, de dampkap voor de 1e, de vetvangput voor het kwartaal, en op elke
+ * andere dag stond daar niets van op het scherm. Terecht — je gaat geen punt
+ * afvinken dat vandaag niet moet — maar zo lijkt de helft van de lijst niet te
+ * bestaan, en dan gaat iemand ze opnieuw aanmaken als dagelijks punt.
+ *
+ * Dit blok is dus geen werk maar een vooruitblik: lezen, niet afvinken. Het
+ * telt niet mee in de voortgang en schrijft niets weg.
+ */
+function Binnenkort({ checklist, scope }) {
+  const komt = useMemo(() => {
+    const rijen = (checklist?.sections ?? [])
+      .flatMap((section) => section.items)
+      .filter((item) => visibleTo(item, scope.person) && !dueOn(item, scope.date))
+      .map((item) => ({ item, wanneer: volgendeKeer(herhalingVan(item), scope.date) }))
+      .filter((rij) => rij.wanneer)
+
+    // Geen afkapping: het gaat er juist om dat de hele lijst bestaat. Wat er
+    // staat is één regel per punt, en langer dan de lijst zelf wordt het niet.
+    return rijen.sort((a, b) => a.wanneer - b.wanneer)
+  }, [checklist, scope])
+
+  if (komt.length === 0) return null
+
+  return (
+    <section className="card p-4">
+      <h2 className="label">Komt er nog aan</h2>
+      <ul className="space-y-1">
+        {komt.map(({ item, wanneer }) => (
+          <li key={item.id} className="flex items-baseline gap-2 text-sm text-ink-600">
+            <span className="min-w-0 flex-1 truncate">{item.label}</span>
+            <span className="shrink-0 text-xs text-ink-500">
+              {repeatLabel(item)} · {formatDate(wanneer)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 

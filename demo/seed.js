@@ -178,6 +178,9 @@ function taak(id, listId, statuses, statusName, o = {}) {
     position: (pos += 1024),
     archived: false, completedAt: s.kind === 'closed' || s.kind === 'done' ? dag(-20) : null,
     trackedSeconds: o.tracked ?? 0, commentCount: o.comments ?? 0,
+    // Taken die uit de ClickUp-migratie komen dragen dat merkje. De fiche leest
+    // eraan af dat hun aanmaakdatum de dag van de verhuizing is en niets meer.
+    clickupId: o.clickupId ?? null,
     createdBy: 'u-jasper', createdAt: o.createdAt ?? dag(-30), updatedAt: dag(-1),
   })
 }
@@ -195,7 +198,7 @@ taak('t-trouw-3', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw',
 taak('t-blum', 'l-overview', OVERVIEW, 'offer accepted', { pax: 180, formule: 'Receptie + diner + dansfeest', eventType: 'Bedrijfsevent',
   title: 'Blum België — 20-jarig bestaan', assignees: ['u-jasper'], priority: 2, customerId: 'k-blum',
   dueDate: dag(82), budget: 24800, location: 'Cultureel Centrum, Sint-Truiden',
-  tracked: 35100, comments: 1, tags: ['losse events'],
+  tracked: 35100, comments: 1, tags: ['losse events'], clickupId: '86b1qk4x9',
   description: '180 medewerkers + partners. Onthaal 18.30 · diner 20.00 · dansfeest tot 02.00.\n\nOpbouw donderdag 18 december vanaf 09.00.',
 })
 // De historiek van Blum: twee afgeronde dossiers en één dat op de factuur wacht.
