@@ -1,4 +1,5 @@
 import { asDate, formatDate } from './dates'
+import { tekst } from './i18n'
 import { labelOf } from './pipeline'
 import { priorityOf } from './format'
 
@@ -43,7 +44,8 @@ export function raaktLog(patch) {
 
 const tijd = (waarde) => asDate(waarde)?.getTime() ?? null
 const lijst = (waarde) => (Array.isArray(waarde) ? waarde.filter(Boolean) : [])
-const tekst = (waarde) => (waarde ?? '').toString().trim()
+// Heette `tekst`; die naam is nu van de vertaalfunctie hierboven.
+const alsTekst = (waarde) => (waarde ?? '').toString().trim()
 
 /**
  * De regels die deze wijziging oplevert.
@@ -57,18 +59,18 @@ export function wijzigingen(voor, na) {
   if (!voor || !na) return []
   const regels = []
 
-  if (tekst(voor.title) !== tekst(na.title)) {
-    regels.push({ veld: 'title', van: tekst(voor.title), naar: tekst(na.title) })
+  if (alsTekst(voor.title) !== alsTekst(na.title)) {
+    regels.push({ veld: 'title', van: alsTekst(voor.title), naar: alsTekst(na.title) })
   }
 
   // Status en "afgerond" zijn één gebeurtenis, geen twee. Een taak die naar de
   // laatste kolom gaat is afgevinkt; dat als aparte regel eronder zetten maakt
   // het log dubbel zo lang zonder dat er iets bij staat.
-  const statusAnders = tekst(voor.statusName) !== tekst(na.statusName)
+  const statusAnders = alsTekst(voor.statusName) !== alsTekst(na.statusName)
   const openAnders = voor.open !== na.open && typeof na.open === 'boolean'
   if (statusAnders || openAnders) {
     const veld = openAnders ? (na.open ? 'heropend' : 'afgerond') : 'status'
-    regels.push({ veld, van: tekst(voor.statusName), naar: tekst(na.statusName) })
+    regels.push({ veld, van: alsTekst(voor.statusName), naar: alsTekst(na.statusName) })
   }
 
   if (tijd(voor.dueDate) !== tijd(na.dueDate)) {
@@ -96,15 +98,22 @@ export function wijzigingen(voor, na) {
   return regels
 }
 
-const naam = (uid, naamVan) => naamVan?.(uid) || 'iemand'
-const datum = (waarde) => formatDate(waarde) || 'geen datum'
+const naam = (uid, naamVan) => naamVan?.(uid) || tekst('taaklib.log.iemand')
+const datum = (waarde) => formatDate(waarde) || tekst('taaklib.log.geen_datum')
+
+/** "Elke en Jasper" — hetzelfde voegwoord als in de verwijdervraag. */
+const enLijst = (delen) => delen.join(` ${tekst('taaklib.en')} `)
 
 /**
- * Eén regel als Nederlandse zin, zonder de naam van wie het deed.
+ * Eén regel als zin, zonder de naam van wie het deed.
  *
  * Die naam staat in het paneel ervoor ("Elke Motmans verzette de deadline…"),
  * zodat hij niet in elke zin herhaald wordt. De statusnamen blijven in de
  * database wat ze in ClickUp heetten; hier komt het label dat het team ziet.
+ *
+ * De zin volgt de taal waarin iemand werkt, maar wat erin gevuld wordt niet:
+ * statuslabels, taaktitels en de namen van collega's staan in de database en
+ * blijven overal hetzelfde.
  */
 export function beschrijf(regel, { naamVan, statuses = [] } = {}) {
   if (!regel) return ''
@@ -113,24 +122,29 @@ export function beschrijf(regel, { naamVan, statuses = [] } = {}) {
   switch (regel.veld) {
     case 'title':
       return regel.van
-        ? `hernoemde “${regel.van}” naar “${regel.naar}”`
-        : `gaf de taak de titel “${regel.naar}”`
+        ? tekst('taaklib.log.hernoemd', { van: regel.van, naar: regel.naar })
+        : tekst('taaklib.log.titel_gezet', { naar: regel.naar })
 
     case 'status':
       return regel.van
-        ? `verzette de status van ${label(regel.van)} naar ${label(regel.naar)}`
-        : `zette de status op ${label(regel.naar)}`
+        ? tekst('taaklib.log.status_verzet', { van: label(regel.van), naar: label(regel.naar) })
+        : tekst('taaklib.log.status_gezet', { naar: label(regel.naar) })
 
+    // Het streepje met het statuslabel erachter is leesteken, geen taal: het
+    // staat er in beide talen hetzelfde bij.
     case 'afgerond':
-      return `rondde de taak af${regel.naar ? ` — ${label(regel.naar)}` : ''}`
+      return `${tekst('taaklib.log.afgerond')}${regel.naar ? ` — ${label(regel.naar)}` : ''}`
 
     case 'heropend':
-      return `heropende de taak${regel.naar ? ` — ${label(regel.naar)}` : ''}`
+      return `${tekst('taaklib.log.heropend')}${regel.naar ? ` — ${label(regel.naar)}` : ''}`
 
     case 'dueDate':
-      if (!regel.naar) return `haalde de deadline weg (stond op ${datum(regel.van)})`
-      if (!regel.van) return `zette de deadline op ${datum(regel.naar)}`
-      return `verzette de deadline van ${datum(regel.van)} naar ${datum(regel.naar)}`
+      if (!regel.naar) return tekst('taaklib.log.deadline_weg', { van: datum(regel.van) })
+      if (!regel.van) return tekst('taaklib.log.deadline_gezet', { naar: datum(regel.naar) })
+      return tekst('taaklib.log.deadline_verzet', {
+        van: datum(regel.van),
+        naar: datum(regel.naar),
+      })
 
     case 'assignees': {
       const van = lijst(regel.van)
@@ -138,22 +152,26 @@ export function beschrijf(regel, { naamVan, statuses = [] } = {}) {
       const erbij = naarLijst.filter((uid) => !van.includes(uid))
       const eraf = van.filter((uid) => !naarLijst.includes(uid))
       const delen = []
-      if (erbij.length) delen.push(`zette ${erbij.map((uid) => naam(uid, naamVan)).join(' en ')} op de taak`)
-      if (eraf.length) delen.push(`haalde ${eraf.map((uid) => naam(uid, naamVan)).join(' en ')} van de taak`)
-      return delen.join(', en ')
+      if (erbij.length) {
+        delen.push(tekst('taaklib.log.toegewezen', { wie: enLijst(erbij.map((uid) => naam(uid, naamVan))) }))
+      }
+      if (eraf.length) {
+        delen.push(tekst('taaklib.log.afgehaald', { wie: enLijst(eraf.map((uid) => naam(uid, naamVan))) }))
+      }
+      return delen.join(`, ${tekst('taaklib.en')} `)
     }
 
     case 'priority': {
       const naarLabel = priorityOf(regel.naar)?.label
-      if (!naarLabel) return 'haalde de prioriteit weg'
-      return `zette de prioriteit op ${naarLabel}`
+      if (!naarLabel) return tekst('taaklib.log.prioriteit_weg')
+      return tekst('taaklib.log.prioriteit_gezet', { prio: naarLabel })
     }
 
     case 'archived':
-      return regel.naar ? 'archiveerde de taak' : 'haalde de taak uit het archief'
+      return regel.naar ? tekst('taaklib.log.gearchiveerd') : tekst('taaklib.log.uit_archief')
 
     default:
-      return 'wijzigde de taak'
+      return tekst('taaklib.log.gewijzigd')
   }
 }
 

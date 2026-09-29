@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { zetHuidigeTaal } from '../src/lib/i18n'
 import { beschrijf, raaktLog, verloopVan, wijzigingen } from '../src/lib/activiteit'
 
 const NAMEN = { 'u-jasper': 'Jasper Hansen', 'u-elke': 'Elke Motmans' }
@@ -141,6 +142,38 @@ describe('beschrijf', () => {
   it('valt niet om over een regel die het niet kent', () => {
     expect(beschrijf({ veld: 'onbekend' })).toBe('wijzigde de taak')
     expect(beschrijf(null)).toBe('')
+  })
+})
+
+describe('beschrijf in het Engels', () => {
+  afterEach(() => zetHuidigeTaal('nl'))
+
+  // Het statuslabel, de titel en de naam van een collega komen uit de database
+  // en blijven staan; alleen de zin eromheen wordt Engels.
+  it('schrijft de zin in het Engels en laat de namen staan', () => {
+    zetHuidigeTaal('en')
+    expect(beschrijf({ veld: 'status', van: 'create offer', naar: 'offer send' })).toBe(
+      'moved the status from Offerte maken to Offerte verstuurd'
+    )
+    expect(beschrijf({ veld: 'title', van: 'Trouw Niels', naar: 'Trouw Niels en Inez' })).toBe(
+      'renamed “Trouw Niels” to “Trouw Niels en Inez”'
+    )
+    expect(beschrijf({ veld: 'assignees', van: ['u-jasper'], naar: ['u-elke'] }, { naamVan })).toBe(
+      'put Elke Motmans on the task, and took Jasper Hansen off the task'
+    )
+    expect(beschrijf({ veld: 'priority', naar: 1 })).toBe('set the priority to Urgent')
+    expect(beschrijf({ veld: 'archived', naar: true })).toBe('archived the task')
+    expect(beschrijf({ veld: 'dueDate', van: '2026-10-04T12:00:00', naar: null })).toContain(
+      'removed the deadline'
+    )
+    expect(beschrijf({ veld: 'onbekend' })).toBe('changed the task')
+  })
+
+  it('valt terug op "someone" voor een profiel dat niet meer bestaat', () => {
+    zetHuidigeTaal('en')
+    expect(beschrijf({ veld: 'assignees', van: [], naar: ['u-weg'] }, { naamVan })).toBe(
+      'put someone on the task'
+    )
   })
 })
 

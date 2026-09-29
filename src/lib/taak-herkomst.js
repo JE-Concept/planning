@@ -1,4 +1,5 @@
 import { asDate, formatDate } from './dates'
+import { tekst } from './i18n'
 
 /**
  * Wat de aanmaakdatum van een taak waard is.
@@ -16,6 +17,8 @@ import { asDate, formatDate } from './dates'
  *
  * Een taak uit de migratie herken je aan `clickupId` — dat veld zet alleen
  * `scripts/migrate-clickup.mjs`.
+ *
+ * ClickUp heet in beide talen ClickUp; alleen de zin eromheen volgt de taal.
  */
 export function herkomstVanTaak(task) {
   const datum = asDate(task?.createdAt)
@@ -25,10 +28,15 @@ export function herkomstVanTaak(task) {
     return {
       soort: 'clickup',
       datum,
-      tekst: `Overgenomen uit ClickUp op ${formatDate(datum)}`,
-      uitleg: 'De datum van de verhuizing, niet van de taak zelf.',
+      tekst: tekst('taaklib.herkomst.clickup', { datum: formatDate(datum) }),
+      uitleg: tekst('taaklib.herkomst.clickup_uitleg'),
     }
   }
 
-  return { soort: 'aangemaakt', datum, tekst: `Aangemaakt ${formatDate(datum)}`, uitleg: null }
+  return {
+    soort: 'aangemaakt',
+    datum,
+    tekst: tekst('taaklib.herkomst.aangemaakt', { datum: formatDate(datum) }),
+    uitleg: null,
+  }
 }
