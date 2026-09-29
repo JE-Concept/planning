@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { formatDateTime, fromLocalInput, toLocalInput } from '@lib/dates'
+import { CHANNELS, channelMeta, hoofdKanaal } from '@lib/social-channels'
+import { heeftEigenPublicatiedatum, publicatieMoment } from '@lib/social-planning'
 import {
   Avatar,
   Badge,
@@ -14,14 +16,15 @@ import {
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
-  CHANNELS,
   POST_STATUSES,
   deletePost,
+  setPublicatiedatum,
   toggleChannel,
   updatePost,
   usePost,
 } from '@data/social'
 import { addComment, deleteComment, useComments } from '@data/comments'
+import PostPreview from './PostPreview'
 import ProjectLink from './ProjectLink'
 import ReviewPanel from './ReviewPanel'
 
@@ -34,6 +37,10 @@ export default function PostDrawer({ postId, onClose }) {
 
   const brand = brandById[post.brandId]
   const captionLength = (post.caption ?? '').length
+  const moment = publicatieMoment(post)
+  const eigenDatum = heeftEigenPublicatiedatum(post)
+  // De tekstlimiet verschilt per kanaal; het strengste gekozen kanaal beslist.
+  const kanaal = channelMeta(hoofdKanaal(post))
 
   return (
     <Drawer
@@ -42,7 +49,7 @@ export default function PostDrawer({ postId, onClose }) {
       title={post.title}
       subtitle={
         brand
-          ? `${brand.name} · ${formatDateTime(post.scheduledAt) || 'nog niet ingepland'}`
+          ? `${brand.name} · ${formatDateTime(moment) || 'nog geen publicatiedatum'}`
           : undefined
       }
       footer={
@@ -96,11 +103,22 @@ export default function PostDrawer({ postId, onClose }) {
             </Select>
           </Field>
 
-          <Field label="Inplannen op">
+          {/* De publicatiedatum staat los van het event: een aankondiging gaat
+              weken vooraf online, een nabeschouwing dagen erna. Zolang niemand
+              er een gekozen heeft, staat hier de datum die van het event kwam —
+              met de melding erbij, want die datum heeft niemand bedoeld. */}
+          <Field
+            label="Publiceren op"
+            hint={
+              moment && !eigenDatum
+                ? 'Overgenomen van het event. Pas aan voor een eigen publicatiemoment.'
+                : undefined
+            }
+          >
             <Input
               type="datetime-local"
-              value={toLocalInput(post.scheduledAt)}
-              onChange={(e) => updatePost(post.id, { scheduledAt: fromLocalInput(e.target.value) })}
+              value={toLocalInput(moment)}
+              onChange={(e) => setPublicatiedatum(post.id, fromLocalInput(e.target.value))}
             />
           </Field>
 
@@ -140,6 +158,8 @@ export default function PostDrawer({ postId, onClose }) {
           </div>
         </section>
 
+        <PostPreview post={post} brand={brand} />
+
         <ProjectLink post={post} />
 
         <Field
@@ -164,7 +184,11 @@ export default function PostDrawer({ postId, onClose }) {
 
         <Field
           label="Caption"
-          hint={`${captionLength} tekens${captionLength > 2200 ? ' — te lang voor Instagram (max 2200)' : ''}`}
+          hint={`${captionLength} tekens${
+            kanaal.captionMax != null && captionLength > kanaal.captionMax
+              ? ` — te lang voor ${kanaal.label} (max ${kanaal.captionMax})`
+              : ''
+          }`}
         >
           <Textarea
             rows={6}

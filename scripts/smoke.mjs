@@ -219,6 +219,50 @@ await test('de kalender en de posts blijven bestaan naast het eventbord', async 
   await page.close()
 })
 
+await test('de weekweergave toont per kanaal wat er die week uitgaat', async () => {
+  const page = await tabblad('/social')
+  await page.getByRole('tab', { name: 'Week' }).click()
+  await page.waitForTimeout(900)
+  const tekst = await inhoud(page)
+
+  zouden(bevat(tekst, 'week '), 'het weeknummer ontbreekt boven de week')
+  // Rijen per kanaal, en alleen de kanalen waar deze week iets op staat.
+  for (const kanaal of ['Instagram', 'Facebook', 'LinkedIn', 'TikTok']) {
+    zouden(bevat(tekst, kanaal), `de rij "${kanaal}" ontbreekt`)
+  }
+  // Een aankondiging gaat weken vóór het event online en hoort dus in déze
+  // week te staan, niet in de week van het feest.
+  zouden(bevat(tekst, 'Blum 20 jaar'), 'de aankondiging staat niet in de week')
+  // Een post die pas over anderhalve week uitgaat, hoort er niet bij.
+  zouden(!bevat(tekst, 'Vacature zaalmedewerker'), 'een post van een andere week staat er toch')
+  // En een post die er al stond vóór er een publicatiedatum bestond, valt
+  // terug op zijn eventdatum in plaats van uit de kalender te verdwijnen.
+  zouden(bevat(tekst, 'Wijnproeverij'), 'een post zonder publicatiedatum verdween')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een post toont zijn kanaal, zijn publicatiedatum en een preview', async () => {
+  const page = await tabblad('/social')
+  await page.getByRole('tab', { name: 'Week' }).click()
+  await page.waitForTimeout(900)
+  await page.getByRole('button', { name: /Blum 20 jaar/ }).first().click()
+  await page.waitForTimeout(900)
+
+  const paneel = page.getByRole('dialog')
+  // Het feest van Blum is pas over een maand; de aankondiging gaat morgen uit.
+  const datum = await paneel.getByLabel('Publiceren op').inputValue()
+  zouden(datum.startsWith('2026-09-29'), `verkeerde publicatiedatum: ${datum}`)
+
+  const tekst = await paneel.innerText()
+  zouden(bevat(tekst, 'LinkedIn') && bevat(tekst, 'Facebook'), 'de kanalen staan niet op de post')
+  zouden(bevat(tekst, 'Preview'), 'de preview ontbreekt')
+  zouden(bevat(tekst, '#blum'), 'de hashtags staan niet in de preview')
+  zouden(bevat(tekst, 'Gaat online op'), 'de preview zegt niet wanneer de post uitgaat')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een klant toont zijn gegevens, events en documenten', async () => {
   const page = await tabblad('/klanten')
   const tekst = await inhoud(page)

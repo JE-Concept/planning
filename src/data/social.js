@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   deleteDoc,
   doc,
@@ -14,15 +14,16 @@ import {
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
 import { db } from '@lib/firebase'
+import { publicatieMoment } from '@lib/social-planning'
 
-export const CHANNELS = [
-  { key: 'instagram', label: 'Instagram', color: '#d62976' },
-  { key: 'facebook', label: 'Facebook', color: '#1877f2' },
-  { key: 'tiktok', label: 'TikTok', color: '#161a22' },
-  { key: 'linkedin', label: 'LinkedIn', color: '#0a66c2' },
-  { key: 'google', label: 'Google Business', color: '#34a853' },
-  { key: 'newsletter', label: 'Nieuwsbrief', color: '#f59e0b' },
-]
+/**
+ * De kanalen staan in `@lib/social-channels`, samen met hun beeldverhouding.
+ *
+ * Ze worden hier doorgegeven omdat andere schermen ze uit dit bestand halen —
+ * het eventpaneel toont de kanalen van de posts bij een event — en die hoeven
+ * daar niet allemaal voor aangeraakt te worden.
+ */
+export { CHANNELS, GEEN_KANAAL, channelMeta, hoofdKanaal, kanalenVan } from '@lib/social-channels'
 
 /** The production line of a post, in the order it actually moves. */
 export const POST_STATUSES = [
@@ -52,9 +53,6 @@ export const reviewMeta = (key) =>
 export const statusMeta = (key) =>
   POST_STATUSES.find((s) => s.key === key) ?? POST_STATUSES[0]
 
-export const channelMeta = (key) =>
-  CHANNELS.find((c) => c.key === key) ?? { key, label: key, color: '#8593a9' }
-
 /**
  * Wie de social content maakt.
  *
@@ -78,8 +76,9 @@ export function useSocialOwner() {
   return email
 }
 
-export function createPost({ brandId, scheduledAt, title, createdBy, ...rest }) {
+export function createPost({ brandId, publishAt, title, createdBy, ...rest }) {
   const postRef = newRef(COL.socialPosts)
+  const wanneer = publishAt ? new Date(publishAt) : null
 
   return setDoc(postRef, {
     brandId,
@@ -87,7 +86,8 @@ export function createPost({ brandId, scheduledAt, title, createdBy, ...rest }) 
     caption: '',
     hashtags: '',
     channels: ['instagram'],
-    scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+    publishAt: wanneer,
+    scheduledAt: wanneer,
     status: 'idea',
     source: 'manual',
     assigneeId: null,
@@ -112,12 +112,27 @@ export function updatePost(id, patch) {
   return updateDoc(ref(COL.socialPosts, id), { ...patch, updatedAt: serverTimestamp() })
 }
 
+/**
+ * De publicatiedatum verzetten.
+ *
+ * `publishAt` is vanaf nu het veld dat telt. `scheduledAt` gaat mee zolang er
+ * schermen zijn die het nog lezen — het eventpaneel toont de datum van de
+ * posts bij een event daaruit — want anders lopen die achter op de kalender.
+ * Zodra die laatste lezer om is, mag deze tweede schrijfactie weg; de
+ * fallback in `publicatieMoment` blijft wél nodig, voor de posts die al in de
+ * database stonden voor dit veld bestond.
+ */
+export function setPublicatiedatum(id, datum) {
+  const wanneer = datum ? new Date(datum) : null
+  return updatePost(id, { publishAt: wanneer, scheduledAt: wanneer })
+}
+
 export function deletePost(id) {
   return deleteDoc(ref(COL.socialPosts, id))
 }
 
 export function movePostTo(id, date) {
-  return updatePost(id, { scheduledAt: date ? new Date(date) : null })
+  return setPublicatiedatum(id, date)
 }
 
 /**
@@ -198,34 +213,70 @@ export function toggleChannel(post, key) {
 
 // ─── Subscriptions ──────────────────────────────────────────────────────────
 
-/** Every scheduled post between two dates, across brands. */
-export function useSocialPosts({ from, to }) {
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
+/**
+ * Alle posts in een periode, op één veld tegelijk. `null` = nog aan het laden.
+ *
+ * Een bereik op één veld heeft geen samengestelde index nodig; Firestore
+ * indexeert losse velden vanzelf.
+ */
+function useBereik(veld, from, to) {
+  const [posts, setPosts] = useState(null)
 
   useEffect(() => {
     if (!from || !to) return undefined
-    setLoading(true)
+    setPosts(null)
 
     return onSnapshot(
-      query(
-        col(COL.socialPosts),
-        where('scheduledAt', '>=', from),
-        where('scheduledAt', '<=', to),
-        orderBy('scheduledAt')
-      ),
-      (snap) => {
-        setPosts(fromQuery(snap))
-        setLoading(false)
-      },
-      () => setLoading(false)
+      query(col(COL.socialPosts), where(veld, '>=', from), where(veld, '<=', to), orderBy(veld)),
+      (snap) => setPosts(fromQuery(snap)),
+      () => setPosts([])
     )
-  }, [from?.getTime(), to?.getTime()]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [veld, from?.getTime(), to?.getTime()]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { posts, loading }
+  return posts
 }
 
-/** Posts without a date yet — the backlog rail next to the calendar. */
+/**
+ * Elke post die in deze periode online gaat, over de merken heen.
+ *
+ * Twee abonnementen in plaats van één, en dat is geen omweg: een `orderBy` op
+ * `publishAt` laat elk document weg dat dat veld níét heeft, en zo staan de
+ * posts erin die er al vóór deze wijziging waren. Die hebben alleen nog hun
+ * oude `scheduledAt`. Één query op `publishAt` zou de halve kalender leeg
+ * maken; één query op `scheduledAt` zou een verzette publicatiedatum missen.
+ * Samenvoegen en daarna op het echte publicatiemoment filteren dekt beide.
+ */
+export function useSocialPosts({ from, to }) {
+  const opPublicatiedatum = useBereik('publishAt', from, to)
+  const opEventdatum = useBereik('scheduledAt', from, to)
+
+  const posts = useMemo(() => {
+    const perId = new Map()
+    for (const post of [...(opPublicatiedatum ?? []), ...(opEventdatum ?? [])]) {
+      perId.set(post.id, post)
+    }
+
+    return [...perId.values()]
+      .filter((post) => {
+        // Een post met een oude datum in deze periode maar een publicatiedatum
+        // erbuiten hoort hier niet: hij gaat online in een andere week.
+        const moment = publicatieMoment(post)
+        return moment && moment >= from && moment <= to
+      })
+      .sort((a, b) => publicatieMoment(a) - publicatieMoment(b))
+  }, [opPublicatiedatum, opEventdatum, from?.getTime(), to?.getTime()]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { posts, loading: opPublicatiedatum === null || opEventdatum === null }
+}
+
+/**
+ * Posts zonder datum — de lijst naast de kalender.
+ *
+ * De query blijft op `scheduledAt` staan: een gelijkheidstoets op `publishAt`
+ * zou de oudere posts overslaan, want die hebben dat veld niet en Firestore
+ * beschouwt een ontbrekend veld niet als `null`. Wat er daarna nog een
+ * publicatiedatum blijkt te hebben, valt er hier uit.
+ */
 export function useUnscheduledPosts() {
   const [posts, setPosts] = useState([])
 
@@ -233,7 +284,7 @@ export function useUnscheduledPosts() {
     () =>
       onSnapshot(
         query(col(COL.socialPosts), where('scheduledAt', '==', null), orderBy('createdAt', 'desc')),
-        (snap) => setPosts(fromQuery(snap))
+        (snap) => setPosts(fromQuery(snap).filter((post) => !publicatieMoment(post)))
       ),
     []
   )

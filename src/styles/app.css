@@ -929,3 +929,265 @@ select.je-compact { padding-right: 24px; }
   .je-kpi { border-color: #999; }
   @page { margin: 14mm; }
 }
+
+/* ── Socials ──────────────────────────────────────────────────────────────
+   De contentkalender: de kanaalmerkjes op een postkaart, het weekrooster met
+   een rij per kanaal, en de preview die toont hoe een post er online uitziet.
+   De kanaalkleuren zijn die van de kanalen zelf en komen uit
+   `src/lib/social-channels.js`; ze staan als inline stijl op het element,
+   want ze horen bij de gegevens en niet bij de huisstijl. */
+
+.je-postcard__kanalen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+.je-postcard__kanaal {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  padding: 0 3px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  letter-spacing: .04em;
+}
+
+/* --- Het weekrooster ---------------------------------------------------- */
+
+.je-weekboard {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 16px 16px;
+}
+
+@media (min-width: 640px) {
+  .je-weekboard { padding: 0 24px 16px; }
+}
+
+/* Eén raster voor de hele week: zo blijven de cellen van een dag onder elkaar
+   staan, ook als de ene rij hogere kaarten heeft dan de andere. De kanaalkolom
+   is smal maar vast — anders springt het rooster bij elke filterwissel. */
+.je-weekboard__rooster {
+  display: grid;
+  grid-template-columns: 8.5rem repeat(var(--dagen), minmax(7rem, 1fr));
+  gap: 1px;
+  background: var(--border-hairline);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  min-width: 46rem;
+}
+
+.je-weekboard__hoek,
+.je-weekboard__dagkop,
+.je-weekboard__kanaal,
+.je-weekboard__cel {
+  background: var(--surface-1);
+}
+
+.je-weekboard__dagkop {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-2);
+}
+
+.je-weekboard__dagkop--vandaag {
+  color: var(--text-on-accent);
+  background: var(--accent);
+}
+
+.je-weekboard__kanaal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+}
+
+.je-weekboard__stip {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  flex: none;
+}
+
+.je-weekboard__kanaalnaam {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.je-weekboard__teller {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 0 5px;
+}
+
+.je-weekboard__cel {
+  position: relative;
+  min-height: 4.5rem;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.je-weekboard__cel--vandaag { background: var(--accent-quiet); }
+.je-weekboard__cel--doel { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* Het plusje blijft weg tot je met de muis in de cel komt: zeven kolommen maal
+   vier rijen vol plusjes leest als een formulier in plaats van als een week. */
+.je-weekboard__plus {
+  margin-top: auto;
+  align-self: flex-start;
+  border-radius: var(--radius-sm);
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-3);
+  opacity: 0;
+  transition: opacity .12s;
+}
+
+.je-weekboard__cel:hover .je-weekboard__plus,
+.je-weekboard__plus:focus-visible { opacity: 1; }
+.je-weekboard__plus:hover { background: var(--surface-2); color: var(--text-1); }
+
+/* --- De preview --------------------------------------------------------- */
+
+.je-postprev__tabs { margin-bottom: 8px; }
+
+.je-postprev__card {
+  max-width: 21rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--surface-1);
+}
+
+.je-postprev__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.je-postprev__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-on-accent);
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+
+.je-postprev__naam {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.je-postprev__kanaal {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* De verhouding komt per kanaal uit de gegevens en staat als inline stijl op
+   dit element; hier staat alleen wat er in dat kader gebeurt. */
+.je-postprev__beeld {
+  width: 100%;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.je-postprev__beeld img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.je-postprev__plaatshouder {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  color: var(--text-3);
+}
+
+.je-postprev__acties {
+  display: flex;
+  gap: 10px;
+  padding: 6px 10px 0;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.je-postprev__tekst { padding: 6px 10px 10px; }
+
+.je-postprev__caption {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-1);
+  white-space: pre-wrap;
+}
+
+/* Te lang voor dit kanaal: de tekst wordt daar afgekapt, dus hier ook — anders
+   ziet de preview er beter uit dan de post straks doet. */
+.je-postprev__caption--lang {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.je-postprev__tags {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-link);
+  word-break: break-word;
+}
+
+.je-postprev__leeg,
+.je-postprev__wanneer {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.je-postprev__wanneer { margin-top: 6px; }
+
+.je-postprev__regels {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.je-postprev__waarschuwing {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--danger);
+}

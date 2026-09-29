@@ -21,7 +21,7 @@ export function toDate(value) {
 // te weten dat het een datum is. Een Timestamp herkent zichzelf; een string niet.
 const DATE_FIELDS = new Set([
   'createdAt', 'updatedAt', 'completedAt', 'dueDate', 'startDate', 'eventDate',
-  'startedAt', 'endedAt', 'scheduledAt', 'lastSeenAt',
+  'startedAt', 'endedAt', 'scheduledAt', 'publishAt', 'lastSeenAt',
   'reviewRequestedAt', 'reviewedAt',
 ])
 
