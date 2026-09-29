@@ -16,6 +16,8 @@
  * de tests precies dit kunnen narekenen.
  */
 
+import { tekst } from './i18n'
+
 /**
  * Drempel waaronder een verschil rekenruis is en geen tekort.
  *
@@ -210,7 +212,12 @@ export function bestelTekst(regel) {
   const inhoud = Math.max(1, Number(regel.inhoud) || 1)
   const eenheid = regel.eenheid || 'stuks'
   if (inhoud === 1) return `${getal.format(regel.bestellen)} ${eenheid}`
-  return `${getal.format(regel.verpakkingen)} × ${regel.verpakking || 'verpakking'} van ${getal.format(inhoud)} ${eenheid}`
+  return tekst('formulelib.bestel.verpakt', {
+    aantal: getal.format(regel.verpakkingen),
+    verpakking: regel.verpakking || tekst('formulelib.bestel.verpakking'),
+    inhoud: getal.format(inhoud),
+    eenheid,
+  })
 }
 
 /** Het totaal in eenheden, los van de verpakking. */
@@ -221,7 +228,10 @@ export function totaalTekst(regel) {
 /** Hoeveel er echt nodig was — alleen als er door het afronden iets overblijft. */
 export function nodigTekst(regel) {
   if (netjes(regel.bestellen - regel.nodig) <= 0) return null
-  return `${getal.format(regel.nodig)} ${regel.eenheid || 'stuks'} nodig`
+  return tekst('formulelib.bestel.nodig', {
+    aantal: getal.format(regel.nodig),
+    eenheid: regel.eenheid || 'stuks',
+  })
 }
 
 /**

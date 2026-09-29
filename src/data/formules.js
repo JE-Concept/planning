@@ -1,6 +1,7 @@
 import { deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { COL, newRef, ref } from '@lib/collections'
 import { prijsVan } from '@lib/formules'
+import { tekst } from '@lib/i18n'
 
 /**
  * Vaste formules: een aanbod met een vaste prijs per persoon, een reeks vragen
@@ -57,10 +58,13 @@ export const nieuweFormule = (position = 0) => ({
 export function formuleSamenvatting(formule) {
   const vragen = formule?.opties?.length ?? 0
   const regels = formule?.bestelregels?.length ?? 0
+  const bedrag = (Number(formule?.prijsPerPersoon) || 0).toFixed(2).replace('.', ',')
   return [
-    `€ ${(Number(formule?.prijsPerPersoon) || 0).toFixed(2).replace('.', ',')} p.p.`,
-    vragen ? `${vragen} ${vragen === 1 ? 'vraag' : 'vragen'}` : 'geen vragen',
-    `${regels} ${regels === 1 ? 'bestelregel' : 'bestelregels'}`,
+    tekst('formulelib.formule.per_persoon', { bedrag }),
+    vragen
+      ? tekst('formulelib.formule.vraag', { aantal: vragen })
+      : tekst('formulelib.formule.geen_vragen'),
+    tekst('formulelib.formule.bestelregel', { aantal: regels }),
   ].join(' · ')
 }
 

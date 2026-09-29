@@ -1,5 +1,6 @@
 import { deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { COL, newRef, ref } from '@lib/collections'
+import { tekst } from '@lib/i18n'
 
 /**
  * Eventtemplates: de taken die een nieuw event meekrijgt.
@@ -117,7 +118,10 @@ export const PRIO_OPTIONS = [
 export function templateSummary(tp) {
   const n = tp.tasks?.length ?? 0
   const subs = (tp.tasks ?? []).reduce((a, t) => a + (t.subs?.length ?? 0), 0)
-  return n ? `${n} taken${subs ? ` · ${subs} subtaken` : ''}` : 'Zonder taken'
+  if (!n) return tekst('formulelib.template.geen_taken')
+  const delen = [tekst('alg.taak', { aantal: n })]
+  if (subs) delen.push(tekst('formulelib.template.subtaak', { aantal: subs }))
+  return delen.join(' · ')
 }
 
 /** Koppelt `whoName` uit een standaardtemplate aan een echt profiel. */

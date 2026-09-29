@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
 import { db } from '@lib/firebase'
+import { tekst } from '@lib/i18n'
 import { publicatieMoment } from '@lib/social-planning'
 
 /**
@@ -25,21 +26,34 @@ import { publicatieMoment } from '@lib/social-planning'
  */
 export { CHANNELS, GEEN_KANAAL, channelMeta, hoofdKanaal, kanalenVan } from '@lib/social-channels'
 
-/**
- * The production line of a post, in the order it actually moves.
- *
- * `sleutel` wijst naar de tekst in de taalcatalogus; `label` blijft ernaast
- * staan omdat schermen buiten de socials deze tabel ook lezen, en die mogen
- * niet stilvallen op een sleutel die ze niet opzoeken.
- */
+/*
+  De kleur en de sleutel liggen vast, de naam hangt aan de taal.
+
+  `sleutel` wijst naar de tekst in de taalcatalogus; `label` blijft ernaast
+  staan omdat schermen buiten de socials deze tabel ook lezen — het dashboard
+  en het takenpaneel — en die mogen niet stilvallen op een sleutel die ze niet
+  opzoeken. Daarom is `label` een getter en geen waarde: deze lijsten worden
+  één keer gemaakt en overal uitgelezen, en een vaste tekst zou na een
+  taalwissel de oude blijven tonen tot de pagina herladen wordt.
+*/
+const stand = (key, sleutel, color) => ({
+  key,
+  sleutel,
+  color,
+  get label() {
+    return tekst(sleutel)
+  },
+})
+
+/** The production line of a post, in the order it actually moves. */
 export const POST_STATUSES = [
-  { key: 'idea', sleutel: 'social.status.idea', label: 'Idee', color: '#8593a9' },
-  { key: 'draft', sleutel: 'social.status.draft', label: 'Tekst', color: '#f59e0b' },
-  { key: 'design', sleutel: 'social.status.design', label: 'Ontwerp', color: '#7c3aed' },
-  { key: 'review', sleutel: 'social.status.review', label: 'Nakijken', color: '#b660e0' },
-  { key: 'approved', sleutel: 'social.status.approved', label: 'Goedgekeurd', color: '#3db88b' },
-  { key: 'scheduled', sleutel: 'social.status.scheduled', label: 'Ingepland', color: '#3377ff' },
-  { key: 'published', sleutel: 'social.status.published', label: 'Gepubliceerd', color: '#008844' },
+  stand('idea', 'social.status.idea', '#8593a9'),
+  stand('draft', 'social.status.draft', '#f59e0b'),
+  stand('design', 'social.status.design', '#7c3aed'),
+  stand('review', 'social.status.review', '#b660e0'),
+  stand('approved', 'social.status.approved', '#3db88b'),
+  stand('scheduled', 'social.status.scheduled', '#3377ff'),
+  stand('published', 'social.status.published', '#008844'),
 ]
 
 /**
@@ -47,10 +61,10 @@ export const POST_STATUSES = [
  * The status says what the post is; the review state says whose move it is.
  */
 export const REVIEW_STATES = [
-  { key: 'none', sleutel: 'social.review.geen', label: 'Geen review', color: '#8593a9' },
-  { key: 'requested', sleutel: 'social.review.wacht', label: 'Wacht op review', color: '#b660e0' },
-  { key: 'changes', sleutel: 'social.review.aanpassing', label: 'Aanpassing gevraagd', color: '#e5484d' },
-  { key: 'approved', sleutel: 'social.review.goedgekeurd', label: 'Goedgekeurd', color: '#3db88b' },
+  stand('none', 'social.review.geen', '#8593a9'),
+  stand('requested', 'social.review.wacht', '#b660e0'),
+  stand('changes', 'social.review.aanpassing', '#e5484d'),
+  stand('approved', 'social.review.goedgekeurd', '#3db88b'),
 ]
 
 export const reviewMeta = (key) =>

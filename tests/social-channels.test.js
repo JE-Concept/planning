@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { zetHuidigeTaal } from '../src/lib/i18n'
 import {
   CHANNELS,
   GEEN_KANAAL,
@@ -36,6 +37,18 @@ describe('de kanalen zelf', () => {
 
   it('kent de rij voor posts zonder kanaal', () => {
     expect(channelMeta(GEEN_KANAAL).label).toBe('Nog geen kanaal')
+  })
+
+  describe('in het Engels', () => {
+    afterEach(() => zetHuidigeTaal('nl'))
+
+    // De merknamen blijven staan; wat geen merk is, gaat mee met de taal.
+    it('vertaalt wat geen merknaam is', () => {
+      zetHuidigeTaal('en')
+      expect(channelMeta('instagram').label).toBe('Instagram')
+      expect(channelMeta('newsletter').label).toBe('Newsletter')
+      expect(channelMeta(GEEN_KANAAL).label).toBe('No channel yet')
+    })
   })
 })
 
