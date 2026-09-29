@@ -4,14 +4,17 @@ import {
   describeRule,
   emptyRule,
   emptyTable,
+  entiteitLabel,
   entityOf,
   fieldOf,
   fieldsFor,
   ruleWarnings,
   toEditable,
   triggersFor,
+  veldLabel,
 } from '@lib/automations'
 import { Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
@@ -49,6 +52,7 @@ export default function BusinessRules({ isAdmin }) {
   const { lists, profiles, brands, tags } = useWorkspace()
   const { rules, loading } = useAutomations()
   const { runs } = useAutomationRuns()
+  const { t } = useTaal()
   const toast = useToast()
   const [draft, setDraft] = useState(null)
 
@@ -58,9 +62,11 @@ export default function BusinessRules({ isAdmin }) {
     [profiles]
   )
 
+  // `t` hoort in de context: de zin onder een regel wordt in @lib/automations
+  // opgebouwd, en die kent de taal alleen als ze meekomt.
   const context = useMemo(
-    () => ({ profiles: team, lists: taakLijsten, tags, brands }),
-    [team, taakLijsten, tags, brands]
+    () => ({ profiles: team, lists: taakLijsten, tags, brands, t }),
+    [team, taakLijsten, tags, brands, t]
   )
 
   const bewaar = async (e) => {
@@ -68,7 +74,7 @@ export default function BusinessRules({ isAdmin }) {
     try {
       await createAutomation(draft)
       setDraft(null)
-      toast.success('Regel staat aan.')
+      toast.success(t('regels.staat_aan'))
     } catch (err) {
       toast.error(err.message)
     }
@@ -84,16 +90,20 @@ export default function BusinessRules({ isAdmin }) {
 
   return (
     <div className="space-y-4">
+      {/* De statusnaam staat schuin in de zin en komt uit de database, dus
+          wordt de zin er omheen gelegd in plaats van erin geplakt. */}
       <p className="max-w-2xl text-sm text-ink-600">
-        Een regel doet iets op het moment dat er iets verandert — bijvoorbeeld: alles wat op{' '}
-        <em>ready to invoice</em> komt, wordt van Elke en van niemand anders. Het kan over taken en
-        events gaan, maar net zo goed over klanten, social posts, afvinklijsten, urenboekingen en
-        profielen. De regels draaien op de server, dus ook wanneer iemand anders de kaart versleept.
+        {t('regels.kop.uitleg').split('{status}').map((deel, i) => (
+          <span key={i}>
+            {i > 0 ? <em>ready to invoice</em> : null}
+            {deel}
+          </span>
+        ))}
       </p>
 
       {rules.length === 0 ? (
         <p className="card px-4 py-6 text-center text-sm text-ink-500">
-          Er staat nog geen enkele regel. Niets gebeurt automatisch.
+          {t('regels.leeg')}
         </p>
       ) : (
         <ul className="space-y-3">
@@ -113,16 +123,16 @@ export default function BusinessRules({ isAdmin }) {
                         size="sm"
                         onClick={() => updateAutomation(rule.id, { enabled: rule.enabled === false })}
                       >
-                        {rule.enabled === false ? 'Aanzetten' : 'Uitzetten'}
+                        {rule.enabled === false ? t('regels.aanzetten') : t('regels.uitzetten')}
                       </Button>
                       <ConfirmButton
                         variant="ghost"
                         size="sm"
                         className="text-ink-400"
-                        question="Regel verwijderen?"
+                        question={t('regels.verwijder_vraag')}
                         onConfirm={() => deleteAutomation(rule.id)}
                       >
-                        Verwijderen
+                        {t('alg.verwijderen')}
                       </ConfirmButton>
                     </div>
                   ) : null
@@ -136,7 +146,7 @@ export default function BusinessRules({ isAdmin }) {
       {!isAdmin ? null : draft ? (
         <form onSubmit={bewaar} className="card space-y-3 border-accent-200 p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">
-            {draft.kind === 'table' ? 'Nieuwe beslissingstabel' : 'Nieuwe regel'}
+            {draft.kind === 'table' ? t('regels.nieuwe_tabel') : t('regels.nieuwe_regel')}
           </h2>
           <RuleEditor
             rule={draft}
@@ -150,29 +160,29 @@ export default function BusinessRules({ isAdmin }) {
               type="submit"
               variant="primary"
               size="sm"
-              disabled={!draft.name.trim() || ruleWarnings(draft, { lists: taakLijsten }).length > 0}
+              disabled={!draft.name.trim() || ruleWarnings(draft, { lists: taakLijsten, t }).length > 0}
             >
-              Regel aanzetten
+              {t('regels.regel_aanzetten')}
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => setDraft(null)}>
-              Weg ermee
+              {t('regels.weg_ermee')}
             </Button>
           </div>
         </form>
       ) : (
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={() => setDraft(emptyRule('task'))}>
-            Nieuwe regel
+            {t('regels.nieuwe_regel')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setDraft(emptyTable('task'))}>
-            Nieuwe beslissingstabel
+            {t('regels.nieuwe_tabel')}
           </Button>
         </div>
       )}
 
       <section className="card space-y-2 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">
-          Wat de regels deden
+          {t('regels.wat_deden')}
         </h2>
         <RuleRuns runs={runs} />
       </section>
@@ -183,8 +193,9 @@ export default function BusinessRules({ isAdmin }) {
 // ─── Eén regel of tabel ─────────────────────────────────────────────────────
 
 function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, context, lists }) {
+  const { t } = useTaal()
   const entity = entityOf(rule.entity)
-  const waarschuwingen = ruleWarnings(rule, { lists })
+  const waarschuwingen = ruleWarnings(rule, { lists, t })
   const uit = rule.enabled === false
   const opLijst = Boolean(fieldOf(entity, 'listId'))
 
@@ -195,25 +206,33 @@ function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, c
           value={rule.name ?? ''}
           onChange={(e) => onChange({ name: e.target.value })}
           onBlur={(e) => onChange({ name: e.target.value.trim() })}
-          placeholder="Naam van de regel"
-          aria-label="Naam van de regel"
+          placeholder={t('regels.naam')}
+          aria-label={t('regels.naam')}
           className="h-8 max-w-xs text-sm font-semibold"
           disabled={readOnly}
           required
         />
-        {rule.kind === 'table' ? <Badge color="#7c3aed" subtle>tabel</Badge> : null}
-        {uit ? <Badge color="#8593a9" subtle>uit</Badge> : null}
+        {rule.kind === 'table' ? (
+          <Badge color="#7c3aed" subtle>
+            {t('regels.badge_tabel')}
+          </Badge>
+        ) : null}
+        {uit ? (
+          <Badge color="#8593a9" subtle>
+            {t('regels.badge_uit')}
+          </Badge>
+        ) : null}
         {header}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
-        <Field label="Waarover">
+        <Field label={t('regels.waarover')}>
           {/* De entiteit ligt vast zodra de regel bestaat: haar velden, haar
               acties en haar voorwaarden hangen er allemaal aan, en die stil
               omzetten naar een andere collectie levert een regel op die niets
               meer doet zonder dat iemand het ziet. */}
           <Select
-            aria-label="Waarover gaat de regel"
+            aria-label={t('regels.waarover_label')}
             value={rule.entity ?? 'task'}
             disabled={readOnly || !nieuw}
             onChange={(e) =>
@@ -226,15 +245,15 @@ function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, c
           >
             {ENTITIES.map((e) => (
               <option key={e.key} value={e.key}>
-                {e.label}
+                {entiteitLabel(t, e)}
               </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="Als">
+        <Field label={t('regels.als')}>
           <Select
-            aria-label="Aanleiding"
+            aria-label={t('regels.aanleiding')}
             value={rule.trigger?.kind ?? 'changed'}
             disabled={readOnly}
             onChange={(e) =>
@@ -246,25 +265,25 @@ function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, c
               })
             }
           >
-            {triggersFor(entity).map((t) => (
-              <option key={t.kind} value={t.kind}>
-                {t.label}
+            {triggersFor(entity, context).map((aanleiding) => (
+              <option key={aanleiding.kind} value={aanleiding.kind}>
+                {aanleiding.label}
               </option>
             ))}
           </Select>
         </Field>
 
         {rule.trigger?.kind === 'changed' ? (
-          <Field label="Welk veld">
+          <Field label={t('regels.welk_veld')}>
             <Select
-              aria-label="Veld dat wijzigt"
+              aria-label={t('regels.veld_wijzigt')}
               value={rule.trigger?.field ?? ''}
               disabled={readOnly}
               onChange={(e) => onChange({ trigger: { kind: 'changed', field: e.target.value } })}
             >
               {fieldsFor(entity).map((f) => (
                 <option key={f.key} value={f.key}>
-                  {f.label}
+                  {veldLabel(t, entity, f)}
                 </option>
               ))}
             </Select>
@@ -272,14 +291,14 @@ function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, c
         ) : null}
 
         {opLijst ? (
-          <Field label="Op lijst">
+          <Field label={t('regels.op_lijst_label')}>
             <Select
-              aria-label="Op lijst"
+              aria-label={t('regels.op_lijst_label')}
               value={rule.listId ?? ''}
               disabled={readOnly}
               onChange={(e) => onChange({ listId: e.target.value || null })}
             >
-              <option value="">Elke lijst</option>
+              <option value="">{t('regels.elke_lijst')}</option>
               {lists.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name}
@@ -291,7 +310,7 @@ function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, c
       </div>
 
       <div className="mt-3 space-y-2">
-        <span className="label">Alleen als</span>
+        <span className="label">{t('regels.alleen_als')}</span>
         <ConditionTree
           node={rule.when}
           entity={entity}
@@ -302,7 +321,7 @@ function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, c
       </div>
 
       <div className="mt-3 space-y-2">
-        <span className="label">Dan</span>
+        <span className="label">{t('regels.dan')}</span>
         {rule.kind === 'table' ? (
           <DecisionTable
             rule={rule}

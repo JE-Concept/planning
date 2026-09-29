@@ -3,9 +3,12 @@ import {
   emptyRow,
   fieldOf,
   fieldsFor,
+  operatorLabel,
   operatorMeta,
   operatorsFor,
+  veldLabel,
 } from '@lib/automations'
+import { useTaal } from '@context/TaalProvider'
 import ActionList from './ActionList'
 import { ValueInput } from './ValueInput'
 
@@ -22,6 +25,7 @@ import { ValueInput } from './ValueInput'
  * iedereen die zo'n tabel voor het eerst ziet, vraagt het.
  */
 export default function DecisionTable({ rule, entity, context, onChange, readOnly = false }) {
+  const { t } = useTaal()
   const inputs = rule.inputs ?? []
   const rows = rule.rows ?? []
 
@@ -53,13 +57,13 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
   return (
     <div className="je-regel-tabelblok">
       <div className="je-regel-kolommen">
-        <span className="label">Kolommen</span>
+        <span className="label">{t('regels.kolommen')}</span>
         {inputs.map((input, i) => {
           const veld = fieldOf(entity, input.field)
           return (
             <div key={i} className="je-regel-kolom">
               <Select
-                aria-label={`Kolom ${i + 1} — veld`}
+                aria-label={t('regels.kolom_veld', { nummer: i + 1 })}
                 value={input.field ?? ''}
                 disabled={readOnly}
                 onChange={(e) => {
@@ -71,25 +75,25 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
               >
                 {fieldsFor(entity).map((f) => (
                   <option key={f.key} value={f.key}>
-                    {f.label}
+                    {veldLabel(t, entity, f)}
                   </option>
                 ))}
               </Select>
               <Select
-                aria-label={`Kolom ${i + 1} — vergelijking`}
+                aria-label={t('regels.kolom_vergelijking', { nummer: i + 1 })}
                 value={input.op ?? 'is'}
                 disabled={readOnly}
                 onChange={(e) => zetKolom(i, { op: e.target.value })}
               >
                 {operatorsFor(veld?.type ?? 'text').map((o) => (
                   <option key={o.op} value={o.op}>
-                    {o.label}
+                    {operatorLabel(t, o)}
                   </option>
                 ))}
               </Select>
               {readOnly ? null : (
                 <Button variant="ghost" size="sm" className="text-ink-400" onClick={() => kolomWeg(i)}>
-                  Kolom weg
+                  {t('regels.kolom_weg')}
                 </Button>
               )}
             </div>
@@ -97,7 +101,7 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
         })}
         {readOnly ? null : (
           <Button variant="ghost" size="sm" onClick={kolomErbij}>
-            Kolom erbij
+            {t('regels.kolom_erbij')}
           </Button>
         )}
       </div>
@@ -106,15 +110,19 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
         <table className="je-regel-tabel">
           <thead>
             <tr>
-              <th scope="col">Rij</th>
+              <th scope="col">{t('regels.rij')}</th>
               {inputs.map((input, i) => (
                 <th scope="col" key={i}>
-                  {fieldOf(entity, input.field)?.label ?? '—'}{' '}
-                  <span className="je-regel-tabel__op">{operatorMeta(input.op)?.label ?? ''}</span>
+                  {veldLabel(t, entity, fieldOf(entity, input.field)) || '—'}{' '}
+                  <span className="je-regel-tabel__op">{operatorLabel(t, input.op)}</span>
                 </th>
               ))}
-              <th scope="col">Dan</th>
-              {readOnly ? null : <th scope="col"><span className="sr-only">Weg</span></th>}
+              <th scope="col">{t('regels.dan')}</th>
+              {readOnly ? null : (
+                <th scope="col">
+                  <span className="sr-only">{t('regels.weg')}</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -123,8 +131,8 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
                 <th scope="row">
                   <span className="je-regel-tabel__nummer">{r + 1}</span>
                   <Input
-                    aria-label={`Naam van rij ${r + 1}`}
-                    placeholder="naam"
+                    aria-label={t('regels.rij_naam', { nummer: r + 1 })}
+                    placeholder={t('regels.rij_naam_plaatshouder')}
                     className="h-8 max-w-[9rem] text-sm"
                     value={row.label ?? ''}
                     disabled={readOnly}
@@ -143,11 +151,14 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
                           context={context}
                           value={row.cells?.[k] ?? ''}
                           disabled={readOnly}
-                          label={`Rij ${r + 1}, ${veld?.label ?? 'kolom'}`}
+                          label={t('regels.rij_cel', {
+                            nummer: r + 1,
+                            kolom: veldLabel(t, entity, veld) || t('regels.kolom_woord'),
+                          })}
                           onChange={(value) => zetCel(r, k, value)}
                         />
                       ) : (
-                        <span className="text-sm text-ink-500">{operatorMeta(input.op)?.label}</span>
+                        <span className="text-sm text-ink-500">{operatorLabel(t, input.op)}</span>
                       )}
                     </td>
                   )
@@ -171,7 +182,7 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
                       className="text-ink-400"
                       onClick={() => onChange({ rows: rows.filter((_, j) => j !== r) })}
                     >
-                      Weg
+                      {t('regels.weg')}
                     </Button>
                   </td>
                 )}
@@ -181,14 +192,11 @@ export default function DecisionTable({ rule, entity, context, onChange, readOnl
         </table>
       </div>
 
-      <p className="text-xs text-ink-500">
-        Van boven naar beneden gelezen tot er een rij past — die rij wint, de rest wordt niet meer
-        bekeken. Een lege cel betekent “maakt niet uit”.
-      </p>
+      <p className="text-xs text-ink-500">{t('regels.tabel_uitleg')}</p>
 
       {readOnly ? null : (
         <Button variant="ghost" size="sm" onClick={() => onChange({ rows: [...rows, emptyRow(rows.length + 1)] })}>
-          Rij erbij
+          {t('regels.rij_erbij')}
         </Button>
       )}
     </div>

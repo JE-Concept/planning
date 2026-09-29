@@ -1,6 +1,7 @@
 import { Badge } from '@ui/index'
-import { entityOf, fieldOf } from '@lib/automations'
+import { entiteitLabel, entityOf, fieldOf, veldLabel } from '@lib/automations'
 import { formatDateTime } from '@lib/dates'
+import { useTaal } from '@context/TaalProvider'
 
 /**
  * Het logboek: welke regel deed wat, en bij een tabel op welke rij.
@@ -12,12 +13,10 @@ import { formatDateTime } from '@lib/dates'
  * erbij is een tabel van twaalf rijen daarvoor niet genoeg.
  */
 export default function RuleRuns({ runs = [] }) {
+  const { t } = useTaal()
+
   if (runs.length === 0) {
-    return (
-      <p className="text-sm text-ink-500">
-        Nog niets gevuurd. Zodra een regel iets wijzigt, staat hier wat en waarom.
-      </p>
-    )
+    return <p className="text-sm text-ink-500">{t('regels.log.leeg')}</p>
   }
 
   return (
@@ -28,19 +27,28 @@ export default function RuleRuns({ runs = [] }) {
           <li key={run.id}>
             <div className="je-regel-log__kop">
               <Badge color="#3377ff" subtle>
-                {ent.label}
+                {entiteitLabel(t, ent)}
               </Badge>
               <span className="font-semibold">{run.docTitle || run.docId}</span>
               <span className="ml-auto text-xs text-ink-500">{formatDateTime(run.firedAt)}</span>
             </div>
             <p className="text-sm text-ink-600">
-              {(run.rules ?? [])
-                .map((r) => (r.rowId ? `${r.name || 'een regel'} (${r.rowLabel || r.rowId})` : r.name || 'een regel'))
-                .join(', ') || 'een regel'}{' '}
-              wijzigde{' '}
-              {(run.fields ?? [])
-                .map((veld) => fieldOf(ent, veld)?.label?.toLowerCase() ?? veld)
-                .join(', ')}
+              {t('regels.log.wijzigde', {
+                wie:
+                  (run.rules ?? [])
+                    .map((r) =>
+                      r.rowId
+                        ? t('regels.log.rij', {
+                            naam: r.name || t('regels.log.een_regel'),
+                            rij: r.rowLabel || r.rowId,
+                          })
+                        : r.name || t('regels.log.een_regel')
+                    )
+                    .join(', ') || t('regels.log.een_regel'),
+                velden: (run.fields ?? [])
+                  .map((veld) => veldLabel(t, ent, fieldOf(ent, veld)).toLowerCase() || veld)
+                  .join(', '),
+              })}
             </p>
           </li>
         )

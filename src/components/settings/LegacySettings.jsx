@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Badge, Button, ConfirmButton, Field, Input, Modal, Select, Spinner } from '@ui/index'
 import ColumnEditor from '@components/board/ColumnEditor'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
@@ -56,6 +57,7 @@ function Kolommen({ list, onClose }) {
  */
 export function StructureSettings() {
   const { spaces, lists } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
   const [kolommenVan, setKolommenVan] = useState(null)
   const [spaceName, setSpaceName] = useState('')
@@ -66,7 +68,7 @@ export function StructureSettings() {
     try {
       await createSpace(spaceName)
       setSpaceName('')
-      toast.success('Ruimte aangemaakt.')
+      toast.success(t('inst.struct.ruimte_aangemaakt'))
     } catch (err) {
       toast.error(err.message)
     }
@@ -77,7 +79,7 @@ export function StructureSettings() {
     try {
       await createList(listDraft)
       setListDraft((d) => ({ ...d, name: '' }))
-      toast.success('Lijst aangemaakt, met vier standaardkolommen.')
+      toast.success(t('inst.struct.lijst_aangemaakt'))
     } catch (err) {
       toast.error(err.message)
     }
@@ -111,32 +113,32 @@ export function StructureSettings() {
                       e.target.value.trim() && updateList(list.id, { name: e.target.value.trim() })
                     }
                     className="h-8 max-w-xs text-sm"
-                    aria-label="Lijstnaam"
+                    aria-label={t('inst.struct.lijstnaam')}
                   />
                   <Badge color={list.kind === 'social' ? '#d62976' : '#3377ff'} subtle>
-                    {list.kind === 'social' ? 'social' : 'taken'}
+                    {list.kind === 'social' ? t('inst.struct.soort_social') : t('inst.struct.soort_taken')}
                   </Badge>
                   {/* De kolommen van een bord horen bij de inrichting van de
                       ruimte, niet alleen bij het bord zelf: wie hier lijsten
                       aanmaakt, zet er meteen de juiste stappen op. */}
                   {list.kind === 'social' ? null : (
                     <Button variant="ghost" size="sm" onClick={() => setKolommenVan(list)}>
-                      Kolommen
+                      {t('inst.struct.kolommen')}
                     </Button>
                   )}
                   {list.archived ? (
                     <Button variant="ghost" size="sm" onClick={() => updateList(list.id, { archived: false })}>
-                      Terughalen
+                      {t('inst.struct.terughalen')}
                     </Button>
                   ) : (
                     <ConfirmButton
                       variant="ghost"
                       size="sm"
                       className="ml-auto text-ink-400"
-                      question="Lijst archiveren? De taken blijven bewaard."
+                      question={t('inst.struct.archiveer_vraag')}
                       onConfirm={() => archiveList(list.id)}
                     >
-                      Archiveren
+                      {t('alg.archiveren')}
                     </ConfirmButton>
                   )}
                 </li>
@@ -147,22 +149,27 @@ export function StructureSettings() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <form onSubmit={addSpace} className="card space-y-2 p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">Nieuwe ruimte</h2>
-          <Input value={spaceName} onChange={(e) => setSpaceName(e.target.value)} placeholder="Naam" required />
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">{t('inst.struct.nieuwe_ruimte')}</h2>
+          <Input
+            value={spaceName}
+            onChange={(e) => setSpaceName(e.target.value)}
+            placeholder={t('inst.struct.naam')}
+            required
+          />
           <Button type="submit" variant="primary" size="sm" disabled={!spaceName.trim()}>
-            Aanmaken
+            {t('alg.aanmaken')}
           </Button>
         </form>
 
         <form onSubmit={addList} className="card space-y-2 p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">Nieuwe lijst</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-600">{t('inst.struct.nieuwe_lijst')}</h2>
           <Select
             value={listDraft.spaceId}
             onChange={(e) => setListDraft((d) => ({ ...d, spaceId: e.target.value }))}
             required
-            aria-label="Ruimte"
+            aria-label={t('inst.struct.ruimte')}
           >
-            <option value="">Kies een ruimte…</option>
+            <option value="">{t('inst.struct.kies_ruimte')}</option>
             {spaces.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -172,16 +179,16 @@ export function StructureSettings() {
           <Input
             value={listDraft.name}
             onChange={(e) => setListDraft((d) => ({ ...d, name: e.target.value }))}
-            placeholder="Naam"
+            placeholder={t('inst.struct.naam')}
             required
           />
           <Select
             value={listDraft.kind}
             onChange={(e) => setListDraft((d) => ({ ...d, kind: e.target.value }))}
-            aria-label="Soort"
+            aria-label={t('inst.struct.soort')}
           >
-            <option value="tasks">Takenbord</option>
-            <option value="social">Socialcontent</option>
+            <option value="tasks">{t('inst.struct.takenbord')}</option>
+            <option value="social">{t('inst.struct.socialcontent')}</option>
           </Select>
           <Button
             type="submit"
@@ -189,7 +196,7 @@ export function StructureSettings() {
             size="sm"
             disabled={!listDraft.name.trim() || !listDraft.spaceId}
           >
-            Aanmaken
+            {t('alg.aanmaken')}
           </Button>
         </form>
       </div>
@@ -201,6 +208,7 @@ export function StructureSettings() {
 
 export function BrandSettings() {
   const { brands, tags } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
   const [brand, setBrand] = useState({ name: '', key: '', color: '#3377ff' })
   const [tag, setTag] = useState({ name: '', color: '#8593a9' })
@@ -210,7 +218,7 @@ export function BrandSettings() {
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="card overflow-hidden">
         <h2 className="border-b border-ink-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-600">
-          Merken
+          {t('inst.merk.kop')}
         </h2>
         <ul className="divide-y divide-ink-100">
           {brands.map((b) => (
@@ -220,13 +228,13 @@ export function BrandSettings() {
                 value={b.color}
                 onChange={(e) => updateBrand(b.id, { color: e.target.value })}
                 className="h-7 w-7 cursor-pointer rounded border border-ink-200 p-0.5"
-                aria-label={`Kleur van ${b.name}`}
+                aria-label={t('inst.merk.kleur_van', { naam: b.name })}
               />
               <Input
                 defaultValue={b.name}
                 onBlur={(e) => e.target.value.trim() && updateBrand(b.id, { name: e.target.value.trim() })}
                 className="h-8 text-sm"
-                aria-label="Merknaam"
+                aria-label={t('inst.merk.naam')}
               />
             </li>
           ))}
@@ -241,7 +249,7 @@ export function BrandSettings() {
                 key: brand.key || brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
               })
               setBrand({ name: '', key: '', color: '#3377ff' })
-              toast.success('Merk toegevoegd.')
+              toast.success(t('inst.merk.toegevoegd'))
             } catch (err) {
               toast.error(err.message)
             }
@@ -253,28 +261,28 @@ export function BrandSettings() {
             value={brand.color}
             onChange={(e) => setBrand((b) => ({ ...b, color: e.target.value }))}
             className="h-8 w-8 cursor-pointer rounded border border-ink-200 p-0.5"
-            aria-label="Kleur"
+            aria-label={t('inst.merk.kleur')}
           />
           <Input
             value={brand.name}
             onChange={(e) => setBrand((b) => ({ ...b, name: e.target.value }))}
-            placeholder="Nieuw merk"
+            placeholder={t('inst.merk.nieuw')}
           />
           <Button type="submit" variant="primary" size="sm" disabled={!brand.name.trim()}>
-            Toevoegen
+            {t('alg.toevoegen')}
           </Button>
         </form>
       </section>
 
       <section className="card overflow-hidden">
         <h2 className="border-b border-ink-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-ink-600">
-          Labels
+          {t('inst.label.kop')}
         </h2>
         <ul className="flex flex-wrap gap-1.5 p-4">
-          {tags.map((t) => (
-            <li key={t.id}>
+          {tags.map((label) => (
+            <li key={label.id}>
               <span className="inline-flex items-center gap-1">
-                <Badge color={t.color}>{t.name}</Badge>
+                <Badge color={label.color}>{label.name}</Badge>
                 {/*
                   Samenvoegen staat naast verwijderen omdat het meestal is wat je
                   bedoelt: "je concept" en "jeconcept" zijn hetzelfde label dat
@@ -285,25 +293,25 @@ export function BrandSettings() {
                   <button
                     type="button"
                     className="je-plainbtn text-[11px] font-medium text-accent-700 underline"
-                    onClick={() => setSamenvoegen(t)}
+                    onClick={() => setSamenvoegen(label)}
                   >
-                    samenvoegen
+                    {t('inst.label.samenvoegen')}
                   </button>
                 ) : null}
                 <ConfirmButton
                   variant="ghost"
                   size="sm"
                   className="h-5 w-5 p-0 text-ink-400"
-                  question={`Label "${t.name}" verwijderen? De taken houden de naam, maar de kleur verdwijnt. Samenvoegen is meestal wat je wil.`}
-                  onConfirm={() => deleteTag(t.id)}
-                  aria-label="Label verwijderen"
+                  question={t('inst.label.verwijder_vraag', { naam: label.name })}
+                  onConfirm={() => deleteTag(label.id)}
+                  aria-label={t('inst.label.verwijderen')}
                 >
                   ✕
                 </ConfirmButton>
               </span>
             </li>
           ))}
-          {tags.length === 0 ? <li className="text-sm text-ink-500">Nog geen labels.</li> : null}
+          {tags.length === 0 ? <li className="text-sm text-ink-500">{t('inst.label.geen')}</li> : null}
         </ul>
 
         {samenvoegen ? (
@@ -315,8 +323,8 @@ export function BrandSettings() {
             onGelukt={(aantal) =>
               toast.success(
                 aantal === 0
-                  ? 'Samengevoegd; er stond geen taak op dat label.'
-                  : `Samengevoegd — ${aantal} ${aantal === 1 ? 'taak' : 'taken'} verplaatst.`
+                  ? t('inst.label.samengevoegd_leeg')
+                  : t('inst.label.samengevoegd', { aantal })
               )
             }
           />
@@ -337,17 +345,17 @@ export function BrandSettings() {
           <input
             type="color"
             value={tag.color}
-            onChange={(e) => setTag((t) => ({ ...t, color: e.target.value }))}
+            onChange={(e) => setTag((vorig) => ({ ...vorig, color: e.target.value }))}
             className="h-8 w-8 cursor-pointer rounded border border-ink-200 p-0.5"
-            aria-label="Kleur"
+            aria-label={t('inst.merk.kleur')}
           />
           <Input
             value={tag.name}
-            onChange={(e) => setTag((t) => ({ ...t, name: e.target.value }))}
-            placeholder="Nieuw label"
+            onChange={(e) => setTag((vorig) => ({ ...vorig, name: e.target.value }))}
+            placeholder={t('inst.label.nieuw')}
           />
           <Button type="submit" variant="primary" size="sm" disabled={!tag.name.trim()}>
-            Toevoegen
+            {t('alg.toevoegen')}
           </Button>
         </form>
       </section>
@@ -363,7 +371,8 @@ export function BrandSettings() {
  * niet ziet, en "31 taken verplaatsen" is een ander besluit dan "geen enkele".
  */
 function SamenvoegDialoog({ bron, tags, onKlaar, onGelukt, onFout }) {
-  const anderen = tags.filter((t) => t.id !== bron.id)
+  const { t } = useTaal()
+  const anderen = tags.filter((label) => label.id !== bron.id)
   const [doelId, setDoelId] = useState(anderen[0]?.id ?? '')
   const [aantal, setAantal] = useState(null)
   const [bezig, setBezig] = useState(false)
@@ -378,7 +387,7 @@ function SamenvoegDialoog({ bron, tags, onKlaar, onGelukt, onFout }) {
     }
   }, [bron.name])
 
-  const doel = anderen.find((t) => t.id === doelId)
+  const doel = anderen.find((label) => label.id === doelId)
 
   const voerUit = async () => {
     if (!doel) return
@@ -397,37 +406,35 @@ function SamenvoegDialoog({ bron, tags, onKlaar, onGelukt, onFout }) {
     <Modal
       open
       onClose={onKlaar}
-      title={`"${bron.name}" samenvoegen`}
+      title={t('inst.label.samenvoeg_titel', { naam: bron.name })}
       width="max-w-sm"
       footer={
         <>
           <Button variant="ghost" onClick={onKlaar}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button variant="primary" onClick={voerUit} disabled={!doel || bezig}>
-            {bezig ? <Spinner className="h-3 w-3" /> : null} Samenvoegen
+            {bezig ? <Spinner className="h-3 w-3" /> : null} {t('inst.label.samenvoegen_knop')}
           </Button>
         </>
       }
     >
       <div className="grid gap-4">
-        <Field label="Wordt" hint="Het label hierboven verdwijnt; de taken krijgen deze naam.">
+        <Field label={t('inst.label.wordt')} hint={t('inst.label.wordt_hint')}>
           <Select value={doelId} onChange={(e) => setDoelId(e.target.value)}>
-            {anderen.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+            {anderen.map((label) => (
+              <option key={label.id} value={label.id}>
+                {label.name}
               </option>
             ))}
           </Select>
         </Field>
         <p className="text-sm text-ink-600">
           {aantal === null
-            ? 'Aan het tellen…'
+            ? t('inst.label.tellen')
             : aantal === 0
-              ? `Er staat geen taak op "${bron.name}". Het label verdwijnt, verder verandert er niets.`
-              : `${aantal} ${aantal === 1 ? 'taak draagt' : 'taken dragen'} "${bron.name}" en ${
-                  aantal === 1 ? 'krijgt' : 'krijgen'
-                } "${doel?.name ?? ''}".`}
+              ? t('inst.label.geen_taak', { naam: bron.name })
+              : t('inst.label.taken', { aantal, van: bron.name, naar: doel?.name ?? '' })}
         </p>
       </div>
     </Modal>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { huidigeLocaleVan } from '@lib/dates'
 import { herhalingProbleem, herhalingUitleg, herhalingVan, herhalingVoor } from '@lib/checklist-herhaling'
 import {
   AFDELINGEN,
@@ -10,6 +11,7 @@ import {
   repeatLabel,
 } from '@lib/checklist-templates'
 import { Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import {
   archiveChecklist,
@@ -36,8 +38,48 @@ import {
  * meeslepen. Nieuwe punten krijgen er een op basis van hun tekst, oude houden
  * de hunne.
  */
+/**
+ * De keuzelijsten zoals ze op het scherm staan.
+ *
+ * De sleutels blijven wat ze in de database zijn — `who`, `kind`, het nummer
+ * van de weekdag — want daar hangen de afvinkingen en de berekening aan. Wat
+ * je leest hangt aan de taal.
+ */
+const AFDELING_SLEUTEL = {
+  iedereen: 'inst.afdeling.iedereen',
+  verantwoordelijke: 'inst.afdeling.verantwoordelijke',
+  keuken: 'inst.afdeling.keuken',
+  zaal: 'inst.afdeling.zaal',
+}
+
+const HERHALING_SLEUTEL = {
+  dagelijks: 'inst.freq.dagelijks',
+  weekdag: 'inst.freq.weekdag',
+  wekelijks: 'inst.freq.wekelijks',
+  maandelijks: 'inst.freq.maandelijks',
+  kwartaal: 'inst.freq.kwartaal',
+  jaarlijks: 'inst.freq.jaarlijks',
+}
+
+const DAG_SLEUTEL = {
+  1: 'inst.dag.ma',
+  2: 'inst.dag.di',
+  3: 'inst.dag.wo',
+  4: 'inst.dag.do',
+  5: 'inst.dag.vr',
+  6: 'inst.dag.za',
+  0: 'inst.dag.zo',
+}
+
+const VELDSOORT_SLEUTEL = {
+  '': 'inst.veldsoort.geen',
+  datum: 'inst.veldsoort.datum',
+  getal: 'inst.veldsoort.getal',
+}
+
 export default function ChecklistEditor({ isAdmin }) {
   const { checklists, loading } = useChecklists({ includeArchived: true })
+  const { t } = useTaal()
   const toast = useToast()
   const [open, setOpen] = useState(null)
   const [nieuweNaam, setNieuweNaam] = useState('')
@@ -61,7 +103,7 @@ export default function ChecklistEditor({ isAdmin }) {
       const id = await createChecklist({ name: nieuweNaam })
       setNieuweNaam('')
       setOpen(id)
-      toast.success('Lijst aangemaakt.')
+      toast.success(t('inst.lijst.aangemaakt'))
     } catch (err) {
       toast.error(err.message)
     }
@@ -69,10 +111,7 @@ export default function ChecklistEditor({ isAdmin }) {
 
   return (
     <div className="space-y-4">
-      <p className="max-w-2xl text-sm text-ink-600">
-        Wat het personeel bij het openen en sluiten afvinkt. Per punt staat wie het ziet en hoe vaak
-        het terugkomt; een punt dat vandaag niet moet, staat er vandaag ook niet.
-      </p>
+      <p className="max-w-2xl text-sm text-ink-600">{t('inst.lijst.uitleg')}</p>
 
       <div className="flex flex-wrap gap-1.5">
         {checklists.map((lijst) => (
@@ -83,7 +122,7 @@ export default function ChecklistEditor({ isAdmin }) {
             onClick={() => setOpen(lijst.id)}
           >
             {lijst.name}
-            {lijst.archived ? ' (uit)' : ''}
+            {lijst.archived ? t('inst.lijst.uit') : ''}
           </Button>
         ))}
       </div>
@@ -91,21 +130,21 @@ export default function ChecklistEditor({ isAdmin }) {
       {actief ? (
         <Lijst lijst={actief} isAdmin={isAdmin} onBewaar={bewaar} toast={toast} />
       ) : (
-        <p className="card px-4 py-6 text-center text-sm text-ink-500">Er is nog geen lijst.</p>
+        <p className="card px-4 py-6 text-center text-sm text-ink-500">{t('inst.lijst.geen')}</p>
       )}
 
       {isAdmin ? (
         <form onSubmit={maakLijst} className="card flex flex-wrap items-end gap-2 p-4">
-          <Field label="Nieuwe lijst" className="min-w-[14rem] flex-1">
+          <Field label={t('inst.lijst.nieuwe')} className="min-w-[14rem] flex-1">
             <Input
               value={nieuweNaam}
               onChange={(e) => setNieuweNaam(e.target.value)}
-              placeholder="Bijvoorbeeld: weekendcontrole terras"
+              placeholder={t('inst.lijst.nieuwe_plaatshouder')}
               required
             />
           </Field>
           <Button type="submit" variant="primary" size="sm" disabled={!nieuweNaam.trim()}>
-            Aanmaken
+            {t('alg.aanmaken')}
           </Button>
         </form>
       ) : null}
@@ -116,6 +155,7 @@ export default function ChecklistEditor({ isAdmin }) {
 // ─── Eén lijst ──────────────────────────────────────────────────────────────
 
 function Lijst({ lijst, isAdmin, onBewaar, toast }) {
+  const { t } = useTaal()
   const secties = lijst.sections ?? []
 
   const zetSecties = (volgende) => onBewaar({ sections: volgende })
@@ -155,38 +195,42 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
         <Input
           defaultValue={lijst.name}
           onBlur={(e) => e.target.value.trim() && onBewaar({ name: e.target.value.trim() })}
-          aria-label="Naam van de lijst"
+          aria-label={t('inst.lijst.naam')}
           className="h-8 max-w-xs text-sm font-semibold"
           disabled={!isAdmin}
         />
         <Select
           value={lijst.kind ?? 'other'}
           onChange={(e) => onBewaar({ kind: e.target.value })}
-          aria-label="Soort lijst"
+          aria-label={t('inst.lijst.soort')}
           className="h-8 max-w-[11rem] text-sm"
           disabled={!isAdmin}
         >
-          <option value="open">Bij het openen</option>
-          <option value="close">Bij het sluiten</option>
-          <option value="other">Los van een dienst</option>
+          <option value="open">{t('inst.lijst.soort_open')}</option>
+          <option value="close">{t('inst.lijst.soort_close')}</option>
+          <option value="other">{t('inst.lijst.soort_other')}</option>
         </Select>
-        {lijst.archived ? <Badge color="#8593a9" subtle>uit gebruik</Badge> : null}
+        {lijst.archived ? (
+          <Badge color="#8593a9" subtle>
+            {t('inst.lijst.uit_gebruik')}
+          </Badge>
+        ) : null}
 
         {isAdmin ? (
           <div className="ml-auto">
             {lijst.archived ? (
               <Button variant="ghost" size="sm" onClick={() => restoreChecklist(lijst.id)}>
-                Terughalen
+                {t('inst.lijst.terughalen')}
               </Button>
             ) : (
               <ConfirmButton
                 variant="ghost"
                 size="sm"
                 className="text-ink-400"
-                question="Lijst uit gebruik nemen? De afgevinkte dagen blijven bewaard."
+                question={t('inst.lijst.uit_nemen_vraag')}
                 onConfirm={() => archiveChecklist(lijst.id).catch((e) => toast.error(e.message))}
               >
-                Uit gebruik nemen
+                {t('inst.lijst.uit_nemen')}
               </ConfirmButton>
             )}
           </div>
@@ -200,20 +244,20 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
               <Input
                 defaultValue={sectie.title}
                 onBlur={(e) => e.target.value.trim() && zetSectie(si, { title: e.target.value.trim() })}
-                aria-label="Naam van de groep"
+                aria-label={t('inst.lijst.groepsnaam')}
                 className="h-7 max-w-xs text-xs font-semibold uppercase tracking-wide"
                 disabled={!isAdmin}
               />
-              <span className="text-xs text-ink-400">{sectie.items.length} punten</span>
+              <span className="text-xs text-ink-400">{t('inst.lijst.punten', { aantal: sectie.items.length })}</span>
               {isAdmin ? (
                 <ConfirmButton
                   variant="ghost"
                   size="sm"
                   className="ml-auto text-ink-400"
-                  question="Deze groep en al haar punten verwijderen?"
+                  question={t('inst.lijst.groep_weg_vraag')}
                   onConfirm={() => zetSecties(secties.filter((_, i) => i !== si))}
                 >
-                  Groep weg
+                  {t('inst.lijst.groep_weg')}
                 </ConfirmButton>
               ) : null}
             </div>
@@ -232,14 +276,14 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
                 </li>
               ))}
               {sectie.items.length === 0 ? (
-                <li className="px-3 py-3 text-sm text-ink-400">Nog geen punten in deze groep.</li>
+                <li className="px-3 py-3 text-sm text-ink-400">{t('inst.lijst.geen_punten')}</li>
               ) : null}
             </ul>
 
             {isAdmin ? (
               <div className="border-t border-ink-100 px-3 py-2">
                 <Button variant="ghost" size="sm" onClick={() => voegPuntToe(si)}>
-                  + Punt
+                  {t('inst.lijst.punt_erbij')}
                 </Button>
               </div>
             ) : null}
@@ -249,7 +293,7 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
 
       {isAdmin ? (
         <Button variant="secondary" size="sm" className="mt-3" onClick={voegSectieToe}>
-          + Groep
+          {t('inst.lijst.groep_erbij')}
         </Button>
       ) : null}
     </section>
@@ -259,6 +303,7 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
 // ─── Eén punt ───────────────────────────────────────────────────────────────
 
 function Punt({ punt, onWijzig, onWeg, isAdmin }) {
+  const { t } = useTaal()
   const [open, setOpen] = useState(!punt.label)
   const repeat = herhalingVan(punt)
 
@@ -282,34 +327,34 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
         <Input
           defaultValue={punt.label}
           onBlur={(e) => onWijzig({ label: e.target.value })}
-          placeholder="Wat moet er gebeuren?"
-          aria-label="Omschrijving van het punt"
+          placeholder={t('inst.punt.plaatshouder')}
+          aria-label={t('inst.punt.omschrijving')}
           className="h-8 min-w-[12rem] flex-1 text-sm"
           disabled={!isAdmin}
         />
         <Badge subtle color="#4A7FC1">
-          {afdelingLabel(punt.who)}
+          {t(AFDELING_SLEUTEL[punt.who ?? 'iedereen'] ?? afdelingLabel(punt.who))}
         </Badge>
         <Badge subtle>{repeatLabel(punt)}</Badge>
         <Button variant="ghost" size="sm" onClick={() => setOpen((o) => !o)}>
-          {open ? 'Klaar' : 'Wijzigen'}
+          {open ? t('inst.punt.klaar') : t('inst.punt.wijzigen')}
         </Button>
         {isAdmin ? (
           <ConfirmButton
             variant="ghost"
             size="sm"
             className="text-ink-400"
-            question="Dit punt verwijderen? Wat er in het verleden is afgevinkt blijft bewaard."
+            question={t('inst.punt.weg_vraag')}
             onConfirm={onWeg}
           >
-            Weg
+            {t('inst.punt.weg')}
           </ConfirmButton>
         ) : null}
       </div>
 
       {open ? (
         <div className="grid gap-2 rounded-lg bg-ink-50 p-3 sm:grid-cols-2">
-          <Field label="Wie ziet dit punt">
+          <Field label={t('inst.punt.wie')}>
             <Select
               value={punt.who ?? 'iedereen'}
               onChange={(e) => onWijzig({ who: e.target.value })}
@@ -317,7 +362,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
             >
               {AFDELINGEN.map((a) => (
                 <option key={a.key} value={a.key}>
-                  {a.label}
+                  {t(AFDELING_SLEUTEL[a.key] ?? a.label)}
                 </option>
               ))}
             </Select>
@@ -326,16 +371,16 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           {/* De eerstvolgende keer staat eronder. "Elk kwartaal, de 1e" zegt pas
               iets als je erbij ziet dat dat 1 oktober is — en het is meteen de
               enige manier om te merken dat een keuze nergens op uitkomt. */}
-          <Field label="Hoe vaak" hint={probleem ? undefined : herhalingUitleg(repeat)}>
+          <Field label={t('inst.punt.hoe_vaak')} hint={probleem ? undefined : herhalingUitleg(repeat)}>
             <Select
               value={repeat.kind}
               onChange={(e) => zetSoort(e.target.value)}
-              aria-label="Hoe vaak dit punt terugkomt"
+              aria-label={t('inst.punt.hoe_vaak_label')}
               disabled={!isAdmin}
             >
               {HERHALINGEN.map((h) => (
                 <option key={h.kind} value={h.kind}>
-                  {h.label}
+                  {t(HERHALING_SLEUTEL[h.kind] ?? h.label)}
                 </option>
               ))}
             </Select>
@@ -343,7 +388,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           </Field>
 
           {repeat.kind === 'weekdag' ? (
-            <Field label="Op welke dagen" className="sm:col-span-2">
+            <Field label={t('inst.punt.welke_dagen')} className="sm:col-span-2">
               <div className="flex flex-wrap gap-1">
                 {WEEKDAGEN.map(({ dag, label }) => {
                   const aan = (repeat.days ?? []).includes(dag)
@@ -365,7 +410,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
                           : 'border-ink-200 bg-white text-ink-500'
                       }`}
                     >
-                      {label}
+                      {t(DAG_SLEUTEL[dag] ?? label)}
                     </button>
                   )
                 })}
@@ -374,7 +419,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           ) : null}
 
           {repeat.kind === 'wekelijks' ? (
-            <Field label="Welke dag">
+            <Field label={t('inst.punt.welke_dag')}>
               <Select
                 value={repeat.days?.[0] ?? 1}
                 onChange={(e) => zetHerhaling({ days: [Number(e.target.value)] })}
@@ -382,7 +427,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
               >
                 {WEEKDAGEN.map(({ dag, label }) => (
                   <option key={dag} value={dag}>
-                    {label}
+                    {t(DAG_SLEUTEL[dag] ?? label)}
                   </option>
                 ))}
               </Select>
@@ -390,7 +435,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           ) : null}
 
           {['maandelijks', 'kwartaal', 'jaarlijks'].includes(repeat.kind) ? (
-            <Field label="Dag van de maand" hint="De 31e schuift naar de laatste dag van de maand.">
+            <Field label={t('inst.punt.dag_van_maand')} hint={t('inst.punt.dag_van_maand_hint')}>
               <Input
                 type="number"
                 min="1"
@@ -403,7 +448,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           ) : null}
 
           {repeat.kind === 'jaarlijks' ? (
-            <Field label="Maand">
+            <Field label={t('inst.punt.maand')}>
               <Select
                 value={repeat.month ?? 0}
                 onChange={(e) => zetHerhaling({ month: Number(e.target.value) })}
@@ -411,14 +456,15 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
               >
                 {Array.from({ length: 12 }, (_, m) => (
                   <option key={m} value={m}>
-                    {new Intl.DateTimeFormat('nl-BE', { month: 'long' }).format(new Date(2026, m, 1))}
+                    {/* De maandnaam volgt de gekozen taal; de waarde blijft het nummer. */}
+                    {new Intl.DateTimeFormat(huidigeLocaleVan(), { month: 'long' }).format(new Date(2026, m, 1))}
                   </option>
                 ))}
               </Select>
             </Field>
           ) : null}
 
-          <Field label="Vraagt een waarde" hint="Naast het vinkje, bijvoorbeeld een datum of een temperatuur.">
+          <Field label={t('inst.punt.waarde')} hint={t('inst.punt.waarde_hint')}>
             <Select
               value={punt.veld?.kind ?? ''}
               onChange={(e) =>
@@ -432,18 +478,18 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
             >
               {VELDSOORTEN.map((v) => (
                 <option key={v.kind} value={v.kind}>
-                  {v.label}
+                  {t(VELDSOORT_SLEUTEL[v.kind] ?? v.label)}
                 </option>
               ))}
             </Select>
           </Field>
 
           {punt.veld ? (
-            <Field label="Wat vraagt het">
+            <Field label={t('inst.punt.wat_vraagt')}>
               <Input
                 defaultValue={punt.veld.label ?? ''}
                 onBlur={(e) => onWijzig({ veld: { ...punt.veld, label: e.target.value } })}
-                placeholder="Laatst vervangen op"
+                placeholder={t('inst.punt.wat_vraagt_plaatshouder')}
                 disabled={!isAdmin}
               />
             </Field>
@@ -461,7 +507,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           */}
           {punt.veld?.kind === 'getal' ? (
             <>
-              <Field label="Eenheid" hint="Wat er achter het getal staat.">
+              <Field label={t('inst.punt.eenheid')} hint={t('inst.punt.eenheid_hint')}>
                 <Input
                   defaultValue={punt.veld.eenheid ?? ''}
                   onBlur={(e) => onWijzig({ veld: { ...punt.veld, eenheid: e.target.value || null } })}
@@ -469,7 +515,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
                   disabled={!isAdmin}
                 />
               </Field>
-              <Field label="Grenzen" hint="Leeg laten betekent: alleen noteren, niet beoordelen.">
+              <Field label={t('inst.punt.grenzen')} hint={t('inst.punt.grenzen_hint')}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                   <Input
                     type="number"
@@ -478,11 +524,11 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
                     onBlur={(e) =>
                       onWijzig({ veld: { ...punt.veld, min: e.target.value === '' ? null : Number(e.target.value) } })
                     }
-                    aria-label={`Ondergrens voor ${punt.label}`}
-                    placeholder="min"
+                    aria-label={t('inst.punt.ondergrens', { punt: punt.label })}
+                    placeholder={t('inst.punt.min')}
                     disabled={!isAdmin}
                   />
-                  <span className="je-muted-caption">tot</span>
+                  <span className="je-muted-caption">{t('inst.punt.tot')}</span>
                   <Input
                     type="number"
                     step="any"
@@ -490,8 +536,8 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
                     onBlur={(e) =>
                       onWijzig({ veld: { ...punt.veld, max: e.target.value === '' ? null : Number(e.target.value) } })
                     }
-                    aria-label={`Bovengrens voor ${punt.label}`}
-                    placeholder="max"
+                    aria-label={t('inst.punt.bovengrens', { punt: punt.label })}
+                    placeholder={t('inst.punt.max')}
                     disabled={!isAdmin}
                   />
                 </span>
@@ -499,11 +545,11 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
             </>
           ) : null}
 
-          <Field label="Toelichting" className="sm:col-span-2">
+          <Field label={t('inst.punt.toelichting')} className="sm:col-span-2">
             <Input
               defaultValue={punt.hint ?? ''}
               onBlur={(e) => onWijzig({ hint: e.target.value })}
-              placeholder="Waar het hangt, welke code, waar je op let…"
+              placeholder={t('inst.punt.toelichting_plaatshouder')}
               disabled={!isAdmin}
             />
           </Field>
@@ -517,7 +563,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
               className="h-4 w-4 rounded border-ink-300"
             />
             {/* Codes horen niet zomaar op een scherm dat een gast kan meelezen. */}
-            De toelichting bevat een code en blijft verborgen tot je erop klikt
+            {t('inst.punt.code_verborgen')}
           </label>
         </div>
       ) : null}
