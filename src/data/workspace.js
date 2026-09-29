@@ -157,6 +157,50 @@ export function deleteTag(id) {
   return deleteDoc(ref(COL.tags, id))
 }
 
+/**
+ * Twee labels die hetzelfde betekenen tot één maken.
+ *
+ * "je concept" en "jeconcept" ontstaan vanzelf: iemand typt het label opnieuw in
+ * plaats van het te kiezen. Daarna staat de helft van het werk onder de ene naam
+ * en de helft onder de andere, en filteren geeft telkens het verkeerde antwoord.
+ *
+ * Het label wegklikken lost dat niet op — dan houden de taken de naam die
+ * nergens meer bij hoort. Daarom verhuizen de taken eerst mee, en verdwijnt het
+ * label pas als dat gelukt is. Dubbel voorkomen kan niet: een taak die beide
+ * labels droeg houdt er precies één over.
+ *
+ * Het aantal dat terugkomt is het aantal taken dat aangepast is — dat is wat je
+ * wil zien voor je zo'n knop indrukt, en achteraf ter bevestiging.
+ */
+export async function mergeTags({ vanNaam, naarNaam, vanId }) {
+  const van = vanNaam.trim()
+  const naar = naarNaam.trim()
+  if (!van || !naar || van === naar) return 0
+
+  const snap = await getDocs(query(col(COL.tasks), where('tags', 'array-contains', van)))
+
+  let gewijzigd = 0
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = writeBatch(db)
+    for (const d of snap.docs.slice(i, i + 400)) {
+      const huidig = d.data().tags ?? []
+      const nieuw = [...new Set(huidig.map((naam) => (naam === van ? naar : naam)))]
+      batch.update(d.ref, { tags: nieuw, updatedAt: serverTimestamp() })
+      gewijzigd += 1
+    }
+    await batch.commit()
+  }
+
+  if (vanId) await deleteDoc(ref(COL.tags, vanId))
+  return gewijzigd
+}
+
+/** Hoeveel taken dit label dragen — het getal dat een samenvoeging voorspelt. */
+export async function countTasksWithTag(naam) {
+  const snap = await getDocs(query(col(COL.tasks), where('tags', 'array-contains', naam.trim())))
+  return snap.size
+}
+
 // ─── Member administration ──────────────────────────────────────────────────
 
 /** An invite is what turns a Google sign-in into a profile. */

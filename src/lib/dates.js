@@ -176,3 +176,21 @@ export function fromLocalInput(value) {
 export function toDateInput(value) {
   return value ? dayKey(value) : ''
 }
+
+/**
+ * Een dag uit een datumveld, bewaard als het midden van die dag.
+ *
+ * `new Date('2026-09-30')` is middernacht in UTC, niet hier. Dat scheelt in
+ * Brussel één of twee uur, en dat is genoeg om een datum de verkeerde dag te
+ * geven zodra er ergens met een lokale dag gerekend wordt — of om een tijd te
+ * tonen die niemand heeft ingevuld.
+ *
+ * Twaalf uur 's middags ligt van beide kanten ver genoeg van de dagovergang dat
+ * geen enkele tijdzone of zomeruurwissel de dag nog kan verzetten. De tijd zelf
+ * betekent niets: het veld vroeg om een dag.
+ */
+export function fromDateInput(value) {
+  if (!value) return null
+  const d = new Date(`${value}T12:00:00`)
+  return Number.isNaN(d.getTime()) ? null : d
+}

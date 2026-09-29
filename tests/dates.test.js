@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, dayKey, monthGrid, startOfWeek, toLocalInput } from '../src/lib/dates'
+import { addDays, dayKey, fromDateInput, monthGrid, startOfWeek, toLocalInput } from '../src/lib/dates'
 import { contrastColor, initials } from '../src/lib/format'
 
 describe('startOfWeek', () => {
@@ -76,5 +76,30 @@ describe('initials', () => {
 
   it('never returns an empty label', () => {
     expect(initials(null, null)).toBe('?')
+  })
+})
+
+describe('fromDateInput', () => {
+  it('bewaart de dag die er staat, niet de dag ervoor', () => {
+    const d = fromDateInput('2026-09-30')
+    expect(d.getFullYear()).toBe(2026)
+    expect(d.getMonth()).toBe(8)
+    expect(d.getDate()).toBe(30)
+  })
+
+  // new Date('2026-09-30') is middernacht in UTC; dat is hier de vorige avond.
+  it('ligt ver genoeg van de dagovergang om niet te verschuiven', () => {
+    expect(fromDateInput('2026-09-30').getHours()).toBe(12)
+  })
+
+  it('geeft niets terug op niets', () => {
+    expect(fromDateInput('')).toBeNull()
+    expect(fromDateInput(null)).toBeNull()
+    expect(fromDateInput('geen datum')).toBeNull()
+  })
+
+  it('komt er met dayKey weer hetzelfde uit', () => {
+    expect(dayKey(fromDateInput('2026-01-01'))).toBe('2026-01-01')
+    expect(dayKey(fromDateInput('2026-12-31'))).toBe('2026-12-31')
   })
 })

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
-import { formatDate } from '@lib/dates'
+import { dayKey, formatDate } from '@lib/dates'
 import {
   Avatar,
   Badge,
@@ -416,7 +416,9 @@ function MeetingDetail({ meeting, onClose }) {
 function PasteTranscript({ onClose }) {
   const toast = useToast()
   const [transcript, setTranscript] = useState('')
-  const [datum, setDatum] = useState(() => new Date().toISOString().slice(0, 10))
+  // dayKey rekent lokaal; toISOString gaf tussen middernacht en twee uur
+  // 's nachts de dag ervoor.
+  const [datum, setDatum] = useState(() => dayKey(new Date()))
   const [bron, setBron] = useState('')
   const [busy, setBusy] = useState(false)
 

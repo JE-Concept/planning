@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
+import { Badge, Button, ConfirmButton, Field, Input, Modal, Select, Spinner } from '@ui/index'
 import ColumnEditor from '@components/board/ColumnEditor'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -9,7 +9,9 @@ import {
   createBrand,
   createList,
   createSpace,
+  countTasksWithTag,
   deleteTag,
+  mergeTags,
   updateBrand,
   updateList,
   upsertTag,
@@ -202,6 +204,7 @@ export function BrandSettings() {
   const toast = useToast()
   const [brand, setBrand] = useState({ name: '', key: '', color: '#3377ff' })
   const [tag, setTag] = useState({ name: '', color: '#8593a9' })
+  const [samenvoegen, setSamenvoegen] = useState(null)
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -272,11 +275,26 @@ export function BrandSettings() {
             <li key={t.id}>
               <span className="inline-flex items-center gap-1">
                 <Badge color={t.color}>{t.name}</Badge>
+                {/*
+                  Samenvoegen staat naast verwijderen omdat het meestal is wat je
+                  bedoelt: "je concept" en "jeconcept" zijn hetzelfde label dat
+                  twee keer getypt is. Verwijderen laat de taken achter met een
+                  naam die nergens meer bij hoort; samenvoegen neemt ze mee.
+                */}
+                {tags.length > 1 ? (
+                  <button
+                    type="button"
+                    className="je-plainbtn text-[11px] font-medium text-accent-700 underline"
+                    onClick={() => setSamenvoegen(t)}
+                  >
+                    samenvoegen
+                  </button>
+                ) : null}
                 <ConfirmButton
                   variant="ghost"
                   size="sm"
                   className="h-5 w-5 p-0 text-ink-400"
-                  question={`Label "${t.name}" verwijderen?`}
+                  question={`Label "${t.name}" verwijderen? De taken houden de naam, maar de kleur verdwijnt. Samenvoegen is meestal wat je wil.`}
                   onConfirm={() => deleteTag(t.id)}
                   aria-label="Label verwijderen"
                 >
@@ -287,6 +305,22 @@ export function BrandSettings() {
           ))}
           {tags.length === 0 ? <li className="text-sm text-ink-500">Nog geen labels.</li> : null}
         </ul>
+
+        {samenvoegen ? (
+          <SamenvoegDialoog
+            bron={samenvoegen}
+            tags={tags}
+            onKlaar={() => setSamenvoegen(null)}
+            onFout={(bericht) => toast.error(bericht)}
+            onGelukt={(aantal) =>
+              toast.success(
+                aantal === 0
+                  ? 'Samengevoegd; er stond geen taak op dat label.'
+                  : `Samengevoegd — ${aantal} ${aantal === 1 ? 'taak' : 'taken'} verplaatst.`
+              )
+            }
+          />
+        ) : null}
 
         <form
           onSubmit={async (e) => {
@@ -318,5 +352,84 @@ export function BrandSettings() {
         </form>
       </section>
     </div>
+  )
+}
+
+
+/**
+ * Twee labels tot één maken.
+ *
+ * Het aantal staat erbij voor je klikt. Een samenvoeging raakt taken aan die je
+ * niet ziet, en "31 taken verplaatsen" is een ander besluit dan "geen enkele".
+ */
+function SamenvoegDialoog({ bron, tags, onKlaar, onGelukt, onFout }) {
+  const anderen = tags.filter((t) => t.id !== bron.id)
+  const [doelId, setDoelId] = useState(anderen[0]?.id ?? '')
+  const [aantal, setAantal] = useState(null)
+  const [bezig, setBezig] = useState(false)
+
+  useEffect(() => {
+    let gestopt = false
+    countTasksWithTag(bron.name)
+      .then((n) => !gestopt && setAantal(n))
+      .catch(() => !gestopt && setAantal(null))
+    return () => {
+      gestopt = true
+    }
+  }, [bron.name])
+
+  const doel = anderen.find((t) => t.id === doelId)
+
+  const voerUit = async () => {
+    if (!doel) return
+    setBezig(true)
+    try {
+      const n = await mergeTags({ vanNaam: bron.name, naarNaam: doel.name, vanId: bron.id })
+      onGelukt(n)
+      onKlaar()
+    } catch (err) {
+      onFout(err.message)
+      setBezig(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onKlaar}
+      title={`"${bron.name}" samenvoegen`}
+      width="max-w-sm"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onKlaar}>
+            Annuleren
+          </Button>
+          <Button variant="primary" onClick={voerUit} disabled={!doel || bezig}>
+            {bezig ? <Spinner className="h-3 w-3" /> : null} Samenvoegen
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        <Field label="Wordt" hint="Het label hierboven verdwijnt; de taken krijgen deze naam.">
+          <Select value={doelId} onChange={(e) => setDoelId(e.target.value)}>
+            {anderen.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <p className="text-sm text-ink-600">
+          {aantal === null
+            ? 'Aan het tellen…'
+            : aantal === 0
+              ? `Er staat geen taak op "${bron.name}". Het label verdwijnt, verder verandert er niets.`
+              : `${aantal} ${aantal === 1 ? 'taak draagt' : 'taken dragen'} "${bron.name}" en ${
+                  aantal === 1 ? 'krijgt' : 'krijgen'
+                } "${doel?.name ?? ''}".`}
+        </p>
+      </div>
+    </Modal>
   )
 }

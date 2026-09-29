@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { PRIORITIES, formatDuration, priorityOf } from '@lib/format'
-import { isOverdue, relativeDay } from '@lib/dates'
+import { relativeDay } from '@lib/dates'
+import { isTeLaat } from '@lib/laat'
 import {
   AvatarStack,
   Badge,
@@ -423,7 +424,7 @@ function ListView({ columns, tasksByColumn, profileById, tagsByName, onOpen }) {
                         </td>
                         <td
                           className={`w-32 px-2 text-right text-xs ${
-                            task.open !== false && isOverdue(task.dueDate)
+                            isTeLaat(task)
                               ? 'font-medium text-red-600'
                               : 'text-ink-500'
                           }`}

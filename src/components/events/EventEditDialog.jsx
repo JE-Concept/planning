@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { dayKey } from '@lib/dates'
+import { dayKey, fromDateInput } from '@lib/dates'
 import { missingForOffer } from '@lib/pipeline'
 import { Button, Checkbox, Dialog, Field, Input, Select } from '@components/ds'
 import { useToast } from '@context/ToastProvider'
@@ -52,7 +52,7 @@ export default function EventEditDialog({ open, onClose, ev }) {
     if (!f.title.trim()) return
     setBusy(true)
     try {
-      const date = f.eventDate ? new Date(`${f.eventDate}T12:00:00`) : null
+      const date = fromDateInput(f.eventDate)
       await updateEvent(ev.id, {
         title: f.title.trim(),
         customerId: f.customerId || null,

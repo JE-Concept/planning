@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatDate, formatDateTime, isOverdue, relativeDay, toLocalInput, fromLocalInput } from '@lib/dates'
+import { formatDate, formatDateTime, relativeDay, toLocalInput, fromLocalInput } from '@lib/dates'
+import { isTeLaat } from '@lib/laat'
 import { formatCurrency, formatDuration, PRIORITIES } from '@lib/format'
 import {
   Avatar,
@@ -488,7 +489,7 @@ function Subtasks({ task, subtasks, profileById }) {
               {sub.dueDate ? (
                 <span
                   className={`shrink-0 text-[11px] ${
-                    isOverdue(sub.dueDate) && !finished ? 'font-medium text-red-600' : 'text-ink-400'
+                    isTeLaat(sub) && !finished ? 'font-medium text-red-600' : 'text-ink-400'
                   }`}
                 >
                   {relativeDay(sub.dueDate.toDate?.() ?? sub.dueDate)}

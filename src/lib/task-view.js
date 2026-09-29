@@ -1,5 +1,6 @@
 import { dayKey, daysUntil, startOfWeek } from './dates'
 import { priorityOf } from './format'
+import { isAfgerond } from './laat'
 
 /**
  * Wat de Tasks-pagina met een lijst taken doet: filteren, groeperen, sorteren.
@@ -84,7 +85,9 @@ export function deadlineGroep(task, vandaag = new Date()) {
   if (!task.dueDate) return 'zonder'
 
   const dagen = daysUntil(task.dueDate)
-  if (dagen < 0) return 'telaat'
+  // Wat af is, is niet te laat. Een event dat klaar is om te factureren staat
+  // anders elke dag verder in het rood terwijl er niets meer aan te doen is.
+  if (dagen < 0) return isAfgerond(task) ? 'later' : 'telaat'
   if (dagen === 0) return 'vandaag'
 
   const eindDezeWeek = startOfWeek(vandaag).getTime() + 7 * 86400000

@@ -432,6 +432,21 @@ await test('Tasks en Uren hebben een kalender', async () => {
   await uren.close()
 })
 
+await test('een event dat klaar is om te factureren staat niet te laat', async () => {
+  // Het feest is geweest, alleen de factuur loopt nog. Eerder stond hier
+  // "31 dagen te laat" in het rood, en dat maakt de kleur waardeloos.
+  const page = await tabblad('/tasks?weergave=lijst&groep=deadline&wie=iedereen')
+  await page.waitForTimeout(1000)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Loonse Feesten'), `het event staat er niet: ${tekst.slice(0, 200)}`)
+
+  const regel = page.locator('li', { hasText: 'Loonse Feesten 2026' }).first()
+  const regelTekst = await regel.innerText()
+  zouden(!bevat(regelTekst, 'te laat'), `staat toch te laat: ${regelTekst}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('het registratieverslag toont de maand met zijn metingen', async () => {
   const page = await tabblad('/registraties')
   await page.waitForTimeout(900)

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { daysUntil, isToday, startOfMonth } from '@lib/dates'
+import { isTeLaat } from '@lib/laat'
 import { formatDuration, priorityOf } from '@lib/format'
 import { filter as filterTaken, groepeer, perDag } from '@lib/task-view'
 import { Badge, Button, EmptyState, Spinner } from '@components/ds'
@@ -341,7 +342,8 @@ function vervalTekst(task) {
   if (isDone(task)) return { tekst: 'Afgerond', kleur: 'var(--text-3)' }
   if (!task.dueDate) return { tekst: '—', kleur: 'var(--text-3)' }
   const d = daysUntil(task.dueDate)
-  if (d < 0) return { tekst: d === -1 ? '1 dag te laat' : `${-d} dagen te laat`, kleur: 'var(--danger)' }
+  if (d < 0 && isTeLaat(task)) return { tekst: d === -1 ? '1 dag te laat' : `${-d} dagen te laat`, kleur: 'var(--danger)' }
+  if (d < 0) return { tekst: 'geweest', kleur: 'var(--text-3)' }
   if (d === 0) return { tekst: 'Vandaag', kleur: 'var(--text-accent)' }
   if (d === 1) return { tekst: 'Morgen', kleur: 'var(--text-2)' }
   return { tekst: `over ${d} dagen`, kleur: 'var(--text-2)' }
@@ -490,7 +492,7 @@ function Kalender({ maand, onMaand, dagen, zonderDatum, onOpen }) {
           </span>
         }
         renderItem={(task) => {
-          const telaat = !isDone(task) && task.dueDate && daysUntil(task.dueDate) < 0
+          const telaat = isTeLaat(task)
           return (
             <button
               type="button"

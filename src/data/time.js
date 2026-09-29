@@ -33,7 +33,7 @@ function entryContext(task, list) {
  * start simply overwrites the first — "one timer per person" is a property of
  * the data, not a rule the UI has to remember.
  */
-export async function startTimer({ uid, task, list, description = '' }) {
+export async function startTimer({ uid, task, list, description = '', billable }) {
   const running = await getDoc(doc(db, COL.runningTimers, uid))
   if (running.exists()) await stopTimer(uid)
 
@@ -41,7 +41,10 @@ export async function startTimer({ uid, task, list, description = '' }) {
     profileId: uid,
     description,
     startedAt: new Date(),
-    billable: true,
+    // Tijd op een taak is werk voor een klant; losse tijd zonder taak is dat
+    // niet vanzelf. Die aanname stond hier op "wel", en dat leverde
+    // factureerbare boekingen op die niemand bedoeld had.
+    billable: billable ?? Boolean(task),
     ...entryContext(task, list),
   })
 }

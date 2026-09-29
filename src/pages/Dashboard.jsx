@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { addDays, dayKey, daysUntil, formatDay, isOverdue, relativeDay, startOfWeek } from '@lib/dates'
+import { isTeLaat } from '@lib/laat'
 import { formatDuration, priorityOf } from '@lib/format'
 import { runProgress } from '@lib/checklist-templates'
 import { Badge, Bar, Button, Icon, ProgressBar, Spinner } from '@components/ds'
@@ -55,7 +56,7 @@ export default function Dashboard() {
   const overdue = useMemo(
     () =>
       tasks
-        .filter((t) => isOverdue(t.dueDate))
+        .filter(isTeLaat)
         .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)),
     [tasks]
   )
@@ -80,7 +81,7 @@ export default function Dashboard() {
         .map((e) => {
           const eigen = tasksByEvent[e.id] ?? []
           const open = eigen.filter((t) => !isDone(t))
-          return { ...e, openTaken: open.length, teLaat: open.filter((t) => isOverdue(t.dueDate)).length }
+          return { ...e, openTaken: open.length, teLaat: open.filter(isTeLaat).length }
         }),
     [events, tasksByEvent]
   )

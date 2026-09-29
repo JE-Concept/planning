@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
-import { daysUntil, formatDate, toDateInput } from '@lib/dates'
+import { daysUntil, formatDate, fromDateInput, toDateInput } from '@lib/dates'
 import { formatCurrency, formatNumber } from '@lib/format'
 import {
   Avatar,
@@ -360,7 +360,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
           description,
           assignees,
           ownerId: ownerId || null,
-          dueDate: new Date(dueDate),
+          dueDate: fromDateInput(dueDate),
           status,
         })
         await setKeyResults(goal.id, cleaned)
@@ -370,7 +370,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
           description,
           assignees,
           ownerId: ownerId || null,
-          dueDate: new Date(dueDate),
+          dueDate: fromDateInput(dueDate),
           status,
         })
         await setKeyResults(id, cleaned)

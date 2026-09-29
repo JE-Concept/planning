@@ -53,8 +53,13 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if isMember() || (signedIn() && request.auth.uid == uid);
 
-      // You may polish your own card, but never your own role or access.
-      allow update: if isAdmin()
+      // Je mag je eigen kaartje bijwerken, maar nooit je eigen rol of toegang —
+      // en dat geldt ook voor een beheerder. Wie zichzelf op "personeel" zet of
+      // zichzelf archiveert, sluit zichzelf buiten en heeft dan niemand meer om
+      // het terug te draaien. Dit hoort in de regels en niet alleen in een
+      // uitgeschakeld keuzelijstje: een verborgen knop is geen beveiliging.
+      allow update: if (isAdmin()
+            && (request.auth.uid != uid || !changedKeys().hasAny(['role', 'active'])))
         || (signedIn() && request.auth.uid == uid
             && changedKeys().hasOnly(['fullName', 'avatarUrl', 'prefs', 'updatedAt']));
 

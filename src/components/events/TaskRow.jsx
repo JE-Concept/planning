@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { daysUntil } from '@lib/dates'
+import { isTeLaat } from '@lib/laat'
 import { Badge, Checkbox, Hex, Icon, IconButton, initialsOf } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
@@ -15,7 +16,9 @@ export function dueOf(task) {
   if (isDone(task)) return { label: 'Afgerond', color: 'var(--text-2)' }
   if (!task.dueDate) return { label: 'Geen deadline', color: 'var(--text-3)' }
   const d = daysUntil(task.dueDate)
-  if (d < 0) return { label: d === -1 ? '1 dag te laat' : `${-d} dagen te laat`, color: 'var(--danger)', late: true }
+  if (d < 0 && isTeLaat(task))
+    return { label: d === -1 ? '1 dag te laat' : `${-d} dagen te laat`, color: 'var(--danger)', late: true }
+  if (d < 0) return { label: 'geweest', color: 'var(--text-3)' }
   if (d === 0) return { label: 'Vandaag', color: 'var(--text-accent)' }
   if (d === 1) return { label: 'Morgen', color: 'var(--text-2)' }
   return { label: dayLabel(task.dueDate), color: 'var(--text-2)' }

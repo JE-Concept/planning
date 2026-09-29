@@ -1,7 +1,8 @@
 import { memo } from 'react'
 import { cn } from '@lib/cn'
 import { formatDuration, priorityOf } from '@lib/format'
-import { isOverdue, relativeDay } from '@lib/dates'
+import { relativeDay } from '@lib/dates'
+import { isTeLaat } from '@lib/laat'
 import { AvatarStack, Badge } from '@ui/index'
 
 /**
@@ -13,7 +14,7 @@ function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, on
   const assignees = (task.assignees ?? [])
     .map((uid) => profiles[uid])
     .filter(Boolean)
-  const overdue = task.open !== false && isOverdue(task.dueDate)
+  const overdue = isTeLaat(task)
 
   return (
     <article

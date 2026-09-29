@@ -223,8 +223,21 @@ function TeamTab() {
               <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{m.fullName || m.email}</div>
               <div className="je-muted-caption">{[m.email, ...(m.aliases ?? [])].join(' · ')}</div>
             </div>
+            {/*
+              Je eigen rol staat vast. Wie zichzelf op "personeel" zet is zijn
+              beheer kwijt en heeft niemand meer om het terug te draaien. De
+              regels weigeren het ook; dit zorgt dat je er niet tegenaan loopt.
+            */}
             <div style={{ width: 150 }}>
-              <Select boxed options={ROLES} value={m.role} onChange={(e) => setMemberRole(m.id, e.target.value)} aria-label={`Rol van ${m.email}`} />
+              <Select
+                boxed
+                options={ROLES}
+                value={m.role}
+                onChange={(e) => setMemberRole(m.id, e.target.value)}
+                aria-label={`Rol van ${m.email}`}
+                disabled={m.id === uid}
+                title={m.id === uid ? 'Je eigen rol kun je niet wijzigen.' : undefined}
+              />
             </div>
             {m.role === 'staff' ? (
               <div style={{ width: 150 }}>
@@ -251,7 +264,13 @@ function TeamTab() {
                 aria-label="Intern uurtarief"
               />
             </div>
-            <Button variant="ghost" size="sm" disabled={m.id === uid} onClick={() => setMemberActive(m.id, false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={m.id === uid}
+              title={m.id === uid ? 'Jezelf archiveren kan niet.' : undefined}
+              onClick={() => setMemberActive(m.id, false)}
+            >
               Archiveren
             </Button>
           </div>
