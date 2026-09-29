@@ -33,6 +33,10 @@ try {
   BESTANDEN = import.meta.glob('./taal/*.js', { eager: true })
 } catch {
   BESTANDEN = {}
+  // In een browser hoort dit niet te kunnen — daar staat de lijst al in de
+  // build. Gebeurt het toch, dan zou elk scherm stilletjes vol sleutels komen
+  // te staan, en dan wil je weten waarom.
+  if (typeof window !== 'undefined') console.error('JE Plan: de teksten zijn niet ingeladen.')
 }
 
 /**
