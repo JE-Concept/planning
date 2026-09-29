@@ -14,6 +14,7 @@ import {
   Textarea,
 } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
   POST_STATUSES,
@@ -33,6 +34,7 @@ export default function PostDrawer({ postId, onClose }) {
   const post = usePost(postId)
   const { brands, profiles, brandById } = useWorkspace()
   const { profile } = useAuth()
+  const { t } = useTaal()
 
   if (!post) return null
 
@@ -50,7 +52,7 @@ export default function PostDrawer({ postId, onClose }) {
       title={post.title}
       subtitle={
         brand
-          ? `${brand.name} · ${formatDateTime(moment) || 'nog geen publicatiedatum'}`
+          ? `${brand.name} · ${formatDateTime(moment) || t('social.post.geen_datum_klein')}`
           : undefined
       }
       footer={
@@ -58,19 +60,19 @@ export default function PostDrawer({ postId, onClose }) {
           <span className="text-xs text-ink-400">
             {post.publishedUrl ? (
               <a href={post.publishedUrl} target="_blank" rel="noreferrer" className="underline">
-                Bekijk de publicatie
+                {t('social.post.bekijk_publicatie')}
               </a>
             ) : (
-              'Nog niet gepubliceerd'
+              t('social.post.niet_gepubliceerd')
             )}
           </span>
           <ConfirmButton
             variant="danger"
             size="sm"
-            question="Deze post verwijderen?"
+            question={t('social.post.verwijder_vraag')}
             onConfirm={() => deletePost(post.id).then(onClose)}
           >
-            Verwijderen
+            {t('alg.verwijderen')}
           </ConfirmButton>
         </>
       }
@@ -79,12 +81,12 @@ export default function PostDrawer({ postId, onClose }) {
         <Input
           defaultValue={post.title}
           onBlur={(e) => e.target.value.trim() && updatePost(post.id, { title: e.target.value.trim() })}
-          aria-label="Titel"
+          aria-label={t('social.veld.titel')}
           className="text-base font-semibold"
         />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Merk">
+          <Field label={t('social.veld.merk')}>
             <Select value={post.brandId} onChange={(e) => updatePost(post.id, { brandId: e.target.value })}>
               {brands.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -94,11 +96,11 @@ export default function PostDrawer({ postId, onClose }) {
             </Select>
           </Field>
 
-          <Field label="Status">
+          <Field label={t('social.veld.status')}>
             <Select value={post.status} onChange={(e) => updatePost(post.id, { status: e.target.value })}>
               {POST_STATUSES.map((s) => (
                 <option key={s.key} value={s.key}>
-                  {s.label}
+                  {t(s.sleutel)}
                 </option>
               ))}
             </Select>
@@ -109,12 +111,8 @@ export default function PostDrawer({ postId, onClose }) {
               er een gekozen heeft, staat hier de datum die van het event kwam —
               met de melding erbij, want die datum heeft niemand bedoeld. */}
           <Field
-            label="Publiceren op"
-            hint={
-              moment && !eigenDatum
-                ? 'Overgenomen van het event. Pas aan voor een eigen publicatiemoment.'
-                : undefined
-            }
+            label={t('social.veld.publiceren_op')}
+            hint={moment && !eigenDatum ? t('social.veld.publiceren_op_hint') : undefined}
           >
             <Input
               type="datetime-local"
@@ -123,12 +121,12 @@ export default function PostDrawer({ postId, onClose }) {
             />
           </Field>
 
-          <Field label="Verantwoordelijke">
+          <Field label={t('social.veld.verantwoordelijke')}>
             <Select
               value={post.assigneeId ?? ''}
               onChange={(e) => updatePost(post.id, { assigneeId: e.target.value || null })}
             >
-              <option value="">Niemand</option>
+              <option value="">{t('alg.niemand')}</option>
               {profiles.filter((p) => p.active !== false).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.fullName || p.email}
@@ -139,7 +137,7 @@ export default function PostDrawer({ postId, onClose }) {
         </div>
 
         <section>
-          <h3 className="label">Kanalen</h3>
+          <h3 className="label">{t('social.veld.kanalen')}</h3>
           <div className="flex flex-wrap gap-1.5">
             {CHANNELS.map((channel) => {
               const on = post.channels?.includes(channel.key)
@@ -166,11 +164,11 @@ export default function PostDrawer({ postId, onClose }) {
         <PostTimer post={post} />
 
         <Field
-          label="Link naar het ontwerp"
+          label={t('social.veld.ontwerp_link')}
           hint={
             post.assetUrl ? (
               <a href={post.assetUrl} target="_blank" rel="noreferrer" className="underline">
-                Ontwerp openen
+                {t('social.veld.ontwerp_openen')}
               </a>
             ) : undefined
           }
@@ -186,22 +184,26 @@ export default function PostDrawer({ postId, onClose }) {
         <ReviewPanel post={post} />
 
         <Field
-          label="Caption"
-          hint={`${captionLength} tekens${
+          label={t('social.veld.caption')}
+          hint={
             kanaal.captionMax != null && captionLength > kanaal.captionMax
-              ? ` — te lang voor ${kanaal.label} (max ${kanaal.captionMax})`
-              : ''
-          }`}
+              ? t('social.caption.te_lang', {
+                  aantal: captionLength,
+                  kanaal: kanaal.label,
+                  max: kanaal.captionMax,
+                })
+              : t('social.caption.tekens', { aantal: captionLength })
+          }
         >
           <Textarea
             rows={6}
             defaultValue={post.caption ?? ''}
             onBlur={(e) => updatePost(post.id, { caption: e.target.value })}
-            placeholder="De tekst zoals hij online komt…"
+            placeholder={t('social.caption.plaatshouder')}
           />
         </Field>
 
-        <Field label="Hashtags">
+        <Field label={t('social.veld.hashtags')}>
           <Textarea
             rows={2}
             defaultValue={post.hashtags ?? ''}
@@ -210,7 +212,7 @@ export default function PostDrawer({ postId, onClose }) {
           />
         </Field>
 
-        <Field label="Link naar de publicatie">
+        <Field label={t('social.veld.publicatie_link')}>
           <Input
             type="url"
             defaultValue={post.publishedUrl ?? ''}
@@ -219,7 +221,7 @@ export default function PostDrawer({ postId, onClose }) {
           />
         </Field>
 
-        <Field label="Interne notities">
+        <Field label={t('social.veld.notities')}>
           <Textarea
             rows={3}
             defaultValue={post.notes ?? ''}
@@ -234,6 +236,7 @@ export default function PostDrawer({ postId, onClose }) {
 }
 
 function PostComments({ postId, profile }) {
+  const { t } = useTaal()
   const comments = useComments({ postId })
   const [body, setBody] = useState('')
 
@@ -246,7 +249,7 @@ function PostComments({ postId, profile }) {
 
   return (
     <section>
-      <h3 className="label">Feedback ({comments.length})</h3>
+      <h3 className="label">{t('social.feedback.kop', { aantal: comments.length })}</h3>
       <ul className="space-y-2">
         {comments.map((c) => (
           <li key={c.id} className="rounded-md bg-ink-50 px-3 py-2">
@@ -259,9 +262,9 @@ function PostComments({ postId, profile }) {
                   variant="ghost"
                   size="sm"
                   className="ml-auto h-5 w-5 p-0"
-                  question="Reactie verwijderen?"
+                  question={t('social.feedback.verwijder_vraag')}
                   onConfirm={() => deleteComment(c)}
-                  aria-label="Reactie verwijderen"
+                  aria-label={t('social.feedback.verwijderen')}
                 >
                   ✕
                 </ConfirmButton>
@@ -273,9 +276,9 @@ function PostComments({ postId, profile }) {
       </ul>
 
       <form onSubmit={submit} className="mt-2 flex gap-2">
-        <Input value={body} onChange={(e) => setBody(e.target.value)} placeholder="Feedback geven…" />
+        <Input value={body} onChange={(e) => setBody(e.target.value)} placeholder={t('social.feedback.plaatshouder')} />
         <Button type="submit" variant="primary" disabled={!body.trim()}>
-          Plaatsen
+          {t('social.feedback.plaatsen')}
         </Button>
       </form>
     </section>

@@ -4,6 +4,7 @@ import { Button, EmptyState, Input, Spinner } from '@ui/index'
 import KanbanBoard from '@components/board/KanbanBoard'
 import TaskDrawer from '@components/board/TaskDrawer'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask, updateTask, useSocialEvents, useTasks } from '@data/tasks'
@@ -19,6 +20,7 @@ import { createTask, updateTask, useSocialEvents, useTasks } from '@data/tasks'
 export default function SocialEventsBoard({ socialOwner = null }) {
   const { events: alles, loading } = useSocialEvents()
   const { profileById, tags, boards, socialLists } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
   const { uid } = useAuth()
   const [openTaskId, setOpenTaskId] = useState(null)
@@ -120,11 +122,11 @@ export default function SocialEventsBoard({ socialOwner = null }) {
       <Input
         value={nieuw}
         onChange={(e) => setNieuw(e.target.value)}
-        placeholder="Los socialwerk, zonder event"
-        aria-label="Nieuwe socialtaak"
+        placeholder={t('social.bord.los_plaatshouder')}
+        aria-label={t('social.bord.nieuwe_taak')}
       />
       <Button type="submit" size="sm" disabled={!nieuw.trim() || bezig}>
-        Toevoegen
+        {t('alg.toevoegen')}
       </Button>
     </form>
   ) : null
@@ -151,8 +153,8 @@ export default function SocialEventsBoard({ socialOwner = null }) {
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
         <EmptyState
           icon="▦"
-          title="Nog geen social content"
-          description="Een event komt hier vanzelf op te staan zodra het op “ready to invoice” komt. Eerder kan ook: zet het aan in het event zelf. Werk dat los van een event staat, voeg je hier toe."
+          title={t('social.bord.leeg.titel')}
+          description={t('social.bord.leeg.tekst')}
         />
         {nieuweTaakKnop}
       </div>
@@ -170,7 +172,7 @@ export default function SocialEventsBoard({ socialOwner = null }) {
           tags={tagsByName}
           onOpen={(task) => setOpenTaskId(task.id)}
           onDrop={drop}
-          emptyHint="Sleep hier een event naartoe"
+          emptyHint={t('social.bord.sleep_hier')}
         />
       </div>
 

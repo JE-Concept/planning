@@ -3,6 +3,7 @@ import { cn } from '@lib/cn'
 import { dayKey, formatDay, isToday } from '@lib/dates'
 import { GEEN_KANAAL, channelMeta, kanaalRijen } from '@lib/social-channels'
 import { bucketPerDagEnKanaal, telPerKanaal, weekDagen } from '@lib/social-planning'
+import { useTaal } from '@context/TaalProvider'
 import PostCard from './PostCard'
 
 /**
@@ -60,6 +61,8 @@ export default function WeekBoard({ week, posts, brandById, onOpen, onAdd, drag 
 }
 
 function Rij({ kanaal, aantal, dagen, perDag, brandById, onOpen, onAdd, drag }) {
+  const { t } = useTaal()
+
   return (
     <>
       <div className="je-weekboard__kanaal">
@@ -112,7 +115,7 @@ function Rij({ kanaal, aantal, dagen, perDag, brandById, onOpen, onAdd, drag }) 
                 type="button"
                 className="je-weekboard__plus"
                 onClick={() => onAdd?.(dag, kanaal.key)}
-                aria-label={`Post toevoegen op ${key} voor ${kanaal.label}`}
+                aria-label={t('social.post.toevoegen_op_kanaal', { dag: key, kanaal: kanaal.label })}
               >
                 +
               </button>

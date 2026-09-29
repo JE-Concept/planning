@@ -25,15 +25,21 @@ import { publicatieMoment } from '@lib/social-planning'
  */
 export { CHANNELS, GEEN_KANAAL, channelMeta, hoofdKanaal, kanalenVan } from '@lib/social-channels'
 
-/** The production line of a post, in the order it actually moves. */
+/**
+ * The production line of a post, in the order it actually moves.
+ *
+ * `sleutel` wijst naar de tekst in de taalcatalogus; `label` blijft ernaast
+ * staan omdat schermen buiten de socials deze tabel ook lezen, en die mogen
+ * niet stilvallen op een sleutel die ze niet opzoeken.
+ */
 export const POST_STATUSES = [
-  { key: 'idea', label: 'Idee', color: '#8593a9' },
-  { key: 'draft', label: 'Tekst', color: '#f59e0b' },
-  { key: 'design', label: 'Ontwerp', color: '#7c3aed' },
-  { key: 'review', label: 'Nakijken', color: '#b660e0' },
-  { key: 'approved', label: 'Goedgekeurd', color: '#3db88b' },
-  { key: 'scheduled', label: 'Ingepland', color: '#3377ff' },
-  { key: 'published', label: 'Gepubliceerd', color: '#008844' },
+  { key: 'idea', sleutel: 'social.status.idea', label: 'Idee', color: '#8593a9' },
+  { key: 'draft', sleutel: 'social.status.draft', label: 'Tekst', color: '#f59e0b' },
+  { key: 'design', sleutel: 'social.status.design', label: 'Ontwerp', color: '#7c3aed' },
+  { key: 'review', sleutel: 'social.status.review', label: 'Nakijken', color: '#b660e0' },
+  { key: 'approved', sleutel: 'social.status.approved', label: 'Goedgekeurd', color: '#3db88b' },
+  { key: 'scheduled', sleutel: 'social.status.scheduled', label: 'Ingepland', color: '#3377ff' },
+  { key: 'published', sleutel: 'social.status.published', label: 'Gepubliceerd', color: '#008844' },
 ]
 
 /**
@@ -41,10 +47,10 @@ export const POST_STATUSES = [
  * The status says what the post is; the review state says whose move it is.
  */
 export const REVIEW_STATES = [
-  { key: 'none', label: 'Geen review', color: '#8593a9' },
-  { key: 'requested', label: 'Wacht op review', color: '#b660e0' },
-  { key: 'changes', label: 'Aanpassing gevraagd', color: '#e5484d' },
-  { key: 'approved', label: 'Goedgekeurd', color: '#3db88b' },
+  { key: 'none', sleutel: 'social.review.geen', label: 'Geen review', color: '#8593a9' },
+  { key: 'requested', sleutel: 'social.review.wacht', label: 'Wacht op review', color: '#b660e0' },
+  { key: 'changes', sleutel: 'social.review.aanpassing', label: 'Aanpassing gevraagd', color: '#e5484d' },
+  { key: 'approved', sleutel: 'social.review.goedgekeurd', label: 'Goedgekeurd', color: '#3db88b' },
 ]
 
 export const reviewMeta = (key) =>

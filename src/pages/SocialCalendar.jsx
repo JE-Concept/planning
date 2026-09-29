@@ -22,6 +22,7 @@ import PostDrawer from '@components/social/PostDrawer'
 import SocialEventsBoard from '@components/social/SocialEventsBoard'
 import WeekBoard from '@components/social/WeekBoard'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
@@ -42,6 +43,7 @@ import {
 export default function SocialCalendar() {
   const { brands, brandById, profiles } = useWorkspace()
   const { uid } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
 
   const [month, setMonth] = useState(() => startOfMonth())
@@ -89,10 +91,10 @@ export default function SocialCalendar() {
   const projects = useMemo(() => {
     const map = new Map()
     for (const post of [...posts, ...backlog]) {
-      if (post.taskId) map.set(post.taskId, post.taskTitle || 'Project')
+      if (post.taskId) map.set(post.taskId, post.taskTitle || t('social.project.kop'))
     }
     return [...map].map(([id, title]) => ({ id, title })).sort((a, b) => a.title.localeCompare(b.title))
-  }, [posts, backlog])
+  }, [posts, backlog, t])
 
   const waitingForReview = useMemo(
     () => posts.filter((p) => p.reviewState === 'requested').length,
@@ -146,7 +148,7 @@ export default function SocialCalendar() {
 
     const brandId = brandFilter[0] ?? brands[0]?.id
     if (!brandId) {
-      toast.error('Maak eerst een merk aan bij Instellingen.')
+      toast.error(t('social.geen_merk'))
       return
     }
 
@@ -174,7 +176,7 @@ export default function SocialCalendar() {
   const addOn = async (date, channel) => {
     const brandId = brandFilter[0] ?? brands[0]?.id
     if (!brandId) {
-      toast.error('Maak eerst een merk aan bij Instellingen.')
+      toast.error(t('social.geen_merk'))
       return
     }
     const when = new Date(date)
@@ -201,43 +203,48 @@ export default function SocialCalendar() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Socials"
+        title={t('nav.socials')}
         subtitle={
           view === 'events'
-            ? 'Events met social content'
+            ? t('social.kop.events')
             : view === 'week'
-              ? `${shown.length} posts in week ${weekNummer(week)} · ${formatDate(weekDagen(week)[0])} – ${formatDate(weekDagen(week)[6])}`
-              : `${shown.length} posts in ${formatMonth(month)}`
+              ? t('social.kop.week', {
+                  aantal: shown.length,
+                  week: weekNummer(week),
+                  van: formatDate(weekDagen(week)[0]),
+                  tot: formatDate(weekDagen(week)[6]),
+                })
+              : t('social.kop.maand', { aantal: shown.length, maand: formatMonth(month) })
         }
         actions={
           view === 'events' ? null : view === 'week' ? (
             <>
-              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, -7))} aria-label="Vorige week">
+              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, -7))} aria-label={t('social.week.vorige')}>
                 ‹
               </Button>
               <Button variant="secondary" onClick={() => setWeek(startOfWeek())}>
-                Deze week
+                {t('social.week.deze')}
               </Button>
-              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, 7))} aria-label="Volgende week">
+              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, 7))} aria-label={t('social.week.volgende')}>
                 ›
               </Button>
               <Button variant="primary" onClick={() => addOn(new Date())}>
-                + Post
+                {t('social.post.nieuw')}
               </Button>
             </>
           ) : (
           <>
-            <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, -1))} aria-label="Vorige maand">
+            <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, -1))} aria-label={t('social.maand.vorige')}>
               ‹
             </Button>
             <Button variant="secondary" onClick={() => setMonth(startOfMonth())}>
-              Vandaag
+              {t('alg.vandaag')}
             </Button>
-            <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, 1))} aria-label="Volgende maand">
+            <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, 1))} aria-label={t('social.maand.volgende')}>
               ›
             </Button>
             <Button variant="primary" onClick={() => addOn(new Date())}>
-              + Post
+              {t('social.post.nieuw')}
             </Button>
           </>
           )
@@ -245,16 +252,16 @@ export default function SocialCalendar() {
         tabs={
           <>
             <Tab active={view === 'events'} onClick={() => setView('events')}>
-              Events
+              {t('nav.events')}
             </Tab>
             <Tab active={view === 'calendar'} onClick={() => setView('calendar')}>
-              Kalender
+              {t('nav.kalender')}
             </Tab>
             <Tab active={view === 'week'} onClick={() => setView('week')}>
-              Week
+              {t('social.tab.week')}
             </Tab>
             <Tab active={view === 'board'} onClick={() => setView('board')}>
-              Posts
+              {t('social.tab.posts')}
             </Tab>
           </>
         }
@@ -274,10 +281,10 @@ export default function SocialCalendar() {
         <Select
           value={projectFilter}
           onChange={(e) => setProjectFilter(e.target.value)}
-          aria-label="Filter op project"
+          aria-label={t('social.filter.project')}
           className="h-7 w-44 py-0 text-xs"
         >
-          <option value="">Alle projecten</option>
+          <option value="">{t('social.filter.alle_projecten')}</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.title}
@@ -287,7 +294,7 @@ export default function SocialCalendar() {
 
         <button type="button" onClick={() => setReviewOnly((v) => !v)} aria-pressed={reviewOnly}>
           <Badge color="#b660e0" subtle={!reviewOnly}>
-            Wacht op review ({waitingForReview})
+            {t('social.filter.wacht_op_review', { aantal: waitingForReview })}
           </Badge>
         </button>
 
@@ -301,7 +308,7 @@ export default function SocialCalendar() {
               setReviewOnly(false)
             }}
           >
-            Alles tonen
+            {t('social.filter.alles_tonen')}
           </Button>
         ) : null}
       </div>
@@ -390,7 +397,7 @@ export default function SocialCalendar() {
                       <button
                         type="button"
                         onClick={() => addOn(date)}
-                        aria-label={`Post toevoegen op ${key}`}
+                        aria-label={t('social.post.toevoegen_op', { dag: key })}
                         className="rounded px-1 text-xs text-ink-300 opacity-0 transition group-hover:opacity-100 hover:bg-ink-100 hover:text-ink-700"
                       >
                         +
@@ -423,7 +430,7 @@ export default function SocialCalendar() {
 
           <aside className="hidden w-56 shrink-0 flex-col overflow-y-auto rounded-lg bg-ink-100/70 p-2 lg:flex">
             <h2 className="px-1 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-600">
-              Nog in te plannen ({backlog.length})
+              {t('social.in_te_plannen', { aantal: backlog.length })}
             </h2>
 
             {/* Een onderwerp is een idee zonder datum. Het komt altijd bij
@@ -432,13 +439,15 @@ export default function SocialCalendar() {
               <Input
                 value={onderwerp}
                 onChange={(e) => setOnderwerp(e.target.value)}
-                placeholder="Onderwerp toevoegen…"
-                aria-label="Onderwerp toevoegen"
+                placeholder={t('social.onderwerp.plaatshouder')}
+                aria-label={t('social.onderwerp.label')}
                 className="h-8 text-sm"
               />
               {onderwerp.trim() ? (
                 <p className="mt-1 text-[11px] text-ink-500">
-                  Enter zet het bij {socialOwner ? socialOwner.fullName || socialOwner.email : 'niemand'}
+                  {socialOwner
+                    ? t('social.onderwerp.enter', { wie: socialOwner.fullName || socialOwner.email })
+                    : t('social.onderwerp.enter_niemand')}
                 </p>
               ) : null}
             </form>
@@ -460,7 +469,7 @@ export default function SocialCalendar() {
               ))}
               {backlog.length === 0 ? (
                 <p className="px-1 py-3 text-center text-[11px] text-ink-400">
-                  Alles staat ingepland.
+                  {t('social.alles_ingepland')}
                 </p>
               ) : null}
             </div>
@@ -475,6 +484,7 @@ export default function SocialCalendar() {
 
 /** The same posts, seen as a production line instead of as a month. */
 function ProductionBoard({ posts, brandById, onOpen, onMove }) {
+  const { t } = useTaal()
   const [dragId, setDragId] = useState(null)
   const [over, setOver] = useState(null)
 
@@ -487,7 +497,7 @@ function ProductionBoard({ posts, brandById, onOpen, onMove }) {
   if (posts.length === 0) {
     return (
       <div className="p-8">
-        <EmptyState title="Nog geen posts deze maand" description="Voeg er een toe in de kalender." />
+        <EmptyState title={t('social.posts.leeg.titel')} description={t('social.posts.leeg.tekst')} />
       </div>
     )
   }
@@ -515,7 +525,7 @@ function ProductionBoard({ posts, brandById, onOpen, onMove }) {
         >
           <header className="flex items-center gap-2 px-3 py-2.5">
             <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: status.color }} />
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-700">{status.label}</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-700">{t(status.sleutel)}</h2>
             <span className="rounded bg-white px-1.5 text-[11px] text-ink-500">
               {(byStatus[status.key] ?? []).length}
             </span>

@@ -4,6 +4,7 @@ import { formatDateTime } from '@lib/dates'
 import { channelMeta, hoofdKanaal, kanalenVan } from '@lib/social-channels'
 import { heeftEigenPublicatiedatum, publicatieMoment } from '@lib/social-planning'
 import { Tabs } from '@components/ds'
+import { useTaal } from '@context/TaalProvider'
 
 /**
  * Hoe de post eruitziet als hij online staat.
@@ -19,6 +20,7 @@ import { Tabs } from '@components/ds'
  * tekst, maar wel het formaat van dát kanaal.
  */
 export default function PostPreview({ post, brand }) {
+  const { t } = useTaal()
   const kanalen = kanalenVan(post)
   const [gekozen, setGekozen] = useState(null)
   const actief = kanalen.includes(gekozen) ? gekozen : hoofdKanaal(post)
@@ -37,7 +39,7 @@ export default function PostPreview({ post, brand }) {
 
   return (
     <section className="je-postprev">
-      <h3 className="label">Preview</h3>
+      <h3 className="label">{t('social.preview.kop')}</h3>
 
       {kanalen.length > 1 ? (
         <Tabs
@@ -49,7 +51,7 @@ export default function PostPreview({ post, brand }) {
         />
       ) : null}
 
-      <article className="je-postprev__card" aria-label={`Voorbeeld voor ${kanaal.label}`}>
+      <article className="je-postprev__card" aria-label={t('social.preview.voorbeeld_voor', { kanaal: kanaal.label })}>
         <header className="je-postprev__head">
           <span
             className="je-postprev__avatar"
@@ -80,7 +82,7 @@ export default function PostPreview({ post, brand }) {
               <strong>{brand?.name ?? 'JE Concept'}</strong> {caption}
             </p>
           ) : (
-            <p className="je-postprev__leeg">Nog geen tekst.</p>
+            <p className="je-postprev__leeg">{t('social.preview.geen_tekst')}</p>
           )}
 
           {hashtags.length > 0 ? (
@@ -89,26 +91,35 @@ export default function PostPreview({ post, brand }) {
 
           <p className="je-postprev__wanneer">
             {moment
-              ? `Gaat online op ${formatDateTime(moment)}${heeftEigenPublicatiedatum(post) ? '' : ' — overgenomen van het event'}`
-              : 'Nog geen publicatiedatum'}
+              ? t(
+                  heeftEigenPublicatiedatum(post)
+                    ? 'social.preview.gaat_online'
+                    : 'social.preview.gaat_online_van_event',
+                  { datum: formatDateTime(moment) }
+                )
+              : t('social.preview.geen_datum')}
           </p>
         </div>
       </article>
 
       <p className="je-postprev__regels">
-        Beeld {kanaal.ratioLabel}
-        {kanaal.captionMax != null ? ` · ${caption.length}/${kanaal.captionMax} tekens` : ''}
-        {kanaal.hashtagMax != null ? ` · ${hashtags.length}/${kanaal.hashtagMax} hashtags` : ''}
+        {t('social.preview.beeld', { verhouding: kanaal.ratioLabel })}
+        {kanaal.captionMax != null
+          ? t('social.preview.tekens', { aantal: caption.length, max: kanaal.captionMax })
+          : ''}
+        {kanaal.hashtagMax != null
+          ? t('social.preview.hashtags', { aantal: hashtags.length, max: kanaal.hashtagMax })
+          : ''}
       </p>
 
       {teLang ? (
         <p className="je-postprev__waarschuwing">
-          De tekst is te lang voor {kanaal.label}; wat erboven staat valt weg.
+          {t('social.preview.te_lang', { kanaal: kanaal.label })}
         </p>
       ) : null}
       {teVeelTags ? (
         <p className="je-postprev__waarschuwing">
-          {kanaal.label} plaatst er maar {kanaal.hashtagMax}; de rest verdwijnt.
+          {t('social.preview.te_veel_tags', { kanaal: kanaal.label, max: kanaal.hashtagMax })}
         </p>
       ) : null}
     </section>
