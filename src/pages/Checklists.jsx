@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { addDays, dayKey, formatDate, formatTime, isToday } from '@lib/dates'
 import { afdelingLabel, dueOn, grensTekst, meetOordeel, repeatLabel, runProgress, visibleTo } from '@lib/checklist-templates'
+import { Icon } from '@components/ds'
 import { Avatar, Badge, Button, EmptyState, Input, ProgressBar, Spinner, Textarea } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
+import { useOffline } from '@context/OfflineProvider'
 import { useToast } from '@context/ToastProvider'
 import { useChecklists, useRunsForDay, closeRun, saveNotes, setItemValue, toggleItem } from '@data/checklists'
 
@@ -30,7 +32,8 @@ export default function Checklists() {
   // Twee filters op elk punt: valt het vandaag, en gaat het deze persoon aan.
   const scope = useMemo(() => ({ date, person: profile }), [date, profile])
 
-  const { byChecklist, loading: runsLoading } = useRunsForDay(day)
+  const { byChecklist, wachtendeRuns, loading: runsLoading } = useRunsForDay(day)
+  const { online } = useOffline()
 
   const current = useMemo(
     () => checklists.find((c) => c.id === active) ?? checklists[0] ?? null,
@@ -110,6 +113,18 @@ export default function Checklists() {
         {run?.participants?.length ? (
           <span className="hidden shrink-0 text-xs text-ink-500 sm:block">
             {run.participants.length} {run.participants.length === 1 ? 'persoon' : 'personen'}
+          </span>
+        ) : null}
+        {/*
+          De keuken en de koelcel hebben één streepje bereik. Wat daar afgevinkt
+          wordt, staat eerst alleen op dit toestel; Firestore stuurt het later
+          vanzelf door. Dat hier zeggen is het hele punt: wie denkt dat het rond
+          is, sluit de app en dan staat er de volgende ochtend een halve lijst.
+        */}
+        {wachtendeRuns.has(current.id) || !online ? (
+          <span className="je-nogopdittoestel" title="Wordt doorgestuurd zodra er weer bereik is">
+            <Icon name="cloud-off" size={13} />
+            {wachtendeRuns.has(current.id) ? 'Nog op dit toestel' : 'Geen verbinding'}
           </span>
         ) : null}
       </div>

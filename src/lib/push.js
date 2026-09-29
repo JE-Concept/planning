@@ -35,17 +35,29 @@ export const meldingsrecht = () => (pushMogelijk() ? Notification.permission : '
  * De worker staat als los bestand in `public/` en gaat ongewijzigd door de
  * build; hij kan dus geen build-variabelen lezen. Meegeven in de query is de
  * gangbare weg, en veilig: deze sleutels staan sowieso in de bundel.
+ *
+ * Het buildnummer staat er sinds de worker de app ook zonder verbinding moet
+ * openen. Een browser installeert een worker alleen opnieuw als zijn URL of
+ * zijn inhoud verandert, en dit bestand verandert nooit; zonder dit nummer
+ * bleef de cache dus voor altijd op de bestanden van de eerste uitrol staan.
+ * De worker gebruikt het meteen ook als naam voor zijn cache.
+ *
+ * Alleen `serviceWorker` is hier vereist, niet het hele meldingenapparaat. Dat
+ * was eerder wél zo, en daardoor kreeg precies het toestel waar het om gaat —
+ * een tablet in de keuken, waar `PushManager` kan ontbreken — geen worker en
+ * dus geen offline schil.
  */
 export async function registreerServiceWorker() {
-  if (!pushMogelijk() || !isConfigured) return null
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null
   if (registratie) return registratie
 
   const config = app.options
   const query = new URLSearchParams({
-    apiKey: config.apiKey,
-    projectId: config.projectId,
+    apiKey: config.apiKey ?? '',
+    projectId: config.projectId ?? '',
     messagingSenderId: config.messagingSenderId ?? '',
     appId: config.appId ?? '',
+    build: __BUILD_ID__,
   })
 
   try {

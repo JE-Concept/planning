@@ -1,9 +1,9 @@
 import { Children, cloneElement, forwardRef, isValidElement, useEffect, useId, useRef, useState } from 'react'
 import {
   AlertTriangle, ArrowRight, ArrowUp, Briefcase, Building2, CalendarDays, Check, CheckCircle, ChevronDown,
-  ChevronLeft, ChevronRight, Circle, ClipboardCheck, Clock, Copy, CornerDownLeft, Download, Euro, FileText,
-  Info, Kanban, LayoutDashboard, Lightbulb, ListChecks, Loader, Lock, LogIn, LogOut, Mail, Menu,
-  MessageSquare, MessagesSquare, Music4, Paperclip, Pencil, Play, Plus, Repeat, Search, Settings, Share2,
+  ChevronLeft, ChevronRight, Circle, ClipboardCheck, Clock, CloudOff, Copy, CornerDownLeft, Download, Euro,
+  FileText, Info, Kanban, Keyboard, LayoutDashboard, Lightbulb, ListChecks, Loader, Lock, LogIn, LogOut,
+  Mail, Menu, MessageSquare, MessagesSquare, Music4, Paperclip, Pencil, Play, Plus, Repeat, Search, Settings, Share2,
   ShieldCheck, Sparkles, Square, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
 } from 'lucide-react'
 import { cn } from '@lib/cn'
@@ -35,6 +35,7 @@ const ICONS = {
   circle: Circle,
   'clipboard-check': ClipboardCheck,
   clock: Clock,
+  'cloud-off': CloudOff,
   copy: Copy,
   'corner-down-left': CornerDownLeft,
   download: Download,
@@ -42,6 +43,7 @@ const ICONS = {
   'file-text': FileText,
   info: Info,
   kanban: Kanban,
+  keyboard: Keyboard,
   'layout-dashboard': LayoutDashboard,
   lightbulb: Lightbulb,
   'list-checks': ListChecks,

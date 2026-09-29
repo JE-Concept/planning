@@ -10,6 +10,29 @@
 const store = new Map()          // "collectie/id" -> data
 const listeners = new Set()      // () => void, één per actief abonnement
 
+/**
+ * Doen alsof er geen bereik is.
+ *
+ * De echte Firestore schrijft offline naar zijn schijfcache en zet
+ * `metadata.hasPendingWrites` op wat er nog niet bij de server is. Daar hangt
+ * de hele mededeling in de app aan ("dit staat nog op dit toestel"), dus de
+ * demo moet zich hier net zo gedragen — anders test de browsertest iets anders
+ * dan wat er in de keuken draait. De gegevens zelf gaan gewoon door: ook echt
+ * offline zie je je eigen vinkje meteen staan, het is alleen nog nergens
+ * anders.
+ */
+const wachtend = new Set()       // paden die nog "doorgestuurd" moeten worden
+const zonderBereik = () => typeof navigator !== 'undefined' && navigator.onLine === false
+
+if (typeof window !== 'undefined') {
+  // Terug online: wat openstond is weg, en iedereen hoort het meteen te zien.
+  window.addEventListener('online', () => {
+    if (!wachtend.size) return
+    wachtend.clear()
+    notify()
+  })
+}
+
 const SERVER_TS = Symbol('serverTimestamp')
 const INCREMENT = Symbol('increment')
 const ARRAY_UNION = Symbol('arrayUnion')
@@ -136,12 +159,15 @@ function run(q) {
   return rows
 }
 
+const metadataVan = (pad) => ({ hasPendingWrites: wachtend.has(pad), fromCache: zonderBereik() })
+
 const docSnap = (col, id) => {
   const data = store.get(`${col}/${id}`)
   return {
     id,
     exists: () => data !== undefined,
     data: () => (data ? { ...data } : undefined),
+    metadata: metadataVan(`${col}/${id}`),
     ref: { __col: col, id, __doc: true },
   }
 }
@@ -151,8 +177,13 @@ const querySnap = (rows, col) => ({
     id: r.id,
     data: () => ({ ...r.data }),
     exists: () => true,
+    metadata: metadataVan(`${col}/${r.id}`),
     ref: { __col: col, id: r.id, __doc: true },
   })),
+  metadata: {
+    hasPendingWrites: rows.some((r) => wachtend.has(`${col}/${r.id}`)),
+    fromCache: zonderBereik(),
+  },
   empty: rows.length === 0,
   size: rows.length,
   forEach(fn) { this.docs.forEach(fn) },
@@ -179,16 +210,22 @@ export function onSnapshot(target, onNext, onError) {
 
 // ─── Schrijven ──────────────────────────────────────────────────────────────
 
+/** Zonder bereik blijft een schrijfbeurt als "nog niet doorgestuurd" staan. */
+function geschreven(path) {
+  if (zonderBereik()) wachtend.add(path)
+  notify()
+}
+
 export async function setDoc(ref, data, options) {
   const path = pathOf(ref)
   if (!options?.merge) {
     store.set(path, resolveSentinels(data))
-    notify()
+    geschreven(path)
     return
   }
   const existing = store.get(path) ?? {}
   store.set(path, deepMerge(existing, resolveSentinels(data, existing)))
-  notify()
+  geschreven(path)
 }
 
 export async function updateDoc(ref, patch) {
@@ -196,11 +233,13 @@ export async function updateDoc(ref, patch) {
   const existing = store.get(path)
   if (!existing) throw new Error(`Bestaat niet: ${path}`)
   store.set(path, { ...existing, ...resolveSentinels(patch, existing) })
-  notify()
+  geschreven(path)
 }
 
 export async function deleteDoc(ref) {
-  store.delete(pathOf(ref))
+  const path = pathOf(ref)
+  store.delete(path)
+  wachtend.delete(path)
   notify()
 }
 

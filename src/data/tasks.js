@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
+import { meldSnapshot, vergeetBron } from '@lib/offline'
 import { byPosition, needsRebalance, positionFor, rebalance } from '@lib/position'
 import { raaktLog } from '@lib/activiteit'
 import { SOCIAL_STAGE_KEYS, SOCIAL_VANAF, heeftSocial } from '@lib/social-stage'
@@ -219,9 +220,15 @@ export function useTasks(listId, { includeArchived = false } = {}) {
     const clauses = [where('listId', '==', listId)]
     if (!includeArchived) clauses.push(where('archived', '==', false))
 
-    return onSnapshot(
+    // Dit abonnement draagt het hele bord. Wat er hier nog niet doorgestuurd is,
+    // telt mee in de melding bovenaan: een taak die iemand met slecht bereik
+    // verzet, hoort net zo zichtbaar open te staan als een vinkje in de keuken.
+    const bron = `tasks:${listId}${includeArchived ? ':alles' : ''}`
+
+    const stop = onSnapshot(
       query(col(COL.tasks), ...clauses, orderBy('position')),
       (snap) => {
+        meldSnapshot(bron, snap)
         setTasks(fromQuery(snap))
         setLoading(false)
         setError(null)
@@ -231,6 +238,11 @@ export function useTasks(listId, { includeArchived = false } = {}) {
         setLoading(false)
       }
     )
+
+    return () => {
+      stop()
+      vergeetBron(bron)
+    }
   }, [listId, includeArchived])
 
   const [top, subtasks] = useMemo(() => {

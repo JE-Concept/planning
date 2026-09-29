@@ -11,6 +11,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
+import { meldSnapshot, vergeetBron } from '@lib/offline'
 import { isWeekend, runId } from '@lib/checklist-templates'
 
 export { isWeekend, runId }
@@ -57,27 +58,52 @@ export function useChecklists({ includeArchived = false } = {}) {
   return { checklists: zichtbaar, loading }
 }
 
-/** De runs van één dag, live — je ziet de vinkjes van je collega binnenkomen. */
+/**
+ * De runs van één dag, live — je ziet de vinkjes van je collega binnenkomen.
+ *
+ * En, sinds de keuken en de koelcel: welke lijsten nog op dit toestel staan.
+ * Firestore schrijft offline naar de schijfcache en stuurt later vanzelf door;
+ * `hasPendingWrites` per document is het enige eerlijke antwoord op "is mijn
+ * vinkje al weg?". Zonder dat sluit iemand de app in de veronderstelling dat
+ * het rond is.
+ */
 export function useRunsForDay(day) {
   const [runs, setRuns] = useState([])
+  const [wachtendeRuns, setWachtendeRuns] = useState(() => new Set())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!day) return undefined
     setLoading(true)
-    return onSnapshot(
+    const bron = `checklistRuns:${day}`
+
+    const stop = onSnapshot(
       query(col(COL.checklistRuns), where('day', '==', day)),
       (snap) => {
+        meldSnapshot(bron, snap)
         setRuns(fromQuery(snap))
+        setWachtendeRuns(
+          new Set(snap.docs.filter((d) => d.metadata?.hasPendingWrites).map((d) => d.data().checklistId))
+        )
         setLoading(false)
       },
       () => setLoading(false)
     )
+
+    return () => {
+      stop()
+      vergeetBron(bron)
+    }
   }, [day])
 
   return useMemo(
-    () => ({ runs, byChecklist: Object.fromEntries(runs.map((r) => [r.checklistId, r])), loading }),
-    [runs, loading]
+    () => ({
+      runs,
+      byChecklist: Object.fromEntries(runs.map((r) => [r.checklistId, r])),
+      wachtendeRuns,
+      loading,
+    }),
+    [runs, wachtendeRuns, loading]
   )
 }
 
