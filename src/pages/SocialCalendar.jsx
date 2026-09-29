@@ -308,7 +308,7 @@ export default function SocialCalendar() {
       )}
 
       {view === 'events' ? (
-        <SocialEventsBoard />
+        <SocialEventsBoard socialOwner={socialOwner} />
       ) : loading ? (
         <div className="flex flex-1 items-center justify-center">
           <Spinner className="h-6 w-6" />

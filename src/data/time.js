@@ -18,13 +18,16 @@ import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
 import { db } from '@lib/firebase'
 import { durationOf, periodKeys } from '@lib/time-math'
 
-function entryContext(task, list) {
+function entryContext(task, list, brandId) {
   return {
     taskId: task?.id ?? null,
     taskTitle: task?.title ?? null,
     listId: list?.id ?? task?.listId ?? null,
     listName: list?.name ?? task?.listName ?? null,
-    brandId: list?.brandId ?? task?.brandId ?? null,
+    // Het merk mag van buitenaf komen: een post op de socialkalender hangt aan
+    // een merk, ook wanneer er geen taak onder zit. Zonder dat zou die tijd op
+    // geen enkele kostenplaats terechtkomen.
+    brandId: brandId ?? list?.brandId ?? task?.brandId ?? null,
   }
 }
 
@@ -33,7 +36,7 @@ function entryContext(task, list) {
  * start simply overwrites the first — "one timer per person" is a property of
  * the data, not a rule the UI has to remember.
  */
-export async function startTimer({ uid, task, list, description = '', billable }) {
+export async function startTimer({ uid, task, list, description = '', billable, brandId }) {
   const running = await getDoc(doc(db, COL.runningTimers, uid))
   if (running.exists()) await stopTimer(uid)
 
@@ -45,7 +48,7 @@ export async function startTimer({ uid, task, list, description = '', billable }
     // niet vanzelf. Die aanname stond hier op "wel", en dat leverde
     // factureerbare boekingen op die niemand bedoeld had.
     billable: billable ?? Boolean(task),
-    ...entryContext(task, list),
+    ...entryContext(task, list, brandId),
   })
 }
 

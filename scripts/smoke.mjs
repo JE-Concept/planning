@@ -641,6 +641,35 @@ await test('een onderwerp op de socialkalender komt bij Charish', async () => {
   await page.close()
 })
 
+await test('los socialwerk kan zonder event, en er is tijd op te boeken', async () => {
+  const page = await tabblad('/social')
+  await page.getByRole('tab', { name: 'Events' }).click()
+  await page.waitForTimeout(800)
+
+  // Werk dat niet uit een event komt, moest tot nu toe aan een event gehangen
+  // worden dat er niet was.
+  const veld = page.getByLabel('Nieuwe socialtaak')
+  zouden((await veld.count()) === 1, 'je kunt geen losse socialtaak toevoegen')
+  await veld.fill('Reel over de nieuwe winterkaart')
+  await page.getByRole('button', { name: 'Toevoegen' }).first().click()
+  await page.waitForTimeout(900)
+  zouden(
+    bevat(await inhoud(page), 'Reel over de nieuwe winterkaart'),
+    'de losse taak staat niet op het socialbord'
+  )
+
+  // En op de kalender staat een timer, want daar werkt wie de content maakt.
+  await page.getByRole('tab', { name: 'Kalender' }).click()
+  await page.waitForTimeout(900)
+  // Op de kaart zelf klikken: de tekst erin zit in een vakje dat nog schuift.
+  await page.getByRole('button', { name: /Bar Vue cocktailweek/ }).first().click()
+  await page.waitForTimeout(900)
+  const paneel = await page.getByRole('dialog').innerText()
+  zouden(bevat(paneel, 'Tijd'), `geen tijdblok op de post: ${paneel.slice(0, 200)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een subtaak opent zijn eigen fiche', async () => {
   const page = await tabblad('/bord/l-overview')
   await page.locator('main').getByText('Trouw Niels en Inez').first().click()

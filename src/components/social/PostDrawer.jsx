@@ -26,6 +26,7 @@ import {
 import { addComment, deleteComment, useComments } from '@data/comments'
 import PostPreview from './PostPreview'
 import ProjectLink from './ProjectLink'
+import PostTimer from './PostTimer'
 import ReviewPanel from './ReviewPanel'
 
 export default function PostDrawer({ postId, onClose }) {
@@ -161,6 +162,8 @@ export default function PostDrawer({ postId, onClose }) {
         <PostPreview post={post} brand={brand} />
 
         <ProjectLink post={post} />
+
+        <PostTimer post={post} />
 
         <Field
           label="Link naar het ontwerp"

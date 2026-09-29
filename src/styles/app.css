@@ -1455,3 +1455,14 @@ select.je-compact { padding-right: 24px; }
   padding: 2px;
   margin: -2px;
 }
+/* Los socialwerk toevoegen, boven het socialbord. Eén regel met een veld en een
+   knop: het is geen formulier maar een invulling, en een dialoog ervoor openen
+   maakt van een idee noteren een handeling. */
+.je-sociallos {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-sociallos .je-input { max-width: 320px; }
