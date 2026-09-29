@@ -8,6 +8,7 @@ import { Avatar, Badge, Button, EmptyState, Input, ProgressBar, Spinner, Textare
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useOffline } from '@context/OfflineProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useChecklists, useRunsForDay, closeRun, saveNotes, setItemValue, toggleItem } from '@data/checklists'
 
@@ -18,10 +19,19 @@ import { useChecklists, useRunsForDay, closeRun, saveNotes, setItemValue, toggle
  * persoon: wie binnenkomt ziet wat de vorige al deed en pakt de rest op. Bij
  * elk vinkje staat wie het zette en wanneer — dat is het enige wat het papier
  * niet kon, en meteen het punt van de oefening.
+ *
+ * Dit scherm is tweetalig, en daar was het de hele oefening om begonnen: hier
+ * werkt personeel dat geen Nederlands leest. Wat eromheen staat — de koppen, de
+ * knoppen, de meldingen — komt uit `taal/bistro.js`. Wat afgevinkt wordt niet:
+ * de punten, de groepen en hun toelichting staan in de database en worden door
+ * de beheerders zelf geschreven. Twee versies van die lijsten laten bestaan is
+ * erger dan een Nederlands punt op een Engels scherm, want dan loopt er één
+ * achter en weet niemand welke.
  */
 export default function Checklists() {
   const { checklists, loading } = useChecklists()
   const { profile } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
 
   const [offset, setOffset] = useState(0)
@@ -52,10 +62,7 @@ export default function Checklists() {
   if (checklists.length === 0) {
     return (
       <div className="p-8">
-        <EmptyState
-          title="Nog geen lijsten"
-          description="De openings- en sluitingslijst worden bij de eerste inrichting klaargezet."
-        />
+        <EmptyState title={t('lijst.geen_titel')} description={t('lijst.geen_tekst')} />
       </div>
     )
   }
@@ -66,23 +73,26 @@ export default function Checklists() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Openen en sluiten"
-        subtitle={`${formatDate(date)}${isToday(date) ? ' — vandaag' : ''}${
+        title={t('lijst.titel')}
+        // De afdeling komt uit de gedeelde tabel in `checklist-templates`, die ook
+        // de lijsteditor vult; die tabel is van een ander stuk en staat nog in het
+        // Nederlands. De datum volgt de taal vanzelf, via de opmaaktaal.
+        subtitle={`${formatDate(date)}${isToday(date) ? ` — ${t('lijst.vandaag')}` : ''}${
           profile?.department ? ` · ${afdelingLabel(profile.department)}` : ''
         }`}
         actions={
           <>
-            <Button variant="secondary" onClick={() => setOffset((o) => o - 1)} aria-label="Vorige dag">
+            <Button variant="secondary" onClick={() => setOffset((o) => o - 1)} aria-label={t('lijst.vorige_dag')}>
               ‹
             </Button>
             <Button variant="secondary" onClick={() => setOffset(0)} disabled={offset === 0}>
-              Vandaag
+              {t('alg.vandaag')}
             </Button>
             <Button
               variant="secondary"
               onClick={() => setOffset((o) => Math.min(0, o + 1))}
               disabled={offset === 0}
-              aria-label="Volgende dag"
+              aria-label={t('lijst.volgende_dag')}
             >
               ›
             </Button>
@@ -109,11 +119,11 @@ export default function Checklists() {
           className="h-2 flex-1"
         />
         <span className="shrink-0 text-xs font-semibold tabular-nums text-ink-700">
-          {progress.done} van {progress.total}
+          {t('lijst.voortgang', { gedaan: progress.done, totaal: progress.total })}
         </span>
         {run?.participants?.length ? (
           <span className="hidden shrink-0 text-xs text-ink-500 sm:block">
-            {run.participants.length} {run.participants.length === 1 ? 'persoon' : 'personen'}
+            {t('alg.persoon', { aantal: run.participants.length })}
           </span>
         ) : null}
         {/*
@@ -123,9 +133,9 @@ export default function Checklists() {
           is, sluit de app en dan staat er de volgende ochtend een halve lijst.
         */}
         {wachtendeRuns.has(current.id) || !online ? (
-          <span className="je-nogopdittoestel" title="Wordt doorgestuurd zodra er weer bereik is">
+          <span className="je-nogopdittoestel" title={t('lijst.wordt_doorgestuurd')}>
             <Icon name="cloud-off" size={13} />
-            {wachtendeRuns.has(current.id) ? 'Nog op dit toestel' : 'Geen verbinding'}
+            {wachtendeRuns.has(current.id) ? t('lijst.nog_op_toestel') : t('lijst.geen_verbinding')}
           </span>
         ) : null}
       </div>
@@ -160,16 +170,14 @@ export default function Checklists() {
 
             <section className="card p-4">
               <h2 className="label">
-                {current.kind === 'close' ? 'Over te dragen aan de volgende shift' : 'Opmerkingen'}
+                {current.kind === 'close' ? t('lijst.overdracht') : t('lijst.opmerkingen')}
               </h2>
               <Textarea
                 rows={3}
                 defaultValue={run?.notes ?? ''}
                 key={`${current.id}-${day}-${run?.notesAt ?? ''}`}
                 placeholder={
-                  current.kind === 'close'
-                    ? 'Wat moet morgen zeker geweten zijn?'
-                    : 'Iets bijzonders vanmorgen?'
+                  current.kind === 'close' ? t('lijst.overdracht_hint') : t('lijst.opmerkingen_hint')
                 }
                 onBlur={(e) => {
                   if ((e.target.value ?? '') === (run?.notes ?? '')) return
@@ -180,8 +188,9 @@ export default function Checklists() {
               />
               {run?.notesByName ? (
                 <p className="mt-1.5 text-[11px] text-ink-500">
-                  Laatst bijgewerkt door {run.notesByName}
-                  {run.notesAt ? ` om ${formatTime(run.notesAt)}` : ''}
+                  {run.notesAt
+                    ? t('lijst.notitie_door_om', { wie: run.notesByName, tijd: formatTime(run.notesAt) })
+                    : t('lijst.notitie_door', { wie: run.notesByName })}
                 </p>
               ) : null}
             </section>
@@ -192,19 +201,19 @@ export default function Checklists() {
                 disabled={progress.done < progress.total || Boolean(run?.closedAt)}
                 onClick={() =>
                   closeRun({ checklist: current, day, profile })
-                    .then(() => toast.success('Lijst afgerond.'))
+                    .then(() => toast.success(t('lijst.afgerond_toast')))
                     .catch((err) => toast.error(err.message))
                 }
               >
-                {run?.closedAt ? 'Afgerond' : 'Lijst afronden'}
+                {run?.closedAt ? t('lijst.is_afgerond') : t('lijst.afronden')}
               </Button>
               {run?.closedAt ? (
                 <span className="text-xs text-ink-500">
-                  Afgerond door {run.closedByName} om {formatTime(run.closedAt)}
+                  {t('lijst.afgerond_door', { wie: run.closedByName, tijd: formatTime(run.closedAt) })}
                 </span>
               ) : progress.done < progress.total ? (
                 <span className="text-xs text-ink-500">
-                  Nog {progress.total - progress.done} te gaan.
+                  {t('lijst.nog_te_gaan', { rest: progress.total - progress.done })}
                 </span>
               ) : null}
             </div>
@@ -228,6 +237,7 @@ export default function Checklists() {
  * telt niet mee in de voortgang en schrijft niets weg.
  */
 function Binnenkort({ checklist, scope }) {
+  const { t } = useTaal()
   const komt = useMemo(() => {
     const rijen = (checklist?.sections ?? [])
       .flatMap((section) => section.items)
@@ -244,7 +254,7 @@ function Binnenkort({ checklist, scope }) {
 
   return (
     <section className="card p-4">
-      <h2 className="label">Komt er nog aan</h2>
+      <h2 className="label">{t('lijst.binnenkort')}</h2>
       <ul className="space-y-1">
         {komt.map(({ item, wanneer }) => (
           <li key={item.id} className="flex items-baseline gap-2 text-sm text-ink-600">
@@ -289,6 +299,7 @@ function Section({ section, run, scope, onToggle, onValue }) {
 }
 
 function Item({ item, state, onToggle, onValue }) {
+  const { t } = useTaal()
   const [revealed, setRevealed] = useState(false)
   const done = Boolean(state?.done)
 
@@ -329,7 +340,7 @@ function Item({ item, state, onToggle, onValue }) {
                 }}
                 className="mt-0.5 text-xs font-medium text-accent-700 underline"
               >
-                Code tonen
+                {t('lijst.code_tonen')}
               </button>
             )
           ) : null}
@@ -366,15 +377,19 @@ function Item({ item, state, onToggle, onValue }) {
  * plaats van het probleem.
  */
 function Meetveld({ item, state, onValue }) {
+  const { t } = useTaal()
   const [waarde, setWaarde] = useState(state?.waarde ?? '')
   const oordeel = meetOordeel(item.veld, waarde)
   const grens = grensTekst(item.veld)
-  const naam = `${item.veld.label ?? 'Waarde'} voor ${item.label}`
+  // De naam van het veld en het punt komen uit de lijst zelf en blijven dus
+  // staan zoals de beheerder ze schreef; alleen het zinnetje eromheen vertaalt.
+  const veldnaam = item.veld.label ?? t('lijst.waarde')
+  const naam = t('lijst.veld_voor', { veld: veldnaam, punt: item.label })
 
   return (
     <span className="mt-1.5 block" onClick={(e) => e.preventDefault()}>
       <span className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-ink-600">{item.veld.label ?? 'Waarde'}</span>
+        <span className="text-xs text-ink-600">{veldnaam}</span>
         <Input
           type={item.veld.kind === 'getal' ? 'number' : 'date'}
           step={item.veld.kind === 'getal' ? 'any' : undefined}
@@ -389,7 +404,7 @@ function Meetveld({ item, state, onValue }) {
         {item.veld.eenheid ? <span className="text-xs text-ink-500">{item.veld.eenheid}</span> : null}
         {grens ? <span className="text-[11px] text-ink-400">{grens}</span> : null}
         {state?.waardeByName ? (
-          <span className="text-[11px] text-ink-400">ingevuld door {state.waardeByName}</span>
+          <span className="text-[11px] text-ink-400">{t('lijst.ingevuld_door', { wie: state.waardeByName })}</span>
         ) : null}
       </span>
 
@@ -399,9 +414,9 @@ function Meetveld({ item, state, onValue }) {
           className="mt-1 block text-[11px] font-medium"
           style={{ color: 'var(--danger)' }}
         >
-          {oordeel.richting === 'boven' ? 'Boven' : 'Onder'} de grens van {oordeel.grens}
-          {item.veld.eenheid ? ` ${item.veld.eenheid}` : ''}. Noteer welke maatregel je genomen hebt bij
-          “Afwijkingen en genomen maatregelen”.
+          {t(oordeel.richting === 'boven' ? 'lijst.boven_grens' : 'lijst.onder_grens', {
+            grens: `${oordeel.grens}${item.veld.eenheid ? ` ${item.veld.eenheid}` : ''}`,
+          })}
         </span>
       ) : null}
     </span>

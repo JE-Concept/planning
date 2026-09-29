@@ -1,3 +1,5 @@
+import { STANDAARDTAAL, vertaal } from './i18n'
+
 /**
  * Wat er nog op dit toestel staat en nergens anders.
  *
@@ -105,7 +107,8 @@ export function vergeetBron(bron) {
   syncboek.vergeet(bron)
 }
 
-const telwoord = (n, enkel, meer) => `${n} ${n === 1 ? enkel : meer}`
+/** Zonder taal meegegeven staat er Nederlands, de brontaal van de app. */
+const nederlands = (sleutel, waarden) => vertaal(STANDAARDTAAL, sleutel, waarden)
 
 /**
  * Wat er bovenaan het scherm hoort te staan, of niets.
@@ -120,25 +123,28 @@ const telwoord = (n, enkel, meer) => `${n} ${n === 1 ? enkel : meer}`
  *
  * `uitCache` alleen is géén reden om iets te zeggen: bij het opstarten komt
  * élk antwoord eerst van schijf, en daar is niets mis mee.
+ *
+ * De taal komt van buiten in plaats van dat dit bestand ze opzoekt: dit is de
+ * enige plek in de rekenkant waar tekst ontstaat, en de mensen die deze balk
+ * het hardst nodig hebben — de keuken, de koelcel — lezen hem in het Engels.
+ * Zonder `t` blijft het Nederlands, zodat de tests hierop gewoon tekst zien.
  */
-export function offlineBericht({ online = true, wachtend = 0 } = {}) {
+export function offlineBericht({ online = true, wachtend = 0, t = nederlands } = {}) {
   if (!online) {
     return {
       toon: 'offline',
-      tekst: 'Geen verbinding. Je kunt gewoon verder afvinken.',
+      tekst: t('lijst.offline_titel'),
       detail: wachtend
-        ? `${telwoord(wachtend, 'wijziging staat', 'wijzigingen staan')} nog op dit toestel en ${
-            wachtend === 1 ? 'gaat' : 'gaan'
-          } mee zodra er weer bereik is.`
-        : 'Alles wat je invult, gaat mee zodra er weer bereik is.',
+        ? t('lijst.offline_detail_wachtend', { aantal: wachtend })
+        : t('lijst.offline_detail'),
     }
   }
 
   if (wachtend > 0) {
     return {
       toon: 'wachtend',
-      tekst: `${telwoord(wachtend, 'wijziging', 'wijzigingen')} nog op dit toestel.`,
-      detail: 'Doorsturen is bezig — laat de app nog even open.',
+      tekst: t('lijst.wachtend', { aantal: wachtend }),
+      detail: t('lijst.wachtend_detail'),
     }
   }
 

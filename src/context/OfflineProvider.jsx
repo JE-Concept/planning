@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { offlineBericht, syncboek } from '@lib/offline'
+import { useTaal } from '@context/TaalProvider'
 
 /**
  * Of er verbinding is, en hoeveel werk er nog op dit toestel staat.
@@ -15,6 +16,9 @@ import { offlineBericht, syncboek } from '@lib/offline'
 const OfflineContext = createContext(null)
 
 export function OfflineProvider({ children }) {
+  // De balk zegt het in de taal van wie kijkt; wie in de koelcel afvinkt leest
+  // hem misschien in het Engels, en juist daar moet de boodschap aankomen.
+  const { t } = useTaal()
   const [online, setOnline] = useState(() => (typeof navigator === 'undefined' ? true : navigator.onLine !== false))
   const [{ wachtend, uitCache }, setStand] = useState(() => syncboek.stand())
 
@@ -38,8 +42,8 @@ export function OfflineProvider({ children }) {
   }, [])
 
   const waarde = useMemo(
-    () => ({ online, wachtend, uitCache, bericht: offlineBericht({ online, wachtend }) }),
-    [online, wachtend, uitCache]
+    () => ({ online, wachtend, uitCache, bericht: offlineBericht({ online, wachtend, t }) }),
+    [online, wachtend, uitCache, t]
   )
 
   return <OfflineContext.Provider value={waarde}>{children}</OfflineContext.Provider>
