@@ -5,6 +5,7 @@
  */
 import { seedDoc } from './firestore.js'
 import { CHECKLIST_TEMPLATES } from '../src/lib/checklist-templates.js'
+import { DEFAULT_FORMULES } from '../src/lib/formule-templates.js'
 
 const D = (s) => new Date(s)
 const NU = D('2026-09-28T09:20:00')
@@ -677,6 +678,12 @@ seedDoc('automations', 'nieuwe-aanvraag', {
   createdAt: dag(-20),
   updatedAt: dag(-20),
 })
+
+// ─── Vaste formules ─────────────────────────────────────────────────────────
+// De winter bbq aan 29,90 staat er echt in, zodat de browsertest een event uit
+// een formule kan aanmaken en de bestellijst kan narekenen.
+DEFAULT_FORMULES.forEach((formule, i) =>
+  seedDoc('formules', formule.id, { ...formule, position: i, createdAt: dag(-60), updatedAt: dag(-60) }))
 
 seedDoc('config', 'access', {
   allowedDomains: ['jeconcept.be', 'kenjeklanten.be'],

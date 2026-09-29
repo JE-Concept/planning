@@ -3,6 +3,7 @@ import { onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
+import { bestellijstVoorEvent, prijsVan } from '@lib/formules'
 import { blockedTransition } from '@lib/pipeline'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask, setTaskStatus, statusFields, updateTask, useTasks } from './tasks'
@@ -150,11 +151,17 @@ export function toggleChecklistItem(task, index) {
 }
 
 /**
- * Nieuw event uit een template.
+ * Nieuw event uit een template, en eventueel uit een vaste formule.
  *
  * Eén batch: het event en al zijn taken bestaan samen of niet. De deadlines
  * tellen terug vanaf de eventdatum; wat daardoor al voorbij zou zijn, komt op
  * vandaag te staan in plaats van meteen te laat te beginnen.
+ *
+ * Komt er een formule mee, dan staan de prijs én de bestellijst er meteen op —
+ * uitgerekend op het aantal personen, met de gekozen antwoorden erin verwerkt.
+ * Ze worden als gewone velden op het event gezet en niet als verwijzing naar de
+ * formule: vanaf hier is het een dossier dat zijn eigen leven leidt, en een
+ * prijswijziging in de formule hoort een verkocht event niet te veranderen.
  */
 export async function createEventFromTemplate({
   list,
@@ -165,6 +172,9 @@ export async function createEventFromTemplate({
   createdBy,
   customerId = null,
   customerName = null,
+  formule = null,
+  keuzes = null,
+  pax = null,
 }) {
   const first = list.statuses?.find((s) => s.name === 'request') ?? list.statuses?.[0]
   const uid = createdBy ?? auth.currentUser?.uid ?? null
@@ -197,6 +207,9 @@ export async function createEventFromTemplate({
     ...extra,
   })
 
+  const personen = pax != null ? Math.max(0, Math.round(Number(pax) || 0)) : null
+  const prijs = formule ? prijsVan(formule, keuzes ?? {}, personen ?? 0) : null
+
   const eventRef = newRef(COL.tasks)
   const batch = writeBatch(db)
   batch.set(
@@ -210,12 +223,27 @@ export async function createEventFromTemplate({
       // historiek op de klantfiche elk dossier zo vaak als het taken heeft.
       customerId: customerId || null,
       customerName: customerName?.trim() || null,
-      eventType: template && template.id !== 'leeg' ? template.name : null,
+      // Een formule zegt meer over het soort event dan de naam van het
+      // takentemplate; staat er geen formule, dan blijft het template de bron.
+      eventType: formule?.name ?? (template && template.id !== 'leeg' ? template.name : null),
       templateId: template?.id ?? null,
       priority: null,
       timeEstimateMinutes: null,
       assignees: team,
       position: Date.now(),
+      pax: personen,
+      // `formule` is het veld dat de fiche al toonde: de naam van het aanbod.
+      formule: formule?.name ?? null,
+      formuleId: formule?.id ?? null,
+      formuleKeuzes: formule ? (keuzes ?? {}) : null,
+      formulePrijsPerPersoon: prijs?.perPersoon ?? null,
+      formuleBtw: prijs?.btw ?? null,
+      formuleInclBtw: prijs?.inclBtw ?? null,
+      // `budget` is het oude ClickUp-veld waar de rapportage op leest; de fiche
+      // toont `quoteAmount`. Ze horen hetzelfde bedrag te dragen.
+      quoteAmount: prijs?.exclBtw ?? null,
+      budget: prijs?.exclBtw ?? null,
+      bestellijst: formule ? bestellijstVoorEvent(formule, keuzes ?? {}, personen ?? 0) : [],
     })
   )
 

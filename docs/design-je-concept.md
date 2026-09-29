@@ -26,11 +26,11 @@ toont de app een getekend zeshoekje met "JE".
 | Design | Route | Bestand |
 |---|---|---|
 | Events — lijst / bord / kalender | `/`, `/?weergave=lijst`, `/kalender` | `src/pages/Events.jsx` |
-| Event detail (taken, draaiboek, notities & bijlagen, tijd) | `/events/:id` | `src/pages/EventDetail.jsx` |
-| Nieuw event (met template) | dialoog | `src/components/events/NewEventDialog.jsx` |
+| Event detail (taken, bestellijst, draaiboek, notities & bijlagen, tijd) | `/events/:id` | `src/pages/EventDetail.jsx` |
+| Nieuw event (custom of vaste formule) | dialoog | `src/components/events/NewEventDialog.jsx` |
 | Mijn taken | `/mijn-taken` | `src/pages/MyTasks.jsx` |
 | Werklast | `/werklast` | `src/pages/Workload.jsx` |
-| Instellingen (team & toegang, pijplijn, templates, concepten & kostenplaatsen) | `/instellingen` | `src/pages/Settings.jsx` |
+| Instellingen (team & toegang, pijplijn, templates, formules, concepten & kostenplaatsen) | `/instellingen` | `src/pages/Settings.jsx` |
 | Aanmelden | — | `src/pages/Login.jsx` |
 | Zoekbalk (`/`) | overal | `src/components/layout/GlobalSearch.jsx` |
 | Assistent | overal | `src/components/layout/AssistantPanel.jsx`, `src/context/AssistantProvider.jsx` |
@@ -47,7 +47,8 @@ Zo blijven de gemigreerde ClickUp-gegevens, de klanten, het socialbord en de
 automatisaties werken zoals voorheen.
 
 Nieuwe velden op een event: `eventDate`, `pax`, `kids`, `formule`, `eventType`,
-`quoteAmount`, `draaiboek` (`[{tijd, wat, wie}]`). Op een taak: `checklist`
+`quoteAmount`, `draaiboek` (`[{tijd, wat, wie}]`), en — komt het uit een vaste
+formule — `formuleId`, `formuleKeuzes`, `formulePrijsPerPersoon` en `bestellijst`. Op een taak: `checklist`
 (`[{text, done}]`) en `repeat`. Waar een oud veld bestond, valt de app erop terug
 (`budget` voor de offerte, `startDate`/`dueDate` voor de eventdatum).
 
@@ -58,7 +59,16 @@ Nieuwe velden op een event: `eventDate`, `pax`, `kids`, `formule`, `eventType`,
   aanvraag verder te zetten (`src/lib/pipeline.js`). Dat geldt ook voor het bord en
   voor de assistent.
 - **Templates:** collectie `templates` (lezen: team, schrijven: beheerders). Zolang ze
-  leeg is gelden de vier templates uit het design; de eerste aanpassing schrijft ze weg.
+  leeg is gelden de templates uit het design; de eerste aanpassing schrijft ze weg.
+  "Nieuw event" is het standaardtemplate: offerte, voorschot, personeel, materiaal,
+  social, draaiboek en facturatie. Een negatief aantal dagen valt ná het event.
+- **Formules:** collectie `formules` (lezen: team, schrijven: beheerders), te beheren in
+  Instellingen → Formules. Een formule heeft een prijs per persoon, vragen met
+  antwoorden (hapjes, drankenformule, dessert) en bestelregels die eraan hangen. Bij een
+  nieuw event kies je custom of een formule; bij een formule staan prijs, btw en een op
+  het aantal personen berekende bestellijst meteen op het event, en zijn ze daarna
+  gewoon te wijzigen. Het rekenwerk (afronden per verpakking) staat in
+  `src/lib/formules.js`, met tests in `tests/formules.test.js`.
 - **Domeinen:** `config/access.allowedDomains` (die las `ensureProfile` al).
 - **Kostenplaatsen:** `config/workspace.costCenters`.
 - **Automatisaties** vuren niet meer op subtaken: een taak uit een template hield

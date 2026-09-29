@@ -3,6 +3,7 @@ import { doc, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { COL, col, fromQuery, normalise } from '@lib/collections'
 import { db } from '@lib/firebase'
 import { isPipelineList } from '@lib/pipeline'
+import { DEFAULT_FORMULES } from '@lib/formule-templates'
 import { DEFAULT_TEMPLATES } from '@data/templates'
 import { useAuth } from './AuthProvider'
 
@@ -30,6 +31,7 @@ export function WorkspaceProvider({ children }) {
     lists: [],
     tags: [],
     templates: [],
+    formules: [],
     access: null,
     workspaceConfig: null,
   })
@@ -45,7 +47,7 @@ export function WorkspaceProvider({ children }) {
     // rechtenfouten op in plaats van een lijst.
     const pending = isStaff
       ? new Set(['profiles'])
-      : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags', 'templates'])
+      : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags', 'templates', 'formules'])
     const settle = (key) => {
       pending.delete(key)
       if (pending.size === 0) {
@@ -93,6 +95,7 @@ export function WorkspaceProvider({ children }) {
             subscribe('lists', query(col(COL.lists), orderBy('position'))),
             subscribe('tags', query(col(COL.tags), orderBy('name'))),
             subscribe('templates', query(col(COL.templates), orderBy('position'))),
+            subscribe('formules', query(col(COL.formules), orderBy('position'))),
             // Instellingen die het design toont: de toegelaten domeinen en de
             // kostenplaatsen. Twee kleine documenten; ontbreken ze, dan gelden
             // de standaarden. Ze tellen niet mee voor "geladen".
@@ -120,11 +123,17 @@ export function WorkspaceProvider({ children }) {
     const activeLists = data.lists.filter((l) => !l.archived)
     const eventsList = activeLists.find(isPipelineList) ?? null
     const templates = data.templates.length ? data.templates : DEFAULT_TEMPLATES
+    // Zolang er niets bewaard is gelden de voorbeeldformules, precies zoals bij
+    // de templates: een lege werkruimte hoort al iets te kunnen.
+    const formules = data.formules.length ? data.formules : DEFAULT_FORMULES
 
     return {
       ...data,
       templates,
       templatesStored: data.templates.length > 0,
+      formules: formules.filter((f) => !f.archived),
+      alleFormules: formules,
+      formulesStored: data.formules.length > 0,
       eventsList,
       eventStatuses: [...(eventsList?.statuses ?? [])].sort((a, b) => a.position - b.position),
       allowedDomains: data.access?.allowedDomains ?? ['jeconcept.be', 'kenjeklanten.be'],

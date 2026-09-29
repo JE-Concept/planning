@@ -142,6 +142,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Vaste formules (winter bbq aan 29,90 met hapjes, drank en dessert): het
+    // team kiest er een bij een nieuw event, een beheerder bepaalt de prijs en
+    // de bestelregels. Een prijslijst is geen veld dat je onderweg bijstelt.
+    match /formules/{id} {
+      allow read:  if isTeam();
+      allow write: if isAdmin();
+    }
+
     match /checklists/{id} {
       allow read:  if isMember();
       allow write: if isAdmin();

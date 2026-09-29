@@ -17,6 +17,7 @@ import {
 } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
+import Bestellijst from '@components/events/Bestellijst'
 import EventEditDialog from '@components/events/EventEditDialog'
 import TaskRow from '@components/events/TaskRow'
 import { StatusBadge, dayLabel, euro, hours, longDate, shortDate } from '@components/events/parts'
@@ -95,13 +96,14 @@ export default function EventDetail() {
   const totalS = time.reduce((a, e) => a + (e.durationSeconds ?? 0), 0) + liveSeconds
   const billS = time.filter((e) => e.billable !== false).reduce((a, e) => a + (e.durationSeconds ?? 0), 0)
   const openCount = tasks.filter((t) => !isDone(t)).length
+  const bestelRegels = ev.bestellijst ?? []
 
   const fiche = [
     ['Klant', ev.customerName],
     ['Datum', longDate(ev.eventDate)],
     ['Gasten', ev.pax ? `${ev.pax} pax${ev.kids ? ` + ${ev.kids} kinderen` : ''}` : null],
     ['Locatie', ev.location],
-    ['Formule', ev.formule],
+    ['Formule', ev.formule ? [ev.formule, ev.formulePrijsPerPersoon ? `${euro(ev.formulePrijsPerPersoon)} p.p.` : null].filter(Boolean).join(' · ') : null],
     ['Offerte', euro(ev.quoteAmount)],
     ['Voorschot 40%', ev.quoteAmount ? euro(Math.round(ev.quoteAmount * 0.4)) : null],
     ['Team', ev.team.map((p) => (profileById[p]?.fullName ?? '').split(' ')[0]).filter(Boolean).join(', ') || null],
@@ -195,6 +197,12 @@ export default function EventDetail() {
           <Tabs
             items={[
               { value: 'taken', label: `Taken · ${openCount}` },
+              // Alleen events die uit een formule komen (of waar iemand zelf een
+              // lijst begon) hebben hier iets te tonen; bij de rest zou het een
+              // leeg tabblad zijn dat je elke keer opnieuw moet negeren.
+              ...(bestelRegels.length || ev.formuleId
+                ? [{ value: 'bestellijst', label: `Bestellijst · ${bestelRegels.length}` }]
+                : []),
               { value: 'draaiboek', label: 'Draaiboek' },
               { value: 'notities', label: 'Notities & bijlagen' },
               { value: 'tijd', label: `Tijd · ${hours(totalS)}` },
@@ -205,6 +213,8 @@ export default function EventDetail() {
 
           {tab === 'taken' ? (
             <TasksTab ev={ev} tasks={tasks} focus={params.get('taak')} onOpen={setDrawer} runningId={timer?.taskId} />
+          ) : tab === 'bestellijst' ? (
+            <Bestellijst ev={ev} />
           ) : tab === 'draaiboek' ? (
             <RunsheetTab ev={ev} />
           ) : tab === 'notities' ? (
