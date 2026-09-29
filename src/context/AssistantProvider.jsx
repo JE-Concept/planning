@@ -4,6 +4,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions'
 import { app } from '@lib/firebase'
 import { addDays, dayKey, startOfDay } from '@lib/dates'
 import { PIPELINE, blockedTransition, labelOf } from '@lib/pipeline'
+import { leesFunctieFout } from '@lib/functie-fout'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { addEventTask, eventDateOf, isDone, moveEvent, toggleTaskDone, useEvents } from '@data/events'
@@ -303,7 +304,10 @@ export function AssistantProvider({ children }) {
             ? 'Even rustig: probeer het over een minuutje opnieuw.'
             : import.meta.env.MODE === 'demo'
               ? 'De assistent werkt enkel in de live app: in deze demo is er geen verbinding met Claude.'
-              : 'Dat lukte niet. Probeer het zo meteen opnieuw.'
+              : // "Dat lukte niet" liet iemand zoeken naar een fout die er niet
+                // is: zolang de sleutel ontbreekt, staat de assistent simpelweg
+                // niet uitgerold. Dat hoort erbij te staan.
+                leesFunctieFout(err, 'De assistent')
       }
 
       setMessages((m) => [...m, { role: 'assistant', text: reply || 'Gedaan.', actions }])

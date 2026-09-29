@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { dayKey, formatDate } from '@lib/dates'
+import { leesFunctieFout } from '@lib/functie-fout'
 import {
   Avatar,
   Badge,
@@ -159,7 +160,7 @@ function Agenda({ items }) {
       setOmschrijving('')
       setMinuten(10)
     } catch (err) {
-      toast.error(err.message)
+      toast.error(leesFunctieFout(err, 'Het samenvatten'))
     } finally {
       setBusy(false)
     }
