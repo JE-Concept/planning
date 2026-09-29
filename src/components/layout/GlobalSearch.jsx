@@ -2,21 +2,50 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { formatDay } from '@lib/dates'
 import { labelOf } from '@lib/pipeline'
+import { groepeer, rangschik } from '@lib/zoeken'
 import { Icon } from '@components/ds'
 import { useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
+import { useCustomers } from '@data/customers'
 import { isDone, useEvents } from '@data/events'
+import { useMeetings } from '@data/meetings'
 import { templateSummary } from '@data/templates'
 
 /**
- * De zoekbalk bovenaan: events, taken, mensen en (voor beheerders) templates.
- * Druk op / om te zoeken. Vindt hij niets, dan gaat de vraag naar de assistent.
+ * De zoekbalk bovenaan: events, taken, klanten, de verslagen van het
+ * teamoverleg, mensen en (voor beheerders) templates.
+ *
+ * ⌘K of Ctrl+K opent hem van waar je ook staat, ook vanuit een invoerveld; /
+ * doet hetzelfde met één toets zolang je niet aan het typen bent. Pijltjes door
+ * de lijst, Enter opent. Vindt hij niets, dan gaat de vraag naar de assistent —
+ * dat is vaker het juiste antwoord dan "geen resultaten".
+ *
+ * De verslagen komen uit `useMeetings`, die filtert op `viewerIds`. Dat is geen
+ * nette extra maar een voorwaarde: de regels laten alleen documenten door waar
+ * je in die lijst staat, en een query die dat niet spiegelt faalt in zijn
+ * geheel in plaats van korter te worden. Wie niet bij een overleg hoorde, vindt
+ * het hier dus ook niet — en dat klopt.
+ *
+ * Het rangschikken staat in @lib/zoeken, met tests. Een handvol verslagen naast
+ * honderden taken op één hoop sorteren betekent dat de verslagen er nooit bij
+ * staan, en dat is het soort fout dat niemand komt melden.
  */
+
+/** De volgorde van de kopjes. Vast, want ze mogen niet wisselen onder je vinger. */
+const SOORTEN = ['Events', 'Taken', 'Klanten', 'Verslagen', 'Mensen', 'Templates']
+
+/** Tiebreaker bij een gelijke score: waar het vaakst naar gezocht wordt, staat boven. */
+const GEWICHT = { Events: 5, Taken: 4, Klanten: 3, Verslagen: 2, Mensen: 1, Templates: 0 }
+
+const samen = (...stukken) => stukken.filter(Boolean).join(' · ')
+
 export default function GlobalSearch({ narrow }) {
-  const { isAdmin } = useAuth()
+  const { isAdmin, uid } = useAuth()
   const { profiles, templates, eventStatuses } = useWorkspace()
   const { events, tasks, eventById } = useEvents()
+  const { customers } = useCustomers()
+  const { meetings } = useMeetings(uid)
   const { ask } = useAssistant()
   const navigate = useNavigate()
   const inputRef = useRef(null)
@@ -34,8 +63,20 @@ export default function GlobalSearch({ narrow }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      const tag = (e.target.tagName || '').toLowerCase()
-      if (e.key === '/' && tag !== 'input' && tag !== 'textarea' && tag !== 'select' && !e.target.isContentEditable) {
+      // ⌘K en Ctrl+K: overal, ook met de cursor in een veld — dat is precies
+      // waarvoor een combinatie met een modificatietoets dient.
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+        inputRef.current?.select()
+        setOpen(true)
+        return
+      }
+
+      const doel = e.target
+      const tag = (doel?.tagName || '').toLowerCase()
+      const inVeld = tag === 'input' || tag === 'textarea' || tag === 'select' || doel?.isContentEditable
+      if (e.key === '/' && !inVeld && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
         inputRef.current?.focus()
       }
@@ -50,82 +91,103 @@ export default function GlobalSearch({ narrow }) {
     setIdx(0)
   }
 
-  const groups = useMemo(() => {
-    const n = q.trim().toLowerCase()
-    if (!n) return []
-    const has = (...xs) => xs.some((x) => (x ?? '').toString().toLowerCase().includes(n))
-    const first = (id) => (profiles.find((p) => p.id === id)?.fullName ?? '').split(' ')[0]
-    const out = [
-      [
-        'Events',
-        events
-          .filter((e) => has(e.name, e.customerName, e.concept, e.location, e.eventType))
-          .slice(0, 4)
-          .map((e) => ({
-            icon: 'calendar-days',
-            title: e.name,
-            sub: [e.eventDate ? formatDay(e.eventDate) : null, e.concept, labelOf(e.statusName, eventStatuses)]
-              .filter(Boolean)
-              .join(' · '),
-            go: () => navigate(`/events/${e.id}`),
-          })),
-      ],
-      [
-        'Taken',
-        tasks
-          .filter((t) => has(t.title))
-          .slice(0, 5)
-          .map((t) => ({
-            icon: isDone(t) ? 'check-circle' : 'circle',
-            title: t.title,
-            sub: [eventById[t.parentId]?.name, first(t.assignees?.[0]), t.dueDate ? formatDay(t.dueDate) : null]
-              .filter(Boolean)
-              .join(' · '),
-            go: () => navigate(`/events/${t.parentId}?taak=${t.id}`),
-          })),
-      ],
-      [
-        'Mensen',
-        profiles
-          .filter((p) => p.active !== false && p.role !== 'staff' && has(p.fullName, p.email))
-          .slice(0, 4)
-          .map((p) => ({
-            icon: 'users',
-            title: p.fullName || p.email,
-            sub: `${tasks.filter((t) => !isDone(t) && t.assignees?.includes(p.id)).length} open taken · werklast bekijken`,
-            go: () => navigate('/werklast'),
-          })),
-      ],
-    ]
-    if (isAdmin) {
-      out.push([
-        'Templates',
-        templates
-          .filter((tp) => has(tp.name))
-          .map((tp) => ({
-            icon: tp.icon,
-            title: tp.name,
-            sub: `Template · ${templateSummary(tp)}`,
-            go: () => navigate(`/instellingen?tab=templates&template=${tp.id}`),
-          })),
-      ])
-    }
-    return out.filter(([, items]) => items.length)
-  }, [q, events, tasks, profiles, templates, isAdmin, eventById, eventStatuses, navigate])
+  /**
+   * Alles waarin gezocht kan worden, in één vorm.
+   *
+   * `titel` bepaalt de score, `extra` helpt vinden zonder de volgorde te
+   * bepalen. Zo vind je de trouw van Niels ook via de naam van de klant, zonder
+   * dat élke taak van diezelfde klant bovenaan komt te staan.
+   */
+  const kandidaten = useMemo(() => {
+    const voornaam = (id) => (profiles.find((p) => p.id === id)?.fullName ?? '').split(' ')[0]
 
-  const flat = groups.flatMap(([, items]) => items)
-  const active = Math.min(idx, Math.max(0, flat.length - 1))
+    const uit = [
+      ...events.map((e) => ({
+        soort: 'Events',
+        titel: e.name,
+        extra: [e.customerName, e.concept, e.location, e.eventType],
+        icon: 'calendar-days',
+        sub: samen(e.eventDate ? formatDay(e.eventDate) : null, e.concept, labelOf(e.statusName, eventStatuses)),
+        go: () => navigate(`/events/${e.id}`),
+      })),
+      ...tasks.map((t) => ({
+        soort: 'Taken',
+        titel: t.title,
+        extra: [eventById[t.parentId]?.name, t.description],
+        icon: isDone(t) ? 'check-circle' : 'circle',
+        sub: samen(eventById[t.parentId]?.name, voornaam(t.assignees?.[0]), t.dueDate ? formatDay(t.dueDate) : null),
+        go: () => navigate(`/events/${t.parentId}?taak=${t.id}`),
+      })),
+      ...customers.map((c) => ({
+        soort: 'Klanten',
+        titel: c.name,
+        extra: [c.email, c.vatNumber, c.address?.city, ...(c.contacts ?? []).map((k) => k.name)],
+        icon: 'building',
+        sub: samen(c.address?.city, c.vatNumber, 'klantfiche openen'),
+        go: () => navigate('/klanten'),
+      })),
+      ...meetings.map((m) => ({
+        soort: 'Verslagen',
+        titel: m.titel || `Teamoverleg van ${m.datum}`,
+        extra: [
+          ...(m.samenvatting ?? []).map((s) => s.onderwerp),
+          ...(m.samenvatting ?? []).map((s) => s.tekst),
+          ...(m.deelnemers ?? []),
+        ],
+        icon: 'messages-square',
+        sub: samen(
+          m.datum ? formatDay(m.datum) : null,
+          `${(m.samenvatting ?? []).length} ${(m.samenvatting ?? []).length === 1 ? 'punt' : 'punten'}`,
+          'teamoverleg'
+        ),
+        go: () => navigate('/overleg'),
+      })),
+      ...profiles
+        .filter((p) => p.active !== false && p.role !== 'staff')
+        .map((p) => ({
+          soort: 'Mensen',
+          titel: p.fullName || p.email,
+          extra: [p.email],
+          icon: 'users',
+          sub: `${tasks.filter((t) => !isDone(t) && t.assignees?.includes(p.id)).length} open taken · werklast bekijken`,
+          go: () => navigate('/werklast'),
+        })),
+    ]
+
+    if (isAdmin) {
+      uit.push(
+        ...templates.map((tp) => ({
+          soort: 'Templates',
+          titel: tp.name,
+          extra: [],
+          icon: tp.icon,
+          sub: `Template · ${templateSummary(tp)}`,
+          go: () => navigate(`/instellingen?tab=templates&template=${tp.id}`),
+        }))
+      )
+    }
+
+    return uit.map((k) => ({ ...k, gewicht: GEWICHT[k.soort] ?? 0 }))
+  }, [events, tasks, customers, meetings, profiles, templates, isAdmin, eventById, eventStatuses, navigate])
+
+  const ranglijst = useMemo(() => rangschik(kandidaten, q), [kandidaten, q])
+  const groups = useMemo(() => groepeer(ranglijst, SOORTEN), [ranglijst])
+
+  // De knoppen worden per kopje getekend, niet in de volgorde van de ranglijst;
+  // de pijltjes moeten dezelfde weg volgen als het oog.
+  const zichtbaar = useMemo(() => groups.flatMap(([, items]) => items), [groups])
+  const active = Math.min(idx, Math.max(0, zichtbaar.length - 1))
 
   const onKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setIdx(Math.min(active + 1, flat.length - 1))
+      setIdx(Math.min(active + 1, zichtbaar.length - 1))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setIdx(Math.max(active - 1, 0))
     } else if (e.key === 'Enter') {
-      if (flat[active]) {
-        flat[active].go()
+      if (zichtbaar[active]) {
+        zichtbaar[active].go()
         done()
       } else if (q.trim()) {
         const vraag = q
@@ -154,10 +216,10 @@ export default function GlobalSearch({ narrow }) {
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 120)}
           onKeyDown={onKeyDown}
-          placeholder="Zoek events, taken, mensen, templates"
+          placeholder="Zoek events, taken, klanten, verslagen"
           aria-label="Zoeken"
         />
-        {narrow ? null : <span className="je-kbd">/</span>}
+        {narrow ? null : <span className="je-kbd">⌘K</span>}
       </div>
       {open && q.trim() ? (
         <div className="je-results" role="listbox">
@@ -203,7 +265,7 @@ export default function GlobalSearch({ narrow }) {
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: 'block', font: 'var(--type-body-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.title}
+                        {r.titel}
                       </span>
                       <span style={{ display: 'block', font: 'var(--type-caption)', fontWeight: 400, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {r.sub}
@@ -230,8 +292,8 @@ export default function GlobalSearch({ narrow }) {
             }}
           >
             <span className="je-muted-caption" style={{ flex: 1 }}>
-              {flat.length
-                ? `${flat.length} ${flat.length === 1 ? 'resultaat' : 'resultaten'}`
+              {zichtbaar.length
+                ? `${zichtbaar.length} ${zichtbaar.length === 1 ? 'resultaat' : 'resultaten'}`
                 : `Niets gevonden voor “${q.trim()}”.`}
             </span>
             <button

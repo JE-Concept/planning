@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@lib/cn'
 import { herstelZonderCache } from '@lib/firebase'
@@ -19,6 +19,7 @@ import { luisterNaarMeldingen } from '@lib/push'
 import AssistantPanel from './AssistantPanel'
 import GlobalSearch from './GlobalSearch'
 import Sidebar, { mainNav } from './Sidebar'
+import Sneltoetsen from './Sneltoetsen'
 
 /**
  * De schil uit het design: donkere zijbalk links, een witte balk met zoeken
@@ -46,6 +47,7 @@ function Shell({ children }) {
   const location = useLocation()
   const { open, setOpen } = useAssistant()
   const nieuweVersie = useNieuweVersie()
+  const [hulpOpen, setHulpOpen] = useState(false)
 
   // Zoals in het design: op een breed scherm staat de assistent open tot je
   // hem sluit (dat wordt onthouden), op een telefoon dicht — daar zou hij het
@@ -107,6 +109,11 @@ function Shell({ children }) {
           <div className="je-topbar">
             <GlobalSearch narrow={narrow} />
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              {/* Sneltoetsen zijn onvindbaar als je niet weet dat ze bestaan;
+                  dit knopje is de enige plek waar ze zichzelf aankondigen. */}
+              {narrow ? null : (
+                <IconButton icon="keyboard" label="Sneltoetsen" variant="bare" onClick={() => setHulpOpen(true)} />
+              )}
               {narrow ? (
                 <IconButton icon="sparkles" label="Assistent" variant="outline" onClick={() => setOpen(!chatOpen)} />
               ) : (
@@ -174,6 +181,7 @@ function Shell({ children }) {
       </main>
 
       {chatOpen ? <AssistantPanel /> : null}
+      <Sneltoetsen hulpOpen={hulpOpen} setHulpOpen={setHulpOpen} />
     </div>
   )
 }

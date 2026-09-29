@@ -848,6 +848,83 @@ await test('de zoekbalk vindt events en taken', async () => {
   await page.close()
 })
 
+await test('Ctrl+K opent de zoekbalk over taken, klanten en verslagen tegelijk', async () => {
+  // De drie soorten die er los bij gekomen zijn, in één zoekopdracht: "Blum"
+  // is een klant, een event met taken, én een punt in een verslag. Zonder
+  // plafond per soort duwen de taken de rest eruit — zie @lib/zoeken.
+  const page = await tabblad('/')
+  await page.keyboard.press('Control+KeyK')
+  await page.waitForTimeout(200)
+  await page.getByLabel('Zoeken').fill('blum')
+  await page.waitForTimeout(400)
+
+  const lijst = await page.getByRole('listbox').innerText()
+  for (const kopje of ['Events', 'Taken', 'Klanten', 'Verslagen']) {
+    zouden(bevat(lijst, kopje), `het kopje "${kopje}" ontbreekt: ${lijst.slice(0, 250)}`)
+  }
+  zouden(lijst.includes('Blum België'), 'de klant staat niet in de resultaten')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een verslag van het teamoverleg is te vinden op wat erin staat', async () => {
+  // "Standenplan" staat nergens in een titel, alleen in de tekst van het
+  // verslag. De verslagen komen uit dezelfde query die op viewerIds filtert,
+  // zoals de regels het eisen.
+  const page = await tabblad('/')
+  await page.getByLabel('Zoeken').fill('standenplan')
+  await page.waitForTimeout(400)
+
+  const lijst = await page.getByRole('listbox').innerText()
+  zouden(bevat(lijst, 'Verslagen'), `geen verslag gevonden: ${lijst.slice(0, 250)}`)
+  zouden(lijst.includes('Weekstart events'), 'het verslag staat er niet bij')
+
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Teamoverleg'), `Enter bracht je naar ${page.url()}`)
+  await page.close()
+})
+
+await test('met de pijltjes verschuift de selectie en Enter opent die', async () => {
+  const page = await tabblad('/')
+  await page.getByLabel('Zoeken').fill('blum')
+  await page.waitForTimeout(400)
+
+  const gekozen = () => page.locator('[role=option][aria-selected=true]').first().innerText()
+  const eerste = await gekozen()
+  await page.keyboard.press('ArrowDown')
+  await page.waitForTimeout(200)
+  const tweede = await gekozen()
+  zouden(eerste !== tweede, `de selectie bleef op "${eerste}" staan`)
+
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(900)
+  zouden(!page.url().endsWith('#/'), `Enter bracht je nergens: ${page.url()}`)
+  await page.close()
+})
+
+await test('? toont de sneltoetsen en een losse letter springt naar het scherm', async () => {
+  const page = await tabblad('/')
+  await page.keyboard.press('Shift+Slash')
+  await page.waitForTimeout(500)
+  const dialoog = await page.getByRole('dialog').innerText()
+  zouden(bevat(dialoog, 'Sneltoetsen'), `geen lijstje: ${dialoog.slice(0, 150)}`)
+  zouden(bevat(dialoog, 'Naar Tasks'), 'de sprong naar Tasks staat er niet bij')
+
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(400)
+  await page.keyboard.press('t')
+  await page.waitForTimeout(900)
+  zouden(page.url().includes('/tasks'), `T bracht je naar ${page.url()}`)
+
+  // En in een veld is een letter gewoon een letter.
+  await page.getByLabel('Zoeken').fill('telefoon')
+  await page.waitForTimeout(300)
+  zouden(page.url().includes('/tasks'), `typen in het zoekveld navigeerde weg: ${page.url()}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 // ─── 4. Personeel ziet alleen zijn eigen scherm ─────────────────────────────
 
 await test('personeel komt op de dagelijkse lijst en nergens anders', async () => {
