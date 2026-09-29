@@ -585,6 +585,39 @@ seedDoc('checklistRuns', `openen_${gisteren}`, {
   updatedAt: NU,
 })
 
+// ─── Het weekrooster ────────────────────────────────────────────────────────
+// Een gewone week in de bistro, met één dienst die over middernacht loopt en
+// één botsing — dat laatste omdat het rooster juist bestaat om zulke dingen te
+// laten zien voor de dag zelf aanbreekt.
+const maandagVanDeWeek = (() => {
+  const d = new Date(NU)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return d
+})()
+const weekdag = (n) => {
+  const d = new Date(maandagVanDeWeek)
+  d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+;[
+  ['u-lotte', 0, '08:00', '16:00', 30, 'Openen'],
+  ['u-sam', 0, '11:00', '22:00', 60, 'Keuken'],
+  ['u-lotte', 1, '08:00', '16:00', 30, ''],
+  ['u-sam', 2, '11:00', '22:00', 60, ''],
+  ['u-lotte', 3, '16:00', '23:30', 30, 'Sluiten'],
+  ['u-sam', 4, '11:00', '22:00', 60, ''],
+  ['u-lotte', 5, '18:00', '03:00', 45, 'Avondbar'],
+  ['u-sam', 5, '17:00', '23:00', 30, ''],
+  // Twee keer tegelijk: dit hoort rood te staan.
+  ['u-sam', 5, '20:00', '23:30', 0, 'Dubbel ingepland'],
+].forEach(([wie, dag, start, eind, pauze, notitie], i) =>
+  seedDoc('shifts', `sh-${i}`, {
+    profileId: wie, date: weekdag(dag), start, end: eind,
+    breakMinutes: pauze, brandId: null, note: notitie, createdAt: NU, updatedAt: NU,
+  })
+)
+
 // ─── Teamoverleg ────────────────────────────────────────────────────────────
 seedDoc('lists', 'l-overleg', {
   spaceId: 's-je', folderId: null, brandId: null, name: 'Tasks',

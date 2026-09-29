@@ -127,6 +127,7 @@ const PAGINAS = [
   ['Registraties', '/registraties', 'Registraties'],
   ['Teamoverleg', '/overleg', 'Teamoverleg'],
   ['Uren', '/uren', 'Uren'],
+  ['Rooster', '/rooster', 'Rooster'],
   ['Goals', '/goals', 'Goals'],
   ['Instellingen', '/instellingen', 'Instellingen'],
   ['Instellingen — formules', '/instellingen?tab=formules', 'Winter BBQ'],
@@ -638,6 +639,27 @@ await test('een onderwerp op de socialkalender komt bij Charish', async () => {
   await veld.press('Enter')
   await page.waitForTimeout(900)
   zouden(bevat(await inhoud(page), 'Kerstmenu aankondigen'), 'het onderwerp staat niet in de lijst')
+  await page.close()
+})
+
+await test('het rooster toont de week en waarschuwt bij dubbel inplannen', async () => {
+  const page = await tabblad('/rooster')
+  await page.waitForTimeout(1000)
+  const tekst = await inhoud(page)
+
+  for (const naald of ['Rooster', 'Lotte', 'Sam', 'Per dag']) {
+    zouden(bevat(tekst, naald), `"${naald}" staat niet op het rooster`)
+  }
+  // De avondbar loopt tot drie uur; dat is hier de regel, geen uitzondering.
+  zouden(bevat(tekst, '18:00'), 'de avonddienst staat er niet')
+  // Twee keer tegelijk ingepland merk je anders pas op de dag zelf.
+  zouden(bevat(tekst, 'tegelijk ingepland'), 'de botsing wordt niet gemeld')
+
+  // Een dienst openen om hem aan te passen.
+  await page.getByRole('button', { name: /18:00/ }).first().click()
+  await page.waitForTimeout(700)
+  zouden(bevat(await inhoud(page), 'Dienst aanpassen'), 'de dienst opent niet')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
 

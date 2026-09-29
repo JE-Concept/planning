@@ -186,6 +186,16 @@ service cloud.firestore {
 
     // ── Time tracking: everyone sees the numbers, you own your own rows ────
 
+    // Het weekrooster.
+    //
+    // Iedereen met een profiel leest het, personeel inbegrepen: wie moet weten
+    // wanneer hij werkt, moet het kunnen openen. Schrijven doet een beheerder —
+    // een rooster waar ieder zijn eigen diensten in verzet, is geen rooster meer.
+    match /shifts/{id} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
     match /timeEntries/{id} {
       allow read: if isTeam();
       allow create: if isTeam()

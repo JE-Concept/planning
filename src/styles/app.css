@@ -1466,3 +1466,103 @@ select.je-compact { padding-right: 24px; }
   border-bottom: 1px solid var(--border-hairline);
 }
 .je-sociallos .je-input { max-width: 320px; }
+
+/* ── Rooster ───────────────────────────────────────────────────────────── */
+
+/* Een week in een tabel: mensen als rijen, dagen als kolommen. Een tabel en geen
+   raster van div's, want dat is wat het is — en dan leest een voorleesprogramma
+   "Lotte, woensdag" in plaats van een losse cel zonder context. */
+.je-rooster {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-5) var(--space-6);
+}
+.je-rooster__tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--type-body-sm);
+}
+.je-rooster__tabel th,
+.je-rooster__tabel td {
+  border: 1px solid var(--border-hairline);
+  padding: var(--space-3);
+  vertical-align: top;
+  text-align: left;
+}
+.je-rooster__tabel thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-1);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.je-rooster__dagnaam { display: block; }
+.je-rooster__dagnr {
+  display: block;
+  font: var(--fw-medium) 17px/1.1 var(--font-display);
+  color: var(--text-1);
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* Vandaag mag opvallen: dat is de kolom waar je het eerst naar kijkt. */
+.je-rooster__vandaag { background: var(--accent-quiet); }
+.je-rooster__wie {
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.je-rooster__wie > span { display: block; }
+.je-rooster__cel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 96px;
+}
+.je-rooster__dienst {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px;
+  border-left: 3px solid var(--border-subtle);
+  background: var(--surface-2);
+  border-radius: 2px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.je-rooster__dienst:hover { background: var(--surface-1); box-shadow: var(--shadow-1); }
+.je-rooster__dienst:disabled { cursor: default; opacity: 0.75; }
+/* Twee keer tegelijk ingepland merk je anders pas op de dag zelf. */
+.je-rooster__dienst--botst {
+  border-left-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+.je-rooster__plus {
+  align-self: flex-start;
+  padding: 2px 7px;
+  color: var(--text-3);
+  border: 1px dashed var(--border-hairline);
+  border-radius: 2px;
+  line-height: 1.3;
+}
+.je-rooster__plus:hover { color: var(--text-accent); border-color: var(--border-accent); }
+.je-rooster__totaal {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-1);
+}
+.je-rooster__totaal > span { display: block; }
+.je-rooster__waarschuwing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4) var(--space-6);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-bottom: 1px solid var(--border-hairline);
+  font: var(--type-body-sm);
+  color: var(--danger);
+}

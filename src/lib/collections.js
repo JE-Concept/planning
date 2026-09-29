@@ -36,6 +36,7 @@ export const COL = {
   automations: 'automations',
   activity: 'activity',
   templates: 'templates',
+  shifts: 'shifts',
   formules: 'formules',
 }
 
