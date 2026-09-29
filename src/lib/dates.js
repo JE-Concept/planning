@@ -1,4 +1,4 @@
-import { tekst } from './i18n'
+import { tekst } from './i18n.js'
 
 const TZ = 'Europe/Brussels'
 

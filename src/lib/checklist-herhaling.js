@@ -1,5 +1,6 @@
 import { dueOn, repeatLabel } from './checklist-templates'
 import { formatDate, startOfDay } from './dates'
+import { tekst } from './i18n'
 
 /**
  * Een herhaling die klopt zodra je ze kiest.
@@ -97,9 +98,9 @@ export function volgendeKeer(repeat, vanaf = new Date()) {
  */
 export function herhalingProbleem(repeat) {
   if (repeat?.kind === 'weekdag' && (repeat.days ?? []).length === 0) {
-    return 'Geen enkele dag aangevinkt — zo komt dit punt nooit meer op de lijst.'
+    return tekst('lijstlib.probleem.geen_dag')
   }
-  return volgendeKeer(repeat) ? null : 'Deze herhaling komt het komende jaar niet voor.'
+  return volgendeKeer(repeat) ? null : tekst('lijstlib.probleem.nooit')
 }
 
 /** "elke maandag · eerstvolgend maandag 5 oktober", zoals het onder de keuze staat. */
@@ -108,5 +109,5 @@ export function herhalingUitleg(repeat, vanaf = new Date()) {
   const label = repeatLabel({ repeat })
   if (!volgende) return label
   if (repeat?.kind === 'dagelijks' || !repeat?.kind) return label
-  return `${label} · eerstvolgend ${formatDate(volgende)}`
+  return tekst('lijstlib.uitleg.eerstvolgend', { label, datum: formatDate(volgende) })
 }

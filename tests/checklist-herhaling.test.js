@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { zetHuidigeTaal } from '../src/lib/i18n'
+import { zetLocale } from '../src/lib/dates'
 import { herhalingProbleem, herhalingUitleg, herhalingVoor, volgendeKeer } from '../src/lib/checklist-herhaling'
 import { dueOn } from '../src/lib/checklist-templates'
 
@@ -103,5 +105,26 @@ describe('herhalingUitleg', () => {
 
   it('laat dat weg bij een punt dat elke dag moet', () => {
     expect(herhalingUitleg({ kind: 'dagelijks' }, DINSDAG)).toBe('elke dag')
+  })
+})
+
+describe('in het Engels', () => {
+  afterEach(() => {
+    zetHuidigeTaal('nl')
+    zetLocale('nl-BE')
+  })
+
+  it('zet de eerstvolgende keer in het Engels naast de omschrijving', () => {
+    zetHuidigeTaal('en')
+    zetLocale('en-GB')
+    expect(herhalingUitleg({ kind: 'wekelijks', days: [1] }, DINSDAG)).toBe(
+      'every Monday · next on 05/10/2026'
+    )
+    expect(herhalingUitleg({ kind: 'dagelijks' }, DINSDAG)).toBe('every day')
+  })
+
+  it('waarschuwt in het Engels over een punt dat nooit meer terugkomt', () => {
+    zetHuidigeTaal('en')
+    expect(herhalingProbleem({ kind: 'weekdag', days: [] })).toMatch(/never/)
   })
 })
