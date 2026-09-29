@@ -291,6 +291,19 @@ await test('het verloop van een doel is uit te klappen', async () => {
   await page.close()
 })
 
+await test('de vorige dag van een dagelijkse lijst opent zonder te crashen', async () => {
+  // Dit was een wit scherm: de tijdstippen van gisteren komen als Timestamp
+  // terug, niet als Date, en Intl gooide daarop RangeError tijdens het tekenen.
+  const page = await tabblad('/openen-sluiten')
+  await page.getByRole('button', { name: 'Vorige dag' }).click()
+  await page.waitForTimeout(900)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Openen'), 'de lijst van gisteren staat er niet')
+  zouden(bevat(tekst, 'Lotte'), `wie afvinkte staat er niet: ${tekst.slice(0, 200)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   const page = await tabblad('/instellingen')
   await page.getByRole('tab', { name: 'Dagelijkse lijsten' }).click()

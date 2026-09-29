@@ -444,6 +444,44 @@ seedDoc('checklistRuns', `openen_${vandaag}`, {
   updatedAt: NU,
 })
 
+/**
+ * De lijst van gisteren, met tijdstippen zoals de server ze teruggeeft.
+ *
+ * Dit staat er om één fout vast te houden. De echte database geeft een tijdstip
+ * terug als Timestamp, niet als Date, en de afvinktijd van een punt zit genest
+ * in `items.<punt>.at`. Die werd niet omgezet, `Intl` gooide er
+ * `RangeError: Invalid time value` op, en wie op ‹ klikte om de vorige dag te
+ * bekijken kreeg een wit scherm. Met gewone Date-objecten in de demo was dat
+ * niet te zien — vandaar hier een Timestamp, net als echt.
+ */
+const stempel = (datum) => ({
+  seconds: Math.floor(datum.getTime() / 1000),
+  nanoseconds: 0,
+  toDate: () => datum,
+})
+
+const gisteren = dag(-1).toISOString().slice(0, 10)
+const afgevinktGisteren = (id, wie, naam, uur) => [id, {
+  done: true, byId: wie, byName: naam,
+  at: stempel(new Date(`${gisteren}T${uur}:00`)),
+}]
+
+seedDoc('checklistRuns', `openen_${gisteren}`, {
+  checklistId: 'openen', checklistKey: 'openen', checklistName: 'Openen van de bistro',
+  brandId: null, day: gisteren, date: new Date(`${gisteren}T12:00:00`), weekend: false,
+  participants: ['u-lotte'],
+  items: Object.fromEntries([
+    afgevinktGisteren('sleutel', 'u-lotte', 'Lotte Vrijsen', '08:05'),
+    afgevinktGisteren('alarm', 'u-lotte', 'Lotte Vrijsen', '08:06'),
+  ]),
+  notes: 'Rustige ochtend, niets bijzonders.',
+  notesById: 'u-lotte', notesByName: 'Lotte Vrijsen',
+  notesAt: stempel(new Date(`${gisteren}T08:40:00`)),
+  closedAt: stempel(new Date(`${gisteren}T23:40:00`)),
+  closedById: 'u-lotte', closedByName: 'Lotte Vrijsen',
+  updatedAt: NU,
+})
+
 // ─── Teamoverleg ────────────────────────────────────────────────────────────
 seedDoc('lists', 'l-overleg', {
   spaceId: 's-je', folderId: null, brandId: null, name: 'Tasks',

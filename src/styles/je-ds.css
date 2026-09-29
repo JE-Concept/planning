@@ -403,3 +403,55 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .je-sect__title em{font-family:var(--font-script);font-style:normal;text-transform:none;font-size:1.05em;letter-spacing:0;color:var(--text-accent)}
 .je-sect__intro{font:var(--type-lead);color:var(--text-2);max-width:56ch}
 .je-icon{display:inline-flex;flex:0 0 auto}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Aanvullingen: de onderdelen die de rest van de app nodig heeft.
+
+   Ze stonden eerder in een tweede set componenten met eigen kleuren, naast dit
+   design system. Dat is precies hoe twee huisstijlen in één app ontstaan, dus
+   staan ze nu hier — op dezelfde tokens.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ---------- Avatar ---------- */
+.je-avatar{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;border-radius:var(--radius-pill);background:var(--surface-3);color:var(--text-accent);font-family:var(--font-ui);font-weight:var(--fw-semibold);letter-spacing:.02em;overflow:hidden;object-fit:cover}
+.je-avatar--xs{width:20px;height:20px;font-size:9px}
+.je-avatar--sm{width:26px;height:26px;font-size:11px}
+.je-avatar--md{width:34px;height:34px;font-size:13px}
+.je-avatar--lg{width:44px;height:44px;font-size:15px}
+.je-avatar--ring{box-shadow:0 0 0 2px var(--surface-1)}
+
+.je-avatars{display:inline-flex}
+.je-avatars > *{margin-left:-6px}
+.je-avatars > *:first-child{margin-left:0}
+.je-avatars__rest{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);background:var(--surface-2);color:var(--text-2);font:var(--type-caption);font-size:9px;width:20px;height:20px;box-shadow:0 0 0 2px var(--surface-1)}
+
+/* ---------- Spinner ---------- */
+.je-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border-subtle);border-top-color:var(--accent);border-radius:var(--radius-pill);animation:je-spin .7s linear infinite}
+.je-spinner--lg{width:24px;height:24px;border-width:3px}
+@keyframes je-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.je-spinner{animation-duration:2s}}
+
+/* ---------- Lege staat ---------- */
+.je-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-3);text-align:center;padding:var(--space-8) var(--space-6);border:1px dashed var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-1)}
+.je-empty__icon{color:var(--text-3);display:flex}
+.je-empty__title{font:var(--type-body);font-weight:var(--fw-semibold);color:var(--text-1)}
+.je-empty__text{font:var(--type-body-sm);color:var(--text-2);max-width:44ch}
+
+/* ---------- Voortgang ---------- */
+.je-progress{width:100%;height:8px;border-radius:var(--radius-pill);background:var(--surface-3);overflow:hidden}
+.je-progress__fill{display:block;height:100%;border-radius:var(--radius-pill);background:var(--accent);transition:width var(--dur-base) var(--ease-brand)}
+
+/* ---------- Zijpaneel ---------- */
+.je-drawer{position:fixed;inset:0;z-index:60;display:flex;justify-content:flex-end}
+.je-drawer__scrim{position:absolute;inset:0;background:rgba(0,23,46,.34)}
+.je-drawer__panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:min(42rem,100vw);height:100%;background:var(--surface-1);box-shadow:var(--shadow-3);animation:je-drawer-in var(--dur-base) var(--ease-brand)}
+.je-drawer__head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--border-hairline)}
+.je-drawer__title{font:var(--type-body);font-weight:var(--fw-semibold);color:var(--text-1)}
+.je-drawer__sub{font:var(--type-caption);color:var(--text-2)}
+.je-drawer__body{flex:1;min-height:0;overflow-y:auto}
+.je-drawer__foot{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) var(--space-6);border-top:1px solid var(--border-hairline)}
+@keyframes je-drawer-in{from{transform:translateX(16px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.je-drawer__panel{animation:none}}
+
+/* ---------- Stip ---------- */
+.je-dot{display:inline-block;width:8px;height:8px;border-radius:var(--radius-pill);background:var(--text-3);flex:0 0 auto}

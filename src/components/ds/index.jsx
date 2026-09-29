@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Children, cloneElement, forwardRef, isValidElement, useEffect, useId, useRef, useState } from 'react'
 import {
   AlertTriangle, ArrowRight, ArrowUp, Briefcase, Building2, CalendarDays, Check, CheckCircle, ChevronDown,
   ChevronLeft, ChevronRight, Circle, ClipboardCheck, Clock, Copy, CornerDownLeft, Download, Euro, FileText,
@@ -93,22 +93,26 @@ export function Icon({ name, size = 20, strokeWidth = 1.5, className, style, ...
   )
 }
 
-export function Button({
-  children,
-  variant = 'primary',
-  size = 'md',
-  iconLeft,
-  iconRight,
-  block = false,
-  loading = false,
-  disabled = false,
-  type = 'button',
-  className,
-  ...rest
-}) {
+export const Button = forwardRef(function Button(
+  {
+    children,
+    variant = 'primary',
+    size = 'md',
+    iconLeft,
+    iconRight,
+    block = false,
+    loading = false,
+    disabled = false,
+    type = 'button',
+    className,
+    ...rest
+  },
+  ref
+) {
   const gs = size === 'lg' ? 16 : size === 'sm' ? 13 : 14
   return (
     <button
+      ref={ref}
       type={type}
       className={cn('je-btn', `je-btn--${variant}`, `je-btn--${size}`, block && 'je-btn--block', className)}
       disabled={disabled || loading}
@@ -121,7 +125,7 @@ export function Button({
       {iconRight ? <Icon name={iconRight} size={gs} /> : null}
     </button>
   )
-}
+})
 
 export function IconButton({ icon, label, variant = 'bare', size = 'md', className, ...rest }) {
   const px = size === 'lg' ? 22 : size === 'sm' ? 16 : 18
@@ -270,37 +274,54 @@ export function Switch({ label, checked, onChange, disabled = false, className, 
 }
 
 export function Field({ label, hint, error, required = false, htmlFor, children, className, style }) {
+  // Het label hangt aan het veld, ook als de aanroeper geen id meegaf. Zonder
+  // die koppeling heeft een invoerveld geen naam: een voorleesprogramma noemt
+  // het "tekstveld" en een klik op het label zet de cursor er niet in. Omdat
+  // het label hier naast het veld staat en niet eromheen, moet dat hier
+  // gebeuren — en dan meteen voor alle schermen in plaats van per stuk.
+  const gegenereerd = useId()
+  const enige = Children.count(children) === 1 ? Children.only(children) : null
+  const koppelbaar = enige && isValidElement(enige) && !enige.props.id && !enige.props['aria-label']
+  const id = htmlFor ?? (koppelbaar ? gegenereerd : undefined)
+
   return (
     <div className={cn('je-field', className)} style={style}>
       {label ? (
-        <label className="je-field__label" htmlFor={htmlFor}>
+        <label className="je-field__label" htmlFor={id}>
           {label}
           {required ? <span className="je-field__req"> *</span> : null}
         </label>
       ) : null}
-      {children}
+      {id && koppelbaar && !htmlFor ? cloneElement(enige, { id }) : children}
       {error ? <span className="je-field__error">{error}</span> : hint ? <span className="je-field__hint">{hint}</span> : null}
     </div>
   )
 }
 
-export function Input({ boxed = false, invalid = false, className, ...rest }) {
+// Velden geven hun ref door: een zoekveld dat bij het openen de focus pakt of
+// een invoer die na het opslaan leeggemaakt wordt, heeft het echte element
+// nodig. Zonder dit moet elk scherm zijn eigen <input> schrijven.
+export const Input = forwardRef(function Input({ boxed = false, invalid = false, className, ...rest }, ref) {
   return (
     <input
+      ref={ref}
       className={cn('je-input', boxed && 'je-input--boxed', invalid && 'je-input--invalid', className)}
       aria-invalid={invalid || undefined}
       {...rest}
     />
   )
-}
+})
 
-export function Textarea({ boxed = false, className, ...rest }) {
-  return <textarea className={cn('je-textarea', boxed && 'je-textarea--boxed', className)} {...rest} />
-}
+export const Textarea = forwardRef(function Textarea({ boxed = false, className, ...rest }, ref) {
+  return <textarea ref={ref} className={cn('je-textarea', boxed && 'je-textarea--boxed', className)} {...rest} />
+})
 
-export function Select({ options = [], placeholder, boxed = false, className, children, ...rest }) {
+export const Select = forwardRef(function Select(
+  { options = [], placeholder, boxed = false, className, children, ...rest },
+  ref
+) {
   return (
-    <select className={cn('je-select', boxed && 'je-select--boxed', className)} {...rest}>
+    <select ref={ref} className={cn('je-select', boxed && 'je-select--boxed', className)} {...rest}>
       {placeholder ? <option value="">{placeholder}</option> : null}
       {options.map((o) => {
         const v = typeof o === 'string' ? o : o.value
@@ -314,23 +335,45 @@ export function Select({ options = [], placeholder, boxed = false, className, ch
       {children}
     </select>
   )
-}
+})
 
-export function Dialog({ open = false, title, onClose, footer, width, children, className }) {
+/**
+ * Wegklikken zoals het hoort: escape sluit, de focus begint binnenin, en de
+ * pagina eronder scrollt niet mee. Eén keer geschreven voor dialoog én
+ * zijpaneel, want een halve versie hiervan is hoe een overlay ergens anders
+ * plots anders aanvoelt.
+ */
+function useDismiss(open, onClose, panelRef) {
   useEffect(() => {
     if (!open) return undefined
+
     const onKey = (e) => {
       if (e.key === 'Escape') onClose?.()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+
+    const vorige = document.activeElement
+    panelRef?.current?.focus?.()
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+      vorige?.focus?.()
+    }
+  }, [open, onClose, panelRef])
+}
+
+export function Dialog({ open = false, title, onClose, footer, width, children, className }) {
+  const panel = useRef(null)
+  useDismiss(open, onClose, panel)
 
   if (!open) return null
   return (
     <div className={cn('je-dialog', className)} role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}>
       <div className="je-dialog__scrim" onClick={onClose} />
-      <div className="je-dialog__panel" style={width ? { maxWidth: width } : undefined}>
+      <div ref={panel} tabIndex={-1} className="je-dialog__panel" style={width ? { maxWidth: width } : undefined}>
         {onClose ? (
           <span className="je-dialog__close">
             <IconButton icon="x" label="Sluiten" onClick={onClose} />
@@ -468,5 +511,169 @@ export function Stat({ label, value, sub }) {
       <div className="je-stat__value">{value}</div>
       {sub ? <div className="je-muted-caption">{sub}</div> : null}
     </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   De rest van het systeem.
+
+   Deze onderdelen stonden in een tweede componentenset met eigen kleuren. Ze
+   staan nu hier, op dezelfde tokens, zodat er één antwoord is op "hoe ziet een
+   avatar, een spinner of een zijpaneel eruit".
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Initialen uit een naam, of anders uit een adres. */
+export function initials(fullName, email) {
+  const bron = (fullName ?? '').trim()
+  if (bron) {
+    const delen = bron.split(/\s+/)
+    return ((delen[0]?.[0] ?? '') + (delen.length > 1 ? delen[delen.length - 1][0] : '')).toUpperCase()
+  }
+  return (email ?? '?').slice(0, 2).toUpperCase()
+}
+
+export function Avatar({ profile, size = 'sm', ring = false, className, ...rest }) {
+  const label = profile?.fullName || profile?.email || 'Niet toegewezen'
+  const klassen = cn('je-avatar', `je-avatar--${size}`, ring && 'je-avatar--ring', className)
+
+  if (profile?.avatarUrl) {
+    return (
+      <img
+        src={profile.avatarUrl}
+        alt={label}
+        title={label}
+        referrerPolicy="no-referrer"
+        className={klassen}
+        {...rest}
+      />
+    )
+  }
+
+  return (
+    <span title={label} className={klassen} {...rest}>
+      {initials(profile?.fullName, profile?.email)}
+    </span>
+  )
+}
+
+/** Een paar avatars naast elkaar, met een telling voor de rest. */
+export function AvatarStack({ profiles = [], max = 3, size = 'xs', className }) {
+  const getoond = profiles.slice(0, max)
+  const rest = profiles.length - getoond.length
+
+  return (
+    <span className={cn('je-avatars', className)}>
+      {getoond.map((p, i) => (
+        <Avatar key={p.id ?? i} profile={p} size={size} ring />
+      ))}
+      {rest > 0 ? <span className="je-avatars__rest">+{rest}</span> : null}
+    </span>
+  )
+}
+
+export function Spinner({ size = 'md', className }) {
+  return (
+    <span
+      role="status"
+      aria-label="Bezig met laden"
+      className={cn('je-spinner', size === 'lg' && 'je-spinner--lg', className)}
+    />
+  )
+}
+
+export function EmptyState({ title, description, action, icon, className }) {
+  return (
+    <div className={cn('je-empty', className)}>
+      {icon ? (
+        <span className="je-empty__icon">
+          {typeof icon === 'string' ? <Icon name={icon} size={24} /> : icon}
+        </span>
+      ) : null}
+      <p className="je-empty__title">{title}</p>
+      {description ? <p className="je-empty__text">{description}</p> : null}
+      {action ? <div>{action}</div> : null}
+    </div>
+  )
+}
+
+/** Voortgang van 0 tot 1. De dunne variant onder een kaart is `Bar`. */
+export function ProgressBar({ value = 0, color, className }) {
+  const pct = Math.round(Math.max(0, Math.min(1, value)) * 100)
+
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className={cn('je-progress', className)}
+    >
+      <span
+        className="je-progress__fill"
+        style={{ width: `${pct}%`, ...(color ? { background: color } : null) }}
+      />
+    </div>
+  )
+}
+
+export function Dot({ color, className, ...rest }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('je-dot', className)}
+      style={color ? { background: color } : undefined}
+      {...rest}
+    />
+  )
+}
+
+/**
+ * Een paneel dat van rechts inschuift.
+ *
+ * Escape sluit, de achtergrond sluit, de focus begint binnenin en de pagina
+ * eronder scrollt niet mee — anders raak je bij het sluiten je plek kwijt.
+ */
+export function Drawer({ open = false, onClose, title, subtitle, children, footer, className }) {
+  const panel = useRef(null)
+  useDismiss(open, onClose, panel)
+
+  if (!open) return null
+
+  return (
+    <div className={cn('je-drawer', className)}>
+      <div className="je-drawer__scrim" onClick={onClose} aria-hidden="true" />
+      <aside
+        ref={panel}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="je-drawer__panel"
+      >
+        <header className="je-drawer__head">
+          <div style={{ minWidth: 0 }}>
+            <div className="je-drawer__title">{title}</div>
+            {subtitle ? <div className="je-drawer__sub">{subtitle}</div> : null}
+          </div>
+          <IconButton icon="x" label="Sluiten" onClick={onClose} />
+        </header>
+        <div className="je-drawer__body">{children}</div>
+        {footer ? <footer className="je-drawer__foot">{footer}</footer> : null}
+      </aside>
+    </div>
+  )
+}
+
+/** Een knop die eerst vraagt of je het zeker weet. */
+export function ConfirmButton({ onConfirm, children, question = 'Zeker weten?', ...rest }) {
+  return (
+    <Button
+      {...rest}
+      onClick={() => {
+        if (window.confirm(question)) onConfirm?.()
+      }}
+    >
+      {children}
+    </Button>
   )
 }
