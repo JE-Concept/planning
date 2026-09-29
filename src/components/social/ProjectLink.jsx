@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Badge, Button, Input } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { linkPostToTask } from '@data/social'
 import { useTaskSearch } from '@data/tasks'
@@ -15,6 +16,7 @@ export default function ProjectLink({ post }) {
   const [term, setTerm] = useState('')
   const [picking, setPicking] = useState(false)
   const { results } = useTaskSearch(term, { enabled: picking })
+  const { t } = useTaal()
   const toast = useToast()
 
   const link = async (task) => {
@@ -30,20 +32,20 @@ export default function ProjectLink({ post }) {
   if (post.taskId && !picking) {
     return (
       <section>
-        <h3 className="label">Project</h3>
+        <h3 className="label">{t('social.project.kop')}</h3>
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 px-3 py-2">
           <span aria-hidden="true" className="text-ink-400">
             ▤
           </span>
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800">
-            {post.taskTitle || 'Gekoppeld project'}
+            {post.taskTitle || t('social.project.gekoppeld')}
           </span>
           {post.taskListName ? <Badge subtle>{post.taskListName}</Badge> : null}
           <Button variant="ghost" size="sm" onClick={() => setPicking(true)}>
-            Wijzigen
+            {t('social.project.wijzigen')}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => link(null)}>
-            Losmaken
+            {t('social.project.losmaken')}
           </Button>
         </div>
       </section>
@@ -52,10 +54,10 @@ export default function ProjectLink({ post }) {
 
   return (
     <section>
-      <h3 className="label">Project</h3>
+      <h3 className="label">{t('social.project.kop')}</h3>
       {!picking ? (
         <Button variant="secondary" size="sm" onClick={() => setPicking(true)}>
-          Aan een project hangen
+          {t('social.project.koppelen')}
         </Button>
       ) : (
         <div className="space-y-2 rounded-xl bg-ink-50 p-3">
@@ -63,8 +65,8 @@ export default function ProjectLink({ post }) {
             autoFocus
             value={term}
             onChange={(e) => setTerm(e.target.value)}
-            placeholder="Zoek een taak…"
-            aria-label="Zoek een project"
+            placeholder={t('social.project.zoek_plaatshouder')}
+            aria-label={t('social.project.zoek_label')}
           />
           <ul className="max-h-56 space-y-0.5 overflow-y-auto">
             {results.map((task) => (
@@ -85,11 +87,11 @@ export default function ProjectLink({ post }) {
               </li>
             ))}
             {results.length === 0 ? (
-              <li className="px-2 py-3 text-center text-xs text-ink-400">Geen open taken gevonden.</li>
+              <li className="px-2 py-3 text-center text-xs text-ink-400">{t('social.project.geen_taken')}</li>
             ) : null}
           </ul>
           <Button variant="ghost" size="sm" onClick={() => setPicking(false)}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
         </div>
       )}

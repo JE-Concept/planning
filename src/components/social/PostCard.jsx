@@ -2,14 +2,17 @@ import { cn } from '@lib/cn'
 import { formatTime } from '@lib/dates'
 import { channelMeta, kanalenVan } from '@lib/social-channels'
 import { heeftEigenPublicatiedatum, publicatieMoment } from '@lib/social-planning'
+import { useTaal } from '@context/TaalProvider'
 import { reviewMeta, statusMeta } from '@data/social'
 
 /** A post as it appears in a calendar cell: brand colour, time, thumbnail, channels. */
 export default function PostCard({ post, brand, compact = false, dragging, onOpen, onDragStart, onDragEnd }) {
+  const { t } = useTaal()
   const status = statusMeta(post.status)
   const review = post.reviewState && post.reviewState !== 'none' ? reviewMeta(post.reviewState) : null
   const moment = publicatieMoment(post)
   const kanalen = kanalenVan(post)
+  const statusNaam = t(status.sleutel)
 
   return (
     <article
@@ -25,7 +28,15 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
       }}
       role="button"
       tabIndex={0}
-      aria-label={`${post.title} — ${status.label}${kanalen.length ? ` — ${kanalen.map((k) => channelMeta(k).label).join(', ')}` : ''}`}
+      aria-label={
+        kanalen.length
+          ? t('social.kaart.label_kanalen', {
+              titel: post.title,
+              status: statusNaam,
+              kanalen: kanalen.map((k) => channelMeta(k).label).join(', '),
+            })
+          : t('social.kaart.label', { titel: post.title, status: statusNaam })
+      }
       className={cn(
         'group cursor-pointer overflow-hidden rounded-md border bg-white text-left transition hover:shadow-md',
         dragging && 'drag-ghost'
@@ -41,8 +52,8 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
               // hoort te zien te zijn vóór de post de deur uit gaat.
               title={
                 heeftEigenPublicatiedatum(post)
-                  ? 'Publicatiedatum'
-                  : 'Overgenomen van het event — nog geen eigen publicatiedatum'
+                  ? t('social.kaart.publicatiedatum')
+                  : t('social.kaart.van_event')
               }
             >
               {formatTime(moment)}
@@ -51,7 +62,7 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
           ) : null}
           <span
             aria-hidden="true"
-            title={status.label}
+            title={statusNaam}
             className="h-1.5 w-1.5 shrink-0 rounded-full"
             style={{ backgroundColor: status.color }}
           />
@@ -59,7 +70,7 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
           {review ? (
             <span
               aria-hidden="true"
-              title={review.label}
+              title={t(review.sleutel)}
               className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full ring-1 ring-white"
               style={{ backgroundColor: review.color }}
             />

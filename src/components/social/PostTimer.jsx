@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { formatDuration } from '@lib/format'
 import { Button } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { startTimer, stopTimer, useRunningTimer } from '@data/time'
@@ -21,6 +22,7 @@ import { startTimer, stopTimer, useRunningTimer } from '@data/time'
  */
 export default function PostTimer({ post }) {
   const { uid } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
   const { socialLists } = useWorkspace()
   const { timer, elapsed } = useRunningTimer(uid)
@@ -35,7 +37,9 @@ export default function PostTimer({ post }) {
     try {
       if (loopt) {
         const id = await stopTimer(uid)
-        toast.success(id ? `Gestopt — ${formatDuration(elapsed)} geboekt.` : 'Te kort, niets geboekt.')
+        toast.success(
+          id ? t('timer.gestopt', { tijd: formatDuration(elapsed) }) : t('timer.te_kort')
+        )
       } else {
         await startTimer({
           uid,
@@ -47,7 +51,7 @@ export default function PostTimer({ post }) {
           // een losse post is dat niet vanzelf.
           billable: Boolean(post.taskId),
         })
-        toast.success('Timer loopt.')
+        toast.success(t('timer.loopt'))
       }
     } catch (err) {
       toast.error(err.message)
@@ -59,15 +63,13 @@ export default function PostTimer({ post }) {
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="label mb-0">Tijd</h3>
+        <h3 className="label mb-0">{t('social.tijd.kop')}</h3>
         <Button variant={loopt ? 'danger' : 'secondary'} size="sm" onClick={schakel} disabled={bezig}>
-          {loopt ? `■ ${formatDuration(elapsed, { withSeconds: true })}` : '▶ Start'}
+          {loopt ? `■ ${formatDuration(elapsed, { withSeconds: true })}` : `▶ ${t('timer.start')}`}
         </Button>
       </div>
       <p className="text-sm text-ink-600">
-        {post.taskId
-          ? 'De tijd komt op het event te staan waar deze post aan hangt.'
-          : 'Deze post hangt niet aan een event; de tijd wordt geboekt op het merk.'}
+        {post.taskId ? t('social.tijd.aan_event') : t('social.tijd.op_merk')}
       </p>
     </section>
   )

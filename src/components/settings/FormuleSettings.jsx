@@ -14,11 +14,28 @@ import {
   nieuweOptie,
   saveFormule,
 } from '@data/formules'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
+import { huidigeLocaleVan } from '@lib/dates'
 
+// Bedragen volgen de gekozen taal, net als de datums: een Engelse pagina met
+// een Belgisch komma-bedrag leest als een typfout.
 const euro = (bedrag) =>
-  new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(Number(bedrag) || 0)
+  new Intl.NumberFormat(huidigeLocaleVan(), { style: 'currency', currency: 'EUR' }).format(Number(bedrag) || 0)
+
+/** De iconen en btw-tarieven zoals ze op het scherm staan; de waarde blijft de waarde. */
+const ICOON_SLEUTEL = {
+  sparkles: 'inst.icoon.feest',
+  users: 'inst.icoon.team',
+  utensils: 'inst.icoon.eten',
+  'music-4': 'inst.icoon.muziek',
+  lightbulb: 'inst.icoon.techniek',
+  'calendar-days': 'inst.icoon.kalender',
+  'file-text': 'inst.icoon.document',
+}
+
+const BTW_SLEUTEL = { 6: 'inst.btw.6', 12: 'inst.btw.12', 21: 'inst.btw.21' }
 
 const getal = (waarde) => (waarde === '' || waarde === null || waarde === undefined ? 0 : Number(waarde) || 0)
 
@@ -34,6 +51,7 @@ const getal = (waarde) => (waarde === '' || waarde === null || waarde === undefi
  */
 export default function FormuleSettings() {
   const { alleFormules, formulesStored, templates } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
   const narrow = useNarrow()
   const [sel, setSel] = useState(alleFormules[0]?.id)
@@ -78,7 +96,7 @@ export default function FormuleSettings() {
   if (!draft) {
     return (
       <div className="je-panel" style={{ padding: 'var(--space-6)' }}>
-        <div className="je-muted-caption">Nog geen formules.</div>
+        <div className="je-muted-caption">{t('inst.formule.geen')}</div>
       </div>
     )
   }
@@ -129,7 +147,7 @@ export default function FormuleSettings() {
    * event mee starten.
    */
   const verwijder = async () => {
-    if (!window.confirm(`Formule "${draft.name}" verwijderen? Archiveren volstaat meestal.`)) return
+    if (!window.confirm(t('inst.formule.verwijder_vraag', { naam: draft.name }))) return
     try {
       await zorgVoorOpslag()
       await deleteFormule(draft.id)
@@ -140,7 +158,7 @@ export default function FormuleSettings() {
   }
 
   const keuzeOpties = [
-    { value: '', label: 'Altijd (kale formule)' },
+    { value: '', label: t('inst.formule.altijd') },
     ...draft.opties.flatMap((o) => (o.keuzes ?? []).map((k) => ({ value: k.id, label: `${o.label}: ${k.label}` }))),
   ]
 
@@ -183,7 +201,7 @@ export default function FormuleSettings() {
         })}
         <div style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '1px solid var(--border-hairline)' }}>
           <Button variant="secondary" size="sm" iconLeft="plus" block onClick={maakNieuw}>
-            Nieuwe formule
+            {t('inst.formule.nieuwe')}
           </Button>
         </div>
       </section>
@@ -192,28 +210,31 @@ export default function FormuleSettings() {
         <section className="je-panel">
           <div className="je-formule-kop">
             <div style={{ flex: 1, minWidth: 200 }}>
-              <Field label="Naam formule">
+              <Field label={t('inst.formule.naam')}>
                 <Input value={draft.name} onChange={(e) => wijzig((d) => ({ ...d, name: e.target.value }))} />
               </Field>
             </div>
             <div style={{ width: 140 }}>
-              <Field label="Icoon">
+              <Field label={t('inst.tpl.icoon')}>
                 <Select
-                  options={TEMPLATE_ICONS.map(([value, label]) => ({ value, label }))}
+                  options={TEMPLATE_ICONS.map(([value, label]) => ({
+                    value,
+                    label: t(ICOON_SLEUTEL[value] ?? label),
+                  }))}
                   value={draft.icon}
                   onChange={(e) => wijzig((d) => ({ ...d, icon: e.target.value }))}
                 />
               </Field>
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <IconButton icon="copy" label="Dupliceren" variant="outline" onClick={dupliceer} />
-              <IconButton icon="trash-2" label="Verwijderen" variant="outline" onClick={verwijder} />
+              <IconButton icon="copy" label={t('inst.tpl.dupliceren')} variant="outline" onClick={dupliceer} />
+              <IconButton icon="trash-2" label={t('alg.verwijderen')} variant="outline" onClick={verwijder} />
             </div>
           </div>
 
           <div className="je-formule-kop">
             <div style={{ width: 150 }}>
-              <Field label="Prijs p.p." hint="Excl. btw">
+              <Field label={t('inst.formule.prijs_pp')} hint={t('inst.formule.excl_btw')}>
                 <Input
                   type="number"
                   min="0"
@@ -224,7 +245,7 @@ export default function FormuleSettings() {
               </Field>
             </div>
             <div style={{ width: 150 }}>
-              <Field label="Vaste kost" hint="Ongeacht het aantal">
+              <Field label={t('inst.formule.vaste_kost')} hint={t('inst.formule.ongeacht')}>
                 <Input
                   type="number"
                   min="0"
@@ -235,18 +256,21 @@ export default function FormuleSettings() {
               </Field>
             </div>
             <div style={{ width: 230 }}>
-              <Field label="Btw-tarief">
+              <Field label={t('inst.formule.btw_tarief')}>
                 <Select
-                  options={BTW_TARIEVEN.map((b) => ({ value: String(b.value), label: b.label }))}
+                  options={BTW_TARIEVEN.map((b) => ({
+                    value: String(b.value),
+                    label: t(BTW_SLEUTEL[b.value] ?? b.label),
+                  }))}
                   value={String(draft.btwPercent ?? 12)}
                   onChange={(e) => wijzig((d) => ({ ...d, btwPercent: Number(e.target.value) }))}
                 />
               </Field>
             </div>
             <div style={{ width: 190 }}>
-              <Field label="Taken uit template">
+              <Field label={t('inst.formule.taken_template')}>
                 <Select
-                  options={templates.map((t) => ({ value: t.id, label: t.name }))}
+                  options={templates.map((tp) => ({ value: tp.id, label: tp.name }))}
                   value={draft.templateId ?? ''}
                   onChange={(e) => wijzig((d) => ({ ...d, templateId: e.target.value }))}
                 />
@@ -256,14 +280,16 @@ export default function FormuleSettings() {
               <Switch
                 checked={!draft.archived}
                 onChange={() => wijzig((d) => ({ ...d, archived: !d.archived }))}
-                aria-label="Formule actief"
+                aria-label={t('inst.formule.actief_label')}
               />
-              <span className="je-muted-caption">{draft.archived ? 'Gearchiveerd' : 'Actief'}</span>
+              <span className="je-muted-caption">
+                {draft.archived ? t('inst.formule.gearchiveerd') : t('inst.formule.actief')}
+              </span>
             </div>
           </div>
 
           <div style={{ padding: '0 var(--space-6) var(--space-5)' }}>
-            <Field label="Omschrijving" hint="Staat bij de keuze in het scherm Nieuw event">
+            <Field label={t('inst.formule.omschrijving')} hint={t('inst.formule.omschrijving_hint')}>
               <Textarea
                 rows={2}
                 value={draft.omschrijving ?? ''}
@@ -275,26 +301,29 @@ export default function FormuleSettings() {
 
         <section className="je-panel">
           <div className="je-panel__head">
-            <span className="je-eyebrow">Vragen bij het aanmaken</span>
-            <span className="je-panel__sub">Het eerste antwoord is wat standaard gekozen staat.</span>
+            <span className="je-eyebrow">{t('inst.formule.vragen')}</span>
+            <span className="je-panel__sub">{t('inst.formule.vragen_sub')}</span>
           </div>
 
           {draft.opties.map((optie, i) => (
             <div key={optie.id} className="je-formule-optie" style={{ borderTop: i ? '1px solid var(--border-hairline)' : 'none' }}>
               <div className="je-formule-kop" style={{ padding: 0 }}>
                 <div style={{ flex: 1, minWidth: 180 }}>
-                  <Field label="Vraag">
+                  <Field label={t('inst.formule.vraag')}>
                     <Input value={optie.label} onChange={(e) => zetOptie(optie.id, { label: e.target.value })} />
                   </Field>
                 </div>
                 <div style={{ width: 230 }}>
-                  <Field label="Btw op deze meerprijs">
+                  <Field label={t('inst.formule.btw_meerprijs')}>
                     <Select
                       value={optie.btwPercent == null ? '' : String(optie.btwPercent)}
                       onChange={(e) => zetOptie(optie.id, { btwPercent: e.target.value === '' ? null : Number(e.target.value) })}
                       options={[
-                        { value: '', label: `Zoals de formule (${draft.btwPercent ?? 12}%)` },
-                        ...BTW_TARIEVEN.map((b) => ({ value: String(b.value), label: b.label })),
+                        { value: '', label: t('inst.formule.btw_zoals', { percent: draft.btwPercent ?? 12 }) },
+                        ...BTW_TARIEVEN.map((b) => ({
+                          value: String(b.value),
+                          label: t(BTW_SLEUTEL[b.value] ?? b.label),
+                        })),
                       ]}
                     />
                   </Field>
@@ -302,7 +331,7 @@ export default function FormuleSettings() {
                 <div style={{ paddingBottom: 4 }}>
                   <IconButton
                     icon="x"
-                    label="Vraag verwijderen"
+                    label={t('inst.formule.vraag_verwijderen')}
                     size="sm"
                     onClick={() =>
                       wijzig((d) => ({
@@ -325,25 +354,25 @@ export default function FormuleSettings() {
                   <Input
                     value={k.label}
                     onChange={(e) => zetKeuze(optie.id, k.id, { label: e.target.value })}
-                    aria-label="Antwoord"
+                    aria-label={t('inst.formule.antwoord')}
                   />
                   <Input
                     type="number"
                     step="0.01"
                     value={String(k.prijsPerPersoon ?? 0)}
                     onChange={(e) => zetKeuze(optie.id, k.id, { prijsPerPersoon: getal(e.target.value) })}
-                    aria-label={`Meerprijs per persoon voor ${k.label}`}
+                    aria-label={t('inst.formule.meerprijs_pp', { antwoord: k.label })}
                   />
                   <Input
                     type="number"
                     step="0.01"
                     value={String(k.prijsVast ?? 0)}
                     onChange={(e) => zetKeuze(optie.id, k.id, { prijsVast: getal(e.target.value) })}
-                    aria-label={`Vaste meerprijs voor ${k.label}`}
+                    aria-label={t('inst.formule.meerprijs_vast', { antwoord: k.label })}
                   />
                   <IconButton
                     icon="x"
-                    label="Antwoord verwijderen"
+                    label={t('inst.formule.antwoord_verwijderen')}
                     size="sm"
                     disabled={(optie.keuzes ?? []).length <= 1}
                     onClick={() =>
@@ -353,9 +382,9 @@ export default function FormuleSettings() {
                 </div>
               ))}
               <div className="je-formule-keuze je-formule-keuze--kop je-muted-caption">
-                <span>Antwoord</span>
-                <span>+ per persoon</span>
-                <span>+ vast</span>
+                <span>{t('inst.formule.antwoord')}</span>
+                <span>{t('inst.formule.per_persoon')}</span>
+                <span>{t('inst.formule.vast')}</span>
                 <span />
               </div>
               <Button
@@ -364,7 +393,7 @@ export default function FormuleSettings() {
                 iconLeft="plus"
                 onClick={() => zetOptie(optie.id, { keuzes: [...(optie.keuzes ?? []), nieuweKeuze('Nieuw antwoord')] })}
               >
-                Antwoord toevoegen
+                {t('inst.formule.antwoord_toevoegen')}
               </Button>
             </div>
           ))}
@@ -376,46 +405,46 @@ export default function FormuleSettings() {
               iconLeft="plus"
               onClick={() => wijzig((d) => ({ ...d, opties: [...d.opties, nieuweOptie()] }))}
             >
-              Vraag toevoegen
+              {t('inst.formule.vraag_toevoegen')}
             </Button>
           </div>
         </section>
 
         <section className="je-panel">
           <div className="je-panel__head">
-            <span className="je-eyebrow">Bestelregels</span>
-            <span className="je-panel__sub">Per persoon, of vast. Er wordt altijd per verpakking naar boven afgerond.</span>
+            <span className="je-eyebrow">{t('inst.formule.bestelregels')}</span>
+            <span className="je-panel__sub">{t('inst.formule.bestelregels_sub')}</span>
           </div>
 
           <div className="je-formule-regel je-formule-regel--kop je-muted-caption">
-            <span>Artikel</span>
-            <span>Categorie</span>
-            <span>Eenheid</span>
-            <span>P.p.</span>
-            <span>Vast</span>
-            <span>Per verpakking</span>
-            <span>Verpakking</span>
-            <span>Hoort bij</span>
+            <span>{t('inst.formule.artikel')}</span>
+            <span>{t('inst.formule.categorie')}</span>
+            <span>{t('inst.formule.eenheid')}</span>
+            <span>{t('inst.formule.pp_kort')}</span>
+            <span>{t('inst.formule.vast_kort')}</span>
+            <span>{t('inst.formule.per_verpakking')}</span>
+            <span>{t('inst.formule.verpakking')}</span>
+            <span>{t('inst.formule.hoort_bij')}</span>
             <span />
           </div>
 
           {draft.bestelregels.map((r) => (
             <div key={r.id} className="je-formule-regel">
-              <Input value={r.item} onChange={(e) => zetRegel(r.id, { item: e.target.value })} aria-label="Artikel" />
+              <Input value={r.item} onChange={(e) => zetRegel(r.id, { item: e.target.value })} aria-label={t('inst.formule.artikel')} />
               <Select
                 value={r.categorie ?? 'Keuken'}
                 onChange={(e) => zetRegel(r.id, { categorie: e.target.value })}
                 options={FORMULE_CATEGORIEEN.map((c) => ({ value: c, label: c }))}
-                aria-label="Categorie"
+                aria-label={t('inst.formule.categorie')}
               />
-              <Input value={r.eenheid ?? ''} onChange={(e) => zetRegel(r.id, { eenheid: e.target.value })} aria-label="Eenheid" />
+              <Input value={r.eenheid ?? ''} onChange={(e) => zetRegel(r.id, { eenheid: e.target.value })} aria-label={t('inst.formule.eenheid')} />
               <Input
                 type="number"
                 step="0.01"
                 min="0"
                 value={String(r.perPersoon ?? 0)}
                 onChange={(e) => zetRegel(r.id, { perPersoon: getal(e.target.value) })}
-                aria-label="Per persoon"
+                aria-label={t('inst.formule.per_persoon_label')}
               />
               <Input
                 type="number"
@@ -423,7 +452,7 @@ export default function FormuleSettings() {
                 min="0"
                 value={String(r.vast ?? 0)}
                 onChange={(e) => zetRegel(r.id, { vast: getal(e.target.value) })}
-                aria-label="Vaste hoeveelheid"
+                aria-label={t('inst.formule.vaste_hoeveelheid')}
               />
               <Input
                 type="number"
@@ -431,22 +460,22 @@ export default function FormuleSettings() {
                 min="1"
                 value={String(r.inhoud ?? 1)}
                 onChange={(e) => zetRegel(r.id, { inhoud: Math.max(1, getal(e.target.value)) })}
-                aria-label="Eenheden per verpakking"
+                aria-label={t('inst.formule.eenheden_verpakking')}
               />
               <Input
                 value={r.verpakking ?? ''}
                 onChange={(e) => zetRegel(r.id, { verpakking: e.target.value })}
-                aria-label="Naam van de verpakking"
+                aria-label={t('inst.formule.verpakking_naam')}
               />
               <Select
                 value={r.keuzeId ?? ''}
                 onChange={(e) => zetRegel(r.id, { keuzeId: e.target.value || null })}
                 options={keuzeOpties}
-                aria-label="Hoort bij welk antwoord"
+                aria-label={t('inst.formule.hoort_bij_label')}
               />
               <IconButton
                 icon="x"
-                label="Bestelregel verwijderen"
+                label={t('inst.formule.regel_verwijderen')}
                 size="sm"
                 onClick={() => wijzig((d) => ({ ...d, bestelregels: d.bestelregels.filter((x) => x.id !== r.id) }))}
               />
@@ -460,30 +489,30 @@ export default function FormuleSettings() {
               iconLeft="plus"
               onClick={() => wijzig((d) => ({ ...d, bestelregels: [...d.bestelregels, nieuweBestelregel()] }))}
             >
-              Bestelregel toevoegen
+              {t('inst.formule.regel_toevoegen')}
             </Button>
           </div>
         </section>
 
         <section className="je-panel">
           <div className="je-panel__head">
-            <span className="je-eyebrow">Proefberekening</span>
-            <span className="je-panel__sub">Met de standaardantwoorden, zoals een nieuw event begint.</span>
+            <span className="je-eyebrow">{t('inst.formule.proef')}</span>
+            <span className="je-panel__sub">{t('inst.formule.proef_sub')}</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 'var(--space-5)', padding: 'var(--space-4) var(--space-6)' }}>
             <div style={{ width: 130 }}>
-              <Field label="Aantal personen">
+              <Field label={t('inst.formule.aantal_personen')}>
                 <Input type="number" min="0" step="1" value={proef} onChange={(e) => setProef(e.target.value)} />
               </Field>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center' }}>
-              <Badge tone="accent">{euro(prijs.exclBtw)} excl.</Badge>
+              <Badge tone="accent">{t('inst.formule.excl', { bedrag: euro(prijs.exclBtw) })}</Badge>
               {prijs.btwRegels.map((b) => (
                 <Badge key={b.percent}>
-                  btw {b.percent}%: {euro(b.btw)}
+                  {t('inst.formule.btw_regel', { percent: b.percent, bedrag: euro(b.btw) })}
                 </Badge>
               ))}
-              <Badge tone="success">{euro(prijs.inclBtw)} incl.</Badge>
+              <Badge tone="success">{t('inst.formule.incl', { bedrag: euro(prijs.inclBtw) })}</Badge>
             </div>
           </div>
           {voorbeeld.map((r, i) => (

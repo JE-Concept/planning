@@ -4,6 +4,7 @@ import { Icon } from '@components/ds'
 import { Modal } from '@ui/index'
 import { useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 
 /**
  * Een handvol sneltoetsen, en een scherm dat ze toont.
@@ -32,12 +33,13 @@ export function inEenVeld(doel) {
 export default function Sneltoetsen({ hulpOpen, setHulpOpen }) {
   const navigate = useNavigate()
   const { isStaff } = useAuth()
+  const { t } = useTaal()
   const { open: chatOpen, setOpen: setChatOpen } = useAssistant()
 
   const toetsen = useMemo(() => {
-    const zoeken = { toets: MAC() ? '⌘K' : 'Ctrl+K', wat: 'Zoeken in taken, events, klanten en verslagen' }
-    const schuin = { toets: '/', wat: 'Hetzelfde, met één toets' }
-    const hulp = { toets: '?', wat: 'Dit lijstje' }
+    const zoeken = { toets: MAC() ? '⌘K' : 'Ctrl+K', wat: t('inst.sneltoets.zoeken') }
+    const schuin = { toets: '/', wat: t('inst.sneltoets.schuin') }
+    const hulp = { toets: '?', wat: t('inst.sneltoets.hulp') }
 
     // Personeel heeft één scherm; sprongen naar borden die ze niet mogen zien
     // horen ook niet in hun lijstje te staan.
@@ -46,14 +48,14 @@ export default function Sneltoetsen({ hulpOpen, setHulpOpen }) {
     return [
       zoeken,
       schuin,
-      { toets: 'E', wat: 'Naar het eventbord', pad: '/' },
-      { toets: 'T', wat: 'Naar Tasks', pad: '/tasks' },
-      { toets: 'D', wat: 'Naar het dashboard', pad: '/dashboard' },
-      { toets: 'L', wat: 'Naar Openen & sluiten', pad: '/openen-sluiten' },
-      { toets: 'A', wat: 'Assistent open of dicht' },
+      { toets: 'E', wat: t('inst.sneltoets.eventbord'), pad: '/' },
+      { toets: 'T', wat: t('inst.sneltoets.tasks'), pad: '/tasks' },
+      { toets: 'D', wat: t('inst.sneltoets.dashboard'), pad: '/dashboard' },
+      { toets: 'L', wat: t('inst.sneltoets.openensluiten'), pad: '/openen-sluiten' },
+      { toets: 'A', wat: t('inst.sneltoets.assistent') },
       hulp,
     ]
-  }, [isStaff])
+  }, [isStaff, t])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -88,18 +90,18 @@ export default function Sneltoetsen({ hulpOpen, setHulpOpen }) {
   }, [navigate, setHulpOpen, setChatOpen, chatOpen, isStaff])
 
   return (
-    <Modal open={hulpOpen} onClose={() => setHulpOpen(false)} title="Sneltoetsen" width="max-w-md">
+    <Modal open={hulpOpen} onClose={() => setHulpOpen(false)} title={t('menu.sneltoetsen')} width="max-w-md">
       <ul className="je-sneltoetsen">
-        {toetsen.map((t) => (
-          <li key={t.toets}>
-            <kbd className="je-kbd">{t.toets}</kbd>
-            <span>{t.wat}</span>
+        {toetsen.map((toets) => (
+          <li key={toets.toets}>
+            <kbd className="je-kbd">{toets.toets}</kbd>
+            <span>{toets.wat}</span>
           </li>
         ))}
       </ul>
       <p className="je-muted-caption" style={{ marginTop: 'var(--space-4)', display: 'flex', gap: 6 }}>
         <Icon name="info" size={14} />
-        De losse letters werken alleen als je niet in een veld staat.
+        {t('inst.sneltoets.uitleg')}
       </p>
     </Modal>
   )

@@ -6,6 +6,7 @@ import { groepeer, rangschik } from '@lib/zoeken'
 import { Icon } from '@components/ds'
 import { useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useCustomers } from '@data/customers'
 import { isDone, useEvents } from '@data/events'
@@ -35,6 +36,21 @@ import { templateSummary } from '@data/templates'
 /** De volgorde van de kopjes. Vast, want ze mogen niet wisselen onder je vinger. */
 const SOORTEN = ['Events', 'Taken', 'Klanten', 'Verslagen', 'Mensen', 'Templates']
 
+/**
+ * Het kopje zoals het op het scherm staat.
+ *
+ * De soort zelf blijft Nederlands: hij groepeert en sorteert, en @lib/zoeken
+ * rekent ermee. Alleen wat je leest hangt aan de taal.
+ */
+const SOORT_LABEL = {
+  Events: 'inst.zoek.soort.events',
+  Taken: 'inst.zoek.soort.taken',
+  Klanten: 'inst.zoek.soort.klanten',
+  Verslagen: 'inst.zoek.soort.verslagen',
+  Mensen: 'inst.zoek.soort.mensen',
+  Templates: 'inst.zoek.soort.templates',
+}
+
 /** Tiebreaker bij een gelijke score: waar het vaakst naar gezocht wordt, staat boven. */
 const GEWICHT = { Events: 5, Taken: 4, Klanten: 3, Verslagen: 2, Mensen: 1, Templates: 0 }
 
@@ -47,6 +63,7 @@ export default function GlobalSearch({ narrow }) {
   const { customers } = useCustomers()
   const { meetings } = useMeetings(uid)
   const { ask } = useAssistant()
+  const { t } = useTaal()
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const [q, setQ] = useState('')
@@ -110,25 +127,29 @@ export default function GlobalSearch({ narrow }) {
         sub: samen(e.eventDate ? formatDay(e.eventDate) : null, e.concept, labelOf(e.statusName, eventStatuses)),
         go: () => navigate(`/events/${e.id}`),
       })),
-      ...tasks.map((t) => ({
+      ...tasks.map((taak) => ({
         soort: 'Taken',
-        titel: t.title,
-        extra: [eventById[t.parentId]?.name, t.description],
-        icon: isDone(t) ? 'check-circle' : 'circle',
-        sub: samen(eventById[t.parentId]?.name, voornaam(t.assignees?.[0]), t.dueDate ? formatDay(t.dueDate) : null),
-        go: () => navigate(`/events/${t.parentId}?taak=${t.id}`),
+        titel: taak.title,
+        extra: [eventById[taak.parentId]?.name, taak.description],
+        icon: isDone(taak) ? 'check-circle' : 'circle',
+        sub: samen(
+          eventById[taak.parentId]?.name,
+          voornaam(taak.assignees?.[0]),
+          taak.dueDate ? formatDay(taak.dueDate) : null
+        ),
+        go: () => navigate(`/events/${taak.parentId}?taak=${taak.id}`),
       })),
       ...customers.map((c) => ({
         soort: 'Klanten',
         titel: c.name,
         extra: [c.email, c.vatNumber, c.address?.city, ...(c.contacts ?? []).map((k) => k.name)],
         icon: 'building',
-        sub: samen(c.address?.city, c.vatNumber, 'klantfiche openen'),
+        sub: samen(c.address?.city, c.vatNumber, t('inst.zoek.klantfiche')),
         go: () => navigate('/klanten'),
       })),
       ...meetings.map((m) => ({
         soort: 'Verslagen',
-        titel: m.titel || `Teamoverleg van ${m.datum}`,
+        titel: m.titel || t('inst.zoek.overleg_van', { datum: m.datum }),
         extra: [
           ...(m.samenvatting ?? []).map((s) => s.onderwerp),
           ...(m.samenvatting ?? []).map((s) => s.tekst),
@@ -137,8 +158,8 @@ export default function GlobalSearch({ narrow }) {
         icon: 'messages-square',
         sub: samen(
           m.datum ? formatDay(m.datum) : null,
-          `${(m.samenvatting ?? []).length} ${(m.samenvatting ?? []).length === 1 ? 'punt' : 'punten'}`,
-          'teamoverleg'
+          t('inst.zoek.punt', { aantal: (m.samenvatting ?? []).length }),
+          t('inst.zoek.teamoverleg')
         ),
         go: () => navigate('/overleg'),
       })),
@@ -149,7 +170,9 @@ export default function GlobalSearch({ narrow }) {
           titel: p.fullName || p.email,
           extra: [p.email],
           icon: 'users',
-          sub: `${tasks.filter((t) => !isDone(t) && t.assignees?.includes(p.id)).length} open taken · werklast bekijken`,
+          sub: t('inst.zoek.mens_sub', {
+            aantal: tasks.filter((taak) => !isDone(taak) && taak.assignees?.includes(p.id)).length,
+          }),
           go: () => navigate('/werklast'),
         })),
     ]
@@ -161,14 +184,14 @@ export default function GlobalSearch({ narrow }) {
           titel: tp.name,
           extra: [],
           icon: tp.icon,
-          sub: `Template · ${templateSummary(tp)}`,
+          sub: t('inst.zoek.template_sub', { uitleg: templateSummary(tp) }),
           go: () => navigate(`/instellingen?tab=templates&template=${tp.id}`),
         }))
       )
     }
 
     return uit.map((k) => ({ ...k, gewicht: GEWICHT[k.soort] ?? 0 }))
-  }, [events, tasks, customers, meetings, profiles, templates, isAdmin, eventById, eventStatuses, navigate])
+  }, [events, tasks, customers, meetings, profiles, templates, isAdmin, eventById, eventStatuses, navigate, t])
 
   const ranglijst = useMemo(() => rangschik(kandidaten, q), [kandidaten, q])
   const groups = useMemo(() => groepeer(ranglijst, SOORTEN), [ranglijst])
@@ -216,8 +239,8 @@ export default function GlobalSearch({ narrow }) {
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 120)}
           onKeyDown={onKeyDown}
-          placeholder="Zoek events, taken, klanten, verslagen"
-          aria-label="Zoeken"
+          placeholder={t('inst.zoek.plaatshouder')}
+          aria-label={t('alg.zoeken')}
         />
         {narrow ? null : <span className="je-kbd">⌘K</span>}
       </div>
@@ -234,7 +257,7 @@ export default function GlobalSearch({ narrow }) {
                   color: 'var(--text-2)',
                 }}
               >
-                {label}
+                {t(SOORT_LABEL[label] ?? label)}
               </div>
               {items.map((r) => {
                 const my = k++
@@ -293,8 +316,8 @@ export default function GlobalSearch({ narrow }) {
           >
             <span className="je-muted-caption" style={{ flex: 1 }}>
               {zichtbaar.length
-                ? `${zichtbaar.length} ${zichtbaar.length === 1 ? 'resultaat' : 'resultaten'}`
-                : `Niets gevonden voor “${q.trim()}”.`}
+                ? t('inst.zoek.resultaat', { aantal: zichtbaar.length })
+                : t('inst.zoek.niets', { vraag: q.trim() })}
             </span>
             <button
               type="button"
@@ -307,7 +330,7 @@ export default function GlobalSearch({ narrow }) {
               style={{ display: 'flex', alignItems: 'center', gap: 6, font: 'var(--type-caption)', color: 'var(--text-accent)' }}
             >
               <Icon name="sparkles" size={14} />
-              Vraag het de assistent
+              {t('inst.zoek.assistent')}
             </button>
           </div>
         </div>

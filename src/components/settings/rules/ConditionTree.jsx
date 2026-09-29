@@ -6,9 +6,12 @@ import {
   emptyGroup,
   fieldOf,
   fieldsFor,
+  operatorLabel,
   operatorMeta,
   operatorsFor,
+  veldLabel,
 } from '@lib/automations'
+import { useTaal } from '@context/TaalProvider'
 import { ValueInput } from './ValueInput'
 
 /**
@@ -32,6 +35,7 @@ export default function ConditionTree({
   depth = 0,
   onRemove,
 }) {
+  const { t } = useTaal()
   const groep = node ?? emptyGroup('all')
   const nodes = groep.nodes ?? []
 
@@ -44,7 +48,7 @@ export default function ConditionTree({
     <div className="je-regel-groep">
       <div className="je-regel-groep__kop">
         <Select
-          aria-label="Voorwaarden combineren"
+          aria-label={t('regels.combineren')}
           className="max-w-[14rem]"
           value={groep.kind}
           disabled={readOnly}
@@ -52,7 +56,7 @@ export default function ConditionTree({
         >
           {GROUP_KINDS.map((g) => (
             <option key={g.kind} value={g.kind}>
-              {g.label}
+              {t(g.sleutel)}
             </option>
           ))}
         </Select>
@@ -60,16 +64,16 @@ export default function ConditionTree({
         {readOnly ? null : (
           <>
             <Button size="sm" variant="ghost" onClick={() => onChange({ ...groep, nodes: [...nodes, emptyCondition(entity)] })}>
-              Voorwaarde erbij
+              {t('regels.voorwaarde_erbij')}
             </Button>
             {depth < MAX_DEPTH - 1 ? (
               <Button size="sm" variant="ghost" onClick={() => onChange({ ...groep, nodes: [...nodes, emptyGroup('any')] })}>
-                Groep erbij
+                {t('regels.groep_erbij')}
               </Button>
             ) : null}
             {onRemove ? (
               <Button size="sm" variant="ghost" className="ml-auto text-ink-400" onClick={onRemove}>
-                Groep weg
+                {t('regels.groep_weg')}
               </Button>
             ) : null}
           </>
@@ -77,7 +81,7 @@ export default function ConditionTree({
       </div>
 
       {nodes.length === 0 ? (
-        <p className="text-sm text-ink-500">Geen voorwaarden — de regel vuurt op haar aanleiding alleen.</p>
+        <p className="text-sm text-ink-500">{t('regels.geen_voorwaarden')}</p>
       ) : null}
 
       {nodes.map((kind, i) =>
@@ -110,6 +114,7 @@ export default function ConditionTree({
 
 /** Eén regel: veld, vergelijking, waarde. */
 export function ConditionRow({ condition, entity, context, onChange, onRemove, readOnly }) {
+  const { t } = useTaal()
   const velden = fieldsFor(entity)
   const veld = fieldOf(entity, condition?.field)
   const operatoren = operatorsFor(veld?.type ?? 'text')
@@ -127,27 +132,27 @@ export function ConditionRow({ condition, entity, context, onChange, onRemove, r
   return (
     <div className="je-regel-voorwaarde">
       <Select
-        aria-label="Veld"
+        aria-label={t('regels.veld')}
         value={condition?.field ?? ''}
         disabled={readOnly}
         onChange={(e) => kiesVeld(e.target.value)}
       >
         {velden.map((f) => (
           <option key={f.key} value={f.key}>
-            {f.label}
+            {veldLabel(t, entity, f)}
           </option>
         ))}
       </Select>
 
       <Select
-        aria-label="Vergelijking"
+        aria-label={t('regels.vergelijking')}
         value={condition?.op ?? ''}
         disabled={readOnly}
         onChange={(e) => onChange({ op: e.target.value })}
       >
         {operatoren.map((o) => (
           <option key={o.op} value={o.op}>
-            {o.label}
+            {operatorLabel(t, o)}
           </option>
         ))}
       </Select>
@@ -164,7 +169,7 @@ export function ConditionRow({ condition, entity, context, onChange, onRemove, r
 
       {readOnly ? null : (
         <Button size="sm" variant="ghost" className="ml-auto text-ink-400" onClick={onRemove}>
-          Weg
+          {t('regels.weg')}
         </Button>
       )}
     </div>

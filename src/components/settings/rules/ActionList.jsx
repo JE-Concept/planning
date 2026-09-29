@@ -1,12 +1,14 @@
 import { Avatar, Button, Field, Select } from '@ui/index'
 import {
   ASSIGNEE_MODES,
+  actieLabel,
   actionOf,
   actionsFor,
   emptyAction,
   entityOf,
   relativeDate,
 } from '@lib/automations'
+import { useTaal } from '@context/TaalProvider'
 import { DateValueInput, ValueInput } from './ValueInput'
 
 /**
@@ -19,6 +21,7 @@ import { DateValueInput, ValueInput } from './ValueInput'
  * per ongeluk wél te kiezen zijn en níét uitgevoerd worden.
  */
 export default function ActionList({ entity, actions = [], onChange, context, readOnly = false }) {
+  const { t } = useTaal()
   const ent = entityOf(entity?.key ?? entity)
 
   const zet = (i, patch) => onChange(actions.map((a, j) => (j === i ? { ...a, ...patch } : a)))
@@ -41,7 +44,7 @@ export default function ActionList({ entity, actions = [], onChange, context, re
               className="ml-auto text-ink-400"
               onClick={() => onChange(actions.filter((_, j) => j !== i))}
             >
-              Weg
+              {t('regels.weg')}
             </Button>
           )}
         </div>
@@ -50,16 +53,16 @@ export default function ActionList({ entity, actions = [], onChange, context, re
       {readOnly ? null : (
         <Select
           value=""
-          aria-label="Actie toevoegen"
+          aria-label={t('regels.actie_toevoegen')}
           className="max-w-[16rem]"
           onChange={(e) =>
             e.target.value && onChange([...actions, emptyAction(ent, e.target.value)])
           }
         >
-          <option value="">Actie toevoegen…</option>
+          <option value="">{t('regels.actie_toevoegen_leeg')}</option>
           {actionsFor(ent).map((a) => (
             <option key={a.kind} value={a.kind}>
-              {a.label}
+              {actieLabel(t, ent, a)}
             </option>
           ))}
         </Select>
@@ -69,14 +72,17 @@ export default function ActionList({ entity, actions = [], onChange, context, re
 }
 
 function ActionEditor({ action, entity, context, onChange, readOnly }) {
+  const { t } = useTaal()
   const desc = actionOf(entity, action?.kind)
-  if (!desc) return <span className="text-sm text-ink-500">Onbekende actie — ze wordt overgeslagen.</span>
+  if (!desc) return <span className="text-sm text-ink-500">{t('regels.actie_onbekend')}</span>
+
+  const naam = actieLabel(t, entity, desc)
 
   if (desc.apply === 'people') {
     const team = context?.profiles ?? []
     return (
       <>
-        <Field label={desc.label} className="min-w-[10rem]">
+        <Field label={naam} className="min-w-[10rem]">
           <div className="flex flex-wrap gap-1">
             {team.map((p) => {
               const aan = (action.profileIds ?? []).includes(p.id)
@@ -102,16 +108,16 @@ function ActionEditor({ action, entity, context, onChange, readOnly }) {
             })}
           </div>
         </Field>
-        <Field label="En">
+        <Field label={t('regels.en')}>
           <Select
-            aria-label="Manier van toewijzen"
+            aria-label={t('regels.manier_toewijzen')}
             value={action.mode ?? 'set'}
             onChange={(e) => onChange({ mode: e.target.value })}
             disabled={readOnly}
           >
             {ASSIGNEE_MODES.map((m) => (
               <option key={m.mode} value={m.mode}>
-                {m.label}
+                {t(m.sleutel)}
               </option>
             ))}
           </Select>
@@ -123,35 +129,35 @@ function ActionEditor({ action, entity, context, onChange, readOnly }) {
   if (desc.apply === 'listAdd') {
     return (
       <>
-        <Field label={desc.label}>
+        <Field label={naam}>
           <ValueInput
             field={{ type: 'text', options: desc.options }}
             context={context}
             value={action.value}
             disabled={readOnly}
-            label={desc.label}
+            label={naam}
             onChange={(value) => onChange({ value })}
           />
         </Field>
         {/* Een label dat zegt wanneer er iets moet gebeuren ("opvolgen 02-10")
             is waar Jasper om vroeg: niet alleen een vast woord. */}
-        <Field label="Datum erbij">
+        <Field label={t('regels.datum_erbij')}>
           <Select
-            aria-label="Datum bij het label"
+            aria-label={t('regels.datum_bij_label')}
             value={action.date ? 'ja' : 'nee'}
             disabled={readOnly}
             onChange={(e) => onChange({ date: e.target.value === 'ja' ? relativeDate(3) : null })}
           >
-            <option value="nee">nee</option>
-            <option value="ja">ja</option>
+            <option value="nee">{t('regels.nee')}</option>
+            <option value="ja">{t('regels.ja')}</option>
           </Select>
         </Field>
         {action.date ? (
-          <Field label="Welke dag">
+          <Field label={t('regels.welke_dag')}>
             <DateValueInput
               value={action.date}
               disabled={readOnly}
-              label="Label"
+              label={t('regels.label_woord')}
               onChange={(date) => onChange({ date })}
             />
           </Field>
@@ -162,11 +168,11 @@ function ActionEditor({ action, entity, context, onChange, readOnly }) {
 
   if (desc.apply === 'date') {
     return (
-      <Field label={desc.label} hint="Om 17.00, zodat het niet meteen te laat staat">
+      <Field label={naam} hint={t('regels.om_vijf')}>
         <DateValueInput
           value={action.date ?? (typeof action.value === 'number' ? relativeDate(action.value) : null)}
           disabled={readOnly}
-          label={desc.label}
+          label={naam}
           onChange={(date) => onChange({ date, value: undefined })}
         />
       </Field>
@@ -174,13 +180,13 @@ function ActionEditor({ action, entity, context, onChange, readOnly }) {
   }
 
   return (
-    <Field label={desc.label}>
+    <Field label={naam}>
       <ValueInput
         field={{ type: desc.type ?? 'text', options: desc.options }}
         context={context}
         value={action.value}
         disabled={readOnly}
-        label={desc.label}
+        label={naam}
         onChange={(value) => onChange({ value })}
       />
     </Field>
