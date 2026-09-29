@@ -50,6 +50,7 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `checklists/{id}` | De lijsten zelf (openen, sluiten), met secties en punten. Beheerders bewerken ze; `src/lib/checklist-templates.js` is de bron voor de seed. |
 | `checklistRuns/{id}` | Eén run per lijst per dag, met de vaste id `<lijst>_<jjjj-mm-dd>`. De stand staat in een map `items`, gesleuteld op punt-id. |
 | `pushTokens/{token}` | Eén rij per toestel dat meldingen wil, gesleuteld op het token. Je beheert en leest alleen je eigen rijen; versturen doet een Cloud Function. |
+| `mailQueue/{id}` | De postbak van de meldingen: één rij per e-mail die nog moet vertrekken, met zijn status (`wachtend`, `verstuurd`, `mislukt`). Dicht voor de app — er staan adressen en volledige teksten in. Schrijven doen de triggers in `functions/`, versturen doet `functions-mail/`, dat alleen uitgerold wordt als het geheim `SMTP_URL` bestaat. Zie `docs/e-mailmeldingen-aanzetten.md`. |
 | `formules/{id}` | Vaste formules (winter bbq aan 29,90) met hun vragen (`opties`), de antwoorden erbij (`keuzes`) en de `bestelregels` die eruit volgen. Lezen: team, schrijven: beheerders. `src/lib/formule-templates.js` is de bron voor de seed en de demo; het rekenwerk staat in `src/lib/formules.js`. |
 | `automations/{id}` | De business rules: wanneer ze vuren en wat ze doen. Beheerders bewerken ze in Instellingen; uitvoeren doet een Cloud Function. |
 | `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde en met welke opmerking. Wordt aangevuld, nooit gewijzigd. |

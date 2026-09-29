@@ -411,6 +411,82 @@ await test('een agendapunt toevoegen komt op de agenda', async () => {
   await page.close()
 })
 
+await test('een besproken agendapunt wordt in één handeling een taak', async () => {
+  // Wat op een overleg afgesproken wordt, gebeurt pas wanneer het ergens staat
+  // met een naam en een datum erbij. Eerder eindigde een punt bij "Besproken".
+  const page = await tabblad('/overleg')
+  await page.getByRole('button', { name: 'Besproken' }).first().click()
+  await page.waitForTimeout(700)
+
+  const dialoog = page.getByRole('dialog')
+  zouden(bevat(await dialoog.innerText(), 'een taak maken'), 'de afrondingsdialoog opent niet')
+
+  // De titel van het punt en een deadline staan al ingevuld: wie niets
+  // verandert, heeft in één klik een taak met een naam en een datum.
+  const titel = dialoog.getByLabel('Wat moet er gebeuren?')
+  zouden(
+    (await titel.inputValue()).includes('Prijzen verhuurmateriaal'),
+    `de titel van het punt staat niet voorgevuld: ${await titel.inputValue()}`
+  )
+  const deadline = dialoog.getByLabel('Deadline van de taak')
+  zouden(/^\d{4}-\d{2}-\d{2}$/.test(await deadline.inputValue()), 'er staat geen deadline voorgesteld')
+
+  await titel.fill('Tarieven verhuurmateriaal +8% vanaf november')
+  await dialoog.getByLabel('Wie doet het?').selectOption({ label: 'Jasper Hansen' })
+  await deadline.fill('2026-10-09')
+  await dialoog.getByRole('button', { name: 'Taak aanmaken' }).click()
+  await page.waitForTimeout(1200)
+
+  // Het punt is van de agenda af, en bij het besprokene staat dat er werk uit
+  // kwam — anders is "besproken" niet te onderscheiden van "besproken en vergeten".
+  const na = await inhoud(page)
+  zouden(!bevat(na, 'Prijzen verhuurmateriaal herzien'), 'het punt staat nog op de open agenda')
+  await page.getByRole('button', { name: /Al besproken/ }).click()
+  await page.waitForTimeout(600)
+  const besproken = await inhoud(page)
+  zouden(bevat(besproken, 'Prijzen verhuurmateriaal'), 'het punt staat niet bij het besprokene')
+  zouden(bevat(besproken, 'taak aangemaakt'), 'er staat niet bij dat er een taak uit kwam')
+
+  // En de taak staat echt op het takenbord. Klikken en niet herladen: de
+  // demodatabase leeft in het tabblad, dus een herlaadbeurt zou alleen bewijzen
+  // dat de voorbeeldgegevens er nog staan.
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Tasks/ }).first().click()
+  await page.waitForTimeout(1400)
+  const bord = await inhoud(page)
+  zouden(bevat(bord, 'Tarieven verhuurmateriaal +8%'), `de taak staat niet op het bord: ${bord.slice(0, 250)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de verslagen zijn doorzoekbaar, tot in de actiepunten', async () => {
+  const page = await tabblad('/overleg')
+  await page.getByRole('tab', { name: 'Verslagen' }).click()
+  await page.waitForTimeout(800)
+  const alles = await inhoud(page)
+  zouden(bevat(alles, 'Weekstart events'), 'de verslagen staan er niet')
+  zouden(bevat(alles, 'Maandoverleg bistro'), 'het tweede verslag staat er niet')
+
+  const veld = page.getByLabel('Zoek in de verslagen')
+  await veld.fill('winterkaart')
+  await page.waitForTimeout(600)
+  const een = await inhoud(page)
+  zouden(bevat(een, 'Maandoverleg bistro'), 'het verslag met dat woord is weggefilterd')
+  zouden(!bevat(een, 'Weekstart events'), 'er wordt niet gefilterd')
+
+  // En het woord dat alleen in een actiepunt staat, vindt zijn verslag terug.
+  await veld.fill('doorsturen')
+  await page.waitForTimeout(600)
+  const via = await inhoud(page)
+  zouden(bevat(via, 'Weekstart events'), 'een woord uit een actiepunt vindt zijn verslag niet')
+  zouden(bevat(via, 'actiepunt'), 'er staat niet bij waarom dit verslag gevonden werd')
+
+  await veld.fill('kerstmarkt borgloon')
+  await page.waitForTimeout(600)
+  zouden(bevat(await inhoud(page), 'Niets gevonden'), 'een zoekterm zonder treffers zegt niets')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('het verloop van een doel is uit te klappen', async () => {
   const page = await tabblad('/goals')
   await page.getByRole('button', { name: 'Verloop' }).first().click()

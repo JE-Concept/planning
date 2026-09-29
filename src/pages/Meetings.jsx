@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { dayKey, formatDate } from '@lib/dates'
 import { leesFunctieFout } from '@lib/functie-fout'
+import { beginstatus, kiesTakenlijst, standaardDeadline } from '@lib/agenda-taak'
+import { groepeerActies, zoekVerslagen } from '@lib/verslag-zoek'
 import {
   Avatar,
   Badge,
@@ -19,9 +21,10 @@ import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { summariseMeeting, useMeetingTasks, useMeetings } from '@data/meetings'
+import { summariseMeeting, useAlleActiepunten, useMeetingTasks, useMeetings } from '@data/meetings'
 import {
   addAgendaItem,
+  besprekenEnTaak,
   deleteAgendaItem,
   markDiscussed,
   reopenAgendaItem,
@@ -43,6 +46,15 @@ export default function Meetings() {
   const [tab, setTab] = useState('agenda')
   const [open, setOpen] = useState(null)
   const [pasting, setPasting] = useState(false)
+  const [zoek, setZoek] = useState('')
+
+  // Alleen op het tabblad waar gezocht wordt; daarbuiten is het een
+  // abonnement op het halve takenbord dat niemand leest.
+  const actiepunten = useAlleActiepunten(tab === 'verslagen')
+  const gevonden = useMemo(
+    () => zoekVerslagen({ verslagen: meetings, actiesPerVerslag: groepeerActies(actiepunten), term: zoek }),
+    [meetings, actiepunten, zoek]
+  )
 
   if (loading) {
     return (
@@ -59,7 +71,9 @@ export default function Meetings() {
         subtitle={
           tab === 'agenda'
             ? `${agenda.length} ${agenda.length === 1 ? 'punt' : 'punten'} · ${totalMinutes(agenda)} min gepland`
-            : `${meetings.length} ${meetings.length === 1 ? 'verslag' : 'verslagen'}`
+            : zoek.trim()
+              ? `${gevonden.length} van ${meetings.length} ${meetings.length === 1 ? 'verslag' : 'verslagen'}`
+              : `${meetings.length} ${meetings.length === 1 ? 'verslag' : 'verslagen'}`
         }
         actions={
           tab === 'verslagen' && isAdmin ? (
@@ -86,41 +100,81 @@ export default function Meetings() {
       {tab === 'agenda' ? <Agenda items={agenda} /> : null}
 
       <div className={tab === 'agenda' ? 'hidden' : 'min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6'}>
-        <div className="mx-auto max-w-3xl py-4">
+        <div className="mx-auto max-w-3xl space-y-3 py-4">
           {meetings.length === 0 ? (
             <EmptyState
               title="Nog geen verslagen"
               description="Zodra er een overleg is samengevat, staat het hier met zijn actiepunten."
             />
           ) : (
-            <ul className="space-y-2">
-              {meetings.map((meeting) => (
-                <li key={meeting.id}>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(meeting)}
-                    className="card w-full p-4 text-left transition hover:shadow-cue-md"
-                  >
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="font-display text-base font-extrabold text-ink-900">
-                        {meeting.titel}
-                      </span>
-                      <span className="text-xs text-ink-500">{formatDate(meeting.datum)}</span>
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-ink-600">
-                      {meeting.samenvatting?.[0]?.tekst ?? ''}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {(meeting.deelnemers ?? []).slice(0, 6).map((naam) => (
-                        <Badge key={naam} subtle>
-                          {naam}
-                        </Badge>
-                      ))}
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              {/* Zoeken gaat door de samenvattingen én de actiepunten. Een
+                  verslag dat je niet terugvindt, had je net zo goed niet
+                  kunnen maken. */}
+              <Input
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                placeholder="Zoek in de verslagen en de actiepunten…"
+                aria-label="Zoek in de verslagen"
+              />
+
+              {gevonden.length === 0 ? (
+                <EmptyState
+                  title="Niets gevonden"
+                  description={`Geen verslag met "${zoek.trim()}" in de samenvatting of de actiepunten.`}
+                />
+              ) : (
+                <ul className="space-y-2">
+                  {gevonden.map((meeting) => (
+                    <li key={meeting.id}>
+                      <button
+                        type="button"
+                        onClick={() => setOpen(meeting)}
+                        className="card w-full p-4 text-left transition hover:shadow-cue-md"
+                      >
+                        <div className="flex flex-wrap items-baseline gap-2">
+                          <span className="font-display text-base font-extrabold text-ink-900">
+                            {meeting.titel}
+                          </span>
+                          <span className="text-xs text-ink-500">{formatDate(meeting.datum)}</span>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-sm text-ink-600">
+                          {meeting.samenvatting?.[0]?.tekst ?? ''}
+                        </p>
+
+                        {/* Waarom dit verslag in de lijst staat. Zonder die
+                            regel moet je alsnog elk verslag openen. */}
+                        {meeting.treffers?.length ? (
+                          <ul className="je-verslagtreffers">
+                            {meeting.treffers.slice(0, 3).map((t, i) => (
+                              <li key={`${t.soort}-${i}`}>
+                                <Badge subtle>
+                                  {t.soort === 'actiepunt' ? 'actiepunt' : 'besproken'}
+                                </Badge>
+                                <span>{t.tekst || t.detail}</span>
+                              </li>
+                            ))}
+                            {meeting.treffers.length > 3 ? (
+                              <li className="text-ink-500">
+                                en {meeting.treffers.length - 3} andere
+                              </li>
+                            ) : null}
+                          </ul>
+                        ) : null}
+
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {(meeting.deelnemers ?? []).slice(0, 6).map((naam) => (
+                            <Badge key={naam} subtle>
+                              {naam}
+                            </Badge>
+                          ))}
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -144,6 +198,7 @@ function Agenda({ items }) {
   const { items: besproken } = useAgenda('besproken')
   const toast = useToast()
   const [toonBesproken, setToonBesproken] = useState(false)
+  const [afronden, setAfronden] = useState(null)
 
   const [titel, setTitel] = useState('')
   const [omschrijving, setOmschrijving] = useState('')
@@ -256,7 +311,7 @@ function Agenda({ items }) {
                         variant="ghost"
                         size="sm"
                         className="ml-auto"
-                        onClick={() => markDiscussed(item.id).catch((e) => toast.error(e.message))}
+                        onClick={() => setAfronden(item)}
                       >
                         Besproken
                       </Button>
@@ -278,6 +333,8 @@ function Agenda({ items }) {
           </>
         )}
 
+        {afronden ? <Afronden item={afronden} onClose={() => setAfronden(null)} /> : null}
+
         {besproken.length > 0 ? (
           <div>
             <button
@@ -295,6 +352,9 @@ function Agenda({ items }) {
                     className="flex flex-wrap items-center gap-2 rounded-xl bg-ink-50 px-3 py-2 text-sm"
                   >
                     <span className="min-w-0 flex-1 truncate text-ink-600 line-through">{item.titel}</span>
+                    {/* Of er werk uit kwam. Zonder dit is "besproken" niet te
+                        onderscheiden van "besproken en vergeten". */}
+                    {item.taskId ? <Badge subtle>taak aangemaakt</Badge> : null}
                     {item.besprokenOp ? (
                       <span className="text-[11px] text-ink-500">{formatDate(item.besprokenOp)}</span>
                     ) : null}
@@ -313,6 +373,129 @@ function Agenda({ items }) {
         ) : null}
       </div>
     </div>
+  )
+}
+
+/**
+ * Een agendapunt afronden, en er in dezelfde handeling een taak van maken.
+ *
+ * Dat "in dezelfde handeling" is het hele punt. Zolang afvinken en een taak
+ * aanmaken twee schermen waren, gebeurde het tweede niet — het overleg loopt
+ * door en de volgende spreker is al begonnen. Hier staat alles wat een taak
+ * nodig heeft al ingevuld: de titel van het punt, de eigenaar ervan, en een
+ * deadline op het volgende overleg. Wie het anders wil, verandert het; wie
+ * niets verandert, heeft in één klik een taak met een naam en een datum.
+ *
+ * "Alleen afvinken" blijft bestaan, want niet elk punt levert werk op. Een
+ * mededeling is besproken en klaar, en daar een lege taak van maken vervuilt
+ * het bord dat het net overzichtelijk moest houden.
+ */
+function Afronden({ item, onClose }) {
+  const { profiles, activeLists, profileById } = useWorkspace()
+  const toast = useToast()
+
+  const lijst = useMemo(() => kiesTakenlijst(activeLists), [activeLists])
+  const [titel, setTitel] = useState(item.titel ?? '')
+  const [eigenaar, setEigenaar] = useState(item.ownerId ?? '')
+  const [deadline, setDeadline] = useState(() => standaardDeadline())
+  const [busy, setBusy] = useState(false)
+
+  const kandidaten = profiles.filter((p) => p.active !== false && p.role !== 'staff')
+
+  const alleenAfvinken = async () => {
+    setBusy(true)
+    try {
+      await markDiscussed(item.id)
+      onClose()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const metTaak = async () => {
+    setBusy(true)
+    try {
+      await besprekenEnTaak({
+        item,
+        lijst,
+        status: beginstatus(lijst),
+        titel,
+        eigenaar: eigenaar || null,
+        deadline,
+      })
+      const wie = eigenaar ? profileById[eigenaar] : null
+      toast.success(
+        wie ? `Taak aangemaakt voor ${wie.fullName || wie.email}.` : 'Taak aangemaakt.'
+      )
+      onClose()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Besproken — en dan?"
+      footer={
+        <>
+          <Button variant="secondary" disabled={busy} onClick={alleenAfvinken}>
+            Alleen afvinken
+          </Button>
+          <Button variant="primary" disabled={busy || !titel.trim() || !lijst} onClick={metTaak}>
+            {busy ? 'Bezig…' : 'Taak aanmaken'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3 px-5 py-4">
+        <p className="text-sm text-ink-600">
+          Van “{item.titel}” een taak maken, met een eigenaar en een deadline erbij.
+        </p>
+
+        <Field label="Wat moet er gebeuren?">
+          <Input value={titel} onChange={(e) => setTitel(e.target.value)} />
+        </Field>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Wie doet het?">
+            <Select value={eigenaar} onChange={(e) => setEigenaar(e.target.value)}>
+              <option value="">Niemand — nog te verdelen</option>
+              {kandidaten.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.fullName || p.email}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <label className="block">
+            <span className="label">Tegen wanneer?</span>
+            <input
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className="field"
+              aria-label="Deadline van de taak"
+            />
+          </label>
+        </div>
+
+        {lijst ? (
+          <p className="text-[11px] text-ink-500">
+            De taak komt op “{lijst.name}” te staan, en meteen in Mijn werk van wie ze krijgt.
+          </p>
+        ) : (
+          <p className="text-[11px] text-amber-700">
+            Er is nog geen takenlijst om dit op te zetten. Maak er een aan bij Instellingen.
+          </p>
+        )}
+      </div>
+    </Modal>
   )
 }
 

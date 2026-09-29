@@ -1466,3 +1466,98 @@ select.je-compact { padding-right: 24px; }
   border-bottom: 1px solid var(--border-hairline);
 }
 .je-sociallos .je-input { max-width: 320px; }
+
+/* ── Overleg en meldingen ─────────────────────────────────────────────────── */
+
+/* Waarom een verslag in de zoekresultaten staat. Twee of drie regels onder de
+   kaart, met het soort treffer ervoor — anders moet je alsnog elk verslag
+   openen om te zien of het dat ene gesprek was. */
+.je-verslagtreffers {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+.je-verslagtreffers > li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.je-verslagtreffers > li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Welke meldingen je krijgt: één regel per soort bericht, met de twee kanalen
+   ernaast. De uitleg staat eronder en niet in een tooltip — wie weet wanneer
+   een bericht komt, zet het minder snel helemaal uit. */
+.je-meldpref {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.je-meldpref__intro {
+  font: var(--type-body-sm);
+  color: var(--text-2);
+  margin: 0;
+}
+.je-meldpref__lijst {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.je-meldpref__rij {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-meldpref__rij:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.je-meldpref__tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.je-meldpref__titel {
+  font: var(--type-body);
+  font-weight: 600;
+}
+.je-meldpref__uitleg {
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+.je-meldpref__schakelaars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+.je-meldpref__waarschuwing {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+
+@media (max-width: 560px) {
+  .je-meldpref__rij {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .je-meldpref__schakelaars {
+    flex-direction: row;
+    gap: var(--space-4);
+  }
+}

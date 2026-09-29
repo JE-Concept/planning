@@ -18,6 +18,12 @@
       "codebase": "meetings",
       "runtime": "nodejs22",
       "ignore": ["node_modules", ".git", "firebase-debug.log", "*.local"]
+    },
+    {
+      "source": "functions-mail",
+      "codebase": "mail",
+      "runtime": "nodejs22",
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "*.local"]
     }
   ],
   "hosting": {

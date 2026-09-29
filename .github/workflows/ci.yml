@@ -163,6 +163,17 @@ jobs:
           else
             echo "::warning::Geheim ANTHROPIC_API_KEY bestaat niet — overlegfuncties overgeslagen."
           fi
+
+          # Hetzelfde verhaal voor de mailverzender: eigen codebase, eigen
+          # geheim. Zonder SMTP_URL blijven de meldingen in `mailQueue` staan
+          # in plaats van te vertrekken — de rest van de tool merkt er niets van.
+          if gcloud secrets describe SMTP_URL --project "$FIREBASE_PROJECT" >/dev/null 2>&1; then
+            ( cd functions-mail && npm install --no-audit --no-fund )
+            scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions:mail \
+              || echo "::warning::De mailverzender is niet uitgerold; de rest staat wel live."
+          else
+            echo "::warning::Geheim SMTP_URL bestaat niet — er wordt niet gemaild, alleen gepusht."
+          fi
           node scripts/seed.mjs
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting
 

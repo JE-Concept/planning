@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { deleteDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
+import { taakUitAgendapunt } from '@lib/agenda-taak'
+import { createTask } from './tasks'
 
 /**
  * De agenda van het teamoverleg.
@@ -46,6 +48,7 @@ export function addAgendaItem({ titel, omschrijving, minuten, uid }) {
     status: 'open',
     meetingId: null,
     besprokenOp: null,
+    taskId: null,
     createdBy: uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -75,3 +78,29 @@ export function deleteAgendaItem(id) {
 
 /** De geplande tijd van de hele agenda — één blik of het overleg past. */
 export const totalMinutes = (items) => items.reduce((n, i) => n + (Number(i.minuten) || 0), 0)
+
+/**
+ * Een punt afronden én er meteen een taak van maken.
+ *
+ * In één handeling, want dat is het hele verschil. Zolang "Besproken" en
+ * "maak hier een taak van" twee schermen waren, gebeurde het tweede niet: het
+ * overleg loopt door, de volgende spreker is al bezig, en wat afgesproken werd
+ * stond nergens meer dan in het hoofd van wie het zei.
+ *
+ * De taak krijgt een eigenaar en een deadline mee — zonder die twee is een
+ * actiepunt een goede bedoeling. `taskId` blijft op het punt staan, zodat een
+ * tweede klik niet stilletjes een tweede taak oplevert en je vanaf de agenda
+ * terugvindt waar het werk terechtkwam.
+ */
+export async function besprekenEnTaak({ item, lijst, status, titel, eigenaar, deadline }) {
+  const payload = taakUitAgendapunt({ item, lijst, status, titel, eigenaar, deadline })
+  if (!payload) throw new Error('Dit punt heeft geen titel om een taak van te maken.')
+
+  const taskId = await createTask(payload)
+  await updateAgendaItem(item.id, {
+    status: 'besproken',
+    besprokenOp: new Date(),
+    taskId,
+  })
+  return taskId
+}

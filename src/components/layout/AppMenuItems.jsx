@@ -107,3 +107,22 @@ export function PushMenuItem() {
     </button>
   )
 }
+
+/**
+ * Welke berichten je wil ontvangen.
+ *
+ * Staat hier en niet in Instellingen, om dezelfde reden als de knop erboven:
+ * Instellingen is van de beheerders, terwijl dit van iedereen persoonlijk is.
+ * Het verschil met de knop erboven is dat die over dít toestel gaat en deze
+ * over jou — vandaar twee regels en niet één.
+ *
+ * Alleen de knop: het venster zelf hangt buiten dit menu, want het menu klapt
+ * dicht zodra je erop klikt en nam het venster anders meteen weer mee.
+ */
+export function MeldingsVoorkeurenMenuItem({ onOpen }) {
+  return (
+    <button type="button" role="menuitem" className={item} onClick={onOpen}>
+      Welke meldingen ik krijg
+    </button>
+  )
+}

@@ -66,3 +66,36 @@ export function useMeetingTasks(meetingId) {
 export function summariseMeeting({ transcript, datum, bron }) {
   return httpsCallable(functions, 'summariseMeeting')({ transcript, datum, bron }).then((r) => r.data)
 }
+
+/**
+ * Alle actiepunten van alle verslagen, in één abonnement.
+ *
+ * Nodig om te kunnen zoeken: wie "leverancier" intikt, verwacht ook het verslag
+ * terug waarin dat woord alleen in een actiepunt stond. Per verslag apart
+ * ophalen zou één query per verslag betekenen, en dat zijn er elke week één
+ * meer.
+ *
+ * De filter `meetingId >= ''` is de manier waarop Firestore "dit veld is een
+ * tekst" zegt: taken zonder actiepunt-herkomst hebben er `null` staan, en null
+ * sorteert vóór elke tekst. Dat scheelt het hele takenbord binnenhalen.
+ *
+ * Alleen wanneer het zoekscherm openstaat, want daarbuiten is het een
+ * abonnement dat niemand leest.
+ */
+export function useAlleActiepunten(actief = true) {
+  const [taken, setTaken] = useState([])
+
+  useEffect(() => {
+    if (!actief) {
+      setTaken([])
+      return undefined
+    }
+    return onSnapshot(
+      query(col(COL.tasks), where('meetingId', '>=', '')),
+      (snap) => setTaken(fromQuery(snap)),
+      () => setTaken([])
+    )
+  }, [actief])
+
+  return taken
+}

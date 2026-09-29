@@ -1,11 +1,27 @@
 import { initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
-import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore'
+import { onDocumentCreated, onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { getMessaging } from 'firebase-admin/messaging'
 import { logger } from 'firebase-functions'
 import { planFor } from './automations.js'
-import { kort, nieuweReviewer, nieuweToegewezenen } from './notify.js'
+import {
+  bepaalOntvangers,
+  isTeLaat,
+  perPersoon,
+  kort,
+  nieuweReviewer,
+  nieuweToegewezenen,
+  vervaltMorgen,
+  wieBijReactie,
+} from './notify.js'
+import {
+  mailVoorDeadline,
+  mailVoorReactie,
+  mailVoorTeLaat,
+  mailVoorToewijzing,
+} from './mail.js'
 
 initializeApp()
 const db = getFirestore()
@@ -245,6 +261,55 @@ async function stuurMelding(profileIds, { title, body, url, tag }) {
 }
 
 /**
+ * Het adres waar een melding naartoe wijst.
+ *
+ * Staat hier als constante en niet in vier teksten: de tool verhuist ooit naar
+ * een ander domein, en dan is een mail met een dood adres erger dan geen mail.
+ */
+const APP = process.env.APP_URL ?? 'https://planning.jeconcept.be'
+
+/** Alle profielen, één keer per aanroep. Het zijn er tien, geen tienduizend. */
+async function alleProfielen() {
+  const snap = await db.collection('profiles').get()
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+/**
+ * Eén bericht versturen langs de kanalen die de ontvanger openliet.
+ *
+ * `bepaalOntvangers` doet het denkwerk — wie valt af en waarom staat daar —
+ * en dit stuurt wat eruit komt. De e-mail gaat niet rechtstreeks de deur uit
+ * maar in `mailQueue`; waarom die wachtrij ertussen zit, staat bovenaan
+ * `mail.js`. Kort: de SMTP-sleutel mag ontbreken zonder dat er iets breekt.
+ */
+async function verstuur({ soort, kandidaten, behalve = null, profielen, push, mail }) {
+  const ontvangers = bepaalOntvangers({ soort, kandidaten, profielen, behalve })
+
+  const verstuurd = push ? await stuurMelding(ontvangers.push, push) : 0
+
+  const batch = db.batch()
+  let gemaild = 0
+  for (const { id, adres } of ontvangers.email) {
+    const inhoud = mail ? mail(adres) : null
+    if (!inhoud) continue
+    batch.set(db.collection('mailQueue').doc(), {
+      aan: adres,
+      profileId: id,
+      soort,
+      onderwerp: inhoud.onderwerp,
+      tekst: inhoud.tekst,
+      status: 'wachtend',
+      pogingen: 0,
+      createdAt: FieldValue.serverTimestamp(),
+    })
+    gemaild += 1
+  }
+  if (gemaild) await batch.commit()
+
+  return { push: verstuurd, email: gemaild }
+}
+
+/**
  * "Er staat iets voor jou klaar."
  *
  * Alleen wie er nieuw op komt te staan, en nooit wie de wijziging zelf maakte.
@@ -262,14 +327,23 @@ export const notifyAssignment = onDocumentWritten(
     const nieuw = nieuweToegewezenen(voor, na, na.updatedBy ?? na.createdBy ?? null)
     if (nieuw.length === 0) return
 
-    const verstuurd = await stuurMelding(nieuw, {
-      title: 'Nieuwe taak voor jou',
-      body: kort(na.title),
-      url: '/mijn-werk',
-      tag: `taak-${event.params.taskId}`,
+    const taak = { id: event.params.taskId, ...na }
+    const uitkomst = await verstuur({
+      soort: 'toewijzing',
+      kandidaten: nieuw,
+      profielen: await alleProfielen(),
+      push: {
+        title: 'Nieuwe taak voor jou',
+        body: kort(na.title),
+        url: '/mijn-werk',
+        tag: `taak-${event.params.taskId}`,
+      },
+      mail: () => mailVoorToewijzing({ taak, link: `${APP}/#/tasks` }),
     })
 
-    if (verstuurd) logger.info('Melding verstuurd', { taskId: event.params.taskId, verstuurd })
+    if (uitkomst.push || uitkomst.email) {
+      logger.info('Melding bij toewijzing', { taskId: event.params.taskId, ...uitkomst })
+    }
   }
 )
 
@@ -322,5 +396,177 @@ export const spreadCustomerRename = onDocumentUpdated(
     }
 
     logger.info('Klant hernoemd', { customerId: event.params.customerId, oud, nieuw, events: snap.size })
+  }
+)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║ Reacties, deadlines en de ochtendlijst                                   ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+/**
+ * "Er is op je taak gereageerd."
+ *
+ * Naar de uitvoerders én naar wie er eerder al op reageerde: een gesprek van
+ * drie berichten waarin de eerste twee sprekers niets meer horen, is geen
+ * gesprek. De schrijver zelf krijgt niets — dat rekenwerk staat in
+ * `wieBijReactie`, met de rest van de afwegingen.
+ *
+ * Alleen reacties op een taak. Een reactie op een social post hangt aan het
+ * reviewspoor, dat zijn eigen melding heeft; daar nog een tweede bericht
+ * bovenop maakt dat allebei genegeerd worden.
+ */
+export const notifyComment = onDocumentCreated(
+  { region: REGION, document: 'comments/{commentId}' },
+  async (event) => {
+    const reactie = event.data?.data()
+    if (!reactie?.taskId) return
+
+    const [taakSnap, eerdere, profielen] = await Promise.all([
+      db.collection('tasks').doc(reactie.taskId).get(),
+      db.collection('comments').where('taskId', '==', reactie.taskId).orderBy('createdAt').get(),
+      alleProfielen(),
+    ])
+    if (!taakSnap.exists) return
+
+    const taak = { id: taakSnap.id, ...taakSnap.data() }
+    const kandidaten = wieBijReactie({
+      taak,
+      // De nieuwe reactie staat er zelf ook al in; die telt niet als "eerdere".
+      eerdereReacties: eerdere.docs.filter((d) => d.id !== event.params.commentId).map((d) => d.data()),
+      auteur: reactie.authorId ?? null,
+    })
+    if (kandidaten.length === 0) return
+
+    const uitkomst = await verstuur({
+      soort: 'reactie',
+      kandidaten,
+      profielen,
+      push: {
+        title: `${reactie.authorName || 'Iemand'} reageerde`,
+        body: kort(reactie.body),
+        url: '/tasks',
+        tag: `taak-${reactie.taskId}`,
+      },
+      mail: () => mailVoorReactie({ taak, reactie, link: `${APP}/#/tasks` }),
+    })
+
+    if (uitkomst.push || uitkomst.email) {
+      logger.info('Melding bij reactie', { taskId: reactie.taskId, ...uitkomst })
+    }
+  }
+)
+
+/**
+ * De taken van morgen, elke ochtend om zeven uur.
+ *
+ * 's Ochtends en niet 's avonds: een deadline die je om acht uur 's avonds te
+ * horen krijgt, kun je die dag niets meer mee. En één dag vooruit en niet
+ * dezelfde dag, want dan is het geen waarschuwing meer maar een verwijt.
+ *
+ * De query haalt een ruim venster op en de dag zelf wordt in `vervaltMorgen`
+ * bepaald, op de Brusselse kalender. Deze functie draait namelijk op UTC, en
+ * een taak die om half twaalf 's avonds vervalt hoort bij de dag die wij
+ * meemaken, niet bij de dag van de server.
+ *
+ * Let op wat een geplande functie is: ze draait met beheerdersrechten en ziet
+ * dus álle taken, ook die van boards waar niet iedereen komt. Daarom gaat er
+ * per taak alleen iets naar wie er zelf op staat, en nooit een overzicht van
+ * het hele team naar één persoon.
+ */
+export const notifyDueTomorrow = onSchedule(
+  { region: REGION, schedule: '0 7 * * *', timeZone: 'Europe/Brussels' },
+  async () => {
+    const nu = new Date()
+    const venster = await db
+      .collection('tasks')
+      .where('archived', '==', false)
+      .where('dueDate', '>=', new Date(nu.getTime() - 86400000))
+      .where('dueDate', '<=', new Date(nu.getTime() + 3 * 86400000))
+      .get()
+
+    const morgen = vervaltMorgen(
+      venster.docs.map((d) => ({ id: d.id, ...d.data() })),
+      nu
+    )
+    if (morgen.length === 0) {
+      logger.info('Deadlines morgen: niets')
+      return
+    }
+
+    const profielen = await alleProfielen()
+    let mensen = 0
+
+    for (const [uid, taken] of perPersoon(morgen)) {
+      const uitkomst = await verstuur({
+        soort: 'deadline',
+        kandidaten: [uid],
+        profielen,
+        push: {
+          title: taken.length === 1 ? 'Morgen te doen' : `Morgen vervallen ${taken.length} taken`,
+          body: kort(taken[0].title),
+          url: '/tasks',
+          tag: 'deadline-morgen',
+        },
+        mail: () => mailVoorDeadline({ taken, link: `${APP}/#/tasks`, nu }),
+      })
+      if (uitkomst.push || uitkomst.email) mensen += 1
+    }
+
+    logger.info('Deadlines morgen verstuurd', { taken: morgen.length, mensen })
+  }
+)
+
+/**
+ * De ochtendmail met wat er op jouw naam over tijd staat.
+ *
+ * Half acht, een half uur na de deadlinemelding: twee berichten in dezelfde
+ * minuut lezen als één bericht, en dan wordt er één van gelezen.
+ *
+ * Eén bericht per persoon met alles erin, en alleen wanneer er iets in staat.
+ * Een dagelijkse mail die "niets te laat" zegt, leert men wegklikken — en
+ * daarna gaat ook de mail van de dag dat het er wél toe doet ongelezen weg.
+ * `mailVoorTeLaat` geeft daarom niets terug bij een lege lijst, en dit stuurt
+ * dan ook niets.
+ *
+ * Standaard staat dit bericht uit; wie het wil, zet het aan bij Meldingen.
+ */
+export const notifyOverdueDigest = onSchedule(
+  { region: REGION, schedule: '30 7 * * *', timeZone: 'Europe/Brussels' },
+  async () => {
+    const nu = new Date()
+    const snap = await db
+      .collection('tasks')
+      .where('archived', '==', false)
+      .where('dueDate', '<', nu)
+      .get()
+
+    const laat = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((t) => isTeLaat(t, nu))
+    if (laat.length === 0) {
+      logger.info('Te-laat-lijst: niets')
+      return
+    }
+
+    const profielen = await alleProfielen()
+    let mensen = 0
+
+    for (const [uid, taken] of perPersoon(laat)) {
+      const uitkomst = await verstuur({
+        soort: 'telaat',
+        kandidaten: [uid],
+        profielen,
+        push: {
+          title: `${taken.length} ${taken.length === 1 ? 'taak staat' : 'taken staan'} te laat`,
+          body: kort(taken[0].title),
+          url: '/tasks',
+          tag: 'te-laat',
+        },
+        mail: () => mailVoorTeLaat({ taken, link: `${APP}/#/tasks`, nu }),
+      })
+      if (uitkomst.push || uitkomst.email) mensen += 1
+    }
+
+    logger.info('Te-laat-lijst verstuurd', { taken: laat.length, mensen })
   }
 )
