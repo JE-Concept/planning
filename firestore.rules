@@ -162,6 +162,14 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Het activiteitslog: wie wijzigde de status, de deadline, de uitvoerders.
+    //
+    // Iedereen schrijft erin — de app doet dat zelf bij elke wijziging — en
+    // niemand bewerkt achteraf wat er staat. Dat is het hele nut ervan: een log
+    // dat je kunt bijstellen beantwoordt de vraag "wie heeft dit verzet?" niet
+    // meer. Rechtzetten gebeurt door een regel bij te schrijven, niet door er
+    // een te herschrijven. De query in het takenpaneel vraagt op `taskId`, wat
+    // deze regel toelaat en waar `firestore.indexes.json` een index voor heeft.
     match /activity/{id} {
       allow read:   if isTeam();
       allow create: if isTeam();

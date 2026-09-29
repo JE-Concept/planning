@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   doc,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -12,10 +13,12 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore'
-import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
+import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { byPosition, needsRebalance, positionFor, rebalance } from '@lib/position'
+import { raaktLog } from '@lib/activiteit'
 import { SOCIAL_STAGE_KEYS, SOCIAL_VANAF, heeftSocial } from '@lib/social-stage'
+import { logWijzigingen } from './activity'
 
 /**
  * A task carries a copy of its column (`statusName`, `statusColor`,
@@ -79,12 +82,40 @@ export function createTask({ list, status, title, ...rest }) {
   return setDoc(taskRef, payload).then(() => taskRef.id)
 }
 
+/**
+ * Elke wijziging aan een taak loopt hier langs, zodat het log één ingang heeft.
+ *
+ * Voor het log is de oude stand nodig — "verzet van dinsdag naar vrijdag" kun
+ * je niet uit de nieuwe waarde alleen afleiden, en zonder de oude waarde kun je
+ * ook niet zien dat er níéts veranderde. Die leesbeurt gebeurt alleen als de
+ * wijziging een gelogd veld raakt: een omschrijving bijwerken of een timer
+ * stoppen kost dus nog altijd één schrijfbeurt en niets meer.
+ *
+ * Het is bewust geen transactie. Twee mensen die in dezelfde seconde dezelfde
+ * taak verzetten, kunnen in theorie een regel opleveren die van de verkeerde
+ * oude waarde uitgaat. Dat is een verkeerde zin in een logboek; een transactie
+ * per klik is het antwoord op een probleem dat een planning van deze omvang
+ * niet heeft.
+ */
+async function schrijfTaak(id, patch) {
+  const taakRef = ref(COL.tasks, id)
+  if (!raaktLog(patch)) return updateDoc(taakRef, patch)
+
+  const voorSnap = await getDoc(taakRef).catch(() => null)
+  await updateDoc(taakRef, patch)
+
+  if (!voorSnap?.exists?.()) return undefined
+  const voor = normalise({ id, ...voorSnap.data() })
+  await logWijzigingen({ taskId: id, voor, na: { ...voor, ...patch }, door: doorWie() })
+  return undefined
+}
+
 export function updateTask(id, patch) {
-  return updateDoc(ref(COL.tasks, id), { ...patch, updatedBy: doorWie(), updatedAt: serverTimestamp() })
+  return schrijfTaak(id, { ...patch, updatedBy: doorWie(), updatedAt: serverTimestamp() })
 }
 
 export function setTaskStatus(id, status) {
-  return updateDoc(ref(COL.tasks, id), {
+  return schrijfTaak(id, {
     ...statusFields(status),
     updatedBy: doorWie(),
     completedAt: status?.kind === 'done' || status?.kind === 'closed' ? new Date() : null,
@@ -110,7 +141,13 @@ export function archiveTask(id) {
   return updateTask(id, { archived: true })
 }
 
-/** Removes the task and everything that only existed because of it. */
+/**
+ * Removes the task and everything that only existed because of it.
+ *
+ * Het activiteitslog blijft staan: wie wil weten wie een taak weggooide, heeft
+ * daar juist een log voor. De regels wijzen dan naar een `taskId` die niet meer
+ * bestaat, en dat is precies wat er gebeurd is.
+ */
 export async function deleteTask(id) {
   const [subtasks, comments, attachments] = await Promise.all([
     getDocs(query(col(COL.tasks), where('parentId', '==', id))),
@@ -143,7 +180,9 @@ export async function deleteTask(id) {
 export async function moveTaskTo({ taskId, status, columnTasks, index }) {
   const position = positionFor(columnTasks, index)
 
-  await updateDoc(ref(COL.tasks, taskId), {
+  // Slepen binnen dezelfde kolom verandert alleen de volgorde, en dat is geen
+  // logregel waard; `schrijfTaak` ziet vanzelf dat de status gelijk bleef.
+  await schrijfTaak(taskId, {
     ...statusFields(status),
     updatedBy: doorWie(),
     position,

@@ -250,6 +250,34 @@ taak('t-menukaart', 'l-overview', OVERVIEW, 'request', { eventType: 'Intern',
   title: 'Menukaart drukken + prijzen ingeven', assignees: ['u-elke'], brandId: 'meer',
 })
 
+// ─── Afgesloten events uit vorige jaren ─────────────────────────────────────
+//
+// Die van vorig jaar en het jaar daarvoor: afgerond of allang gefactureerd, en
+// dus weg van het bord maar terug te vinden in het archief, per jaar. Ze staan
+// hier omdat het archief anders leeg is in de demo — en een filter op jaar dat
+// je niet kunt uitproberen, is geen filter.
+//
+// De social-schakelaar staat uit: de content van vorig jaar staat allang
+// online, en het socialbord gaat over wat er nog moet gebeuren.
+taak('t-kerstmarkt-2025', 'l-overview', OVERVIEW, 'complete', { pax: 1800, formule: 'Drie chalets + glühweinbar', eventType: 'Stadsevent',
+  title: 'Kerstmarkt Borgloon 2025', assignees: ['u-jasper', 'u-anneleen'], customerId: 'k-borgloon',
+  eventDate: D('2025-12-13T12:00:00'), dueDate: D('2025-12-13T12:00:00'), budget: 27400,
+  location: 'Grote Markt, Borgloon', tracked: 104400, socialWanted: false,
+  description: 'Drie chalets aan de kerk, glühweinbar centraal. Eindafrekening in januari afgesloten.',
+})
+taak('t-oldskool-2024', 'l-overview', OVERVIEW, 'complete', { pax: 900, formule: 'Twee bars + backstage', eventType: 'Festival',
+  title: 'Oldskool Festival 2024', assignees: ['u-jasper'], tags: ['oldskool'],
+  eventDate: D('2024-09-21T12:00:00'), dueDate: D('2024-09-21T12:00:00'), budget: 19200,
+  location: 'Sportterrein, Wellen', tracked: 79200, socialWanted: false,
+})
+// Gefactureerd, nooit op "Afgerond" gezet — precies het geval waarvoor de
+// tweede archiefregel bestaat: na twee maanden is dat geen planningswerk meer.
+taak('t-blum-kick-2025', 'l-overview', OVERVIEW, 'invoiced', { pax: 120, formule: 'Ontbijtbuffet', eventType: 'Bedrijfsevent',
+  title: 'Blum België — kick-off 2025', assignees: ['u-elke'], customerId: 'k-blum',
+  eventDate: D('2025-02-06T12:00:00'), dueDate: D('2025-02-06T12:00:00'), budget: 8600,
+  location: 'Industrieweg 12, Sint-Truiden', tracked: 21600, socialWanted: false,
+})
+
 
 // Taken met een deadline in de komende dagen: Mijn taken en de werklast.
 taak('t-trouw-4', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Tent en vloer bevestigen bij verhuur', assignees: ['u-elke'], dueDate: dag(2), priority: 2, estimate: 90, comments: 1,
@@ -286,6 +314,22 @@ taak('t-soc-5', 'l-socials', SOCIALS, 'done', { title: 'Terugblik Loonse Feesten
   ['c4', 't-loonse', 'u-jasper', 'Jasper Hansen', 'Eindafrekening: voorschot van €8.600 verrekenen. Drie dagen bar, 8 tappunten, geen schade gemeld.', dag(-4)],
 ].forEach(([id, taskId, authorId, authorName, body, createdAt]) =>
   seedDoc('comments', id, { taskId, postId: null, authorId, authorName, body, createdAt }))
+
+// ─── Activiteitslog ─────────────────────────────────────────────────────────
+//
+// Wie wijzigde wat, wanneer. In het paneel staat dit door de reacties heen, en
+// dat is het punt: "verzet naar volgende week" leest pas als iets wanneer de
+// reactie eronder vertelt dat de klant belde.
+;[
+  ['a1', 't-trouw', 'status', 'request', 'create offer', 'u-jasper', dag(-13)],
+  ['a2', 't-trouw', 'assignees', ['u-jasper'], ['u-jasper', 'u-elke'], 'u-jasper', dag(-12)],
+  ['a3', 't-trouw', 'dueDate', D('2026-09-30T12:00:00').toISOString(), D('2026-10-04T12:00:00').toISOString(), 'u-elke', dag(-11)],
+  ['a4', 't-trouw', 'priority', null, 2, 'u-elke', dag(-8)],
+  ['a5', 't-blum', 'status', 'offer send', 'offer accepted', 'u-jasper', dag(-7)],
+  ['a6', 't-blum', 'assignees', [], ['u-jasper'], 'u-elke', dag(-7)],
+  ['a7', 't-trouw-2', 'afgerond', 'create offer', 'complete', 'u-jasper', dag(-5)],
+].forEach(([id, taskId, veld, van, naar, createdBy, createdAt]) =>
+  seedDoc('activity', id, { taskId, veld, van, naar, createdBy, createdAt }))
 
 // ─── Tijdregistratie ────────────────────────────────────────────────────────
 const maand = '2026-09'

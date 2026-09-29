@@ -929,3 +929,37 @@ select.je-compact { padding-right: 24px; }
   .je-kpi { border-color: #999; }
   @page { margin: 14mm; }
 }
+
+/* ── Activiteit en archief ──
+
+   Twee kleine dingen die nergens anders thuishoren: een regel in het verloop
+   van een taak (wie wat wanneer verzette, tussen de reacties door), en de weg
+   naar het archief onderaan de eventlijst. */
+
+.je-logregel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 4px 2px;
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+/* Het avatartje staat op de tekstregel en niet erboven; baseline-uitlijning
+   duwt het anders een halve regel omhoog. */
+.je-logregel > :first-child { align-self: center; flex: 0 0 auto; }
+.je-logregel__tekst { flex: 1 1 auto; min-width: 0; }
+.je-logregel__tijd {
+  flex: 0 0 auto;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.je-archieflink {
+  font: var(--type-caption);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: var(--space-3);
+}
+.je-archieflink:hover { color: var(--text-1); }

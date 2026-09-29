@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { addMonths, dayKey, startOfDay, startOfMonth } from '@lib/dates'
 import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
+import { ARCHIEF_NA_DAGEN, jaarVan, jarenIn, splitsArchief } from '@lib/archief'
 import { Bar, Button, Icon, IconButton, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
@@ -25,6 +26,7 @@ const VIEWS = [
   { value: 'lijst', label: 'Lijst' },
   { value: 'bord', label: 'Bord' },
   { value: 'kalender', label: 'Kalender' },
+  { value: 'archief', label: 'Archief' },
 ]
 const LOS = '__los'
 
@@ -55,7 +57,9 @@ export default function Events() {
 
   const setView = (v) => {
     try {
-      localStorage.setItem('je-events-weergave', v)
+      // Het archief wordt niet onthouden: je gaat er iets opzoeken en daarna
+      // weer verder werken. Morgen op het archief openen zou als een fout lezen.
+      if (v !== 'archief') localStorage.setItem('je-events-weergave', v)
     } catch {
       /* niet erg */
     }
@@ -77,15 +81,26 @@ export default function Events() {
     return tags
   }, [brands, brandById, events])
 
+  /*
+    Afgesloten events gaan naar het archief en niet naar de prullenmand.
+
+    De bordweergaven tonen alleen wat er nog toe doet; het archief toont precies
+    de rest. Beide kijken naar dezelfde lijst, zodat een event nooit in geen van
+    beide belandt — dat zou lijken op verdwenen data, en bij een dossier met
+    facturatiegegevens is dat geen kleinigheid.
+  */
+  const { actief, archief } = useMemo(() => splitsArchief(events), [events])
+  const zichtbaar = view === 'archief' ? archief : actief
+
   const filtered = useMemo(
     () =>
-      events
+      zichtbaar
         .filter((e) => concept === 'Alle' || (concept === LOS ? !e.brandId || !brandById[e.brandId] : e.brandId === concept))
         .sort(byEventDate),
-    [events, concept, brandById]
+    [zichtbaar, concept, brandById]
   )
 
-  const lopend = events.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice'))
+  const lopend = actief.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice'))
   const monthLabel = MONTHS_FULL[new Date().getMonth()]
 
   return (
@@ -116,15 +131,25 @@ export default function Events() {
           <div className="je-muted-caption" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <Spinner /> Events laden…
           </div>
+        ) : view === 'archief' ? (
+          <ArchiefView
+            events={filtered}
+            tasksByEvent={tasksByEvent}
+            profileById={profileById}
+            statuses={eventStatuses}
+            narrow={narrow}
+          />
         ) : view === 'lijst' ? (
           <ListView
             events={filtered}
-            all={events}
+            all={actief}
+            archief={archief}
             tasksByEvent={tasksByEvent}
             profileById={profileById}
             statuses={eventStatuses}
             narrow={narrow}
             monthLabel={monthLabel}
+            onArchief={() => setView('archief')}
           />
         ) : view === 'kalender' ? (
           <CalendarView events={filtered} narrow={narrow} />
@@ -140,7 +165,7 @@ export default function Events() {
 
 // ─── Lijst ─────────────────────────────────────────────────────────────────
 
-function ListView({ events, all, tasksByEvent, profileById, statuses, narrow }) {
+function ListView({ events, all, archief, tasksByEvent, profileById, statuses, narrow, onArchief }) {
   const navigate = useNavigate()
   // Vast, zodat de gememoriseerde rijen niet hertekenen bij elke render.
   const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
@@ -177,7 +202,6 @@ function ListView({ events, all, tasksByEvent, profileById, statuses, narrow }) 
   })).filter((g) => g.events.length)
 
   const cols = narrow ? '44px minmax(0,1fr) 16px' : '48px minmax(120px,1fr) 64px 136px 84px 96px 16px'
-  const archived = all.filter((e) => e.statusName === 'complete').length
 
   return (
     <>
@@ -218,9 +242,101 @@ function ListView({ events, all, tasksByEvent, profileById, statuses, narrow }) 
         </section>
       ))}
 
-      <div className="je-muted-caption" style={{ textAlign: 'center' }}>
-        {archived} afgeronde {archived === 1 ? 'event staat' : 'events staan'} in het archief
+      {/* Wat er niet meer op het bord staat, hoort wel te zien te zijn — anders
+          is "weg van het bord" niet te onderscheiden van "weg". */}
+      <div style={{ textAlign: 'center' }}>
+        <button type="button" className="je-plainbtn je-archieflink" onClick={onArchief}>
+          {archief.length} afgesloten {archief.length === 1 ? 'event staat' : 'events staan'} in het archief
+        </button>
       </div>
+    </>
+  )
+}
+
+// ─── Archief ───────────────────────────────────────────────────────────────
+
+/**
+ * De afgesloten events, per jaar.
+ *
+ * Niets is verwijderd: dit zijn dezelfde documenten als op het bord, alleen
+ * niet meer in de weg. Ze openen dan ook gewoon hun eventfiche, met de
+ * facturatiegegevens en de documenten die eraan hangen.
+ *
+ * Het filter staat op jaar en niet op maand, omdat de vraag die mensen hier
+ * stellen bijna altijd "wat deden we vorig jaar rond deze tijd" is — een
+ * vergelijkbaar dossier terugvinden, of nakijken wat er toen aangerekend werd.
+ */
+function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
+  const navigate = useNavigate()
+  const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
+  const [jaar, setJaar] = useState('alle')
+
+  const jaren = useMemo(() => jarenIn(events), [events])
+  const getoond = useMemo(
+    () =>
+      events
+        .filter((e) => jaar === 'alle' || jaarVan(e) === jaar)
+        .sort((a, b) => byEventDate(b, a)),
+    [events, jaar]
+  )
+
+  const cols = narrow ? '44px minmax(0,1fr) 16px' : '48px minmax(120px,1fr) 64px 136px 84px 96px 16px'
+
+  return (
+    <>
+      <div className="je-panel" style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-4)' }}>
+        <span className="je-eyebrow">Jaar</span>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <Tag selectable selected={jaar === 'alle'} onClick={() => setJaar('alle')}>
+            Alle jaren
+          </Tag>
+          {jaren.map((j) => (
+            <Tag key={j} selectable selected={jaar === j} onClick={() => setJaar(j)}>
+              {j}
+            </Tag>
+          ))}
+        </div>
+        <span className="je-muted-caption" style={{ marginLeft: 'auto' }}>
+          {getoond.length} {getoond.length === 1 ? 'event' : 'events'}
+        </span>
+      </div>
+
+      <p className="je-muted-caption" style={{ maxWidth: '68ch' }}>
+        Hier staat wat afgesloten is: alles op “Afgerond”, plus wat langer dan{' '}
+        {ARCHIEF_NA_DAGEN} dagen geleden gefactureerd werd. Er wordt niets verwijderd — de
+        offertes, facturen en documenten blijven bij het event staan.
+      </p>
+
+      {getoond.length === 0 ? (
+        <div className="je-panel" style={{ padding: 'var(--space-7)', textAlign: 'center' }}>
+          <div className="je-muted-caption">
+            Nog geen afgesloten events voor deze selectie.
+          </div>
+        </div>
+      ) : (
+        <section className="je-panel">
+          <div className="je-panel__head" style={{ padding: 'var(--space-5) var(--space-6)' }}>
+            <span className="je-eyebrow">Archief</span>
+            <span className="je-panel__sub">Nieuwste eerst</span>
+            <span className="je-panel__right">
+              {jaar === 'alle' ? 'Alle jaren' : jaar}
+            </span>
+          </div>
+          {getoond.map((e, i) => (
+            <EventRow
+              key={e.id}
+              event={e}
+              progress={progressOf(tasksByEvent[e.id])}
+              statuses={statuses}
+              profileById={profileById}
+              columns={cols}
+              narrow={narrow}
+              first={i === 0}
+              onOpen={openEvent}
+            />
+          ))}
+        </section>
+      )}
     </>
   )
 }
