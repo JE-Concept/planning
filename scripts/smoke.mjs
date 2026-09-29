@@ -528,6 +528,53 @@ await test('een subtaak opent zijn eigen fiche', async () => {
   await page.close()
 })
 
+// ─── Het activiteitslog en het archief ──────────────────────────────────────
+
+await test('een wijziging aan een taak komt in het verloop te staan', async () => {
+  const page = await tabblad('/bord/l-overview')
+  await page.locator('main').getByText('Trouw Niels en Inez').first().click()
+  await page.waitForTimeout(900)
+  const paneel = page.getByRole('dialog')
+
+  // Wat er vóór deze functie gebeurde staat er ook in: het log begint niet leeg.
+  zouden(bevat(await paneel.innerText(), 'Verloop'), 'het verloop staat niet in het paneel')
+  zouden(
+    bevat(await paneel.innerText(), 'verzette de status van Aanvraag naar Offerte maken'),
+    'de bestaande logregels staan er niet'
+  )
+
+  // En nu echt iets wijzigen: de prioriteit hoger zetten.
+  await paneel.getByLabel('Prioriteit').selectOption('1')
+  await page.waitForTimeout(900)
+  const na = await paneel.innerText()
+  zouden(bevat(na, 'zette de prioriteit op Urgent'), `de wijziging staat niet in het verloop: ${na.slice(-300)}`)
+  zouden(bevat(na, 'Jasper Hansen'), 'er staat niet bij wie het deed')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('dezelfde waarde opnieuw kiezen levert geen tweede regel op', async () => {
+  const page = await tabblad('/bord/l-overview')
+  await page.locator('main').getByText('Blum België — 20-jarig bestaan').first().click()
+  await page.waitForTimeout(900)
+  const paneel = page.getByRole('dialog')
+
+  // De kop staat in kapitalen via CSS, dus zonder op hoofdletters te letten.
+  const tel = async () => Number((await paneel.innerText()).match(/verloop \((\d+)\)/i)?.[1])
+  const voor = await tel()
+
+  // De status staat al op "offer accepted"; die opnieuw kiezen verandert niets.
+  const status = paneel.getByLabel('Status')
+  await status.selectOption({ label: 'offer accepted' })
+  await page.waitForTimeout(900)
+  zouden((await tel()) === voor, `het verloop groeide van ${voor} naar ${await tel()} zonder wijziging`)
+
+  await status.selectOption({ label: 'planning ongoing' })
+  await page.waitForTimeout(900)
+  zouden((await tel()) === voor + 1, `een echte wijziging gaf ${voor} → ${await tel()}`)
+  await page.close()
+})
+
 await test('de lopende timer staat in de zijbalk', async () => {
   const page = await tabblad('/')
   const balk = await page.locator('aside').first().innerText()

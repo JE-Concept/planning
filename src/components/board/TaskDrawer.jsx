@@ -30,6 +30,8 @@ import {
   useTask,
 } from '@data/tasks'
 import { addComment, deleteComment, useComments } from '@data/comments'
+import { useActivity } from '@data/activity'
+import { LOGGEN_SINDS, beschrijf, verloopVan } from '@lib/activiteit'
 import { channelMeta, reviewMeta, statusMeta, usePostsForTask } from '@data/social'
 import { addManualEntry, startTimer, stopTimer, useRunningTimer, useTaskTimeEntries, deleteEntry } from '@data/time'
 
@@ -260,7 +262,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 
         <SocialSection taskId={task.id} />
 
-        <CommentSection taskId={task.id} profile={profile} />
+        <VerloopSection taskId={task.id} listId={task.listId} profile={profile} />
       </div>
     </Drawer>
   )
@@ -662,11 +664,30 @@ function ManualEntryForm({ task, list, uid, toast, onDone }) {
   )
 }
 
-// ─── Comments ───────────────────────────────────────────────────────────────
+// ─── Verloop: reacties en activiteit door elkaar ────────────────────────────
 
-function CommentSection({ taskId, profile }) {
+/**
+ * Wat er met deze taak gebeurd is, als één verhaal.
+ *
+ * Dit waren twee dingen die niet bestonden naast elkaar: reacties stonden
+ * onderaan, en wie wat wanneer verzette stond nergens. Sinds er met meerdere
+ * mensen tegelijk gepland wordt, is dat laatste een dagelijkse vraag — "wie
+ * heeft dit naar volgende week gezet?" — en het antwoord staat het best pal
+ * naast de reactie waarin iemand uitlegt waarom.
+ */
+function VerloopSection({ taskId, listId, profile }) {
   const comments = useComments({ taskId })
+  const { regels } = useActivity(taskId)
+  const { profileById, statusesOf } = useWorkspace()
   const [body, setBody] = useState('')
+
+  const statuses = useMemo(() => statusesOf(listId), [statusesOf, listId])
+  const items = useMemo(
+    () => verloopVan({ reacties: comments, activiteit: regels }),
+    [comments, regels]
+  )
+
+  const naamVan = (uid) => profileById[uid]?.fullName || profileById[uid]?.email || null
 
   const submit = async (e) => {
     e.preventDefault()
@@ -677,29 +698,50 @@ function CommentSection({ taskId, profile }) {
 
   return (
     <section>
-      <h3 className="label">Reacties ({comments.length})</h3>
+      <h3 className="label">Verloop ({items.length})</h3>
+
+      {items.length === 0 ? (
+        <p className="text-xs text-ink-400">
+          Nog geen reacties, en geen wijzigingen sinds het bijhouden begon op{' '}
+          {formatDate(LOGGEN_SINDS)}. Wat daarvoor aan deze taak veranderde, staat er niet in.
+        </p>
+      ) : null}
+
       <ul className="space-y-2">
-        {comments.map((c) => (
-          <li key={c.id} className="rounded-md bg-ink-50 px-3 py-2">
-            <div className="flex items-center gap-2 text-xs text-ink-500">
-              <strong className="text-ink-800">{c.authorName}</strong>
-              <span>{formatDateTime(c.createdAt)}</span>
-              {c.authorId === profile?.id ? (
-                <ConfirmButton
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto h-5 w-5 p-0"
-                  question="Reactie verwijderen?"
-                  onConfirm={() => deleteComment(c)}
-                  aria-label="Reactie verwijderen"
-                >
-                  ✕
-                </ConfirmButton>
-              ) : null}
-            </div>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">{c.body}</p>
-          </li>
-        ))}
+        {items.map((item) =>
+          item.soort === 'reactie' ? (
+            <li key={item.id} className="rounded-md bg-ink-50 px-3 py-2">
+              <div className="flex items-center gap-2 text-xs text-ink-500">
+                <strong className="text-ink-800">{item.data.authorName}</strong>
+                <span>{formatDateTime(item.data.createdAt)}</span>
+                {item.data.authorId === profile?.id ? (
+                  <ConfirmButton
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-5 w-5 p-0"
+                    question="Reactie verwijderen?"
+                    onConfirm={() => deleteComment(item.data)}
+                    aria-label="Reactie verwijderen"
+                  >
+                    ✕
+                  </ConfirmButton>
+                ) : null}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">{item.data.body}</p>
+            </li>
+          ) : (
+            <li key={item.id} className="je-logregel">
+              <Avatar profile={profileById[item.data.createdBy]} size="xs" />
+              <span className="je-logregel__tekst">
+                <strong className="text-ink-800">
+                  {naamVan(item.data.createdBy) ?? 'Iemand'}
+                </strong>{' '}
+                {beschrijf(item.data, { naamVan: (uid) => naamVan(uid), statuses })}
+              </span>
+              <span className="je-logregel__tijd">{formatDateTime(item.at)}</span>
+            </li>
+          )
+        )}
       </ul>
 
       <form onSubmit={submit} className="mt-2 flex gap-2">
