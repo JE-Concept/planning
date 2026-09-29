@@ -22,6 +22,7 @@ import EventEditDialog from '@components/events/EventEditDialog'
 import TaskRow from '@components/events/TaskRow'
 import { StatusBadge, dayLabel, euro, hours, longDate, shortDate } from '@components/events/parts'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { addComment, deleteComment, useComments } from '@data/comments'
@@ -38,6 +39,7 @@ export default function EventDetail() {
   const navigate = useNavigate()
   const narrow = useNarrow()
   const toast = useToast()
+  const { t } = useTaal()
   const { eventStatuses, profileById } = useWorkspace()
   const { eventById, tasksByEvent, loading } = useEvents()
   const [editing, setEditing] = useState(false)
@@ -53,7 +55,7 @@ export default function EventDetail() {
     setParams(next, { replace: true })
   }
 
-  const taskIds = useMemo(() => [id, ...tasks.map((t) => t.id)], [id, tasks])
+  const taskIds = useMemo(() => [id, ...tasks.map((taak) => taak.id)], [id, tasks])
   const time = useEventTime(taskIds)
   const { uid } = useAuth()
   const { timer } = useRunningTimer(uid)
@@ -63,13 +65,13 @@ export default function EventDetail() {
       <div className="je-pagebody">
         {loading ? (
           <div className="je-muted-caption" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Spinner /> Event laden…
+            <Spinner /> {t('events.detail.laden')}
           </div>
         ) : (
           <div className="je-panel" style={{ padding: 'var(--space-7)', maxWidth: 560 }}>
-            <div style={{ font: 'var(--type-body)', fontWeight: 600 }}>Dit event bestaat niet (meer).</div>
+            <div style={{ font: 'var(--type-body)', fontWeight: 600 }}>{t('events.detail.bestaat_niet')}</div>
             <Button variant="secondary" size="sm" style={{ marginTop: 16 }} onClick={() => navigate('/')}>
-              Naar alle events
+              {t('events.detail.naar_alle')}
             </Button>
           </div>
         )}
@@ -95,28 +97,43 @@ export default function EventDetail() {
     timer && taskIds.includes(timer.taskId) ? durationOf(timer) : 0
   const totalS = time.reduce((a, e) => a + (e.durationSeconds ?? 0), 0) + liveSeconds
   const billS = time.filter((e) => e.billable !== false).reduce((a, e) => a + (e.durationSeconds ?? 0), 0)
-  const openCount = tasks.filter((t) => !isDone(t)).length
+  const openCount = tasks.filter((taak) => !isDone(taak)).length
   const bestelRegels = ev.bestellijst ?? []
 
+  // "pax" blijft staan: zo staat het op de offerte en zo zegt het team het,
+  // in allebei de talen.
   const fiche = [
-    ['Klant', ev.customerName],
-    ['Datum', longDate(ev.eventDate)],
-    ['Gasten', ev.pax ? `${ev.pax} pax${ev.kids ? ` + ${ev.kids} kinderen` : ''}` : null],
-    ['Locatie', ev.location],
-    ['Formule', ev.formule ? [ev.formule, ev.formulePrijsPerPersoon ? `${euro(ev.formulePrijsPerPersoon)} p.p.` : null].filter(Boolean).join(' · ') : null],
-    ['Offerte', euro(ev.quoteAmount)],
-    ['Voorschot 40%', ev.quoteAmount ? euro(Math.round(ev.quoteAmount * 0.4)) : null],
-    ['Team', ev.team.map((p) => (profileById[p]?.fullName ?? '').split(' ')[0]).filter(Boolean).join(', ') || null],
+    ['events.fiche.klant', ev.customerName],
+    ['events.fiche.datum', longDate(ev.eventDate)],
+    [
+      'events.fiche.gasten',
+      ev.pax ? `${ev.pax} pax${ev.kids ? ` + ${t('events.fiche.kinderen', { aantal: ev.kids })}` : ''}` : null,
+    ],
+    ['events.fiche.locatie', ev.location],
+    [
+      'events.fiche.formule',
+      ev.formule
+        ? [
+            ev.formule,
+            ev.formulePrijsPerPersoon ? t('events.fiche.pp', { bedrag: euro(ev.formulePrijsPerPersoon) }) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : null,
+    ],
+    ['events.fiche.offerte', euro(ev.quoteAmount)],
+    ['events.fiche.voorschot', ev.quoteAmount ? euro(Math.round(ev.quoteAmount * 0.4)) : null],
+    ['events.fiche.team', ev.team.map((p) => (profileById[p]?.fullName ?? '').split(' ')[0]).filter(Boolean).join(', ') || null],
   ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <PageHeader
-        back={{ to: '/', label: 'Alle events' }}
+        back={{ to: '/', label: t('events.detail.alle_events') }}
         eyebrow={[
-          ev.concept?.split(' — ')[0] ?? 'Los event',
+          ev.concept?.split(' — ')[0] ?? t('events.los_event'),
           dayLabel(ev.eventDate),
-          days != null && days >= 0 ? `over ${days} ${days === 1 ? 'dag' : 'dagen'}` : null,
+          days != null && days >= 0 ? t('events.over_dagen', { aantal: days }) : null,
         ]
           .filter(Boolean)
           .join(' · ')}
@@ -124,10 +141,16 @@ export default function EventDetail() {
         actions={
           <>
             <StatusBadge statusName={ev.statusName} statuses={eventStatuses} />
-            <IconButton icon="pencil" label="Fiche bewerken" variant="outline" size="sm" onClick={() => setEditing(true)} />
+            <IconButton
+              icon="pencil"
+              label={t('events.fiche.bewerken')}
+              variant="outline"
+              size="sm"
+              onClick={() => setEditing(true)}
+            />
             {next ? (
               <Button size="sm" iconRight="arrow-right" disabled={blocked} onClick={() => move(next)}>
-                Naar {labelOf(next, eventStatuses).toLowerCase()}
+                {t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}
               </Button>
             ) : null}
           </>
@@ -173,20 +196,23 @@ export default function EventDetail() {
               <span style={{ color: 'var(--warning)', display: 'flex', marginTop: 2 }}>
                 <Icon name="info" size={16} />
               </span>
-              <span style={{ flex: 1 }}>
-                Vul klant, datum, aantal gasten en offertebedrag in voor je een offerte start. Zo blijft elk event
-                rapporteerbaar.
-              </span>
+              <span style={{ flex: 1 }}>{t('events.detail.blokkade')}</span>
               <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-                Invullen
+                {t('events.detail.invullen')}
               </Button>
             </div>
           ) : null}
 
           <div className="je-fiche">
-            {fiche.map(([label, value]) => (
-              <button key={label} type="button" className="je-plainbtn" onClick={() => setEditing(true)} title="Fiche bewerken">
-                <div className="je-caps">{label}</div>
+            {fiche.map(([sleutel, value]) => (
+              <button
+                key={sleutel}
+                type="button"
+                className="je-plainbtn"
+                onClick={() => setEditing(true)}
+                title={t('events.fiche.bewerken')}
+              >
+                <div className="je-caps">{t(sleutel)}</div>
                 <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, color: value ? 'var(--text-1)' : 'var(--text-3)', marginTop: 2 }}>
                   {value ?? '—'}
                 </div>
@@ -196,16 +222,16 @@ export default function EventDetail() {
 
           <Tabs
             items={[
-              { value: 'taken', label: `Taken · ${openCount}` },
+              { value: 'taken', label: t('events.tab.taken', { aantal: openCount }) },
               // Alleen events die uit een formule komen (of waar iemand zelf een
               // lijst begon) hebben hier iets te tonen; bij de rest zou het een
               // leeg tabblad zijn dat je elke keer opnieuw moet negeren.
               ...(bestelRegels.length || ev.formuleId
-                ? [{ value: 'bestellijst', label: `Bestellijst · ${bestelRegels.length}` }]
+                ? [{ value: 'bestellijst', label: t('events.tab.bestellijst', { aantal: bestelRegels.length }) }]
                 : []),
-              { value: 'draaiboek', label: 'Draaiboek' },
-              { value: 'notities', label: 'Notities & bijlagen' },
-              { value: 'tijd', label: `Tijd · ${hours(totalS)}` },
+              { value: 'draaiboek', label: t('events.tab.draaiboek') },
+              { value: 'notities', label: t('events.tab.notities') },
+              { value: 'tijd', label: t('events.tab.tijd', { tijd: hours(totalS) }) },
             ]}
             value={tab}
             onChange={setTab}
@@ -240,6 +266,7 @@ export default function EventDetail() {
 // ─── Taken ─────────────────────────────────────────────────────────────────
 
 function TasksTab({ ev, tasks, focus, onOpen, runningId }) {
+  const { t } = useTaal()
   const { eventsList } = useWorkspace()
   const { uid } = useAuth()
   const toast = useToast()
@@ -260,9 +287,7 @@ function TasksTab({ ev, tasks, focus, onOpen, runningId }) {
   return (
     <div className="je-panel">
       {tasks.length === 0 ? (
-        <div className="je-muted-caption" style={{ padding: 'var(--space-5)' }}>
-          Nog geen taken. Typ er hieronder een en druk Enter.
-        </div>
+        <div className="je-muted-caption" style={{ padding: 'var(--space-5)' }}>{t('events.taken.leeg')}</div>
       ) : null}
       {tasks.map((t, i) => (
         <TaskRow
@@ -293,8 +318,8 @@ function TasksTab({ ev, tasks, focus, onOpen, runningId }) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') add()
           }}
-          placeholder="Taak toevoegen en Enter"
-          aria-label="Taak toevoegen"
+          placeholder={t('events.taken.toevoegen_hint')}
+          aria-label={t('events.taken.toevoegen')}
           style={{ flex: 1, border: 0, outline: 'none', background: 'transparent', font: 'var(--type-body-sm)', color: 'var(--text-1)', boxShadow: 'none' }}
         />
       </div>
@@ -305,6 +330,7 @@ function TasksTab({ ev, tasks, focus, onOpen, runningId }) {
 // ─── Draaiboek ─────────────────────────────────────────────────────────────
 
 function RunsheetTab({ ev }) {
+  const { t } = useTaal()
   const toast = useToast()
   const rows = useMemo(() => [...(ev.draaiboek ?? [])].sort((a, b) => (a.tijd ?? '').localeCompare(b.tijd ?? '')), [ev.draaiboek])
   const [tijd, setTijd] = useState('')
@@ -342,7 +368,7 @@ function RunsheetTab({ ev }) {
           <span style={{ font: 'var(--type-caption)', color: 'var(--text-2)' }}>{d.wie}</span>
           <IconButton
             icon="x"
-            label="Regel verwijderen"
+            label={t('events.draaiboek.regel_weg')}
             size="sm"
             onClick={() => save((ev.draaiboek ?? []).filter((x) => x !== d))}
           />
@@ -350,7 +376,7 @@ function RunsheetTab({ ev }) {
       ))}
       {rows.length === 0 ? (
         <div style={{ padding: 'var(--space-6) 0 var(--space-3)', font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
-          Nog geen draaiboek. Het wordt opgebouwd zodra de planning loopt.
+          {t('events.draaiboek.leeg')}
         </div>
       ) : null}
       <div
@@ -363,15 +389,15 @@ function RunsheetTab({ ev }) {
           borderTop: rows.length ? '1px solid var(--border-hairline)' : 'none',
         }}
       >
-        <Input type="time" value={tijd} onChange={(e) => setTijd(e.target.value)} aria-label="Tijd" />
+        <Input type="time" value={tijd} onChange={(e) => setTijd(e.target.value)} aria-label={t('events.draaiboek.tijd')} />
         <Input
           value={wat}
           onChange={(e) => setWat(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') add()
           }}
-          placeholder="Wat gebeurt er"
-          aria-label="Wat"
+          placeholder={t('events.draaiboek.wat_hint')}
+          aria-label={t('events.draaiboek.wat')}
         />
         <Input
           value={wie}
@@ -379,11 +405,11 @@ function RunsheetTab({ ev }) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') add()
           }}
-          placeholder="Wie"
-          aria-label="Wie"
+          placeholder={t('events.draaiboek.wie')}
+          aria-label={t('events.draaiboek.wie')}
         />
         <Button variant="secondary" size="sm" iconLeft="plus" disabled={!wat.trim()} onClick={add}>
-          Regel
+          {t('events.draaiboek.regel')}
         </Button>
       </div>
     </div>
@@ -406,6 +432,7 @@ function parseNote(body = '') {
 }
 
 function NotesTab({ ev, onOpenDetails }) {
+  const { t } = useTaal()
   const { profile, profileById } = { ...useAuth(), ...useWorkspace() }
   const comments = useComments({ taskId: ev.id })
   const toast = useToast()
@@ -430,10 +457,20 @@ function NotesTab({ ev, onOpenDetails }) {
         {/* Het vrije dossier uit ClickUp: draaiboeken zijn nu eenmaal proza. */}
         <div className="je-panel" style={{ padding: 'var(--space-5) var(--space-6)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-            <span className="je-eyebrow">Dossier</span>
+            <span className="je-eyebrow">{t('events.notities.dossier')}</span>
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-              <IconButton icon="pencil" label="Dossier bewerken" size="sm" onClick={() => setDossierOpen((o) => !o)} />
-              <IconButton icon="settings" label="Alle details (social, klant, labels)" size="sm" onClick={onOpenDetails} />
+              <IconButton
+                icon="pencil"
+                label={t('events.notities.dossier_bewerken')}
+                size="sm"
+                onClick={() => setDossierOpen((o) => !o)}
+              />
+              <IconButton
+                icon="settings"
+                label={t('events.notities.alle_details')}
+                size="sm"
+                onClick={onOpenDetails}
+              />
             </span>
           </div>
           {dossierOpen ? (
@@ -441,7 +478,7 @@ function NotesTab({ ev, onOpenDetails }) {
               <Textarea boxed rows={10} value={dossier} onChange={(e) => setDossier(e.target.value)} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
                 <Button variant="ghost" size="sm" onClick={() => setDossierOpen(false)}>
-                  Annuleren
+                  {t('alg.annuleren')}
                 </Button>
                 <Button
                   size="sm"
@@ -451,13 +488,13 @@ function NotesTab({ ev, onOpenDetails }) {
                       .catch((err) => toast.error(err.message))
                   }
                 >
-                  Bewaren
+                  {t('alg.opslaan')}
                 </Button>
               </div>
             </>
           ) : (
             <div style={{ font: 'var(--type-body-sm)', whiteSpace: 'pre-wrap', color: ev.description ? 'var(--text-1)' : 'var(--text-3)' }}>
-              {ev.description ? ev.description.replace(/\*\*/g, '') : 'Nog geen dossier.'}
+              {ev.description ? ev.description.replace(/\*\*/g, '') : t('events.notities.geen_dossier')}
             </div>
           )}
         </div>
@@ -476,10 +513,11 @@ function NotesTab({ ev, onOpenDetails }) {
                 {c.authorId === profile?.id ? (
                   <IconButton
                     icon="trash-2"
-                    label="Notitie verwijderen"
+                    label={t('events.notities.notitie_weg')}
                     size="sm"
                     onClick={() => {
-                      if (window.confirm('Deze notitie verwijderen?')) deleteComment(c).catch((err) => toast.error(err.message))
+                      if (window.confirm(t('events.notities.notitie_weg_vraag')))
+                        deleteComment(c).catch((err) => toast.error(err.message))
                     }}
                   />
                 ) : null}
@@ -500,15 +538,15 @@ function NotesTab({ ev, onOpenDetails }) {
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder={'Notitie toevoegen…\nTip: "- [ ] iets" wordt een vinkje.'}
+            placeholder={t('events.notities.plaatshouder')}
             rows={draft ? 4 : 1}
             style={{ border: 0, padding: 0 }}
-            aria-label="Notitie toevoegen"
+            aria-label={t('events.notities.toevoegen')}
           />
           {draft.trim() ? (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
               <Button size="sm" onClick={add}>
-                Notitie bewaren
+                {t('events.notities.bewaren')}
               </Button>
             </div>
           ) : null}
@@ -522,6 +560,7 @@ function NotesTab({ ev, onOpenDetails }) {
 
 function Attachments({ taskId }) {
   const { documents } = useDocuments({ taskId })
+  const { t } = useTaal()
   const toast = useToast()
   const input = useRef(null)
   const [busy, setBusy] = useState(false)
@@ -532,7 +571,7 @@ function Attachments({ taskId }) {
     setBusy(true)
     try {
       for (const file of files) await uploadDocument({ file, taskId })
-      toast.success(files.length === 1 ? 'Bestand toegevoegd.' : `${files.length} bestanden toegevoegd.`)
+      toast.success(t('events.doc.toegevoegd', { aantal: files.length }))
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -543,7 +582,7 @@ function Attachments({ taskId }) {
   return (
     <div className="je-panel">
       <div className="je-eyebrow" style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-hairline)', color: 'var(--text-2)' }}>
-        Bijlagen
+        {t('events.bijlagen.titel')}
       </div>
       {documents.map((d, i) => (
         <div
@@ -559,10 +598,11 @@ function Attachments({ taskId }) {
           <span className="je-muted-caption">{leesbareGrootte(d.size)}</span>
           <IconButton
             icon="x"
-            label="Verwijderen"
+            label={t('alg.verwijderen')}
             size="sm"
             onClick={() => {
-              if (window.confirm(`"${d.name}" verwijderen?`)) deleteDocument(d).catch((err) => toast.error(err.message))
+              if (window.confirm(t('events.doc.weg_vraag', { naam: d.name })))
+                deleteDocument(d).catch((err) => toast.error(err.message))
             }}
           />
         </div>
@@ -596,7 +636,7 @@ function Attachments({ taskId }) {
         }}
       >
         {busy ? <Spinner /> : <Icon name="download" size={14} />}
-        {busy ? 'Bezig met opladen…' : 'Sleep een bestand hierheen'}
+        {busy ? t('events.bijlagen.bezig') : t('events.bijlagen.sleep')}
       </button>
       <input
         ref={input}
@@ -608,7 +648,7 @@ function Attachments({ taskId }) {
           e.target.value = ''
           upload(files)
         }}
-        aria-label="Bestand kiezen"
+        aria-label={t('events.doc.kiezen')}
       />
     </div>
   )
@@ -617,14 +657,20 @@ function Attachments({ taskId }) {
 // ─── Tijd ──────────────────────────────────────────────────────────────────
 
 function TimeTab({ entries, totalS, billS, days, profileById, eventTasks, ev }) {
-  const titleOf = (id) => (id === ev.id ? ev.name : eventTasks.find((t) => t.id === id)?.title)
+  const { t } = useTaal()
+  const titleOf = (id) => (id === ev.id ? ev.name : eventTasks.find((taak) => taak.id === id)?.title)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-4)' }}>
         {[
-          ['Totaal geboekt', hours(totalS)],
+          // "Billable" staat er niet per ongeluk in het Engels: zo heet het op
+          // de urenstaat en zo zegt het team het.
+          [t('events.tijd.totaal'), hours(totalS)],
           ['Billable', hours(billS)],
-          ['Tot het event', days == null ? '—' : days >= 0 ? `${days} dagen` : 'Voorbij'],
+          [
+            t('events.tijd.tot_event'),
+            days == null ? '—' : days >= 0 ? t('alg.dag', { aantal: days }) : t('events.tijd.voorbij'),
+          ],
         ].map(([label, value]) => (
           <div key={label} className="je-stat">
             <div className="je-caps">{label}</div>
@@ -634,9 +680,7 @@ function TimeTab({ entries, totalS, billS, days, profileById, eventTasks, ev }) 
       </div>
       <div className="je-panel">
         {entries.length === 0 ? (
-          <div className="je-muted-caption" style={{ padding: 'var(--space-5)' }}>
-            Nog geen tijd geboekt op dit event. Start een timer vanaf een taak.
-          </div>
+          <div className="je-muted-caption" style={{ padding: 'var(--space-5)' }}>{t('events.tijd.leeg')}</div>
         ) : null}
         {entries.map((r, i) => {
           const p = profileById[r.profileId]
@@ -657,10 +701,12 @@ function TimeTab({ entries, totalS, billS, days, profileById, eventTasks, ev }) 
                 {initialsOf(p)}
               </Hex>
               <span style={{ font: 'var(--type-body-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {r.description || titleOf(r.taskId) || r.taskTitle || 'Tijd'}
+                {r.description || titleOf(r.taskId) || r.taskTitle || t('events.tijd.losse')}
               </span>
               <span>
-                <Badge tone={r.billable === false ? 'neutral' : 'accent'}>{r.billable === false ? 'Intern' : 'Billable'}</Badge>
+                <Badge tone={r.billable === false ? 'neutral' : 'accent'}>
+                  {r.billable === false ? t('events.tijd.intern') : 'Billable'}
+                </Badge>
               </span>
               <span style={{ font: 'var(--fw-medium) 16px/1 var(--font-display)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                 {hours(r.durationSeconds)}

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { cn } from '@lib/cn'
-import { WEEKDAYS, addMonths, dayKey, formatMonth, isToday, monthGrid, startOfMonth } from '@lib/dates'
+import { addMonths, dayKey, formatMonth, isToday, monthGrid, startOfMonth } from '@lib/dates'
+import { useTaal } from '@context/TaalProvider'
 import { Button } from '@ui/index'
 
 /**
@@ -20,19 +21,27 @@ export default function MonthCalendar({
   onSelectDay,
   legenda = null,
 }) {
+  const { t, locale } = useTaal()
   const weeks = useMemo(() => monthGrid(month), [month])
   const huidigeMaand = startOfMonth(month).getMonth()
+
+  // De dagkoppen komen uit de eerste week van het raster en niet uit een lijst
+  // met "ma, di, wo": zo volgen ze dezelfde opmaaktaal als de maand erboven.
+  const dagkoppen = useMemo(() => {
+    const vorm = new Intl.DateTimeFormat(locale, { weekday: 'short' })
+    return weeks[0].map((dag) => vorm.format(dag))
+  }, [weeks, locale])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
-        <Button variant="secondary" size="sm" onClick={() => onMonthChange(addMonths(month, -1))} aria-label="Vorige maand">
+        <Button variant="secondary" size="sm" onClick={() => onMonthChange(addMonths(month, -1))} aria-label={t('events.maand.vorige')}>
           ‹
         </Button>
         <Button variant="secondary" size="sm" onClick={() => onMonthChange(startOfMonth())}>
-          Vandaag
+          {t('alg.vandaag')}
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => onMonthChange(addMonths(month, 1))} aria-label="Volgende maand">
+        <Button variant="secondary" size="sm" onClick={() => onMonthChange(addMonths(month, 1))} aria-label={t('events.maand.volgende')}>
           ›
         </Button>
         <span className="ml-1 text-sm font-semibold text-ink-900">{formatMonth(month)}</span>
@@ -41,7 +50,7 @@ export default function MonthCalendar({
 
       <div className="min-h-0 flex-1 overflow-auto px-4 pb-4 sm:px-6">
         <div className="grid grid-cols-7 border-b border-ink-200 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-          {WEEKDAYS.map((d) => (
+          {dagkoppen.map((d) => (
             <div key={d} className="py-1.5">
               {d}
             </div>
@@ -85,7 +94,9 @@ export default function MonthCalendar({
                     <div key={item.id ?? i}>{renderItem(item, dag)}</div>
                   ))}
                   {items.length > 4 ? (
-                    <p className="px-1 text-[11px] text-ink-400">+{items.length - 4} meer</p>
+                    <p className="px-1 text-[11px] text-ink-400">
+                      {t('events.maand.meer', { aantal: items.length - 4 })}
+                    </p>
                   ) : null}
                 </div>
               </div>

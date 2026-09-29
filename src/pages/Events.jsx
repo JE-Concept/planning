@@ -10,25 +10,39 @@ import NewEventDialog from '@components/events/NewEventDialog'
 import EventRow from '@components/events/EventRow'
 import EventBoardCard from '@components/events/EventBoardCard'
 import {
-  MONTHS_FULL,
   StatusBadge,
   TeamHexes,
   dayLabel,
   euro,
+  maandNaam,
   progressOf,
+  weekdagKort,
 } from '@components/events/parts'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { BlockedError, byEventDate, moveEvent, useEvents } from '@data/events'
 import { Spinner } from '@ui/index'
 
 const VIEWS = [
-  { value: 'lijst', label: 'Lijst' },
-  { value: 'bord', label: 'Bord' },
-  { value: 'kalender', label: 'Kalender' },
-  { value: 'archief', label: 'Archief' },
+  { value: 'lijst', sleutel: 'events.weergave.lijst' },
+  { value: 'bord', sleutel: 'events.weergave.bord' },
+  { value: 'kalender', sleutel: 'events.weergave.kalender' },
+  { value: 'archief', sleutel: 'events.weergave.archief' },
 ]
 const LOS = '__los'
+
+/*
+  De drie fasen komen uit @lib/pipeline en heten daar nog zoals ze in de code
+  heten. Hoe ze op het scherm staan hangt aan de taal, dus staat hier per fase
+  welke sleutel erbij hoort — herkend aan de eerste status van de fase, want
+  die verandert niet mee met de tekst.
+*/
+const FASE_TEKST = {
+  request: { label: 'events.fase.verkoop', sub: 'events.fase.verkoop_sub' },
+  'offer accepted': { label: 'events.fase.voorbereiding', sub: 'events.fase.voorbereiding_sub' },
+  'ready to invoice': { label: 'events.fase.facturatie', sub: 'events.fase.facturatie_sub' },
+}
 
 function rememberedView() {
   try {
@@ -47,6 +61,7 @@ export default function Events() {
   const navigate = useNavigate()
   const narrow = useNarrow()
   const [params, setParams] = useSearchParams()
+  const { t } = useTaal()
   const { brands, brandById, eventStatuses, profileById } = useWorkspace()
   const { events, tasksByEvent, loading } = useEvents()
   const [dialog, setDialog] = useState(false)
@@ -76,10 +91,13 @@ export default function Events() {
   // Concepten: de actieve merken, plus "Los event" voor wat aan geen merk hangt.
   const conceptTags = useMemo(() => {
     const active = brands.filter((b) => !b.archived)
-    const tags = [{ key: 'Alle', label: 'Alle' }, ...active.map((b) => ({ key: b.id, label: b.name.split(' — ')[0] }))]
-    if (events.some((e) => !e.brandId || !brandById[e.brandId])) tags.push({ key: LOS, label: 'Los event' })
+    const tags = [
+      { key: 'Alle', label: t('alg.alles') },
+      ...active.map((b) => ({ key: b.id, label: b.name.split(' — ')[0] })),
+    ]
+    if (events.some((e) => !e.brandId || !brandById[e.brandId])) tags.push({ key: LOS, label: t('events.los_event') })
     return tags
-  }, [brands, brandById, events])
+  }, [brands, brandById, events, t])
 
   /*
     Afgesloten events gaan naar het archief en niet naar de prullenmand.
@@ -101,23 +119,22 @@ export default function Events() {
   )
 
   const lopend = actief.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice'))
-  const monthLabel = MONTHS_FULL[new Date().getMonth()]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <PageHeader
-        eyebrow={view === 'kalender' ? null : `JE Concept · ${lopend.length} lopend`}
-        title={view === 'kalender' ? 'Kalender' : 'Events'}
+        eyebrow={view === 'kalender' ? null : `JE Concept · ${t('events.lopend', { aantal: lopend.length })}`}
+        title={view === 'kalender' ? t('nav.kalender') : t('nav.events')}
         actions={
           <Button size="sm" iconLeft="plus" onClick={() => setDialog(true)}>
-            Nieuw event
+            {t('events.nieuw')}
           </Button>
         }
       />
 
       <div className="je-pagebody" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
-          <Tabs items={VIEWS} value={view} onChange={setView} />
+          <Tabs items={VIEWS.map((v) => ({ ...v, label: t(v.sleutel) }))} value={view} onChange={setView} />
           <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
             {conceptTags.map((c) => (
               <Tag key={c.key} selectable selected={concept === c.key} onClick={() => setConcept(c.key)}>
@@ -129,7 +146,7 @@ export default function Events() {
 
         {loading ? (
           <div className="je-muted-caption" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Spinner /> Events laden…
+            <Spinner /> {t('events.laden')}
           </div>
         ) : view === 'archief' ? (
           <ArchiefView
@@ -148,7 +165,6 @@ export default function Events() {
             profileById={profileById}
             statuses={eventStatuses}
             narrow={narrow}
-            monthLabel={monthLabel}
             onArchief={() => setView('archief')}
           />
         ) : view === 'kalender' ? (
@@ -166,6 +182,7 @@ export default function Events() {
 // ─── Lijst ─────────────────────────────────────────────────────────────────
 
 function ListView({ events, all, archief, tasksByEvent, profileById, statuses, narrow, onArchief }) {
+  const { t } = useTaal()
   const navigate = useNavigate()
   // Vast, zodat de gememoriseerde rijen niet hertekenen bij elke render.
   const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
@@ -180,24 +197,27 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
 
   const stats = [
     {
-      label: 'Lopend',
+      label: t('events.stat.lopend'),
       value: String(open.length),
-      sub: `${open.reduce((a, e) => a + (Number(e.pax) || 0), 0).toLocaleString('nl-BE')} gasten in totaal`,
+      sub: t('events.stat.gasten', {
+        aantal: open.reduce((a, e) => a + (Number(e.pax) || 0), 0).toLocaleString('nl-BE'),
+      }),
     },
     {
-      label: MONTHS_FULL[focus.getMonth()],
-      value: `${inMonth.length} ${inMonth.length === 1 ? 'event' : 'events'}`,
-      sub: inMonth[0] ? `Eerste: ${dayLabel(inMonth[0].eventDate)}` : 'Nog niets gepland',
+      label: maandNaam(focus),
+      value: t('events.aantal', { aantal: inMonth.length }),
+      sub: inMonth[0] ? t('events.stat.eerste', { dag: dayLabel(inMonth[0].eventDate) }) : t('events.stat.niets_gepland'),
     },
     {
-      label: 'Te factureren',
+      label: t('events.stat.factureren'),
       value: euro(toInvoice.reduce((a, e) => a + (Number(e.quoteAmount) || 0), 0)) ?? '€ 0',
-      sub: `${toInvoice.length} ${toInvoice.length === 1 ? 'event wacht' : 'events wachten'} op factuur`,
+      sub: t('events.stat.wacht', { aantal: toInvoice.length }),
     },
   ]
 
   const groups = PHASES.map((ph) => ({
     ...ph,
+    tekst: FASE_TEKST[ph.keys[0]],
     events: events.filter((e) => ph.keys.includes(e.statusName)),
   })).filter((g) => g.events.length)
 
@@ -213,18 +233,16 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
 
       {groups.length === 0 ? (
         <div className="je-panel" style={{ padding: 'var(--space-7)', textAlign: 'center' }}>
-          <div className="je-muted-caption">Geen lopende events voor deze selectie.</div>
+          <div className="je-muted-caption">{t('events.leeg')}</div>
         </div>
       ) : null}
 
       {groups.map((g) => (
         <section key={g.label} className="je-panel">
           <div className="je-panel__head" style={{ padding: 'var(--space-5) var(--space-6)' }}>
-            <span className="je-eyebrow">{g.label}</span>
-            <span className="je-panel__sub">{g.sub}</span>
-            <span className="je-panel__right">
-              {g.events.length} {g.events.length === 1 ? 'event' : 'events'}
-            </span>
+            <span className="je-eyebrow">{t(g.tekst.label)}</span>
+            <span className="je-panel__sub">{t(g.tekst.sub)}</span>
+            <span className="je-panel__right">{t('events.aantal', { aantal: g.events.length })}</span>
           </div>
           {g.events.map((e, i) => (
             <EventRow
@@ -246,7 +264,7 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
           is "weg van het bord" niet te onderscheiden van "weg". */}
       <div style={{ textAlign: 'center' }}>
         <button type="button" className="je-plainbtn je-archieflink" onClick={onArchief}>
-          {archief.length} afgesloten {archief.length === 1 ? 'event staat' : 'events staan'} in het archief
+          {t('events.archief.link', { aantal: archief.length })}
         </button>
       </div>
     </>
@@ -267,6 +285,7 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
  * vergelijkbaar dossier terugvinden, of nakijken wat er toen aangerekend werd.
  */
 function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
+  const { t } = useTaal()
   const navigate = useNavigate()
   const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
   const [jaar, setJaar] = useState('alle')
@@ -285,10 +304,10 @@ function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
   return (
     <>
       <div className="je-panel" style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-4)' }}>
-        <span className="je-eyebrow">Jaar</span>
+        <span className="je-eyebrow">{t('events.archief.jaar')}</span>
         <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <Tag selectable selected={jaar === 'alle'} onClick={() => setJaar('alle')}>
-            Alle jaren
+            {t('events.archief.alle_jaren')}
           </Tag>
           {jaren.map((j) => (
             <Tag key={j} selectable selected={jaar === j} onClick={() => setJaar(j)}>
@@ -297,30 +316,24 @@ function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
           ))}
         </div>
         <span className="je-muted-caption" style={{ marginLeft: 'auto' }}>
-          {getoond.length} {getoond.length === 1 ? 'event' : 'events'}
+          {t('events.aantal', { aantal: getoond.length })}
         </span>
       </div>
 
       <p className="je-muted-caption" style={{ maxWidth: '68ch' }}>
-        Hier staat wat afgesloten is: alles op “Afgerond”, plus wat langer dan{' '}
-        {ARCHIEF_NA_DAGEN} dagen geleden gefactureerd werd. Er wordt niets verwijderd — de
-        offertes, facturen en documenten blijven bij het event staan.
+        {t('events.archief.uitleg', { dagen: ARCHIEF_NA_DAGEN })}
       </p>
 
       {getoond.length === 0 ? (
         <div className="je-panel" style={{ padding: 'var(--space-7)', textAlign: 'center' }}>
-          <div className="je-muted-caption">
-            Nog geen afgesloten events voor deze selectie.
-          </div>
+          <div className="je-muted-caption">{t('events.archief.leeg')}</div>
         </div>
       ) : (
         <section className="je-panel">
           <div className="je-panel__head" style={{ padding: 'var(--space-5) var(--space-6)' }}>
-            <span className="je-eyebrow">Archief</span>
-            <span className="je-panel__sub">Nieuwste eerst</span>
-            <span className="je-panel__right">
-              {jaar === 'alle' ? 'Alle jaren' : jaar}
-            </span>
+            <span className="je-eyebrow">{t('events.archief.titel')}</span>
+            <span className="je-panel__sub">{t('events.archief.nieuwste')}</span>
+            <span className="je-panel__right">{jaar === 'alle' ? t('events.archief.alle_jaren') : jaar}</span>
           </div>
           {getoond.map((e, i) => (
             <EventRow
@@ -445,6 +458,7 @@ function BoardView({ events, tasksByEvent, profileById, statuses }) {
 // ─── Kalender ──────────────────────────────────────────────────────────────
 
 function CalendarView({ events, narrow }) {
+  const { t } = useTaal()
   const navigate = useNavigate()
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const todayKey = dayKey(new Date())
@@ -472,23 +486,33 @@ function CalendarView({ events, narrow }) {
   return (
     <div className="je-panel">
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-hairline)' }}>
-        <IconButton icon="chevron-left" label="Vorige maand" size="sm" onClick={() => setMonth((m) => addMonths(m, -1))} />
+        <IconButton
+          icon="chevron-left"
+          label={t('events.maand.vorige')}
+          size="sm"
+          onClick={() => setMonth((m) => addMonths(m, -1))}
+        />
         <span style={{ font: 'var(--type-h3)', textTransform: 'uppercase', minWidth: narrow ? 140 : 180, textAlign: 'center' }}>
-          {MONTHS_FULL[first.getMonth()]} {first.getFullYear()}
+          {maandNaam(first)} {first.getFullYear()}
         </span>
-        <IconButton icon="chevron-right" label="Volgende maand" size="sm" onClick={() => setMonth((m) => addMonths(m, 1))} />
+        <IconButton
+          icon="chevron-right"
+          label={t('events.maand.volgende')}
+          size="sm"
+          onClick={() => setMonth((m) => addMonths(m, 1))}
+        />
         <span className="je-muted-caption" style={{ marginLeft: 'auto' }}>
-          {count} {count === 1 ? 'event' : 'events'}
+          {t('events.aantal', { aantal: count })}
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
-        {['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'].map((w) => (
+        {cells.slice(0, 7).map((c) => (
           <div
-            key={w}
+            key={c.key}
             className="je-eyebrow"
             style={{ padding: 'var(--space-3) var(--space-4)', letterSpacing: '.14em', color: 'var(--text-2)', borderBottom: '1px solid var(--border-hairline)' }}
           >
-            {w}
+            {weekdagKort(c.d)}
           </div>
         ))}
         {cells.map((c) => (

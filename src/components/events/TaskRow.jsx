@@ -4,6 +4,7 @@ import { daysUntil } from '@lib/dates'
 import { isTeLaat } from '@lib/laat'
 import { Badge, Checkbox, Hex, Icon, IconButton, initialsOf } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { isDone, toggleChecklistItem, toggleTaskDone } from '@data/events'
@@ -11,21 +12,31 @@ import { startTimer, stopTimer } from '@data/time'
 import { updateTask } from '@data/tasks'
 import { dayLabel } from './parts'
 
-/** "Vandaag", "Morgen", "2 dagen te laat" of de dag — met de kleur die erbij hoort. */
-export function dueOf(task) {
-  if (isDone(task)) return { label: 'Afgerond', color: 'var(--text-2)' }
-  if (!task.dueDate) return { label: 'Geen deadline', color: 'var(--text-3)' }
+/**
+ * "Vandaag", "Morgen", "2 dagen te laat" of de dag — met de kleur die erbij
+ * hoort. `t` komt van buiten: dit is een gewone functie en geen component, en
+ * een tekst die van de taal afhangt hoort niet in een rekensom.
+ */
+export function dueOf(task, t) {
+  if (isDone(task)) return { label: t('events.taak.afgerond'), color: 'var(--text-2)' }
+  if (!task.dueDate) return { label: t('events.taak.geen_deadline'), color: 'var(--text-3)' }
   const d = daysUntil(task.dueDate)
   if (d < 0 && isTeLaat(task))
-    return { label: d === -1 ? '1 dag te laat' : `${-d} dagen te laat`, color: 'var(--danger)', late: true }
-  if (d < 0) return { label: 'geweest', color: 'var(--text-3)' }
-  if (d === 0) return { label: 'Vandaag', color: 'var(--text-accent)' }
-  if (d === 1) return { label: 'Morgen', color: 'var(--text-2)' }
+    return { label: t('events.taak.te_laat', { aantal: -d }), color: 'var(--danger)', late: true }
+  if (d < 0) return { label: t('events.taak.geweest'), color: 'var(--text-3)' }
+  if (d === 0) return { label: t('alg.vandaag'), color: 'var(--text-accent)' }
+  if (d === 1) return { label: t('alg.morgen'), color: 'var(--text-2)' }
   return { label: dayLabel(task.dueDate), color: 'var(--text-2)' }
 }
 
-export const prioOf = (task) =>
-  isDone(task) ? null : task.priority === 1 ? { label: 'Urgent', tone: 'danger' } : task.priority === 2 ? { label: 'Hoog', tone: 'warning' } : null
+export const prioOf = (task, t) =>
+  isDone(task)
+    ? null
+    : task.priority === 1
+      ? { label: t('events.prio.urgent'), tone: 'danger' }
+      : task.priority === 2
+        ? { label: t('events.prio.hoog'), tone: 'warning' }
+        : null
 
 /**
  * Eén taak: afvinken, openklappen voor de checklist, de timer starten.
@@ -36,13 +47,14 @@ export const prioOf = (task) =>
 export default function TaskRow({ task, event, first, open, onExpand, onDetails, running, variant = 'event' }) {
   const { statusesOf, profileById, listById } = useWorkspace()
   const { uid } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
 
   const done = isDone(task)
-  const due = dueOf(task)
-  const prio = prioOf(task)
+  const due = dueOf(task, t)
+  const prio = prioOf(task, t)
   const checklist = task.checklist ?? []
   const who = profileById[task.assignees?.[0]]
 
@@ -55,7 +67,7 @@ export default function TaskRow({ task, event, first, open, onExpand, onDetails,
     try {
       if (running) {
         await stopTimer(uid)
-        toast.success('Tijd geboekt.')
+        toast.success(t('events.taak.tijd_geboekt'))
       } else {
         await startTimer({ uid, task, list: listById[task.listId] })
       }
@@ -75,7 +87,7 @@ export default function TaskRow({ task, event, first, open, onExpand, onDetails,
   return (
     <div style={{ borderTop: first ? 'none' : '1px solid var(--border-hairline)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4) var(--space-5)' }}>
-        <Checkbox checked={done} onChange={toggle} aria-label="Afvinken" />
+        <Checkbox checked={done} onChange={toggle} aria-label={t('events.taak.afvinken')} />
 
         {variant === 'mine' ? (
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -132,7 +144,7 @@ export default function TaskRow({ task, event, first, open, onExpand, onDetails,
         )}
         <IconButton
           icon={running ? 'square' : 'play'}
-          label={running ? 'Timer stoppen' : 'Timer starten'}
+          label={running ? t('timer.stoppen') : t('timer.starten')}
           variant={running ? 'accent' : 'bare'}
           size="sm"
           disabled={busy}
@@ -152,8 +164,8 @@ export default function TaskRow({ task, event, first, open, onExpand, onDetails,
           ))}
           <input
             className="je-underline-input"
-            placeholder="+ checklistpunt en Enter"
-            aria-label="Checklistpunt toevoegen"
+            placeholder={t('events.taak.checklist_hint')}
+            aria-label={t('events.taak.checklist_toevoegen')}
             style={{ width: 220 }}
             onKeyDown={(e) => {
               const text = e.currentTarget.value.trim()
@@ -163,13 +175,17 @@ export default function TaskRow({ task, event, first, open, onExpand, onDetails,
             }}
           />
           <span className="je-muted-caption">
-            {checklist.length ? null : 'Geen checklist. '}
-            Geschat: {task.timeEstimateMinutes ? `${Math.round((task.timeEstimateMinutes / 60) * 100) / 100} u` : '—'}
+            {checklist.length ? null : t('events.taak.geen_checklist')}
+            {t('events.taak.geschat', {
+              tijd: task.timeEstimateMinutes
+                ? t('events.taak.uren', { uren: Math.round((task.timeEstimateMinutes / 60) * 100) / 100 })
+                : '—',
+            })}
             {onDetails ? (
               <>
                 {' · '}
                 <button type="button" className="je-plainbtn" style={{ color: 'var(--text-accent)' }} onClick={onDetails}>
-                  Details, checklist en notities
+                  {t('events.taak.details')}
                 </button>
               </>
             ) : null}

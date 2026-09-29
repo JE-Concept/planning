@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Button, Spinner } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import {
   deleteDocument,
@@ -16,8 +17,9 @@ import {
  * eigenaar. Afbeeldingen krijgen een miniatuur — een logo herken je sneller
  * aan het beeld dan aan "logo-def-v3-final.png".
  */
-export default function Documents({ customerId = null, taskId = null, titel = 'Documenten' }) {
+export default function Documents({ customerId = null, taskId = null, titel = null }) {
   const { documents, loading } = useDocuments({ customerId, taskId })
+  const { t } = useTaal()
   const toast = useToast()
   const invoer = useRef(null)
   const [bezig, setBezig] = useState(false)
@@ -34,7 +36,7 @@ export default function Documents({ customerId = null, taskId = null, titel = 'D
       for (const file of bestanden) {
         await uploadDocument({ file, customerId, taskId })
       }
-      toast.success(bestanden.length === 1 ? 'Bestand toegevoegd.' : `${bestanden.length} bestanden toegevoegd.`)
+      toast.success(t('events.doc.toegevoegd', { aantal: bestanden.length }))
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -46,7 +48,7 @@ export default function Documents({ customerId = null, taskId = null, titel = 'D
     <section>
       <div className="flex items-center gap-2">
         <h3 className="label mb-0">
-          {titel} ({documents.length})
+          {titel ?? t('events.doc.titel')} ({documents.length})
         </h3>
         <Button
           variant="ghost"
@@ -55,9 +57,9 @@ export default function Documents({ customerId = null, taskId = null, titel = 'D
           disabled={bezig}
           onClick={() => invoer.current?.click()}
         >
-          {bezig ? 'Bezig…' : '+ Bestand'}
+          {bezig ? t('events.doc.bezig') : t('events.doc.toevoegen')}
         </Button>
-        <input ref={invoer} type="file" multiple hidden onChange={kies} aria-label="Bestand kiezen" />
+        <input ref={invoer} type="file" multiple hidden onChange={kies} aria-label={t('events.doc.kiezen')} />
       </div>
 
       {loading ? (
@@ -65,9 +67,7 @@ export default function Documents({ customerId = null, taskId = null, titel = 'D
           <Spinner />
         </div>
       ) : documents.length === 0 ? (
-        <p className="mt-1 text-sm text-ink-500">
-          Nog niets. Logo's, huisstijl, contracten, plannen — alles wat je later terug wil vinden.
-        </p>
+        <p className="mt-1 text-sm text-ink-500">{t('events.doc.leeg')}</p>
       ) : (
         <ul className="mt-2 space-y-1.5">
           {documents.map((document) => (
@@ -104,12 +104,12 @@ export default function Documents({ customerId = null, taskId = null, titel = 'D
                 size="sm"
                 className="shrink-0 text-ink-400"
                 onClick={() => {
-                  if (window.confirm(`"${document.name}" verwijderen?`)) {
+                  if (window.confirm(t('events.doc.weg_vraag', { naam: document.name }))) {
                     deleteDocument(document).catch((err) => toast.error(err.message))
                   }
                 }}
               >
-                Weg
+                {t('events.doc.weg')}
               </Button>
             </li>
           ))}
