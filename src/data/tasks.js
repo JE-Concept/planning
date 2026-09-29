@@ -264,12 +264,14 @@ export function useMyTasks(uid) {
  * daar is de pagina niet voor. Het archief is dat wel.
  */
 export function useTaskBoard({ who, open = true, max = 500 } = {}) {
-  const [tasks, setTasks] = useState([])
+  const [eigen, setEigen] = useState([])
+  const [zonder, setZonder] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!who) {
-      setTasks([])
+      setEigen([])
+      setZonder([])
       setLoading(false)
       return undefined
     }
@@ -280,10 +282,10 @@ export function useTaskBoard({ who, open = true, max = 500 } = {}) {
     ]
 
     setLoading(true)
-    return onSnapshot(
+    const stop = onSnapshot(
       query(col(COL.tasks), ...filters, orderBy('dueDate'), limit(max)),
       (snap) => {
-        setTasks(fromQuery(snap))
+        setEigen(fromQuery(snap))
         setLoading(false)
       },
       (err) => {
@@ -291,7 +293,45 @@ export function useTaskBoard({ who, open = true, max = 500 } = {}) {
         setLoading(false)
       }
     )
+
+    /*
+      En wat niemand op zijn naam heeft.
+
+      Een taak zonder uitvoerder komt in geen enkele persoonlijke lijst voor —
+      hij hoort bij niemand, dus vindt hij niemand. Precies dat werk moet gezien
+      worden: het is wat blijft liggen omdat iedereen aanneemt dat een ander het
+      doet.
+
+      Het is een tweede vraag en geen deel van de eerste, omdat Firestore geen
+      "van jou óf van niemand" in één keer kan beantwoorden. Het scherm voegt ze
+      samen; dat is dezelfde aanpak als bij de socials.
+    */
+    const stopZonder =
+      who === 'iedereen'
+        ? () => {}
+        : onSnapshot(
+            query(
+              col(COL.tasks),
+              where('assignees', '==', []),
+              ...(open ? [where('open', '==', true)] : []),
+              orderBy('dueDate'),
+              limit(max)
+            ),
+            (snap) => setZonder(fromQuery(snap)),
+            (err) => console.error('JE Plan: de niet-toegewezen taken zijn niet op te halen', err)
+          )
+
+    return () => {
+      stop()
+      stopZonder()
+    }
   }, [who, open, max])
+
+  const tasks = useMemo(() => {
+    if (zonder.length === 0) return eigen
+    const gezien = new Set(eigen.map((t) => t.id))
+    return [...eigen, ...zonder.filter((t) => !gezien.has(t.id))]
+  }, [eigen, zonder])
 
   return { tasks, loading }
 }

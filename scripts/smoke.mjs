@@ -27,7 +27,9 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist-demo')
-const POORT = 4310
+// Verzetbaar, zodat twee takken tegelijk kunnen testen zonder elkaar de poort
+// af te nemen.
+const POORT = Number(process.env.SMOKE_PORT ?? 4310)
 const adres = `http://localhost:${POORT}`
 
 if (!existsSync(join(root, 'index.html'))) {
