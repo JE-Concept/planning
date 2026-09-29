@@ -260,6 +260,30 @@ De favicon blijft de drie balken alleen: op 16 pixels valt een schreefletter uit
 
 ---
 
+## Nederlands en Engels
+
+De tool staat in het Nederlands en in het Engels. De keuze staat in het
+accountmenu, onder *Taal*, en hangt aan je profiel — dus ze volgt mee naar je
+telefoon en naar de tablet in de keuken. Datums, maanden en dagnamen gaan mee,
+en de e-mails en meldingen die de server stuurt komen in de taal van de
+ontvanger aan.
+
+De taal van je browser wordt met opzet niet overgenomen. Een deel van het team
+heeft Windows of Chrome in het Engels staan, en dat zegt niets over de taal
+waarin ze willen werken; die zouden op een ochtend een andere tool openen dan
+gisteren zonder zelf iets veranderd te hebben. Iedereen begint in het
+Nederlands; wie Engels wil, kiest het. De knop heet *English*, in het Engels,
+zodat wie geen Nederlands leest hem herkent.
+
+Twee dingen blijven Nederlands, wat je ook kiest: wat het team zelf in de
+database schreef (namen van events, klanten, taken en afvinkpunten), en de
+FAVV-maandrapportage — een controleur van de voedselinspectie leest Nederlands,
+en een officieel rapport dat per gebruiker van taal verandert is geen rapport.
+
+Een tekst toevoegen of wijzigen: [`docs/vertalen.md`](docs/vertalen.md).
+
+---
+
 ## Migratie uit ClickUp
 
 ```bash
