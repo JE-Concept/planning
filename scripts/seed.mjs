@@ -201,12 +201,14 @@ async function main() {
 
   await vulMeetveldenAan()
 
+  await vulKlantveldenAan()
+
   await seedFacturatieRegel()
 
   console.log(
     aangemaakt.length ? `Aangemaakt: ${aangemaakt.join(', ')}.` : 'Niets nieuws aan te maken.'
   )
-  if (aangevuld.length) console.log(`Meetvelden aangevuld — ${aangevuld.join(' | ')}.`)
+  if (aangevuld.length) console.log(`Aangevuld op bestaande documenten — ${aangevuld.join(' | ')}.`)
   if (overgeslagen.length) {
     console.log(`Ongemoeid gelaten (bestaat al, is van de app): ${overgeslagen.join(', ')}.`)
   }
@@ -264,6 +266,34 @@ async function vulMeetveldenAan() {
 
     await ref.set({ sections: nieuw, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
     aangevuld.push(`${template.name}: ${bijgewerkt.join(', ')}`)
+  }
+}
+
+/**
+ * Geeft bestaande klanten de facturatievelden die er nog niet waren.
+ *
+ * De klantfiche toont sinds kort een apart factuuradres en een factuur-e-mail.
+ * Een klant die van voor die verandering dateert heeft die sleutels niet, en
+ * dan schrijft het scherm bij de eerste wijziging een halve map terug.
+ *
+ * Aanvullend en niets anders: alleen een veld dat ontbreekt wordt gezet, en op
+ * leeg — leeg betekent in de app "hetzelfde als het gewone adres". Namen,
+ * btw-nummers en contactpersonen blijven onaangeroerd; die zijn van de app.
+ * Wat er wel gebeurde staat per klant in het logboek van de uitrol.
+ */
+async function vulKlantveldenAan() {
+  const LEEG_ADRES = { street: '', postalCode: '', city: '', country: 'België' }
+  const klanten = await db.collection('customers').get()
+
+  for (const snap of klanten.docs) {
+    const data = snap.data()
+    const patch = {}
+    if (data.billingAddress === undefined) patch.billingAddress = LEEG_ADRES
+    if (data.billingEmail === undefined) patch.billingEmail = ''
+    if (Object.keys(patch).length === 0) continue
+
+    await snap.ref.set({ ...patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    aangevuld.push(`klant ${data.name ?? snap.id}: ${Object.keys(patch).join(', ')}`)
   }
 }
 

@@ -231,9 +231,89 @@ await test('een klant toont zijn gegevens, events en documenten', async () => {
   // De contactgegevens staan in invoervelden en dus niet in de tekst.
   const velden = await paneel.locator('input').evaluateAll((els) => els.map((e) => e.value))
   zouden(velden.includes('Karen Vandeput'), `contactpersoon ontbreekt: ${velden.slice(0, 6).join(' | ')}`)
-  zouden(velden.includes('BE 0456.789.123'), 'het btw-nummer ontbreekt')
+  zouden(velden.includes('BE 0456.789.133'), 'het btw-nummer ontbreekt')
   zouden(paneeltekst.includes('blum-logo.svg'), 'het logo ontbreekt bij de klant')
   zouden(paneeltekst.includes('20-jarig bestaan'), 'het event van deze klant ontbreekt')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de klantfiche toont de historiek en wat er nog te factureren valt', async () => {
+  // Waar de klantenmodule om bestaat. Stond dit er niet, dan was een klant een
+  // adresboekje en moest je de bedragen van het bord bij elkaar zoeken.
+  const page = await tabblad('/klanten')
+  await page.getByText('Blum België').first().click()
+  await page.waitForTimeout(900)
+  const paneel = await page.getByRole('dialog').innerText()
+
+  zouden(bevat(paneel, 'Historiek (3 events)'), `de historiek klopt niet: ${paneel.slice(0, 200)}`)
+  for (const dossier of ['20-jarig bestaan', 'kerstborrel 2025', 'teambuilding productie']) {
+    zouden(bevat(paneel, dossier), `"${dossier}" ontbreekt in de historiek`)
+  }
+  // 24.800 + 6.800 + 4.150, en de subtaken tellen niet mee.
+  zouden(bevat(paneel, '35.750'), `het totaal ontbreekt: ${paneel.slice(0, 300)}`)
+  zouden(bevat(paneel, 'Nog te factureren (1)'), 'wat er te factureren valt staat er niet apart')
+  zouden(bevat(paneel, '4.150'), 'het openstaande bedrag ontbreekt')
+  // Het factuuradres van Blum wijkt af van het bezoekadres.
+  zouden(bevat(paneel, 'facturen@blum.be'), 'het factuur-e-mailadres ontbreekt')
+  zouden(bevat(paneel, 'Postbus 40'), 'het aparte factuuradres ontbreekt')
+  zouden(bevat(paneel, 'bel Karen Vandeput'), 'de hoofdcontactpersoon staat er niet')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een klant kiezen op een event zet hem in de historiek van die klant', async () => {
+  const page = await tabblad('/events/t-ruben')
+  await page.getByRole('button', { name: 'Fiche bewerken' }).first().click()
+  await page.waitForTimeout(600)
+
+  const dialoog = page.getByRole('dialog')
+  await dialoog.getByLabel('Klant van dit event').selectOption({ label: 'Stad Borgloon' })
+  await page.waitForTimeout(300)
+  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  await page.waitForTimeout(1000)
+  zouden(bevat(await inhoud(page), 'Stad Borgloon'), 'de klant staat niet op de fiche van het event')
+
+  // En dan het punt van de hele koppeling: het dossier hoort meteen bij de klant.
+  await page.goto(`${adres}/#/klanten`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  await page.getByText('Stad Borgloon').first().click()
+  await page.waitForTimeout(900)
+  const paneel = await page.getByRole('dialog').innerText()
+  zouden(bevat(paneel, 'Ruben Theuwen'), `het event staat niet in de historiek: ${paneel.slice(0, 250)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een klant die nog niet bestaat maak je aan vanaf het event', async () => {
+  // De reden dat de klantenlijst leeg bleef: wie eerst naar Klanten moest,
+  // typte in de praktijk gewoon een naam in het vrije veld.
+  const page = await tabblad('/events/t-jolien')
+  await page.getByRole('button', { name: 'Fiche bewerken' }).first().click()
+  await page.waitForTimeout(600)
+
+  const dialoog = page.getByRole('dialog')
+  await dialoog.getByLabel('Klant van dit event').selectOption('__nieuw')
+  await page.waitForTimeout(400)
+  await dialoog.getByLabel('Naam van de klant').fill('Jolien en Bernd')
+  await dialoog.getByLabel('Btw-nummer').fill('0400378485')
+  await dialoog.getByRole('button', { name: 'Klant aanmaken' }).click()
+  await page.waitForTimeout(900)
+
+  const gekozen = await dialoog.getByLabel('Klant van dit event').evaluate((el) => el.selectedOptions[0].text)
+  zouden(gekozen === 'Jolien en Bernd', `de nieuwe klant staat niet gekozen: ${gekozen}`)
+  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  await page.waitForTimeout(1000)
+
+  await page.goto(`${adres}/#/klanten`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  await page.getByText('Jolien en Bernd').first().click()
+  await page.waitForTimeout(900)
+  const paneel = page.getByRole('dialog')
+  const velden = await paneel.locator('input').evaluateAll((els) => els.map((e) => e.value))
+  // Ingetypt als 0400378485, bewaard als een leesbaar nummer.
+  zouden(velden.includes('BE 0400.378.485'), `het btw-nummer is niet netgezet: ${velden.slice(0, 5).join(' | ')}`)
+  zouden(bevat(await paneel.innerText(), 'doopsel'), 'het event hangt niet aan de nieuwe klant')
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })

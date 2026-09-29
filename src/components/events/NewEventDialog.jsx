@@ -7,6 +7,7 @@ import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createEventFromTemplate } from '@data/events'
 import { resolveTemplate, templateSummary } from '@data/templates'
+import CustomerPicker from './CustomerPicker'
 
 /** Nieuw event: naam, datum, concept en het template waarmee het start. */
 export default function NewEventDialog({ open, onClose }) {
@@ -19,6 +20,9 @@ export default function NewEventDialog({ open, onClose }) {
   const [name, setName] = useState('')
   const [date, setDate] = useState(() => dayKey(addDays(new Date(), 45)))
   const [brandId, setBrandId] = useState('')
+  // Een event zonder klant is een event zonder historiek; daarom staat de keuze
+  // hier al en niet pas op de fiche.
+  const [klant, setKlant] = useState({ customerId: '', customerName: '' })
   const [tplId, setTplId] = useState(templates[0]?.id ?? 'leeg')
   const [busy, setBusy] = useState(false)
 
@@ -34,9 +38,12 @@ export default function NewEventDialog({ open, onClose }) {
         brandId: brandId || null,
         template,
         createdBy: uid,
+        customerId: klant.customerId,
+        customerName: klant.customerName,
       })
       toast.success(`${name.trim()} staat in de planning.`)
       setName('')
+      setKlant({ customerId: '', customerName: '' })
       onClose()
       navigate(`/events/${id}`)
     } catch (err) {
@@ -65,6 +72,11 @@ export default function NewEventDialog({ open, onClose }) {
             autoFocus
           />
         </Field>
+        <CustomerPicker
+          customerId={klant.customerId}
+          customerName={klant.customerName}
+          onChange={setKlant}
+        />
         <Field label="Datum event" hint="Deadlines van het template tellen hiervan terug">
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
@@ -113,7 +125,7 @@ export default function NewEventDialog({ open, onClose }) {
           </div>
         </div>
         <div className="je-muted-caption">
-          Klant, datum, gasten en offerte vul je in op de fiche. Ze zijn verplicht vanaf de offertestap.
+          Gasten en offerte vul je aan op de fiche. Samen met klant en datum zijn ze verplicht vanaf de offertestap.
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
           <Button variant="ghost" size="sm" onClick={onClose}>
