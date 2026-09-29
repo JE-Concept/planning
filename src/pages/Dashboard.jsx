@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { addDays, dayKey, daysUntil, formatDay, isOverdue, relativeDay, startOfWeek } from '@lib/dates'
+import { publicatieMoment } from '@lib/social-planning'
 import { isTeLaat } from '@lib/laat'
 import { formatDuration, priorityOf } from '@lib/format'
 import { runProgress } from '@lib/checklist-templates'
@@ -287,7 +288,7 @@ export default function Dashboard() {
                           className="je-taskline__prio"
                           style={{ background: brandById[post.brandId]?.color ?? 'var(--text-3)' }}
                         />
-                        <span className="je-dash__wanneer">{formatDay(post.scheduledAt)}</span>
+                        <span className="je-dash__wanneer">{formatDay(publicatieMoment(post))}</span>
                         <span className="je-taskline__title">{post.title}</span>
                         <Badge
                           style={{ background: `${status.color}1f`, color: status.color, borderColor: 'transparent' }}

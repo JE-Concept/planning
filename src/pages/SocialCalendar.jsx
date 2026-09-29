@@ -1,19 +1,26 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import {
+  addDays,
   addMonths,
   dayKey,
+  endOfDay,
+  formatDate,
   formatMonth,
   isToday,
   monthGrid,
+  startOfDay,
   startOfMonth,
+  startOfWeek,
   WEEKDAYS,
 } from '@lib/dates'
+import { bucketPerDag, publicatieMoment, weekDagen, weekNummer } from '@lib/social-planning'
 import { Badge, Button, EmptyState, Input, Select, Spinner } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import PostCard from '@components/social/PostCard'
 import PostDrawer from '@components/social/PostDrawer'
 import SocialEventsBoard from '@components/social/SocialEventsBoard'
+import WeekBoard from '@components/social/WeekBoard'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -38,6 +45,7 @@ export default function SocialCalendar() {
   const toast = useToast()
 
   const [month, setMonth] = useState(() => startOfMonth())
+  const [week, setWeek] = useState(() => startOfWeek())
   // Het eventbord staat vooraan: dat is de vraag waarmee de week begint —
   // van welke events moet er nog content komen?
   const [view, setView] = useState('events')
@@ -57,10 +65,21 @@ export default function SocialCalendar() {
     [profiles, socialOwnerEmail]
   )
 
+  /**
+   * Wat er opgehaald wordt hangt af van de weergave.
+   *
+   * De laatste dag loopt tot middernacht en niet tot het begin ervan: een post
+   * die op de laatste dag om 18:00 online gaat viel er anders buiten, en dan
+   * ontbreekt hij op de kalender zonder dat iemand ziet waarom.
+   */
   const range = useMemo(() => {
+    if (view === 'week') {
+      const dagen = weekDagen(week)
+      return { from: startOfDay(dagen[0]), to: endOfDay(dagen[6]) }
+    }
     const weeks = monthGrid(month)
-    return { from: weeks[0][0], to: weeks[weeks.length - 1][6] }
-  }, [month])
+    return { from: weeks[0][0], to: endOfDay(weeks[weeks.length - 1][6]) }
+  }, [view, week, month])
 
   const { posts, loading } = useSocialPosts(range)
   const backlog = useUnscheduledPosts()
@@ -88,15 +107,7 @@ export default function SocialCalendar() {
     return out
   }, [posts, brandFilter, projectFilter, reviewOnly])
 
-  const byDay = useMemo(() => {
-    const map = {}
-    for (const post of shown) {
-      if (!post.scheduledAt) continue
-      const key = dayKey(post.scheduledAt)
-      ;(map[key] ??= []).push(post)
-    }
-    return map
-  }, [shown])
+  const byDay = useMemo(() => bucketPerDag(shown), [shown])
 
   const toggleBrand = (id) =>
     setBrandFilter((f) => (f.includes(id) ? f.filter((b) => b !== id) : [...f, id]))
@@ -110,7 +121,7 @@ export default function SocialCalendar() {
 
     // Dropping on a day keeps the hour the post already had; a post that never
     // had one lands at 10:00, which is when this team usually posts.
-    const previous = post.scheduledAt ? new Date(post.scheduledAt) : null
+    const previous = publicatieMoment(post)
     const next = new Date(date)
     next.setHours(previous?.getHours() ?? 10, previous?.getMinutes() ?? 0, 0, 0)
 
@@ -142,7 +153,7 @@ export default function SocialCalendar() {
     try {
       await createPost({
         brandId,
-        scheduledAt: null,
+        publishAt: null,
         title: titel,
         createdBy: uid,
         assigneeId: socialOwner?.id ?? null,
@@ -153,7 +164,14 @@ export default function SocialCalendar() {
     }
   }
 
-  const addOn = async (date) => {
+  /**
+   * Een post op een dag zetten.
+   *
+   * Vanuit de weekweergave komt het kanaal mee: je klikt daar in de rij van
+   * een kanaal, en dan is dát het kanaal — anders staat de nieuwe post meteen
+   * in de verkeerde rij.
+   */
+  const addOn = async (date, channel) => {
     const brandId = brandFilter[0] ?? brands[0]?.id
     if (!brandId) {
       toast.error('Maak eerst een merk aan bij Instellingen.')
@@ -165,10 +183,11 @@ export default function SocialCalendar() {
     try {
       const id = await createPost({
         brandId,
-        scheduledAt: when,
+        publishAt: when,
         title: 'Nieuwe post',
         createdBy: uid,
         assigneeId: socialOwner?.id ?? null,
+        ...(channel ? { channels: [channel] } : {}),
       })
       setOpenPostId(id)
     } catch (err) {
@@ -184,10 +203,29 @@ export default function SocialCalendar() {
       <PageHeader
         title="Socials"
         subtitle={
-          view === 'events' ? 'Events met social content' : `${shown.length} posts in ${formatMonth(month)}`
+          view === 'events'
+            ? 'Events met social content'
+            : view === 'week'
+              ? `${shown.length} posts in week ${weekNummer(week)} · ${formatDate(weekDagen(week)[0])} – ${formatDate(weekDagen(week)[6])}`
+              : `${shown.length} posts in ${formatMonth(month)}`
         }
         actions={
-          view === 'events' ? null : (
+          view === 'events' ? null : view === 'week' ? (
+            <>
+              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, -7))} aria-label="Vorige week">
+                ‹
+              </Button>
+              <Button variant="secondary" onClick={() => setWeek(startOfWeek())}>
+                Deze week
+              </Button>
+              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, 7))} aria-label="Volgende week">
+                ›
+              </Button>
+              <Button variant="primary" onClick={() => addOn(new Date())}>
+                + Post
+              </Button>
+            </>
+          ) : (
           <>
             <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, -1))} aria-label="Vorige maand">
               ‹
@@ -211,6 +249,9 @@ export default function SocialCalendar() {
             </Tab>
             <Tab active={view === 'calendar'} onClick={() => setView('calendar')}>
               Kalender
+            </Tab>
+            <Tab active={view === 'week'} onClick={() => setView('week')}>
+              Week
             </Tab>
             <Tab active={view === 'board'} onClick={() => setView('board')}>
               Posts
@@ -272,6 +313,27 @@ export default function SocialCalendar() {
         <div className="flex flex-1 items-center justify-center">
           <Spinner className="h-6 w-6" />
         </div>
+      ) : view === 'week' ? (
+        <WeekBoard
+          week={week}
+          posts={shown}
+          brandById={brandById}
+          onOpen={(p) => setOpenPostId(p.id)}
+          onAdd={addOn}
+          drag={{
+            id: dragId,
+            over: overDay,
+            onStart: (e, p) => {
+              setDragId(p.id)
+              e.dataTransfer.effectAllowed = 'move'
+              e.dataTransfer.setData('text/plain', p.id)
+            },
+            onEnd: () => setDragId(null),
+            onOver: (key) => setOverDay(key),
+            onLeave: (key) => setOverDay((d) => (d === key ? null : d)),
+            onDrop: dropOn,
+          }}
+        />
       ) : view === 'board' ? (
         <ProductionBoard
           posts={shown}

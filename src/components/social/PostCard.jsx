@@ -1,11 +1,15 @@
 import { cn } from '@lib/cn'
 import { formatTime } from '@lib/dates'
-import { channelMeta, reviewMeta, statusMeta } from '@data/social'
+import { channelMeta, kanalenVan } from '@lib/social-channels'
+import { heeftEigenPublicatiedatum, publicatieMoment } from '@lib/social-planning'
+import { reviewMeta, statusMeta } from '@data/social'
 
 /** A post as it appears in a calendar cell: brand colour, time, thumbnail, channels. */
 export default function PostCard({ post, brand, compact = false, dragging, onOpen, onDragStart, onDragEnd }) {
   const status = statusMeta(post.status)
   const review = post.reviewState && post.reviewState !== 'none' ? reviewMeta(post.reviewState) : null
+  const moment = publicatieMoment(post)
+  const kanalen = kanalenVan(post)
 
   return (
     <article
@@ -21,7 +25,7 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
       }}
       role="button"
       tabIndex={0}
-      aria-label={`${post.title} — ${status.label}`}
+      aria-label={`${post.title} — ${status.label}${kanalen.length ? ` — ${kanalen.map((k) => channelMeta(k).label).join(', ')}` : ''}`}
       className={cn(
         'group cursor-pointer overflow-hidden rounded-md border bg-white text-left transition hover:shadow-md',
         dragging && 'drag-ghost'
@@ -30,8 +34,20 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
     >
       <div className="px-1.5 py-1">
         <div className="flex items-center gap-1">
-          {post.scheduledAt ? (
-            <span className="text-[10px] tabular-nums text-ink-500">{formatTime(post.scheduledAt)}</span>
+          {moment ? (
+            <span
+              className="text-[10px] tabular-nums text-ink-500"
+              // Een datum die nog van het event komt heeft niemand gekozen; dat
+              // hoort te zien te zijn vóór de post de deur uit gaat.
+              title={
+                heeftEigenPublicatiedatum(post)
+                  ? 'Publicatiedatum'
+                  : 'Overgenomen van het event — nog geen eigen publicatiedatum'
+              }
+            >
+              {formatTime(moment)}
+              {heeftEigenPublicatiedatum(post) ? '' : '*'}
+            </span>
           ) : null}
           <span
             aria-hidden="true"
@@ -56,17 +72,22 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
           </p>
         ) : null}
 
-        {post.channels?.length ? (
-          <div className="mt-0.5 flex flex-wrap gap-0.5">
-            {post.channels.map((key) => {
+        {/* Het kanaal met zoveel letters dat je het herkent zonder de kleuren
+            uit je hoofd te kennen — op een gedeeld scherm kijkt niet iedereen
+            even goed, en IG is niet FB. */}
+        {kanalen.length > 0 ? (
+          <div className="je-postcard__kanalen">
+            {kanalen.map((key) => {
               const channel = channelMeta(key)
               return (
                 <span
                   key={key}
                   title={channel.label}
-                  className="inline-block h-1.5 w-1.5 rounded-full"
-                  style={{ backgroundColor: channel.color }}
-                />
+                  className="je-postcard__kanaal"
+                  style={{ color: channel.color, borderColor: `${channel.color}59` }}
+                >
+                  {channel.short}
+                </span>
               )
             })}
           </div>

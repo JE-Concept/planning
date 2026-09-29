@@ -382,13 +382,27 @@ seedDoc('runningTimers', 'u-jasper', {
 //
 // Sommige posts zitten al in een reviewronde; hun beslissingen staan verderop
 // in het logboek.
+//
+// `over` is de publicatiedatum in dagen vanaf nu, `event` die van het event
+// waar de post bij hoort. Die twee lopen uiteen en dat is het punt: een
+// aankondiging gaat weken vooraf online, een nabeschouwing dagen erna.
+// `oud: true` zet er een post in zoals ze in de database stonden vóór
+// `publishAt` bestond — alleen een eventdatum. De kalender hoort die nog
+// steeds te tonen.
 
 function post(id, o) {
-  const when = o.over == null ? null : (() => { const d = dag(o.over); d.setHours(o.uur ?? 10, 0, 0, 0); return d })()
+  const moment = (over) =>
+    over == null ? null : (() => { const d = dag(over); d.setHours(o.uur ?? 10, 0, 0, 0); return d })()
+
+  const publicatie = moment(o.over)
+  const eventdatum = o.event == null ? publicatie : moment(o.event)
+
   seedDoc('socialPosts', id, {
     brandId: o.brandId, listId: 'l-socials', title: o.title,
     caption: o.caption ?? '', hashtags: o.hashtags ?? '',
-    channels: o.channels, scheduledAt: when, status: o.status,
+    channels: o.channels,
+    ...(o.oud ? {} : { publishAt: publicatie }),
+    scheduledAt: eventdatum, status: o.status,
     assigneeId: o.assigneeId ?? 'u-charish',
     source: 'manual',
     taskId: o.taskId ?? null, taskTitle: o.taskTitle ?? null, taskListName: o.taskId ? 'Events' : null,
@@ -403,16 +417,19 @@ function post(id, o) {
   })
 }
 
-post('p1', { brandId: 'meer', title: 'Herfstwandeling Het Vinne', over: 2, status: 'scheduled', channels: ['instagram', 'facebook'],
+post('p1', { brandId: 'meer', title: 'Herfstwandeling Het Vinne', over: 2, event: 9, status: 'scheduled', channels: ['instagram', 'facebook'],
   reviewState: 'approved', reviewRound: 1,
   taskId: 't-vinne', taskTitle: 'Wandelzondag Vinne',
+  hashtags: '#hetvinne #haspengouw #herfst',
   caption: 'Zondag wandelen door het Vinne, en achteraf iets warms op het terras. 🍂' })
 
-post('p2', { brandId: 'bar-vue', title: 'Bar Vue cocktailweek', over: 3, status: 'review', channels: ['instagram'],
+post('p2', { brandId: 'bar-vue', title: 'Bar Vue cocktailweek', over: 3, status: 'review', channels: ['instagram', 'tiktok'],
   reviewState: 'requested', reviewRound: 2,
+  hashtags: '#barvue #sinttruiden #cocktails',
+  caption: 'Zeven avonden, zeven cocktails. Van maandag tot zondag, telkens één nieuwe op de kaart.',
   reviewerId: 'u-jasper', reviewNote: 'Tweede versie — logo staat nu links onder.' })
 
-post('p3', { brandId: 'je-concept', title: 'Haspengouw Culinair sfeerbeeld', over: 4, status: 'approved', channels: ['instagram', 'linkedin'],
+post('p3', { brandId: 'je-concept', title: 'Haspengouw Culinair sfeerbeeld', over: 4, event: 11, status: 'approved', channels: ['instagram', 'linkedin'],
   reviewState: 'approved', reviewRound: 1,
   taskId: 't-haspengouw', taskTitle: 'Haspengouw Culinair — Grote Markt' })
 
@@ -425,6 +442,27 @@ post('p6', { brandId: 'je-concept', title: 'Vacature zaalmedewerker', over: 10, 
 post('p7', { brandId: 'feestbeest', title: 'Trouw Niels en Inez — bedankt', over: null, status: 'idea', channels: ['instagram'],
   taskId: 't-trouw', taskTitle: 'Trouw Niels en Inez',
   notes: 'Pas na het weekend; foto’s komen van de fotograaf.' })
+
+// Weken vóór het event: de aankondiging van een feest dat pas eind oktober is.
+post('p8', { brandId: 'je-concept', title: 'Blum 20 jaar — aankondiging', over: 1, event: 30, uur: 9, status: 'scheduled',
+  channels: ['linkedin', 'facebook'],
+  reviewState: 'approved', reviewRound: 1,
+  taskId: 't-blum', taskTitle: 'Blum België — 20-jarig bestaan',
+  hashtags: '#blum #jeconcept #bedrijfsfeest',
+  caption: 'Twintig jaar Blum België, en wij mogen het feest bouwen. Save the date. 🎉' })
+
+// Dagen ná het event: de nabeschouwing van iets dat vorige week doorging.
+post('p9', { brandId: 'je-concept', title: 'Loonse Feesten — nabeschouwing', over: 5, event: -6, uur: 19, status: 'approved',
+  channels: ['instagram', 'facebook'],
+  reviewState: 'approved', reviewRound: 1,
+  hashtags: '#loonsefeesten #borgloon #jeconcept',
+  caption: 'Drie dagen, veertienhonderd borden en geen druppel regen. Bedankt Borgloon.' })
+
+// Zoals de posts erin stonden vóór er een publicatiedatum bestond: alleen de
+// datum die van het event kwam. De kalender valt daarop terug.
+post('p10', { brandId: 'bar-vue', title: 'Wijnproeverij — oude planning', over: 2, uur: 17, status: 'draft',
+  channels: ['facebook'], oud: true,
+  notes: 'Staat nog op de eventdatum; er is nog geen eigen publicatiemoment gekozen.' })
 
 // De beslissingen achter die reviews, zoals het logboek ze bewaart.
 ;[
