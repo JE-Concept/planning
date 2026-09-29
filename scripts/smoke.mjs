@@ -641,6 +641,28 @@ await test('een onderwerp op de socialkalender komt bij Charish', async () => {
   await page.close()
 })
 
+await test('werk dat niemand opgepakt heeft is voor iedereen zichtbaar', async () => {
+  // Zo'n taak hoort bij niemand, dus vond hij niemand: hij stond in geen enkele
+  // persoonlijke lijst en bleef daardoor liggen.
+  const page = await tabblad('/tasks?weergave=lijst&groep=deadline&wie=ik')
+  await page.waitForTimeout(1000)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Parkeerplan doorgeven'), `de niet-toegewezen taak ontbreekt: ${tekst.slice(0, 200)}`)
+
+  // En het moet te zien zijn dát hij niet van jou is, anders lees je hem als
+  // jouw werk en wacht iedereen op een ander.
+  const regel = await page.locator('li', { hasText: 'Parkeerplan doorgeven' }).first().innerText()
+  zouden(bevat(regel, 'niemand'), `niet gemarkeerd: ${regel}`)
+
+  // Op het dashboard staat het aantal, met een weg ernaartoe.
+  const dash = await tabblad('/dashboard')
+  await dash.waitForTimeout(900)
+  zouden(bevat(await inhoud(dash), 'Niemand toegewezen'), 'het dashboard zwijgt erover')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await dash.close()
+  await page.close()
+})
+
 await test('los socialwerk kan zonder event, en er is tijd op te boeken', async () => {
   const page = await tabblad('/social')
   await page.getByRole('tab', { name: 'Events' }).click()

@@ -75,11 +75,27 @@ export const query = (col, ...parts) => ({ __col: col.__col, parts })
 
 const val = (v) => (v instanceof Date ? v.getTime() : v)
 
+/**
+ * Gelijk zoals Firestore gelijk bedoelt.
+ *
+ * Twee arrays met dezelfde inhoud zijn daar hetzelfde; in JavaScript zijn het
+ * twee verschillende objecten. Zonder dit gaf `where('assignees', '==', [])` —
+ * de vraag "wie heeft dit nog niet opgepakt" — hier altijd niets terug, terwijl
+ * ze live wél werkt. Een demo die anders antwoordt dan de echte database is
+ * erger dan geen demo: de browsertest zegt dan groen over iets wat stuk is.
+ */
+const gelijk = (a, b) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((item, i) => gelijk(item, b[i]))
+  }
+  return val(a) === val(b)
+}
+
 function matches(data, c) {
   const left = data[c.field]
   switch (c.op) {
-    case '==':             return c.value === null ? left == null : val(left) === val(c.value)
-    case '!=':             return val(left) !== val(c.value)
+    case '==':             return c.value === null ? left == null : gelijk(left, c.value)
+    case '!=':             return !gelijk(left, c.value)
     case '>=':             return left != null && val(left) >= val(c.value)
     case '<=':             return left != null && val(left) <= val(c.value)
     case '>':              return left != null && val(left) > val(c.value)

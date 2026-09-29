@@ -362,6 +362,25 @@ function Regel({ task, onOpen, listById, tagsByName }) {
           style={{ background: prio?.color ?? 'transparent' }}
         />
         <span className="je-taskline__title">{task.title}</span>
+        {/*
+          Werk dat niemand opgepakt heeft.
+
+          Zo'n taak komt in geen enkele persoonlijke lijst voor — hij hoort bij
+          niemand, dus vindt hij niemand. Hij staat er nu wel tussen, maar dan
+          moet ook te zien zijn dat hij niet van jou is; anders lees je hem als
+          jouw werk en wacht iedereen op een ander.
+        */}
+        {(task.assignees ?? []).length === 0 ? (
+          <Badge
+            style={{
+              background: 'color-mix(in srgb, var(--warning, #d98324) 14%, transparent)',
+              color: 'var(--warning, #d98324)',
+              borderColor: 'transparent',
+            }}
+          >
+            niemand
+          </Badge>
+        ) : null}
         {(task.tags ?? []).map((naam) => (
           <Badge key={naam} style={{ background: `${tagsByName[naam]?.color ?? '#8593a9'}1f`, color: tagsByName[naam]?.color ?? '#8593a9', borderColor: 'transparent' }}>
             {naam}

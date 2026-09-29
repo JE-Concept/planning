@@ -105,6 +105,18 @@ export default function Dashboard() {
     .filter((e) => new Date(e.startedAt) >= week.from)
     .reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0)
 
+  /*
+    Wat niemand op zijn naam heeft.
+
+    Dit is het werk dat blijft liggen omdat iedereen aanneemt dat een ander het
+    doet. Het staat in geen enkele persoonlijke lijst, dus hoort het hier — als
+    getal en niet als lijst, want het is een vraag aan het team en niet aan jou.
+  */
+  const zonderUitvoerder = useMemo(
+    () => tasks.filter((t) => (t.assignees ?? []).length === 0),
+    [tasks]
+  )
+
   const atRisk = goals
     .filter((g) => g.status === 'active')
     .filter((g) => goalProgress(g) < 0.5 && new Date(g.dueDate) < addDays(new Date(), 30))
@@ -147,6 +159,13 @@ export default function Dashboard() {
             naar="/"
             toon={teFactureren.length ? 'letop' : undefined}
             onder="nog niet gefactureerd"
+          />
+          <Cijfer
+            label="Niemand toegewezen"
+            waarde={zonderUitvoerder.length}
+            naar="/tasks?weergave=lijst&groep=persoon&wie=iedereen"
+            toon={zonderUitvoerder.length ? 'letop' : undefined}
+            onder="wacht op iemand"
           />
           <Cijfer label="Events deze maand" waarde={dezeMaand} naar="/kalender" onder="in de kalender" />
           <Cijfer label="Deze week geboekt" waarde={formatDuration(weekSeconds)} naar="/uren" onder="jouw uren" />

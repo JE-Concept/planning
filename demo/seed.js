@@ -294,6 +294,12 @@ taak('t-blum-kick-2025', 'l-overview', OVERVIEW, 'invoiced', { pax: 120, formule
 })
 
 
+// Werk dat niemand opgepakt heeft. Zo'n taak komt in geen enkele persoonlijke
+// lijst voor en was daardoor voor iedereen onzichtbaar — precies het werk dat
+// blijft liggen omdat elk aanneemt dat een ander het doet.
+taak('t-trouw-9', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw',
+  title: 'Parkeerplan doorgeven aan de gemeente', dueDate: dag(4) })
+
 // Taken met een deadline in de komende dagen: Mijn taken en de werklast.
 taak('t-trouw-4', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Tent en vloer bevestigen bij verhuur', assignees: ['u-elke'], dueDate: dag(2), priority: 2, estimate: 90, comments: 1,
   checklist: [{ text: 'Offerte tent 12×24 m', done: true }, { text: 'Vloer + verlichting', done: false }, { text: 'Levering daags voordien', done: false }] })
