@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Spinner } from '@ui/index'
 import { AuthProvider, useAuth } from '@context/AuthProvider'
+import { TaalProvider } from '@context/TaalProvider'
 import { ToastProvider } from '@context/ToastProvider'
 import { WorkspaceProvider } from '@context/WorkspaceProvider'
 import AppShell from '@components/layout/AppShell'
@@ -126,7 +127,12 @@ export default function App() {
     <ErrorBoundary>
       <ToastProvider>
         <AuthProvider>
-          <Authenticated />
+          {/* Binnen het aanmelden, want de taalkeuze staat op het profiel — en
+              buiten de schil, zodat ook het aanmeldscherm en de foutmeldingen
+              eromheen in de gekozen taal staan. */}
+          <TaalProvider>
+            <Authenticated />
+          </TaalProvider>
         </AuthProvider>
       </ToastProvider>
     </ErrorBoundary>

@@ -11,6 +11,7 @@ import { Spinner } from '@ui/index'
 import { AssistantProvider, useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
 import { OfflineProvider } from '@context/OfflineProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { EventsProvider, useEvents } from '@data/events'
@@ -50,6 +51,7 @@ function Shell({ children }) {
   const narrow = useNarrow()
   const location = useLocation()
   const { open, setOpen } = useAssistant()
+  const { t } = useTaal()
   const nieuweVersie = useNieuweVersie()
   const [hulpOpen, setHulpOpen] = useState(false)
 
@@ -100,9 +102,9 @@ function Shell({ children }) {
         {nieuweVersie ? (
           <div className="je-updatebar" role="status">
             <Icon name="sparkles" size={15} />
-            <span>Er staat een nieuwe versie van JE Plan klaar.</span>
+            <span>{t('schil.nieuwe_versie')}</span>
             <Button size="sm" variant="secondary" onClick={() => window.location.reload()}>
-              Herladen
+              {t('alg.herladen')}
             </Button>
           </div>
         ) : null}
@@ -123,13 +125,13 @@ function Shell({ children }) {
               {/* Sneltoetsen zijn onvindbaar als je niet weet dat ze bestaan;
                   dit knopje is de enige plek waar ze zichzelf aankondigen. */}
               {narrow ? null : (
-                <IconButton icon="keyboard" label="Sneltoetsen" variant="bare" onClick={() => setHulpOpen(true)} />
+                <IconButton icon="keyboard" label={t('menu.sneltoetsen')} variant="bare" onClick={() => setHulpOpen(true)} />
               )}
               {narrow ? (
-                <IconButton icon="sparkles" label="Assistent" variant="outline" onClick={() => setOpen(!chatOpen)} />
+                <IconButton icon="sparkles" label={t('schil.assistent')} variant="outline" onClick={() => setOpen(!chatOpen)} />
               ) : (
                 <Button variant={chatOpen ? 'primary' : 'secondary'} size="sm" iconLeft="sparkles" onClick={() => setOpen(!chatOpen)}>
-                  Assistent
+                  {t('schil.assistent')}
                 </Button>
               )}
             </div>
@@ -142,30 +144,28 @@ function Shell({ children }) {
             // antwoordt niet. Eerder bleef hier alleen een molentje draaien.
             <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
               <div style={{ maxWidth: 380 }}>
-                <h2 style={{ font: 'var(--type-h3)', textTransform: 'uppercase' }}>Dit duurt te lang</h2>
+                <h2 style={{ font: 'var(--type-h3)', textTransform: 'uppercase' }}>{t('schil.duurt_te_lang_titel')}</h2>
                 <p style={{ marginTop: 8, font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
-                  De gegevens die op dit toestel bewaard zijn, antwoorden niet. Opnieuw beginnen lost het op — er gaat
-                  niets verloren, want alles staat ook online.
+                  {t('schil.duurt_te_lang_tekst')}
                 </p>
                 <Button size="sm" style={{ marginTop: 16 }} onClick={herstelZonderCache}>
-                  Opnieuw beginnen
+                  {t('schil.opnieuw_beginnen')}
                 </Button>
               </div>
             </div>
           ) : loading ? (
             <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }} className="je-muted-caption">
-              <Spinner /> Werkruimte laden…
+              <Spinner /> {t('schil.werkruimte_laadt')}
             </div>
           ) : error ? (
             <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
               <div style={{ maxWidth: 380 }}>
-                <h2 style={{ font: 'var(--type-h3)', textTransform: 'uppercase' }}>De werkruimte laadt niet</h2>
+                <h2 style={{ font: 'var(--type-h3)', textTransform: 'uppercase' }}>{t('schil.laadt_niet_titel')}</h2>
                 <p style={{ marginTop: 8, font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
-                  Er ging iets mis bij het ophalen van de lijsten en de mensen. Herlaad de pagina; blijft het staan, geef
-                  dan deze melding door: {error.code ?? error.message}
+                  {t('schil.laadt_niet_tekst', { fout: error.code ?? error.message })}
                 </p>
                 <Button size="sm" style={{ marginTop: 16 }} onClick={() => window.location.reload()}>
-                  Herladen
+                  {t('alg.herladen')}
                 </Button>
               </div>
             </div>
@@ -184,7 +184,7 @@ function Shell({ children }) {
                 className={({ isActive }) => cn((item.match ? item.match(location.pathname) : isActive) && 'je-on')}
               >
                 <Icon name={item.icon} size={20} />
-                {item.label}
+                {t(item.sleutel)}
               </NavLink>
             ))}
           </nav>
@@ -201,6 +201,7 @@ function MobileBar({ uid, isStaff }) {
   const { timer, elapsed } = useRunningTimer(isStaff ? null : uid)
   const toast = useToast()
   const { logOut } = useAuth()
+  const { t } = useTaal()
 
   return (
     <div className="je-mobilebar je-night">
@@ -213,9 +214,9 @@ function MobileBar({ uid, isStaff }) {
           className="je-mobilebar__timer"
           onClick={async () => {
             const id = await stopTimer(uid)
-            toast.success(id ? `Gestopt — ${formatDuration(elapsed)} geboekt.` : 'Te kort, niets geboekt.')
+            toast.success(id ? t('timer.gestopt', { tijd: formatDuration(elapsed) }) : t('timer.te_kort'))
           }}
-          aria-label="Timer stoppen en boeken"
+          aria-label={t('timer.stoppen')}
         >
           <Icon name="square" size={14} />
           {formatDuration(elapsed, { withSeconds: true })}
@@ -224,11 +225,11 @@ function MobileBar({ uid, isStaff }) {
       {/* Afmelden en de extra schermen: op een telefoon via Meer. */}
       <span style={{ marginLeft: timer ? 0 : 'auto', color: 'var(--navy-300)', display: 'flex', gap: 4 }}>
         {isStaff ? null : (
-          <NavLink to="/meer" aria-label="Meer" className="je-iconbtn je-iconbtn--sm" style={{ color: 'inherit', border: 0 }}>
+          <NavLink to="/meer" aria-label={t('menu.meer')} className="je-iconbtn je-iconbtn--sm" style={{ color: 'inherit', border: 0 }}>
             <Icon name="menu" size={16} />
           </NavLink>
         )}
-        <IconButton icon="log-out" label="Afmelden" size="sm" onClick={logOut} />
+        <IconButton icon="log-out" label={t('schil.afmelden')} size="sm" onClick={logOut} />
       </span>
     </div>
   )

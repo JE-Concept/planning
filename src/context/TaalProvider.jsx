@@ -1,0 +1,91 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { STANDAARDTAAL, geldigeTaal, localeVan, vertaal } from '@lib/i18n'
+import { zetLocale } from '@lib/dates'
+import { useAuth } from '@context/AuthProvider'
+import { zetTaal as bewaarTaal } from '@data/taal'
+
+/**
+ * Welke taal iemand ziet.
+ *
+ * De keuze staat op het profiel, niet in deze browser. Wie op de tablet in de
+ * keuken in het Engels werkt, wil dat ook op zijn telefoon — en een keuze die
+ * per toestel opnieuw gemaakt moet worden, wordt niet gemaakt.
+ *
+ * Wie nooit koos, krijgt Nederlands — de taal van de zaak. De taal van de
+ * browser wordt niet overgenomen; waarom niet staat in `@lib/i18n`.
+ *
+ * Er staat een kopie in `localStorage` omdat het aanmeldscherm nog geen profiel
+ * heeft. Zonder dat zou de app eerst in de ene taal openen en na het aanmelden
+ * in de andere — en dat ziet er kapot uit, ook al is het dat niet.
+ */
+
+const TaalContext = createContext(null)
+const BEWAARD = 'je-plan:taal'
+
+function uitOpslag() {
+  try {
+    return localStorage.getItem(BEWAARD)
+  } catch {
+    return null
+  }
+}
+
+export function TaalProvider({ children }) {
+  const { profile, uid } = useAuth()
+  const [gekozen, setGekozen] = useState(() => geldigeTaal(uitOpslag() ?? STANDAARDTAAL))
+
+  // Het profiel wint zodra het er is: dat is de keuze die de persoon ergens
+  // gemaakt heeft, en deze browser weet daar niets van.
+  const taal = geldigeTaal(profile?.prefs?.taal ?? gekozen ?? STANDAARDTAAL)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(BEWAARD, taal)
+    } catch {
+      /* Zonder opslag werkt alles, het opent alleen één keer in de verkeerde taal. */
+    }
+    // De datums, getallen en bedragen moeten meegaan; anders leest een Engelse
+    // pagina "1 oktober" en dat is geen halve vertaling maar een fout.
+    zetLocale(localeVan(taal))
+    if (typeof document !== 'undefined') document.documentElement.lang = taal
+  }, [taal])
+
+  const kies = useCallback(
+    async (nieuw) => {
+      const veilig = geldigeTaal(nieuw)
+      setGekozen(veilig)
+      if (uid) await bewaarTaal(uid, veilig).catch(() => {})
+    },
+    [uid]
+  )
+
+  const waarde = useMemo(
+    () => ({
+      taal,
+      locale: localeVan(taal),
+      kies,
+      t: (sleutel, waarden) => vertaal(taal, sleutel, waarden),
+    }),
+    [taal, kies]
+  )
+
+  return <TaalContext.Provider value={waarde}>{children}</TaalContext.Provider>
+}
+
+/**
+ * `const { t } = useTaal()` en dan `t('nav.tasks')`.
+ *
+ * Buiten de provider valt hij terug op het Nederlands in plaats van te crashen:
+ * dit wordt in tientallen componenten gebruikt, en een scherm dat omvalt omdat
+ * het toevallig buiten de boom staat, is erger dan een scherm in de brontaal.
+ */
+export function useTaal() {
+  return (
+    useContext(TaalContext) ?? {
+      taal: STANDAARDTAAL,
+      locale: localeVan(STANDAARDTAAL),
+      kies: async () => {},
+      t: (sleutel, waarden) => vertaal(STANDAARDTAAL, sleutel, waarden),
+    }
+  )
+}

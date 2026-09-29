@@ -1,6 +1,7 @@
 import { Button, Icon, Logotype } from '@components/ds'
 import { Spinner } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 
 /**
  * Aanmelden, zoals in het design: één witte kaart op nachtblauw, één knop.
@@ -8,6 +9,7 @@ import { useAuth } from '@context/AuthProvider'
  */
 export default function Login() {
   const { state, signIn, error, logOut, user, herstelZonderCache } = useAuth()
+  const { t } = useTaal()
 
   return (
     <div
@@ -47,22 +49,20 @@ export default function Login() {
             JE Plan
           </div>
           <h1 style={{ font: 'var(--type-h2)', textTransform: 'uppercase', letterSpacing: 'var(--ls-h2)', margin: '8px 0 0', color: 'var(--navy-950)' }}>
-            Aanmelden
+            {t('login.aanmelden')}
           </h1>
         </div>
 
         {state === 'misconfigured' ? (
           <Notice>
-            De Firebase-configuratie ontbreekt in deze build. Zet de <code>VITE_FIREBASE_*</code> variabelen en deploy
-            opnieuw.
+            {t('login.niet_ingesteld')}
           </Notice>
         ) : null}
 
         {state === 'denied' ? (
           <>
             <Notice>
-              {user?.email ? <strong>{user.email}</strong> : 'Dit account'} heeft geen toegang. Vraag een beheerder om een
-              uitnodiging.
+              {t('login.geen_toegang', { wie: user?.email || t('login.dit_account') })}
             </Notice>
             {/*
               "Geen toegang" is maar één van de redenen waarom dit scherm
@@ -73,12 +73,12 @@ export default function Login() {
             */}
             {error ? (
               <details style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--slate-500)' }}>
-                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Technische melding</summary>
+                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{t('login.technische_melding')}</summary>
                 <p style={{ marginTop: 6, fontFamily: 'var(--font-mono, monospace)', wordBreak: 'break-word' }}>{error}</p>
               </details>
             ) : null}
             <Button variant="secondary" size="lg" block onClick={logOut}>
-              Met een ander account aanmelden
+              {t('login.ander_account')}
             </Button>
           </>
         ) : null}
@@ -86,11 +86,11 @@ export default function Login() {
         {state === 'signed-out' ? (
           <>
             <Button size="lg" block iconLeft="log-in" onClick={signIn}>
-              Aanmelden met Google
+              {t('login.met_google')}
             </Button>
             {error ? <Notice>{error}</Notice> : null}
             <p style={{ margin: 0, font: 'var(--type-caption)', fontWeight: 400, color: 'var(--slate-500)', textAlign: 'center' }}>
-              Enkel voor @jeconcept.be en @kenjeklanten.be, of op uitnodiging.
+              {t('login.enkel_voor')}
             </p>
           </>
         ) : null}
@@ -105,22 +105,20 @@ export default function Login() {
         {state === 'stuck' ? (
           <>
             <Notice>
-              JE Plan krijgt geen antwoord van de opgeslagen gegevens op dit toestel. Dat gebeurt als een
-              eerder tabblad niet netjes afgesloten werd. Opnieuw beginnen lost het op — er gaat niets
-              verloren.
+              {t('login.vastgelopen')}
             </Notice>
             <Button size="lg" block onClick={herstelZonderCache}>
-              Opnieuw beginnen
+              {t('schil.opnieuw_beginnen')}
             </Button>
             <Button variant="ghost" size="md" block onClick={logOut}>
-              Afmelden
+              {t('schil.afmelden')}
             </Button>
           </>
         ) : null}
 
         {state === 'loading' ? (
           <div className="je-muted-caption" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <Spinner /> Even geduld…
+            <Spinner /> {t('alg.laden')}
           </div>
         ) : null}
       </div>

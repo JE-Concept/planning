@@ -1,21 +1,45 @@
 const TZ = 'Europe/Brussels'
 
-const dayFmt = new Intl.DateTimeFormat('nl-BE', {
-  weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ,
-})
-const dateFmt = new Intl.DateTimeFormat('nl-BE', {
-  day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ,
-})
-const dateTimeFmt = new Intl.DateTimeFormat('nl-BE', {
-  day: '2-digit', month: '2-digit', year: 'numeric',
-  hour: '2-digit', minute: '2-digit', timeZone: TZ,
-})
-const timeFmt = new Intl.DateTimeFormat('nl-BE', {
-  hour: '2-digit', minute: '2-digit', timeZone: TZ,
-})
-const monthFmt = new Intl.DateTimeFormat('nl-BE', {
-  month: 'long', year: 'numeric', timeZone: TZ,
-})
+/**
+ * De opmaaktaal van datums, los van de tijdzone.
+ *
+ * De zaak staat in Sint-Truiden, dus de tijdzone ligt vast — maar de taal niet:
+ * wie de tool in het Engels gebruikt hoort "1 October" te lezen en niet
+ * "1 oktober". Een halve vertaling waarin de maanden Nederlands blijven, leest
+ * als een fout.
+ *
+ * De formatters worden hier één keer gemaakt en bij een taalwissel opnieuw. Ze
+ * elke render opnieuw bouwen kost merkbaar tijd op een bord met honderden
+ * regels; `Intl.DateTimeFormat` is duurder dan het lijkt.
+ */
+const VORMEN = {
+  dag: { weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ },
+  datum: { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ },
+  datumtijd: {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: TZ,
+  },
+  tijd: { hour: '2-digit', minute: '2-digit', timeZone: TZ },
+  maand: { month: 'long', year: 'numeric', timeZone: TZ },
+}
+
+let huidigeLocale = 'nl-BE'
+let fmt = bouwFormatters(huidigeLocale)
+
+function bouwFormatters(locale) {
+  return Object.fromEntries(
+    Object.entries(VORMEN).map(([naam, vorm]) => [naam, new Intl.DateTimeFormat(locale, vorm)])
+  )
+}
+
+/** Wordt door de taalprovider aangeroepen zodra iemand een andere taal kiest. */
+export function zetLocale(locale) {
+  if (!locale || locale === huidigeLocale) return
+  huidigeLocale = locale
+  fmt = bouwFormatters(locale)
+}
+
+export const huidigeLocaleVan = () => huidigeLocale
 
 export const WEEKDAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo']
 
@@ -46,16 +70,19 @@ function asDate(value) {
 
 export { asDate }
 
-const formatteer = (fmt) => (value) => {
+// De vorm bij naam opzoeken en niet de formatter zelf meegeven: bij een
+// taalwissel worden de formatters vervangen, en een vastgehouden verwijzing zou
+// in de oude taal blijven opmaken.
+const formatteer = (naam) => (value) => {
   const d = asDate(value)
-  return d ? fmt.format(d) : ''
+  return d ? fmt[naam].format(d) : ''
 }
 
-export const formatDay = formatteer(dayFmt)
-export const formatDate = formatteer(dateFmt)
-export const formatDateTime = formatteer(dateTimeFmt)
-export const formatTime = formatteer(timeFmt)
-export const formatMonth = formatteer(monthFmt)
+export const formatDay = formatteer('dag')
+export const formatDate = formatteer('datum')
+export const formatDateTime = formatteer('datumtijd')
+export const formatTime = formatteer('tijd')
+export const formatMonth = formatteer('maand')
 
 /** "vandaag", "morgen", "over 3 dagen", "5 dagen te laat" — board-card language. */
 export function relativeDay(value) {

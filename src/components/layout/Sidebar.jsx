@@ -5,10 +5,11 @@ import { formatDuration } from '@lib/format'
 import { periodKeys } from '@lib/time-math'
 import { Button, Hex, Icon, IconButton, Logotype, initialsOf } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useEvents, useWeekEntries } from '@data/events'
 import { stopTimer, useRunningTimer } from '@data/time'
-import { InstallMenuItem, MeldingsVoorkeurenMenuItem, PushMenuItem } from './AppMenuItems'
+import { InstallMenuItem, MeldingsVoorkeurenMenuItem, PushMenuItem, TaalMenuItem } from './AppMenuItems'
 import MeldingsVoorkeuren from '@components/notifications/MeldingsVoorkeuren'
 
 /**
@@ -28,7 +29,7 @@ import MeldingsVoorkeuren from '@components/notifications/MeldingsVoorkeuren'
  */
 export function navSecties({ isAdmin, isStaff }) {
   if (isStaff) {
-    return [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten', kinderen: [] }]
+    return [{ to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten', kinderen: [] }]
   }
 
   /*
@@ -42,91 +43,92 @@ export function navSecties({ isAdmin, isStaff }) {
   */
 
   return [
-    { to: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard', kinderen: [] },
+    { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard', kinderen: [] },
     {
       to: '/',
       icon: 'kanban',
-      label: 'Events',
+      sleutel: 'nav.events',
       end: true,
       match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten' || p === '/social',
       kinderen: [
-        { to: '/', icon: 'kanban', label: 'Bord', end: true, match: (p) => p === '/' || p.startsWith('/events') },
-        { to: '/kalender', icon: 'calendar-days', label: 'Kalender' },
-        { to: '/klanten', icon: 'building', label: 'Klanten' },
-        { to: '/social', icon: 'share-2', label: 'Socials' },
+        { to: '/', icon: 'kanban', sleutel: 'nav.bord', end: true, match: (p) => p === '/' || p.startsWith('/events') },
+        { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
+        { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
+        { to: '/social', icon: 'share-2', sleutel: 'nav.socials' },
       ],
     },
     {
       to: '/tasks',
       icon: 'check-circle',
-      label: 'Tasks',
+      sleutel: 'nav.tasks',
       match: (p) => p === '/tasks' || p === '/werklast' || p === '/goals' || p.startsWith('/bord'),
       kinderen: [
-        { to: '/werklast', icon: 'users', label: 'Werklast' },
-        { to: '/goals', icon: 'target', label: 'Goals' },
+        { to: '/werklast', icon: 'users', sleutel: 'nav.werklast' },
+        { to: '/goals', icon: 'target', sleutel: 'nav.goals' },
       ],
     },
     {
       to: '/openen-sluiten',
       icon: 'clipboard-check',
-      label: 'Bistro',
+      sleutel: 'nav.bistro',
       match: (p) => p.startsWith('/openen-sluiten') || p.startsWith('/registraties'),
       kinderen: [
-        { to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' },
-        { to: '/registraties', icon: 'file-text', label: 'Registraties' },
+        { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
+        { to: '/registraties', icon: 'file-text', sleutel: 'nav.registraties' },
       ],
     },
     {
       to: '/overleg',
       icon: 'messages-square',
-      label: 'Team',
+      sleutel: 'nav.team',
       match: (p) => p === '/overleg' || p === '/uren' || p === '/rooster',
       kinderen: [
-        { to: '/overleg', icon: 'messages-square', label: 'Teamoverleg' },
-        { to: '/rooster', icon: 'calendar-days', label: 'Rooster' },
-        { to: '/rooster', icon: 'calendar-days', label: 'Rooster' },
-  { to: '/uren', icon: 'timer', label: 'Uren' },
+        { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
+        { to: '/rooster', icon: 'calendar-days', sleutel: 'nav.rooster' },
+        { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
       ],
     },
-    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', label: 'Instellingen', kinderen: [] }] : []),
+    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', sleutel: 'nav.instellingen', kinderen: [] }] : []),
   ]
 }
 
 /** De platte lijst die de onderbalk op een telefoon nodig heeft. */
 export function mainNav({ isAdmin, isStaff }) {
-  if (isStaff) return [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' }]
+  if (isStaff) return [{ to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' }]
   return [
-    { to: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard' },
-    { to: '/', icon: 'kanban', label: 'Events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
-    { to: '/tasks', icon: 'check-circle', label: 'Tasks' },
-    { to: '/kalender', icon: 'calendar-days', label: 'Kalender' },
-    { to: '/werklast', icon: 'users', label: 'Werklast' },
-    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', label: 'Instellingen' }] : []),
+    { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
+    { to: '/', icon: 'kanban', sleutel: 'nav.events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
+    { to: '/tasks', icon: 'check-circle', sleutel: 'nav.tasks' },
+    { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
+    { to: '/werklast', icon: 'users', sleutel: 'nav.werklast' },
+    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', sleutel: 'nav.instellingen' }] : []),
   ]
 }
 
 /** Alles wat niet in de onderbalk past, voor het scherm "Meer" op een telefoon. */
 export const MORE = [
-  { to: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard' },
-  { to: '/klanten', icon: 'building', label: 'Klanten' },
-  { to: '/social', icon: 'share-2', label: 'Socials' },
-  { to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' },
-  { to: '/registraties', icon: 'file-text', label: 'Registraties' },
-  { to: '/overleg', icon: 'messages-square', label: 'Teamoverleg' },
-  { to: '/uren', icon: 'timer', label: 'Uren' },
-  { to: '/goals', icon: 'target', label: 'Goals' },
+  { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
+  { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
+  { to: '/social', icon: 'share-2', sleutel: 'nav.socials' },
+  { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
+  { to: '/registraties', icon: 'file-text', sleutel: 'nav.registraties' },
+  { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
+  { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
+  { to: '/goals', icon: 'target', sleutel: 'nav.goals' },
 ]
 
+/** De rol zoals ze op het scherm staat. De sleutel, de tekst hangt aan de taal. */
 export const ROLE_LABEL = {
-  owner: 'Eigenaar',
-  admin: 'Beheerder',
-  member: 'Lid',
-  staff: 'Personeel',
-  guest: 'Gast',
+  owner: 'rol.owner',
+  admin: 'rol.admin',
+  member: 'rol.member',
+  staff: 'rol.staff',
+  guest: 'rol.guest',
 }
 
 export default function Sidebar({ counts = {} }) {
   const { isAdmin, isStaff } = useAuth()
+  const { t } = useTaal()
   const location = useLocation()
   const [zoekArgs] = useSearchParams()
 
@@ -148,7 +150,7 @@ export default function Sidebar({ counts = {} }) {
   const openSectie = geopend ?? huidige?.to ?? null
 
   return (
-    <aside className="je-side je-night" aria-label="Hoofdnavigatie">
+    <aside className="je-side je-night" aria-label={t('nav.hoofdnavigatie')}>
       <NavLink to="/" className="je-side__logo">
         <Logotype size={38} invert />
       </NavLink>
@@ -171,7 +173,7 @@ export default function Sidebar({ counts = {} }) {
                   aria-expanded={sectie.kinderen.length ? uitgeklapt : undefined}
                 >
                   <Icon name={sectie.icon} size={17} />
-                  <span style={{ flex: 1 }}>{sectie.label}</span>
+                  <span style={{ flex: 1 }}>{t(sectie.sleutel)}</span>
                   {counts[sectie.to] ? <span className="je-nav__count">{counts[sectie.to]}</span> : null}
                   {sectie.kinderen.length ? (
                     <Icon name={uitgeklapt ? 'chevron-down' : 'chevron-right'} size={13} />
@@ -182,14 +184,14 @@ export default function Sidebar({ counts = {} }) {
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {sectie.kinderen.map((kind) => (
                       <NavLink
-                        key={kind.to + kind.label}
+                        key={kind.to + kind.sleutel}
                         to={kind.to}
                         end={kind.end}
                         className={cn('je-nav je-nav--minor', actief(kind, location.pathname) && 'je-nav--on')}
                       >
                         <Icon name={kind.icon} size={15} />
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {kind.label}
+                          {t(kind.sleutel)}
                         </span>
                         {counts[kind.to] ? <span className="je-nav__count">{counts[kind.to]}</span> : null}
                       </NavLink>
@@ -212,6 +214,7 @@ export default function Sidebar({ counts = {} }) {
 /** De timer onderaan de zijbalk: altijd zichtbaar, want een timer die je moet gaan zoeken vergeet je. */
 function SideTimer() {
   const { uid } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
   const { timer, elapsed } = useRunningTimer(uid)
   const { tasks, eventById } = useEvents()
@@ -231,7 +234,7 @@ function SideTimer() {
     setBusy(true)
     try {
       const id = await stopTimer(uid)
-      toast.success(id ? `Gestopt — ${formatDuration(elapsed)} geboekt.` : 'Te kort, niets geboekt.')
+      toast.success(id ? t('timer.gestopt', { tijd: formatDuration(elapsed) }) : t('timer.te_kort'))
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -242,13 +245,13 @@ function SideTimer() {
   return (
     <div className="je-side__timer">
       <span className="je-eyebrow" style={{ color: 'var(--navy-300)' }}>
-        Timer
+        {t('timer.titel')}
       </span>
       {timer ? (
         <>
           <div className="je-side__clock">{formatDuration(elapsed, { withSeconds: true })}</div>
           <div style={{ font: 'var(--type-body-sm)', color: 'var(--navy-200)' }}>
-            {timer.taskTitle || timer.description || 'Losse tijd'}
+            {timer.taskTitle || timer.description || t('timer.losse_tijd')}
           </div>
           <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
             {[eventName, timer.billable === false ? 'intern' : 'billable'].filter(Boolean).join(' · ')}
@@ -262,17 +265,17 @@ function SideTimer() {
               loading={busy}
               style={{ color: 'var(--white)', borderColor: 'var(--border-strong)' }}
             >
-              Stop en boek
+              {t('timer.stop_en_boek')}
             </Button>
           </div>
         </>
       ) : (
         <>
           <div style={{ font: 'var(--type-body-sm)', color: 'var(--navy-300)' }}>
-            Start een timer vanaf een taak, of boek tijd op een kostenplaats.
+            {t('timer.leeg')}
           </div>
           <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
-            Deze week geboekt: {formatDuration(booked)}
+            {t('timer.week_geboekt', { tijd: formatDuration(booked) })}
           </div>
         </>
       )}
@@ -282,6 +285,7 @@ function SideTimer() {
 
 function Me() {
   const { profile, logOut } = useAuth()
+  const { t } = useTaal()
   const [menu, setMenu] = useState(false)
   // Buiten het menu, want het menu klapt dicht bij de klik erop.
   const [voorkeuren, setVoorkeuren] = useState(false)
@@ -301,19 +305,20 @@ function Me() {
           {profile?.fullName || profile?.email}
         </div>
         <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
-          {ROLE_LABEL[profile?.role] ?? profile?.role}
+          {profile?.role ? t(ROLE_LABEL[profile.role] ?? profile.role) : null}
         </div>
       </button>
       <span style={{ color: 'var(--navy-300)' }}>
-        <IconButton icon="log-out" label="Afmelden" size="sm" onClick={logOut} />
+        <IconButton icon="log-out" label={t('schil.afmelden')} size="sm" onClick={logOut} />
       </span>
       {menu ? (
         <div className="je-menu" role="menu" onClick={() => setMenu(false)}>
+          <TaalMenuItem />
           <InstallMenuItem />
           <PushMenuItem />
           <MeldingsVoorkeurenMenuItem onOpen={() => setVoorkeuren(true)} />
           <button type="button" role="menuitem" onClick={logOut}>
-            Afmelden
+            {t('schil.afmelden')}
           </button>
         </div>
       ) : null}

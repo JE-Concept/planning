@@ -1181,6 +1181,36 @@ await test('de lopende timer staat in de zijbalk', async () => {
   await page.close()
 })
 
+await test('de tool schakelt over naar het Engels en onthoudt dat', async () => {
+  const page = await tabblad('/')
+  const zijbalk = page.locator('aside').first()
+  const nederlands = await zijbalk.innerText()
+  zouden(nederlands.includes('Instellingen') && nederlands.includes('Eigenaar'), 'de zijbalk staat niet in het Nederlands')
+
+  // De taalknop hangt in het accountmenu, onderaan de zijbalk.
+  await zijbalk.locator('[aria-haspopup="menu"]').click()
+  await page.getByRole('menuitemradio', { name: 'English' }).click()
+  await page.waitForTimeout(400)
+
+  // De navigatie, de rol eronder en de timerknop komen uit drie verschillende
+  // hoeken van de schil; staan die alle drie om, dan staat de schil om.
+  const engels = (await zijbalk.innerText()).replace(/\n/g, ' | ')
+  for (const woord of ['Settings', 'Owner', 'STOP AND LOG']) {
+    zouden(engels.toLowerCase().includes(woord.toLowerCase()), `"${woord}" staat er niet: ${engels}`)
+  }
+  zouden(await page.locator('html[lang="en"]').count(), 'de pagina zegt niet dat ze Engels is')
+
+  // De keuze is van jou, niet van dit tabblad: na herladen staat ze er nog.
+  await page.reload()
+  await page.waitForTimeout(900)
+  zouden(
+    (await page.locator('aside').first().innerText()).includes('Settings'),
+    'de taalkeuze overleeft het herladen niet'
+  )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 // ─── Het design: events, pijplijn, templates ────────────────────────────────
 
 await test('een aanvraag zonder klant, gasten en offerte gaat niet naar de offertestap', async () => {

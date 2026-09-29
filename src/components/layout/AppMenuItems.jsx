@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
+import { cn } from '@lib/cn'
 import { meldingsrecht, pushIngesteld, pushMogelijk, pushStaatAan, zetPushAan, zetPushUit } from '@lib/push'
+import { TALEN } from '@lib/i18n'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 
 /**
@@ -15,7 +18,49 @@ import { useToast } from '@context/ToastProvider'
 const item =
   'w-full px-3 py-2 text-left text-sm text-ink-700 hover:bg-ink-50 disabled:opacity-50'
 
+/**
+ * De taalkeuze.
+ *
+ * Twee knoppen naast elkaar in plaats van een uitklapmenu: er zijn twee talen,
+ * en een menu in een menu is een klik te veel voor een keuze die je één keer
+ * maakt. De taal waar je in staat, staat aangeduid — anders weet je na het
+ * klikken niet of er iets gebeurd is.
+ *
+ * De knoppen staan altijd in de eigen taal ("Nederlands", "English") en worden
+ * niet vertaald: wie de tool per ongeluk in een taal zette die hij niet leest,
+ * moet de weg terug kunnen vinden.
+ */
+export function TaalMenuItem() {
+  const { taal, kies, t } = useTaal()
+
+  return (
+    <div className="px-3 py-2">
+      <div className="text-xs font-semibold uppercase tracking-wide text-ink-400">{t('taal.titel')}</div>
+      <div className="mt-1 flex gap-1">
+        {TALEN.map((optie) => (
+          <button
+            key={optie.code}
+            type="button"
+            role="menuitemradio"
+            aria-checked={optie.code === taal}
+            lang={optie.code}
+            className={cn(
+              'rounded px-2 py-1 text-sm',
+              optie.code === taal ? 'bg-ink-100 font-semibold text-ink-900' : 'text-ink-700 hover:bg-ink-50'
+            )}
+            onClick={() => kies(optie.code)}
+          >
+            {optie.label}
+          </button>
+        ))}
+      </div>
+      <div className="mt-1 text-xs text-ink-400">{t('taal.uitleg')}</div>
+    </div>
+  )
+}
+
 export function InstallMenuItem() {
+  const { t } = useTaal()
   const [prompt, setPrompt] = useState(null)
 
   useEffect(() => {
@@ -43,13 +88,14 @@ export function InstallMenuItem() {
         setPrompt(null)
       }}
     >
-      Installeren op dit toestel
+      {t('menu.installeren')}
     </button>
   )
 }
 
 export function PushMenuItem() {
   const { profile } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
   const [aan, setAan] = useState(false)
   const [bezig, setBezig] = useState(false)
@@ -66,19 +112,19 @@ export function PushMenuItem() {
       if (aan) {
         await zetPushUit()
         setAan(false)
-        toast.success('Meldingen staan uit op dit toestel.')
+        toast.success(t('menu.push_uit'))
       } else {
         const uitkomst = await zetPushAan(profile?.id)
         setAan(uitkomst.ok)
-        if (uitkomst.ok) toast.success('Meldingen staan aan op dit toestel.')
+        if (uitkomst.ok) toast.success(t('menu.push_aan'))
         else if (uitkomst.reden === 'geweigerd') {
           // Alleen de gebruiker kan dit terugdraaien; de app mag het niet
           // opnieuw vragen, dus zeggen we waar het staat.
-          toast.error('De browser blokkeert meldingen. Zet ze aan bij de site-instellingen.')
+          toast.error(t('menu.push_geblokkeerd'))
         } else if (uitkomst.reden === 'niet-ingesteld') {
-          toast.error('Meldingen zijn nog niet ingesteld voor deze installatie.')
+          toast.error(t('menu.push_niet_ingesteld'))
         } else if (uitkomst.reden !== 'afgebroken') {
-          toast.error('Meldingen lukken niet op dit toestel.')
+          toast.error(t('menu.push_mislukt'))
         }
       }
     } catch (err) {
@@ -97,13 +143,13 @@ export function PushMenuItem() {
       onClick={klik}
       title={
         geweigerd
-          ? 'De browser blokkeert meldingen voor deze site.'
+          ? t('menu.push_geblokkeerd_kort')
           : pushIngesteld()
             ? undefined
-            : 'Nog niet ingesteld voor deze installatie.'
+            : t('menu.push_niet_ingesteld_kort')
       }
     >
-      {aan ? 'Meldingen uitzetten' : 'Meldingen aanzetten'}
+      {aan ? t('menu.push_uitzetten') : t('menu.push_aanzetten')}
     </button>
   )
 }
@@ -120,9 +166,11 @@ export function PushMenuItem() {
  * dicht zodra je erop klikt en nam het venster anders meteen weer mee.
  */
 export function MeldingsVoorkeurenMenuItem({ onOpen }) {
+  const { t } = useTaal()
+
   return (
     <button type="button" role="menuitem" className={item} onClick={onOpen}>
-      Welke meldingen ik krijg
+      {t('menu.welke_meldingen')}
     </button>
   )
 }
