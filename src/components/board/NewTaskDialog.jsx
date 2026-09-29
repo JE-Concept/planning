@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { PRIORITIES } from '@lib/format'
+import { prioSleutel } from '@lib/task-view'
 import { Button, Field, Input, Modal, Select, Spinner } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask } from '@data/tasks'
@@ -14,6 +16,7 @@ import { createTask } from '@data/tasks'
  */
 export default function NewTaskDialog({ list, statuses, initialStatus, uid, onClose, onCreated }) {
   const toast = useToast()
+  const { t } = useTaal()
   const { profiles } = useWorkspace()
   const [title, setTitle] = useState('')
   const [statusId, setStatusId] = useState(initialStatus?.id ?? statuses[0]?.id ?? '')
@@ -47,23 +50,23 @@ export default function NewTaskDialog({ list, statuses, initialStatus, uid, onCl
     <Modal
       open
       onClose={onClose}
-      title={`Nieuwe taak in ${list.name}`}
+      title={t('bord.nieuwe_taak_in', { lijst: list.name })}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button variant="primary" onClick={submit} disabled={!title.trim() || saving}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} Aanmaken
+            {saving ? <Spinner className="h-3 w-3" /> : null} {t('alg.aanmaken')}
           </Button>
         </>
       }
     >
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Titel" className="sm:col-span-2">
-          <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Wat moet er gebeuren?" />
+        <Field label={t('bord.veld.titel')} className="sm:col-span-2">
+          <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('bord.wat_moet_gebeuren')} />
         </Field>
-        <Field label="Status">
+        <Field label={t('bord.veld.status')}>
           <Select value={statusId} onChange={(e) => setStatusId(e.target.value)}>
             {statuses.map((s) => (
               <option key={s.id} value={s.id}>
@@ -72,9 +75,9 @@ export default function NewTaskDialog({ list, statuses, initialStatus, uid, onCl
             ))}
           </Select>
         </Field>
-        <Field label="Toewijzen aan">
+        <Field label={t('bord.veld.toewijzen')}>
           <Select value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">Niemand</option>
+            <option value="">{t('alg.niemand')}</option>
             {profiles.filter((p) => p.active !== false).map((p) => (
               <option key={p.id} value={p.id}>
                 {p.fullName || p.email}
@@ -82,15 +85,15 @@ export default function NewTaskDialog({ list, statuses, initialStatus, uid, onCl
             ))}
           </Select>
         </Field>
-        <Field label="Deadline">
+        <Field label={t('bord.veld.deadline')}>
           <Input type="datetime-local" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </Field>
-        <Field label="Prioriteit">
+        <Field label={t('bord.veld.prioriteit')}>
           <Select value={priority} onChange={(e) => setPriority(e.target.value)}>
-            <option value="">Geen</option>
+            <option value="">{t('alg.geen')}</option>
             {PRIORITIES.map((p) => (
               <option key={p.value} value={p.value}>
-                {p.label}
+                {t(prioSleutel(p.value))}
               </option>
             ))}
           </Select>

@@ -5,10 +5,12 @@ import { periodKeys } from '@lib/time-math'
 import { Bar, Hex, IconButton, initialsOf } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { hours, shortDate } from '@components/events/parts'
+import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { isDone, useEvents, useWeekEntries } from '@data/events'
 
-const WD = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za']
+// Op de volgorde van `Date.getDay()`, dus zondag eerst.
+const WD = ['tasks.wd.zo', 'tasks.wd.ma', 'tasks.wd.di', 'tasks.wd.wo', 'tasks.wd.do', 'tasks.wd.vr', 'tasks.wd.za']
 const WEEK_HOURS = 38
 
 /**
@@ -18,6 +20,7 @@ const WEEK_HOURS = 38
  */
 export default function Workload() {
   const navigate = useNavigate()
+  const { t } = useTaal()
   const { profiles } = useWorkspace()
   const { events, tasks, eventById } = useEvents()
   const [offset, setOffset] = useState(0)
@@ -52,7 +55,11 @@ export default function Workload() {
           return dk === k || (k === todayKey && dk < todayKey)
         })
         const est = dayT.reduce((a, t) => a + (t.timeEstimateMinutes ?? 60), 0) / 60
-        return { k, tasks: dayT, label: dayT.length ? `${Math.round(est * 100) / 100} u` : '' }
+        return {
+          k,
+          tasks: dayT,
+          label: dayT.length ? t('tasks.werklast.uren', { uren: Math.round(est * 100) / 100 }) : '',
+        }
       }),
     }
   })
@@ -63,12 +70,12 @@ export default function Workload() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <PageHeader
-        eyebrow={`Week ${Number(weekNo)} · ${range}`}
-        title="Werklast"
+        eyebrow={t('tasks.werklast.week', { week: Number(weekNo), reeks: range })}
+        title={t('nav.werklast')}
         actions={
           <>
-            <IconButton icon="chevron-left" label="Vorige week" variant="outline" size="sm" onClick={() => setOffset((o) => o - 1)} />
-            <IconButton icon="chevron-right" label="Volgende week" variant="outline" size="sm" onClick={() => setOffset((o) => o + 1)} />
+            <IconButton icon="chevron-left" label={t('tasks.werklast.vorige')} variant="outline" size="sm" onClick={() => setOffset((o) => o - 1)} />
+            <IconButton icon="chevron-right" label={t('tasks.werklast.volgende')} variant="outline" size="sm" onClick={() => setOffset((o) => o + 1)} />
           </>
         }
       />
@@ -77,7 +84,7 @@ export default function Workload() {
           <div className="je-panel" style={{ overflowX: 'auto' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '200px repeat(7, minmax(56px, 1fr)) 150px', minWidth: 760 }}>
               <div className="je-eyebrow" style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-hairline)', letterSpacing: '.14em', color: 'var(--text-2)' }}>
-                Team
+                {t('nav.team')}
               </div>
               {days.map((d, i) => {
                 const k = keys[i]
@@ -94,7 +101,7 @@ export default function Workload() {
                     }}
                   >
                     <div className="je-eyebrow" style={{ letterSpacing: '.14em', color: isT ? 'var(--text-accent)' : 'var(--text-2)' }}>
-                      {WD[d.getDay()]} {d.getDate()}
+                      {t(WD[d.getDay()])} {d.getDate()}
                     </div>
                     {dayEvents.map((e) => (
                       <button
@@ -126,7 +133,7 @@ export default function Workload() {
                 )
               })}
               <div className="je-eyebrow" style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-hairline)', borderLeft: '1px solid var(--border-hairline)', letterSpacing: '.14em', color: 'var(--text-2)' }}>
-                Geboekt / {WEEK_HOURS}u
+                {t('tasks.werklast.geboekt', { uren: WEEK_HOURS })}
               </div>
 
               {rows.map((r) => (
@@ -137,15 +144,15 @@ export default function Workload() {
           <div className="je-muted-caption" style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 14, height: 6, background: 'var(--navy-700)' }} />
-              Taak met deadline
+              {t('tasks.werklast.legenda_taak')}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 14, height: 6, background: 'var(--red-600)' }} />
-              Te laat of urgent
+              {t('tasks.werklast.legenda_telaat')}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 14, height: 6, background: 'var(--navy-900)' }} />
-              Event
+              {t('tasks.werklast.legenda_event')}
             </span>
           </div>
         </div>
@@ -155,6 +162,7 @@ export default function Workload() {
 }
 
 function Row({ r, todayKey, eventById }) {
+  const { t } = useTaal()
   const cell = { borderBottom: '1px solid var(--border-hairline)', borderLeft: '1px solid var(--border-hairline)' }
   return (
     <>
@@ -166,7 +174,7 @@ function Row({ r, todayKey, eventById }) {
           <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {r.p.fullName || r.p.email}
           </div>
-          <div className="je-muted-caption">{r.open.length} open taken</div>
+          <div className="je-muted-caption">{t('tasks.werklast.open', { aantal: r.open.length })}</div>
         </div>
       </div>
       {r.days.map((c) => (

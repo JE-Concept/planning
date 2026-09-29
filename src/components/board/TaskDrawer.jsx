@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatDate, formatDateTime, relativeDay, toLocalInput, fromLocalInput } from '@lib/dates'
+import { formatDate, formatDateTime, toLocalInput, fromLocalInput } from '@lib/dates'
 import { isTeLaat } from '@lib/laat'
 import { formatCurrency, formatDuration, PRIORITIES } from '@lib/format'
+import { prioSleutel, vervaldag } from '@lib/task-view'
 import {
   Avatar,
   Badge,
@@ -14,6 +15,7 @@ import {
   Textarea,
 } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import Documents from '@components/common/Documents'
@@ -66,6 +68,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
   const task = useTask(taskId)
   const { profiles, profileById, tags, listById, statusesOf } = useWorkspace()
   const { uid, profile } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
 
   const title = useDraft(task?.title, (v) => v.trim() && updateTask(task.id, { title: v.trim() }))
@@ -79,7 +82,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 
   if (!task) return null
 
-  const tagsByName = Object.fromEntries(tags.map((t) => [t.name, t]))
+  const tagsByName = Object.fromEntries(tags.map((tag) => [tag.name, tag]))
   const herkomst = herkomstVanTaak(task)
 
   return (
@@ -94,7 +97,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
         dan liever de kopie die je niet kon aanraken. Wat de kop nu geeft is wat
         het veld niet geeft: op welk bord en in welke kolom dit staat.
       */
-      title={list?.name ?? 'Taak'}
+      title={list?.name ?? t('bord.taak')}
       subtitle={task.statusName || undefined}
       footer={
         <>
@@ -114,13 +117,13 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
               onClick={() =>
                 archiveTask(task.id)
                   .then(() => {
-                    toast.success('Naar het archief. Alles blijft bewaard.')
+                    toast.success(t('bord.naar_archief'))
                     onClose()
                   })
                   .catch((err) => toast.error(err.message))
               }
             >
-              Archiveren
+              {t('alg.archiveren')}
             </Button>
             <ConfirmButton
               variant="ghost"
@@ -133,7 +136,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
                   .catch((err) => toast.error(err.message))
               }
             >
-              Verwijderen
+              {t('alg.verwijderen')}
             </ConfirmButton>
           </div>
         </>
@@ -142,19 +145,19 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
       <div className="space-y-6 px-5 py-4">
         <input
           className="w-full rounded-md border border-transparent px-2 py-1.5 text-base font-semibold text-ink-900 hover:border-ink-200 focus:border-accent-500 focus:outline-none"
-          aria-label="Titel"
+          aria-label={t('bord.veld.titel')}
           {...title}
         />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Status">
+          <Field label={t('bord.veld.status')}>
             <Select
               value={task.statusId ?? ''}
               onChange={(e) =>
                 setTaskStatus(task.id, statuses.find((s) => s.id === e.target.value) ?? null)
               }
             >
-              <option value="">Geen status</option>
+              <option value="">{t('bord.geen_status')}</option>
               {statuses.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -163,7 +166,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
             </Select>
           </Field>
 
-          <Field label="Prioriteit">
+          <Field label={t('bord.veld.prioriteit')}>
             <Select
               value={task.priority ?? ''}
               onChange={(e) =>
@@ -172,16 +175,16 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
                 })
               }
             >
-              <option value="">Geen</option>
+              <option value="">{t('alg.geen')}</option>
               {PRIORITIES.map((p) => (
                 <option key={p.value} value={p.value}>
-                  {p.label}
+                  {t(prioSleutel(p.value))}
                 </option>
               ))}
             </Select>
           </Field>
 
-          <Field label="Startdatum">
+          <Field label={t('bord.veld.startdatum')}>
             <Input
               type="datetime-local"
               value={toLocalInput(task.startDate?.toDate?.() ?? task.startDate)}
@@ -189,7 +192,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
             />
           </Field>
 
-          <Field label="Deadline">
+          <Field label={t('bord.veld.deadline')}>
             <Input
               type="datetime-local"
               value={toLocalInput(task.dueDate?.toDate?.() ?? task.dueDate)}
@@ -197,7 +200,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
             />
           </Field>
 
-          <Field label="Raming (minuten)">
+          <Field label={t('bord.veld.raming')}>
             <Input
               type="number"
               min="0"
@@ -211,7 +214,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
             />
           </Field>
 
-          <Field label="Budget" hint={task.budget ? formatCurrency(task.budget) : undefined}>
+          <Field label={t('bord.veld.budget')} hint={task.budget ? formatCurrency(task.budget) : undefined}>
             <Input
               type="number"
               min="0"
@@ -223,11 +226,11 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
             />
           </Field>
 
-          <Field label="Locatie" className="sm:col-span-2">
+          <Field label={t('bord.veld.locatie')} className="sm:col-span-2">
             <Input
               defaultValue={task.location ?? ''}
               onBlur={(e) => updateTask(task.id, { location: e.target.value || null })}
-              placeholder="Adres of zaal"
+              placeholder={t('bord.adres_of_zaal')}
             />
           </Field>
 
@@ -237,7 +240,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
         <SocialContent task={task} />
 
         <section>
-          <h3 className="label">Toegewezen aan</h3>
+          <h3 className="label">{t('bord.toegewezen_aan')}</h3>
           <div className="flex flex-wrap gap-1.5">
             {profiles
               .filter((p) => p.active !== false)
@@ -265,8 +268,8 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 
         <Labels task={task} tags={tags} toast={toast} />
 
-        <Field label="Omschrijving">
-          <Textarea rows={5} placeholder="Wat moet er precies gebeuren?" {...description} />
+        <Field label={t('bord.veld.omschrijving')}>
+          <Textarea rows={5} placeholder={t('bord.wat_precies')} {...description} />
         </Field>
 
         <Subtasks task={task} subtasks={subtasks} tagsByName={tagsByName} profileById={profileById} />
@@ -276,7 +279,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
         {/* Bijlagen horen bij de taak waarover ze gaan: een grondplan bij dat
             ene event, niet in een map die je elders moet gaan zoeken. Dezelfde
             component als bij een klant, want het is hetzelfde lijstje. */}
-        <Documents taskId={task.id} titel={task.parentId ? 'Bijlagen' : 'Bijlagen bij dit event'} />
+        <Documents taskId={task.id} titel={t(task.parentId ? 'bord.bijlagen' : 'bord.bijlagen_event')} />
 
         <SocialSection taskId={task.id} />
 
@@ -302,6 +305,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
  * tegelijk "winterbar" bedenken krijgen hetzelfde label.
  */
 function Labels({ task, tags, toast }) {
+  const { t } = useTaal()
   const [nieuw, setNieuw] = useState('')
 
   const voegToe = async (e) => {
@@ -310,7 +314,7 @@ function Labels({ task, tags, toast }) {
     if (!naam) return
 
     try {
-      const bestaand = tags.find((t) => t.name.toLowerCase() === naam.toLowerCase())
+      const bestaand = tags.find((tag) => tag.name.toLowerCase() === naam.toLowerCase())
       if (!bestaand) await upsertTag({ name: naam, color: '#8593a9' })
       const opTaak = bestaand?.name ?? naam
       if (!task.tags?.includes(opTaak)) await toggleTag(task, opTaak)
@@ -322,14 +326,14 @@ function Labels({ task, tags, toast }) {
 
   return (
     <section>
-      <h3 className="label">Labels</h3>
+      <h3 className="label">{t('bord.labels')}</h3>
       <div className="flex flex-wrap gap-1.5">
-        {tags.map((t) => {
-          const on = task.tags?.includes(t.name)
+        {tags.map((tag) => {
+          const on = task.tags?.includes(tag.name)
           return (
-            <button key={t.id} type="button" onClick={() => toggleTag(task, t.name)} aria-pressed={on}>
-              <Badge color={t.color} subtle={!on}>
-                {t.name}
+            <button key={tag.id} type="button" onClick={() => toggleTag(task, tag.name)} aria-pressed={on}>
+              <Badge color={tag.color} subtle={!on}>
+                {tag.name}
               </Badge>
             </button>
           )
@@ -338,7 +342,7 @@ function Labels({ task, tags, toast }) {
             taak. Het blijft zichtbaar en afzetbaar; stil verdwijnen zou het
             onvindbaar maken zonder dat het weg is. */}
         {(task.tags ?? [])
-          .filter((naam) => !tags.some((t) => t.name === naam))
+          .filter((naam) => !tags.some((tag) => tag.name === naam))
           .map((naam) => (
             <button key={naam} type="button" onClick={() => toggleTag(task, naam)} aria-pressed>
               <Badge color="#8593a9">{naam}</Badge>
@@ -350,12 +354,12 @@ function Labels({ task, tags, toast }) {
         <Input
           value={nieuw}
           onChange={(e) => setNieuw(e.target.value)}
-          placeholder="Nieuw label…"
-          aria-label="Nieuw label"
+          placeholder={t('bord.nieuw_label_hint')}
+          aria-label={t('bord.nieuw_label')}
           className="max-w-[14rem]"
         />
         <Button type="submit" variant="secondary" size="sm" disabled={!nieuw.trim()}>
-          Toevoegen
+          {t('alg.toevoegen')}
         </Button>
       </form>
     </section>
@@ -373,12 +377,13 @@ function Labels({ task, tags, toast }) {
  * de taak, want een bord dat per kaart de klant moet ophalen leest zich scheef.
  */
 function KlantVeld({ task }) {
+  const { t } = useTaal()
   const { customers } = useCustomers()
 
   return (
-    <Field label="Klant" className="sm:col-span-2">
+    <Field label={t('bord.veld.klant')} className="sm:col-span-2">
       <Select
-        aria-label="Klant van dit event"
+        aria-label={t('bord.klant_van_event')}
         value={task.customerId ?? ''}
         onChange={(e) => {
           const klant = customers.find((c) => c.id === e.target.value) ?? null
@@ -388,7 +393,7 @@ function KlantVeld({ task }) {
           })
         }}
       >
-        <option value="">Geen klant</option>
+        <option value="">{t('bord.geen_klant')}</option>
         {customers.map((klant) => (
           <option key={klant.id} value={klant.id}>
             {klant.name}
@@ -397,7 +402,7 @@ function KlantVeld({ task }) {
         {/* Hoort de taak bij een klant die intussen uit gebruik is, dan blijft
             die hier staan in plaats van stilletjes op "geen klant" te vallen. */}
         {task.customerId && !customers.some((c) => c.id === task.customerId) ? (
-          <option value={task.customerId}>{task.customerName ?? 'Klant uit gebruik'}</option>
+          <option value={task.customerId}>{task.customerName ?? t('bord.klant_uit_gebruik')}</option>
         ) : null}
       </Select>
     </Field>
@@ -413,6 +418,8 @@ function KlantVeld({ task }) {
  * bij hoort. Wat aanstaat verschijnt op het socialbord.
  */
 function SocialContent({ task }) {
+  const { t } = useTaal()
+
   if (task.parentId) return null
 
   const meedoen = heeftSocial(task)
@@ -421,7 +428,7 @@ function SocialContent({ task }) {
   return (
     <section>
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="label mb-0">Social content</h3>
+        <h3 className="label mb-0">{t('bord.social.titel')}</h3>
         <label className="ml-auto flex items-center gap-2 text-sm text-ink-700">
           <input
             type="checkbox"
@@ -436,7 +443,7 @@ function SocialContent({ task }) {
             }
             className="h-4 w-4 rounded border-ink-300"
           />
-          Dit event levert social content op
+          {t('bord.social.aan')}
         </label>
       </div>
 
@@ -445,7 +452,7 @@ function SocialContent({ task }) {
           <Select
             value={stageOf(task)}
             onChange={(e) => updateTask(task.id, { socialStage: e.target.value })}
-            aria-label="Stand van de social content"
+            aria-label={t('bord.social.stand')}
             className="max-w-[16rem]"
           >
             {SOCIAL_STAGES.map((stap) => (
@@ -460,9 +467,7 @@ function SocialContent({ task }) {
         </div>
       ) : (
         <p className="mt-1 text-sm text-ink-500">
-          {vanzelf
-            ? 'Uitgezet voor dit event.'
-            : 'Komt er vanzelf bij zodra het event op “ready to invoice” staat.'}
+          {t(vanzelf ? 'bord.social.uit' : 'bord.social.vanzelf')}
         </p>
       )}
     </section>
@@ -477,13 +482,14 @@ function SocialContent({ task }) {
  * review yet — so the calendar shows up here rather than only the other way.
  */
 function SocialSection({ taskId }) {
+  const { t } = useTaal()
   const posts = usePostsForTask(taskId)
 
   if (posts.length === 0) return null
 
   return (
     <section>
-      <h3 className="label">Social posts ({posts.length})</h3>
+      <h3 className="label">{t('bord.social.posts', { aantal: posts.length })}</h3>
       <ul className="space-y-1">
         {posts.map((post) => {
           const status = statusMeta(post.status)
@@ -502,7 +508,7 @@ function SocialSection({ taskId }) {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm text-ink-800">{post.title}</span>
                 <span className="block text-[11px] text-ink-500">
-                  {post.scheduledAt ? formatDateTime(post.scheduledAt) : 'nog niet ingepland'} ·{' '}
+                  {post.scheduledAt ? formatDateTime(post.scheduledAt) : t('bord.social.niet_ingepland')} ·{' '}
                   {status.label}
                 </span>
               </span>
@@ -539,6 +545,7 @@ function SocialSection({ taskId }) {
  * sluiten brengt je terug bij de hoofdtaak.
  */
 function Subtasks({ task, subtasks, profileById }) {
+  const { t } = useTaal()
   const { listById, statusesOf } = useWorkspace()
   const [title, setTitle] = useState('')
   const [openSub, setOpenSub] = useState(null)
@@ -560,7 +567,7 @@ function Subtasks({ task, subtasks, profileById }) {
 
   return (
     <section>
-      <h3 className="label">Subtaken ({subtasks.length})</h3>
+      <h3 className="label">{t('bord.subtaken', { aantal: subtasks.length })}</h3>
       <ul className="space-y-1">
         {subtasks.map((sub) => {
           const finished = sub.open === false
@@ -569,7 +576,7 @@ function Subtasks({ task, subtasks, profileById }) {
               <input
                 type="checkbox"
                 checked={finished}
-                aria-label={`${sub.title} afwerken`}
+                aria-label={t('bord.subtaak_afwerken', { taak: sub.title })}
                 onChange={() => setTaskStatus(sub.id, finished ? open : done ?? open)}
                 className="h-4 w-4 rounded border-ink-300 text-accent-600 focus:ring-accent-500"
               />
@@ -588,7 +595,7 @@ function Subtasks({ task, subtasks, profileById }) {
                     isTeLaat(sub) && !finished ? 'font-medium text-red-600' : 'text-ink-400'
                   }`}
                 >
-                  {relativeDay(sub.dueDate.toDate?.() ?? sub.dueDate)}
+                  {vervaldag(t, sub.dueDate.toDate?.() ?? sub.dueDate)}
                 </span>
               ) : null}
               {(sub.assignees ?? []).slice(0, 1).map((assignee) => (
@@ -598,9 +605,9 @@ function Subtasks({ task, subtasks, profileById }) {
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0 text-ink-400"
-                question="Subtaak verwijderen?"
+                question={t('bord.subtaak_verwijderen_vraag')}
                 onConfirm={() => deleteTask(sub.id)}
-                aria-label="Subtaak verwijderen"
+                aria-label={t('bord.subtaak_verwijderen')}
               >
                 ✕
               </ConfirmButton>
@@ -613,10 +620,10 @@ function Subtasks({ task, subtasks, profileById }) {
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Subtaak toevoegen…"
+          placeholder={t('bord.subtaak_toevoegen')}
         />
         <Button type="submit" variant="secondary" disabled={!title.trim()}>
-          Toevoegen
+          {t('alg.toevoegen')}
         </Button>
       </form>
 
@@ -628,6 +635,7 @@ function Subtasks({ task, subtasks, profileById }) {
 // ─── Time ───────────────────────────────────────────────────────────────────
 
 function TimeSection({ task, list, uid, toast, profileById }) {
+  const { t } = useTaal()
   const entries = useTaskTimeEntries(task.id)
   const { timer, elapsed } = useRunningTimer(uid)
   const [manual, setManual] = useState(false)
@@ -640,10 +648,10 @@ function TimeSection({ task, list, uid, toast, profileById }) {
     try {
       if (runningHere) {
         await stopTimer(uid)
-        toast.success('Tijd geboekt.')
+        toast.success(t('bord.tijd_geboekt'))
       } else {
         await startTimer({ uid, task, list })
-        toast.success('Timer loopt op deze taak.')
+        toast.success(t('bord.timer_loopt'))
       }
     } catch (err) {
       toast.error(err.message)
@@ -653,10 +661,10 @@ function TimeSection({ task, list, uid, toast, profileById }) {
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="label mb-0">Tijd</h3>
+        <h3 className="label mb-0">{t('bord.tijd')}</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={() => setManual((m) => !m)}>
-            Handmatig
+            {t('bord.handmatig')}
           </Button>
           <Button variant={runningHere ? 'danger' : 'secondary'} size="sm" onClick={toggle}>
             {runningHere ? `■ ${formatDuration(elapsed, { withSeconds: true })}` : '▶ Start'}
@@ -665,11 +673,12 @@ function TimeSection({ task, list, uid, toast, profileById }) {
       </div>
 
       <p className="text-sm text-ink-600">
-        <strong className="tabular-nums text-ink-900">{formatDuration(tracked)}</strong> geboekt
+        <strong className="tabular-nums text-ink-900">{formatDuration(tracked)}</strong>{' '}
+        {t('bord.geboekt')}
         {estimate > 0 ? (
           <>
             {' '}
-            van {formatDuration(estimate)} geraamd
+            {t('bord.van_geraamd', { tijd: formatDuration(estimate) })}
             {tracked > estimate ? (
               <span className="ml-1 text-red-600">
                 (+{formatDuration(tracked - estimate)})
@@ -697,9 +706,9 @@ function TimeSection({ task, list, uid, toast, profileById }) {
                 variant="ghost"
                 size="sm"
                 className="ml-auto h-6 w-6 p-0 text-ink-400"
-                question="Tijdsregistratie verwijderen?"
+                question={t('bord.tijd_verwijderen')}
                 onConfirm={() => deleteEntry(entry)}
-                aria-label="Verwijderen"
+                aria-label={t('alg.verwijderen')}
               >
                 ✕
               </ConfirmButton>
@@ -712,6 +721,7 @@ function TimeSection({ task, list, uid, toast, profileById }) {
 }
 
 function ManualEntryForm({ task, list, uid, toast, onDone }) {
+  const { t } = useTaal()
   const now = new Date()
   const [startedAt, setStartedAt] = useState(toLocalInput(new Date(now.getTime() - 3600000)))
   const [endedAt, setEndedAt] = useState(toLocalInput(now))
@@ -728,7 +738,7 @@ function ManualEntryForm({ task, list, uid, toast, onDone }) {
         endedAt: new Date(endedAt),
         description,
       })
-      toast.success('Tijd toegevoegd.')
+      toast.success(t('bord.tijd_toegevoegd'))
       onDone()
     } catch (err) {
       toast.error(err.message)
@@ -737,21 +747,21 @@ function ManualEntryForm({ task, list, uid, toast, onDone }) {
 
   return (
     <form onSubmit={submit} className="mt-2 grid gap-2 rounded-md bg-ink-50 p-3 sm:grid-cols-2">
-      <Field label="Van">
+      <Field label={t('bord.van')}>
         <Input type="datetime-local" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} />
       </Field>
-      <Field label="Tot">
+      <Field label={t('bord.tot')}>
         <Input type="datetime-local" value={endedAt} onChange={(e) => setEndedAt(e.target.value)} />
       </Field>
-      <Field label="Omschrijving" className="sm:col-span-2">
+      <Field label={t('bord.veld.omschrijving')} className="sm:col-span-2">
         <Input value={description} onChange={(e) => setDescription(e.target.value)} />
       </Field>
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" variant="primary" size="sm">
-          Toevoegen
+          {t('alg.toevoegen')}
         </Button>
         <Button variant="ghost" size="sm" onClick={onDone}>
-          Annuleren
+          {t('alg.annuleren')}
         </Button>
       </div>
     </form>
@@ -770,6 +780,7 @@ function ManualEntryForm({ task, list, uid, toast, onDone }) {
  * naast de reactie waarin iemand uitlegt waarom.
  */
 function VerloopSection({ taskId, listId, profile }) {
+  const { t } = useTaal()
   const comments = useComments({ taskId })
   const { regels } = useActivity(taskId)
   const { profileById, statusesOf } = useWorkspace()
@@ -792,12 +803,11 @@ function VerloopSection({ taskId, listId, profile }) {
 
   return (
     <section>
-      <h3 className="label">Verloop ({items.length})</h3>
+      <h3 className="label">{t('bord.verloop', { aantal: items.length })}</h3>
 
       {items.length === 0 ? (
         <p className="text-xs text-ink-400">
-          Nog geen reacties, en geen wijzigingen sinds het bijhouden begon op{' '}
-          {formatDate(LOGGEN_SINDS)}. Wat daarvoor aan deze taak veranderde, staat er niet in.
+          {t('bord.verloop_leeg', { datum: formatDate(LOGGEN_SINDS) })}
         </p>
       ) : null}
 
@@ -813,9 +823,9 @@ function VerloopSection({ taskId, listId, profile }) {
                     variant="ghost"
                     size="sm"
                     className="ml-auto h-5 w-5 p-0"
-                    question="Reactie verwijderen?"
+                    question={t('bord.reactie_verwijderen_vraag')}
                     onConfirm={() => deleteComment(item.data)}
-                    aria-label="Reactie verwijderen"
+                    aria-label={t('bord.reactie_verwijderen')}
                   >
                     ✕
                   </ConfirmButton>
@@ -828,7 +838,7 @@ function VerloopSection({ taskId, listId, profile }) {
               <Avatar profile={profileById[item.data.createdBy]} size="xs" />
               <span className="je-logregel__tekst">
                 <strong className="text-ink-800">
-                  {naamVan(item.data.createdBy) ?? 'Iemand'}
+                  {naamVan(item.data.createdBy) ?? t('bord.iemand')}
                 </strong>{' '}
                 {beschrijf(item.data, { naamVan: (uid) => naamVan(uid), statuses })}
               </span>
@@ -842,10 +852,10 @@ function VerloopSection({ taskId, listId, profile }) {
         <Input
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Reactie schrijven…"
+          placeholder={t('bord.reactie_schrijven')}
         />
         <Button type="submit" variant="primary" disabled={!body.trim()}>
-          Plaatsen
+          {t('bord.plaatsen')}
         </Button>
       </form>
     </section>

@@ -1,5 +1,6 @@
-import { dayKey, daysUntil, startOfWeek } from './dates'
+import { asDate, dayKey, daysUntil, formatDate, startOfWeek } from './dates'
 import { priorityOf } from './format'
+import { STANDAARDTAAL, vertaal } from './i18n'
 import { isAfgerond } from './laat'
 
 /**
@@ -10,29 +11,70 @@ import { isAfgerond } from './laat'
  * "te laat" stond niet op deadline gesorteerd, en een groep heette "Komende
  * week" terwijl er "Deze week" in stond. Zulke dingen zie je in een tabel met
  * verwachte uitkomsten, en niet in een component van driehonderd regels.
+ *
+ * De namen van de keuzes staan hier als sleutel en niet als tekst. Ze worden op
+ * twee schermen getoond, en een tekst die op twee plekken vertaald wordt, loopt
+ * op de derde plek uiteen.
  */
 
+/** De tekst in de brontaal, voor wie geen `t` meegeeft — de tests bijvoorbeeld. */
+const nederlands = (sleutel, waarden) => vertaal(STANDAARDTAAL, sleutel, waarden)
+
 export const WEERGAVEN = [
-  { key: 'lijst', label: 'Lijst' },
-  { key: 'bord', label: 'Bord' },
-  { key: 'kalender', label: 'Kalender' },
+  { key: 'lijst', sleutel: 'tasks.weergave.lijst' },
+  { key: 'bord', sleutel: 'tasks.weergave.bord' },
+  { key: 'kalender', sleutel: 'tasks.weergave.kalender' },
 ]
 
 export const GROEPEN = [
-  { key: 'deadline', label: 'Deadline' },
-  { key: 'status', label: 'Status' },
-  { key: 'persoon', label: 'Persoon' },
-  { key: 'lijst', label: 'Lijst' },
-  { key: 'prioriteit', label: 'Prioriteit' },
-  { key: 'geen', label: 'Niet groeperen' },
+  { key: 'deadline', sleutel: 'tasks.groep.deadline' },
+  { key: 'status', sleutel: 'tasks.groep.status' },
+  { key: 'persoon', sleutel: 'tasks.groep.persoon' },
+  { key: 'lijst', sleutel: 'tasks.groep.lijst' },
+  { key: 'prioriteit', sleutel: 'tasks.groep.prioriteit' },
+  { key: 'geen', sleutel: 'tasks.groep.geen' },
 ]
 
 export const SORTERINGEN = [
-  { key: 'deadline', label: 'Deadline' },
-  { key: 'prioriteit', label: 'Prioriteit' },
-  { key: 'titel', label: 'Titel' },
-  { key: 'gewijzigd', label: 'Laatst gewijzigd' },
+  { key: 'deadline', sleutel: 'tasks.sortering.deadline' },
+  { key: 'prioriteit', sleutel: 'tasks.sortering.prioriteit' },
+  { key: 'titel', sleutel: 'tasks.sortering.titel' },
+  { key: 'gewijzigd', sleutel: 'tasks.sortering.gewijzigd' },
 ]
+
+/**
+ * De prioriteit als sleutel.
+ *
+ * `PRIORITIES` in `format` draagt de naam en de kleur, en wordt ook buiten de
+ * taken gebruikt. De naam hoort bij de taal en staat daarom hier; de kleur
+ * blijft waar ze stond.
+ */
+export const PRIO_SLEUTELS = {
+  1: 'tasks.prio.urgent',
+  2: 'tasks.prio.hoog',
+  3: 'tasks.prio.normaal',
+  4: 'tasks.prio.laag',
+}
+
+/** De naam van een prioriteit, of die van "geen". */
+export const prioSleutel = (waarde) => PRIO_SLEUTELS[waarde] ?? 'tasks.prio.geen'
+
+/**
+ * De vervaldag in woorden: "Vandaag", "over 3 dagen", "5 dagen te laat".
+ *
+ * Hetzelfde als `relativeDay` in `dates`, maar dan vertaald. Die functie staat
+ * in een lib die de taal niet kent en die ook buiten de taken gebruikt wordt;
+ * hier is de taal er wel, want elk scherm dat dit toont heeft `t`.
+ */
+export function vervaldag(t, value) {
+  if (!asDate(value)) return ''
+  const dagen = daysUntil(value)
+  if (dagen === 0) return t('alg.vandaag')
+  if (dagen === 1) return t('alg.morgen')
+  if (dagen === -1) return t('alg.gisteren')
+  if (dagen > 0) return dagen < 7 ? t('tasks.verval.over', { aantal: dagen }) : formatDate(value)
+  return t('tasks.verval.telaat', { aantal: Math.abs(dagen) })
+}
 
 /**
  * Hoog eerst; wat geen prioriteit heeft komt achteraan in plaats van vooraan.
@@ -98,12 +140,12 @@ export function deadlineGroep(task, vandaag = new Date()) {
 }
 
 export const DEADLINE_GROEPEN = [
-  { key: 'telaat', label: 'Te laat', toon: 'danger' },
-  { key: 'vandaag', label: 'Vandaag', toon: 'accent' },
-  { key: 'dezeweek', label: 'Deze week', toon: 'accent' },
-  { key: 'volgendeweek', label: 'Volgende week', toon: 'rustig' },
-  { key: 'later', label: 'Later', toon: 'rustig' },
-  { key: 'zonder', label: 'Zonder deadline', toon: 'rustig' },
+  { key: 'telaat', sleutel: 'tasks.deadline.telaat', toon: 'danger' },
+  { key: 'vandaag', sleutel: 'alg.vandaag', toon: 'accent' },
+  { key: 'dezeweek', sleutel: 'tasks.deadline.dezeweek', toon: 'accent' },
+  { key: 'volgendeweek', sleutel: 'tasks.deadline.volgendeweek', toon: 'rustig' },
+  { key: 'later', sleutel: 'tasks.deadline.later', toon: 'rustig' },
+  { key: 'zonder', sleutel: 'tasks.deadline.zonder', toon: 'rustig' },
 ]
 
 /**
@@ -134,7 +176,10 @@ export function filter(tasks, { zoek = '', lijstId = '', label = '', prioriteit 
  * de volgorde waarin Firestore het gaf, waardoor iets van vorige maand onder
  * iets van gisteren stond. Juist in die groep is de volgorde het antwoord.
  */
-export function groepeer(tasks, { groep = 'deadline', sortering = 'deadline', profileById = {}, listById = {} } = {}) {
+export function groepeer(
+  tasks,
+  { groep = 'deadline', sortering = 'deadline', profileById = {}, listById = {}, t = nederlands } = {}
+) {
   const gesorteerd = sorteer(tasks, sortering)
 
   if (groep === 'geen') {
@@ -144,15 +189,21 @@ export function groepeer(tasks, { groep = 'deadline', sortering = 'deadline', pr
   if (groep === 'deadline') {
     const emmers = Object.fromEntries(DEADLINE_GROEPEN.map((g) => [g.key, []]))
     for (const task of gesorteerd) emmers[deadlineGroep(task)].push(task)
-    return DEADLINE_GROEPEN.filter((g) => emmers[g.key].length).map((g) => ({ ...g, tasks: emmers[g.key] }))
+    return DEADLINE_GROEPEN.filter((g) => emmers[g.key].length).map((g) => ({
+      ...g,
+      label: t(g.sleutel),
+      tasks: emmers[g.key],
+    }))
   }
 
+  // De naam van een status of een lijst komt uit de database en blijft staan;
+  // alleen wat de code zelf invult wanneer er niets is, hoort vertaald.
   const sleutelVan = {
-    status: (t) => [t.statusName || 'Zonder status', t.statusName || 'Zonder status'],
-    lijst: (t) => [t.listId || 'geen', listById[t.listId]?.name ?? t.listName ?? 'Zonder lijst'],
-    prioriteit: (t) => [
-      String(t.priority ?? 'geen'),
-      priorityOf(t.priority)?.label ?? 'Zonder prioriteit',
+    status: (taak) => [taak.statusName || t('tasks.zonder_status'), taak.statusName || t('tasks.zonder_status')],
+    lijst: (taak) => [taak.listId || 'geen', listById[taak.listId]?.name ?? taak.listName ?? t('tasks.zonder_lijst')],
+    prioriteit: (taak) => [
+      String(taak.priority ?? 'geen'),
+      priorityOf(taak.priority) ? t(prioSleutel(taak.priority)) : t('tasks.zonder_prioriteit'),
     ],
   }[groep]
 
@@ -171,7 +222,10 @@ export function groepeer(tasks, { groep = 'deadline', sortering = 'deadline', pr
     return [...emmers.entries()]
       .map(([id, taken]) => ({
         key: id,
-        label: id === 'geen' ? 'Niemand toegewezen' : profileById[id]?.fullName || profileById[id]?.email || 'Onbekend',
+        label:
+          id === 'geen'
+            ? t('tasks.groep.niemand')
+            : profileById[id]?.fullName || profileById[id]?.email || t('tasks.groep.onbekend'),
         tasks: taken,
       }))
       .sort((a, b) => (a.key === 'geen' ? 1 : b.key === 'geen' ? -1 : a.label.localeCompare(b.label, 'nl')))
