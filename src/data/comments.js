@@ -26,7 +26,8 @@ export function useComments({ taskId, postId }) {
 
     return onSnapshot(
       query(col(COL.comments), where(field, '==', value), orderBy('createdAt')),
-      (snap) => setComments(fromQuery(snap))
+      (snap) => setComments(fromQuery(snap)),
+      () => setComments([])
     )
   }, [taskId, postId])
 

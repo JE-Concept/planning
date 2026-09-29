@@ -332,15 +332,6 @@ export function visibleTo(item, person) {
 
 // ─── Wanneer het moet ───────────────────────────────────────────────────────
 
-export const HERHALINGEN = [
-  { key: 'dagelijks', label: 'Elke dag' },
-  { key: 'weekdag', label: 'Op bepaalde dagen' },
-  { key: 'wekelijks', label: 'Eén keer per week' },
-  { key: 'maandelijks', label: 'Eén keer per maand' },
-  { key: 'kwartaal', label: 'Elk kwartaal' },
-  { key: 'jaarlijks', label: 'Eén keer per jaar' },
-]
-
 const dagenInMaand = (jaar, maand) => new Date(jaar, maand + 1, 0).getDate()
 
 /**

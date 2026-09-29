@@ -6,8 +6,12 @@ import {
   getAuth,
   setPersistence,
 } from 'firebase/auth'
-import { connectFirestoreEmulator, initializeFirestore } from 'firebase/firestore'
-import { connectStorageEmulator, getStorage } from 'firebase/storage'
+import {
+  connectFirestoreEmulator,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore'
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -31,11 +35,41 @@ if (!isConfigured) {
 
 export const app = initializeApp(config)
 
-// Long polling auto-detect keeps the realtime channel alive behind corporate
-// proxies that choke on the streaming transport.
-export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true })
+/**
+ * Firestore, met de gegevens op schijf.
+ *
+ * Zonder cache haalt elk bezoek elk bord opnieuw op — en het grootste bord
+ * heeft honderden taken. Met de cache staat alles er meteen en vraagt de
+ * verbinding alleen nog wat er sinds de vorige keer veranderde. Dat scheelt
+ * wachten op een telefoon op mobiel internet, en het scheelt leesbewerkingen,
+ * want die worden per stuk gefactureerd.
+ *
+ * De tabbladbeheerder erbij omdat mensen de tool in meerdere tabbladen open
+ * hebben; zonder hem werkt de cache maar in één ervan.
+ *
+ * Long polling auto-detect houdt het realtime-kanaal overeind achter proxies
+ * die de streaming-verbinding dichtknijpen.
+ */
+function maakFirestore() {
+  const basis = { experimentalAutoDetectLongPolling: true }
+
+  // Privémodus en oudere browsers hebben geen IndexedDB. Dan maar zonder
+  // cache: trager is beter dan een tool die niet opent.
+  if (typeof indexedDB === 'undefined') return initializeFirestore(app, basis)
+
+  try {
+    return initializeFirestore(app, {
+      ...basis,
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    })
+  } catch (err) {
+    console.warn('JE Plan: geen schijfcache voor Firestore', err)
+    return initializeFirestore(app, basis)
+  }
+}
+
+export const db = maakFirestore()
 export const auth = getAuth(app)
-export const storage = getStorage(app)
 
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })
@@ -43,7 +77,6 @@ googleProvider.setCustomParameters({ prompt: 'select_account' })
 if (import.meta.env.VITE_USE_EMULATORS === '1') {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
   connectFirestoreEmulator(db, '127.0.0.1', 8080)
-  connectStorageEmulator(storage, '127.0.0.1', 9199)
 }
 
 setPersistence(auth, browserLocalPersistence).catch(() => {

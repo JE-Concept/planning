@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PRIORITIES, formatDuration, priorityOf } from '@lib/format'
 import { isOverdue, relativeDay } from '@lib/dates'
@@ -46,6 +46,10 @@ export default function Board() {
   const [openTaskId, setOpenTaskId] = useState(null)
   const [newTask, setNewTask] = useState(null)
   const [editingColumns, setEditingColumns] = useState(false)
+
+  // Vast, zodat de gememoriseerde kaarten niet bij elke render van het bord
+  // opnieuw getekend worden.
+  const openTask = useCallback((task) => setOpenTaskId(task.id), [])
 
   const tagsByName = useMemo(() => Object.fromEntries(tags.map((t) => [t.name, t])), [tags])
 
@@ -277,7 +281,7 @@ export default function Board() {
             profiles={profileById}
             tags={tagsByName}
             subtaskCounts={subtaskCounts}
-            onOpen={(task) => setOpenTaskId(task.id)}
+            onOpen={openTask}
             onDrop={handleDrop}
             onAdd={
               groupBy === 'status'
@@ -291,7 +295,7 @@ export default function Board() {
             tasksByColumn={tasksByColumn}
             profileById={profileById}
             tagsByName={tagsByName}
-            onOpen={(task) => setOpenTaskId(task.id)}
+            onOpen={openTask}
           />
         )}
       </div>

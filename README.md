@@ -34,7 +34,7 @@ firestore.indexes.json  Samengestelde indexes voor de bord- en urenqueries
 
 ### Datamodel in het kort
 
-Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergave nodig heeft:
+Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergave nodig heeft. Daarnaast staat de **schijfcache** van Firestore aan (`persistentLocalCache`, met tabbladbeheer): een tweede bezoek leest de borden van schijf en vraagt alleen nog wat er sinds de vorige keer veranderde. Dat scheelt wachttijd op een telefoon én leesbewerkingen, die per stuk gefactureerd worden. Het kost ongeveer 20 kB extra in de bundel, éénmalig.
 
 | Collectie | Opmerking |
 |---|---|
@@ -224,17 +224,26 @@ npm install
 npm run dev              # http://localhost:5173
 
 npm run lint
-npm test                 # 47 unit tests op de rekenlogica
+npm test                 # unit tests op de rekenlogica
+npm run smoke            # de echte app in een echte browser
 npm run build
 
 npm run emulators        # zet VITE_USE_EMULATORS=1 in .env.local
 ```
 
-De testen dekken bewust de logica die stil kan breken: de volgorde van kaarten op een bord (inclusief het punt waarop floats hun precisie verliezen), de ISO-weeknummering rond de jaarwisseling en de voortgangsberekening bij dalende doelen.
+### Testen
+
+Twee lagen, met een duidelijke taakverdeling.
+
+**`npm test`** dekt de logica die stil kan breken: de volgorde van kaarten op een bord (inclusief het punt waarop floats hun precisie verliezen), de ISO-weeknummering rond de jaarwisseling, de voortgang bij dalende doelen, wanneer een business rule vuurt en wie er een melding krijgt.
+
+**`npm run smoke`** doet wat geen unittest kan: elke pagina echt openen in Chromium, op de demobuild. Geen wit scherm, niets in de console, en op elk scherm één handeling die er hoort te werken — een taak openen, een punt afvinken, een agendapunt toevoegen, het verloop van een doel uitklappen. Plus de twee dingen die de tool onbruikbaar maken zonder dat er iets "stuk" is: personeel dat meer ziet dan zijn eigen lijst, en een pagina die na een uitrol niet meer laadt.
+
+Dat laatste staat er omdat het gebeurd is. Wie een tabblad open had staan terwijl er uitgerold werd, kreeg bij de volgende klik een **wit scherm**: de pagina vroeg een bestandsnaam op die na de uitrol niet meer bestond, React haalde de hele boom weg en er bleef niets over. Nu vangt een foutgrens dat op, ruimt de cache op en herlaadt één keer; lukt dat niet, dan staat er een uitleg met een knop in plaats van niets. De test speelt precies dat na door een bestand te laten verdwijnen.
 
 ### Deploy
 
-Elke push naar `main` doet lint + test + build via GitHub Actions, en rolt uit zodra deze secrets bestaan:
+Elke push naar `main` doet lint + unittests + browsertest + build via GitHub Actions, en rolt uit zodra deze secrets bestaan:
 
 | Secret | Waarde |
 |---|---|

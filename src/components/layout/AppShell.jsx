@@ -12,7 +12,7 @@ import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
 
 export default function AppShell({ children }) {
   const { profile, logOut, isStaff } = useAuth()
-  const { loading } = useWorkspace()
+  const { loading, error } = useWorkspace()
   const counts = useNavCounts()
   const toast = useToast()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -117,6 +117,21 @@ export default function AppShell({ children }) {
           {loading ? (
             <div className="flex h-full items-center justify-center gap-2 text-sm text-ink-500">
               <Spinner /> Werkruimte laden…
+            </div>
+          ) : error ? (
+            <div className="flex h-full items-center justify-center p-6 text-center">
+              <div className="max-w-sm">
+                <p className="font-display text-lg font-extrabold text-ink-900">
+                  De werkruimte laadt niet
+                </p>
+                <p className="mt-2 text-sm text-ink-600">
+                  Er ging iets mis bij het ophalen van de lijsten en de mensen. Herlaad de pagina;
+                  blijft het staan, geef dan deze melding door: {error.code ?? error.message}
+                </p>
+                <Button variant="primary" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+                  Herladen
+                </Button>
+              </div>
             </div>
           ) : (
             children

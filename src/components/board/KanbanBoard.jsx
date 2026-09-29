@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@lib/cn'
 import { byPosition } from '@lib/position'
 import { Button } from '@ui/index'
@@ -28,19 +28,21 @@ export default function KanbanBoard({
   const [target, setTarget] = useState(null)
   const dragged = useRef(null)
 
-  const handleDragStart = (e, task) => {
+  // Vaste functies, zodat de kaarten (memo) niet bij elke render opnieuw
+  // getekend worden. Op het grootste bord zijn dat er honderden.
+  const handleDragStart = useCallback((e, task) => {
     dragged.current = task
     setDragId(task.id)
     e.dataTransfer.effectAllowed = 'move'
     // Firefox refuses to start a drag without payload.
     e.dataTransfer.setData('text/plain', task.id)
-  }
+  }, [])
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     dragged.current = null
     setDragId(null)
     setTarget(null)
-  }
+  }, [])
 
   const indexAt = (columnKey, clientY) => {
     const cards = Array.from(
@@ -58,7 +60,16 @@ export default function KanbanBoard({
     if (!dragged.current) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    setTarget({ columnKey, index: indexAt(columnKey, e.clientY) })
+
+    // dragover vuurt tientallen keren per seconde. Alleen wanneer de plek
+    // waar de kaart zou landen écht verschuift, is er iets te hertekenen —
+    // anders hertekent het hele bord bij elke muisbeweging.
+    const index = indexAt(columnKey, e.clientY)
+    setTarget((vorig) =>
+      vorig && vorig.columnKey === columnKey && vorig.index === index
+        ? vorig
+        : { columnKey, index }
+    )
   }
 
   const handleDrop = (e, columnKey) => {

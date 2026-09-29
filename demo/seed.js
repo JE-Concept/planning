@@ -319,6 +319,18 @@ seedDoc('goals', 'g1', {
   createdAt: dag(-40), updatedAt: dag(-3),
 })
 
+// Het verloop van een resultaat: dat werd wel bewaard maar nergens getoond.
+;[
+  ['gu1', 'kr1', 2, 'Twee bevestigd na de beurs.', 'u-jasper', -24],
+  ['gu2', 'kr1', 4, '', 'u-elke', -12],
+  ['gu3', 'kr1', 5, 'Blum bevestigd.', 'u-jasper', -3],
+  ['gu4', 'kr2', 18400, '', 'u-elke', -20],
+  ['gu5', 'kr2', 46400, 'Haspengouw en Blum getekend.', 'u-elke', -4],
+].forEach(([id, keyResultId, value, note, profileId, dagen]) =>
+  seedDoc('goalUpdates', id, {
+    goalId: 'g1', keyResultId, value, note, profileId, createdAt: dag(dagen),
+  }))
+
 // ─── Openen en sluiten ──────────────────────────────────────────────────────
 CHECKLIST_TEMPLATES.forEach((template, position) =>
   seedDoc('checklists', template.id, {

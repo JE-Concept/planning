@@ -14,7 +14,7 @@ import { useTaskSearch } from '@data/tasks'
 export default function ProjectLink({ post }) {
   const [term, setTerm] = useState('')
   const [picking, setPicking] = useState(false)
-  const { results } = useTaskSearch(term)
+  const { results } = useTaskSearch(term, { enabled: picking })
   const toast = useToast()
 
   const link = async (task) => {

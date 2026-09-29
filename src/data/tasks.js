@@ -91,18 +91,6 @@ export function setTaskStatus(id, status) {
   })
 }
 
-export function setTaskList(id, list, status) {
-  return updateDoc(ref(COL.tasks, id), {
-    listId: list.id,
-    listName: list.name,
-    spaceId: list.spaceId ?? null,
-    brandId: list.brandId ?? null,
-    ...statusFields(status),
-    updatedBy: doorWie(),
-    updatedAt: serverTimestamp(),
-  })
-}
-
 export function toggleAssignee(task, uid) {
   const next = task.assignees?.includes(uid)
     ? task.assignees.filter((a) => a !== uid)
@@ -268,22 +256,28 @@ export function useMyTasks(uid) {
  * and filtered in the browser. A planning this size never has enough open work
  * for that to be the wrong trade, and it keeps the picker instant.
  */
-export function useTaskSearch(term, { max = 250 } = {}) {
+export function useTaskSearch(term, { max = 250, enabled = true } = {}) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(
-    () =>
-      onSnapshot(
-        query(col(COL.tasks), where('open', '==', true), orderBy('updatedAt', 'desc'), limit(max)),
-        (snap) => {
-          setTasks(fromQuery(snap).filter((t) => !t.parentId))
-          setLoading(false)
-        },
-        () => setLoading(false)
-      ),
-    [max]
-  )
+  useEffect(() => {
+    // Pas abonneren wanneer de kiezer echt openstaat. Anders loopt er bij elke
+    // geopende post een abonnement op tweehonderdvijftig taken mee waar
+    // niemand naar kijkt.
+    if (!enabled) {
+      setLoading(false)
+      return undefined
+    }
+
+    return onSnapshot(
+      query(col(COL.tasks), where('open', '==', true), orderBy('updatedAt', 'desc'), limit(max)),
+      (snap) => {
+        setTasks(fromQuery(snap).filter((t) => !t.parentId))
+        setLoading(false)
+      },
+      () => setLoading(false)
+    )
+  }, [max, enabled])
 
   const results = useMemo(() => {
     const needle = term.trim().toLowerCase()

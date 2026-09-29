@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   deleteDoc,
-  doc,
   getCountFromServer,
   onSnapshot,
   orderBy,
@@ -11,8 +10,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
-import { db } from '@lib/firebase'
+import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 import { goalProgress, keyResultProgress } from '@lib/goal-math'
 
 export { goalProgress, keyResultProgress }
@@ -156,19 +154,6 @@ export function useGoals({ includeArchived = false } = {}) {
   return { goals, loading }
 }
 
-export function useGoal(id) {
-  const [goal, setGoal] = useState(null)
-
-  useEffect(() => {
-    if (!id) return undefined
-    return onSnapshot(doc(db, COL.goals, id), (snap) =>
-      setGoal(snap.exists() ? normalise({ id: snap.id, ...snap.data() }) : null)
-    )
-  }, [id])
-
-  return goal
-}
-
 export function useKeyResultHistory(keyResultId) {
   const [updates, setUpdates] = useState([])
 
@@ -183,7 +168,8 @@ export function useKeyResultHistory(keyResultId) {
         where('keyResultId', '==', keyResultId),
         orderBy('createdAt', 'desc')
       ),
-      (snap) => setUpdates(fromQuery(snap))
+      (snap) => setUpdates(fromQuery(snap)),
+      () => setUpdates([])
     )
   }, [keyResultId])
 

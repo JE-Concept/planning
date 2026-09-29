@@ -32,6 +32,7 @@ import {
   setKeyResults,
   updateGoal,
   useGoals,
+  useKeyResultHistory,
 } from '@data/goals'
 
 const STATUS_LABELS = {
@@ -209,6 +210,7 @@ function GoalCard({ goal, brand, owner, onEdit, onCheckIn }) {
 
 function KeyResultRow({ kr, onCheckIn }) {
   const [open, setOpen] = useState(false)
+  const [historie, setHistorie] = useState(false)
   const [value, setValue] = useState(kr.currentValue ?? 0)
   const [note, setNote] = useState('')
   const progress = keyResultProgress(kr)
@@ -256,15 +258,59 @@ function KeyResultRow({ kr, onCheckIn }) {
           </Button>
         </form>
       ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="mt-1 text-[11px] font-medium text-accent-700 hover:underline"
-        >
-          Bijwerken
-        </button>
+        <div className="mt-1 flex gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="text-[11px] font-medium text-accent-700 hover:underline"
+          >
+            Bijwerken
+          </button>
+          <button
+            type="button"
+            onClick={() => setHistorie((h) => !h)}
+            className="text-[11px] font-medium text-ink-500 hover:underline"
+          >
+            {historie ? 'Verberg verloop' : 'Verloop'}
+          </button>
+        </div>
       )}
+
+      {historie && !derived ? <Verloop kr={kr} /> : null}
     </li>
+  )
+}
+
+/**
+ * Hoe dit resultaat bewoog.
+ *
+ * De check-ins werden al bewaard maar waren nergens te zien — en een doel
+ * zonder verloop zegt alleen waar je nu staat, niet of het de goede kant op
+ * gaat. Het abonnement start pas bij het openklappen; anders loopt er per
+ * resultaat een abonnement mee voor een lijstje dat niemand openslaat.
+ */
+function Verloop({ kr }) {
+  const { profileById } = useWorkspace()
+  const updates = useKeyResultHistory(kr.id)
+
+  if (updates.length === 0) {
+    return <p className="mt-2 text-[11px] text-ink-400">Nog geen bijwerkingen.</p>
+  }
+
+  return (
+    <ol className="mt-2 space-y-1 border-l border-ink-200 pl-2.5">
+      {updates.slice(0, 6).map((u) => (
+        <li key={u.id} className="text-[11px] text-ink-500">
+          <span className="font-semibold tabular-nums text-ink-800">{valueLabel(kr, u.value)}</span>
+          {' · '}
+          {formatDate(u.createdAt)}
+          {u.profileId && profileById[u.profileId]
+            ? ` · ${profileById[u.profileId].fullName ?? profileById[u.profileId].email}`
+            : ''}
+          {u.note ? <span className="block text-ink-400">{u.note}</span> : null}
+        </li>
+      ))}
+    </ol>
   )
 }
 

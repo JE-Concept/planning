@@ -21,6 +21,7 @@ export function WorkspaceProvider({ children }) {
     tags: [],
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (state !== 'ready') return undefined
@@ -36,11 +37,25 @@ export function WorkspaceProvider({ children }) {
       if (pending.size === 0) setLoading(false)
     }
 
+    setError(null)
+
+    // Elk abonnement moet ook bij een fout "klaar" melden. Anders blijft er
+    // eentje openstaan in de teller en blijft het hele scherm hangen op
+    // "Werkruimte laden…" — een molentje dat nooit stopt, zonder te zeggen
+    // waarom. Dat is precies zo onbruikbaar als een wit scherm.
     const subscribe = (key, q) =>
-      onSnapshot(q, (snap) => {
-        setData((current) => ({ ...current, [key]: fromQuery(snap) }))
-        settle(key)
-      })
+      onSnapshot(
+        q,
+        (snap) => {
+          setData((current) => ({ ...current, [key]: fromQuery(snap) }))
+          settle(key)
+        },
+        (err) => {
+          console.error(`JE Plan: ${key} kon niet geladen worden`, err)
+          setError(err)
+          settle(key)
+        }
+      )
 
     const unsubscribers = [
       subscribe('profiles', query(col(COL.profiles), orderBy('email'))),
@@ -65,6 +80,7 @@ export function WorkspaceProvider({ children }) {
     return {
       ...data,
       loading,
+      error,
       activeLists,
       boards: activeLists.filter((l) => l.kind !== 'social'),
       socialLists: activeLists.filter((l) => l.kind === 'social'),
@@ -79,7 +95,7 @@ export function WorkspaceProvider({ children }) {
           (a, b) => a.position - b.position
         ),
     }
-  }, [data, loading])
+  }, [data, loading, error])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
 }

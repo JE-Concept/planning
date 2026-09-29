@@ -48,12 +48,6 @@ export function toDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-/** Snapshot → plain object with the id and every Timestamp already a Date. */
-export function fromSnap(snap) {
-  if (!snap.exists()) return null
-  return normalise({ id: snap.id, ...snap.data() })
-}
-
 const DATE_FIELDS = new Set([
   'createdAt', 'updatedAt', 'completedAt', 'dueDate', 'startDate',
   'startedAt', 'endedAt', 'scheduledAt', 'lastSeenAt',

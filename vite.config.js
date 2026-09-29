@@ -42,7 +42,9 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               vendor: ['react', 'react-dom', 'react-router-dom'],
-              firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+              // Storage zit er bewust niet bij: er wordt nergens een bestand
+              // geüpload, en de SDK meeleveren kost iedereen laadtijd voor niets.
+              firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
             },
           },
         },

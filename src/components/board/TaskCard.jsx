@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '@lib/cn'
 import { formatDuration, priorityOf } from '@lib/format'
 import { isOverdue, relativeDay } from '@lib/dates'
@@ -7,7 +8,7 @@ import { AvatarStack, Badge } from '@ui/index'
  * One card on the board. Everything it shows is already on the task document —
  * no card triggers a read of its own.
  */
-export default function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, onDragStart, onDragEnd }) {
+function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, onDragStart, onDragEnd }) {
   const priority = priorityOf(task.priority)
   const assignees = (task.assignees ?? [])
     .map((uid) => profiles[uid])
@@ -92,3 +93,11 @@ export default function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpe
     </article>
   )
 }
+
+/**
+ * Een kaart hertekent alleen wanneer er aan die kaart iets verandert.
+ *
+ * Zonder dit tekent het hele bord zich opnieuw bij elke muisbeweging tijdens
+ * het slepen — op het eventbord zijn dat honderden kaarten per seconde.
+ */
+export default memo(TaskCard)

@@ -20,6 +20,16 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm test
+
+      # De browsertest draait de echte app op de demobuild: elke pagina open,
+      # geen wit scherm, geen fout in de console. De unittests dekken het
+      # rekenwerk; dit dekt wat mensen overkomt.
+      - name: Browsertest
+        run: |
+          npx playwright install --with-deps chromium
+          npm run build:demo
+          node scripts/smoke.mjs
+
       - name: Build
         run: npm run build
         env:

@@ -88,10 +88,6 @@ export async function stopTimer(uid) {
   return entryRef.id
 }
 
-export async function discardTimer(uid) {
-  await deleteDoc(doc(db, COL.runningTimers, uid))
-}
-
 export async function addManualEntry({ uid, task, list, startedAt, endedAt, description, billable = true }) {
   const durationSeconds = durationOf({ startedAt, endedAt })
   if (durationSeconds <= 0) throw new Error('De eindtijd moet na de starttijd liggen.')

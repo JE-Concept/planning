@@ -1,12 +1,19 @@
 import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Spinner } from '@ui/index'
 import { AuthProvider, useAuth } from '@context/AuthProvider'
 import { ToastProvider } from '@context/ToastProvider'
 import { WorkspaceProvider } from '@context/WorkspaceProvider'
 import AppShell from '@components/layout/AppShell'
+import ErrorBoundary from '@components/layout/ErrorBoundary'
 import Login from '@pages/Login'
 
+/**
+ * Elke pagina komt apart binnen, zodat het eerste scherm niet wacht op code
+ * voor schermen die je misschien nooit opent. De keerzijde daarvan is dat een
+ * uitrol terwijl je tabblad openstaat een bestandsnaam kan weghalen die deze
+ * pagina nog wil ophalen — daar staat de ErrorBoundary hieronder voor.
+ */
 const Dashboard      = lazy(() => import('@pages/Dashboard'))
 const MyWork         = lazy(() => import('@pages/MyWork'))
 const Board          = lazy(() => import('@pages/Board'))
@@ -26,6 +33,24 @@ function Loading() {
   )
 }
 
+/**
+ * De pagina's, met een vangnet eromheen.
+ *
+ * De grens staat binnen de schil en niet eromheen: gaat één pagina onderuit,
+ * dan blijft de zijbalk staan en kun je ergens anders heen klikken. De sleutel
+ * op het pad zorgt dat die stap ook echt helpt — anders blijft de foutmelding
+ * staan na het wegklikken.
+ */
+function Pages({ children }) {
+  const { pathname } = useLocation()
+
+  return (
+    <ErrorBoundary key={pathname}>
+      <Suspense fallback={<Loading />}>{children}</Suspense>
+    </ErrorBoundary>
+  )
+}
+
 function Authenticated() {
   const { state, isStaff } = useAuth()
 
@@ -38,12 +63,12 @@ function Authenticated() {
     return (
       <WorkspaceProvider>
         <AppShell>
-          <Suspense fallback={<Loading />}>
+          <Pages>
             <Routes>
               <Route path="/openen-sluiten" element={<Checklists />} />
               <Route path="*" element={<Navigate to="/openen-sluiten" replace />} />
             </Routes>
-          </Suspense>
+          </Pages>
         </AppShell>
       </WorkspaceProvider>
     )
@@ -52,7 +77,7 @@ function Authenticated() {
   return (
     <WorkspaceProvider>
       <AppShell>
-        <Suspense fallback={<Loading />}>
+        <Pages>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/mijn-werk" element={<MyWork />} />
@@ -66,7 +91,7 @@ function Authenticated() {
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Suspense>
+        </Pages>
       </AppShell>
     </WorkspaceProvider>
   )
@@ -74,10 +99,15 @@ function Authenticated() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <Authenticated />
-      </AuthProvider>
-    </ToastProvider>
+    // Twee grenzen, met opzet: deze vangt wat er buiten een pagina misgaat —
+    // het aanmelden, de werkruimte, de schil zelf. Zonder deze zou dat nog
+    // altijd een wit scherm zijn.
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <Authenticated />
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   )
 }

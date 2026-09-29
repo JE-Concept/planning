@@ -203,4 +203,8 @@ export const arrayUnion = (...values) => ({ __sentinel: ARRAY_UNION, values })
 // ─── Wat de app bij opstarten aanroept ──────────────────────────────────────
 
 export const initializeFirestore = () => ({ __demo: true })
+// De demo bewaart niets tussen bezoeken; deze twee bestaan alleen omdat de
+// echte app ze importeert.
+export const persistentLocalCache = () => ({ __demo: 'cache' })
+export const persistentMultipleTabManager = () => ({ __demo: 'tabs' })
 export const connectFirestoreEmulator = () => {}

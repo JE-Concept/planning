@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { ACTION_KINDS, planFor, ruleFires } from '../functions/automations.js'
-import { ACTIONS, emptyAction, ruleWarnings } from '../src/lib/automations.js'
+import { ACTION_KINDS, TRIGGER_KINDS, planFor, ruleFires } from '../functions/automations.js'
+import { ACTIONS, TRIGGERS, emptyAction, ruleWarnings } from '../src/lib/automations.js'
 
 /**
  * Dit is de enige code die ongevraagd andermans taken aanpast. Twee dingen
@@ -168,6 +168,10 @@ describe('wat een regel doet', () => {
 describe('de interface en de motor spreken dezelfde taal', () => {
   it('elke actie die je kunt kiezen, wordt ook uitgevoerd', () => {
     expect(ACTIONS.map((a) => a.kind).sort()).toEqual([...ACTION_KINDS].sort())
+  })
+
+  it('elke aanleiding die je kunt kiezen, kent de motor ook', () => {
+    expect(TRIGGERS.map((t) => t.kind).sort()).toEqual([...TRIGGER_KINDS].sort())
   })
 
   it('elke actie uit het formulier levert, ingevuld, een echte wijziging', () => {
