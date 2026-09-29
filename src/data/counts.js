@@ -39,7 +39,7 @@ export function useNavCounts() {
 
   return useMemo(
     () => ({
-      '/mijn-werk': tasks.length,
+      '/mijn-taken': tasks.length,
       '/social': review.length,
       '/openen-sluiten': openChecklistItems,
     }),

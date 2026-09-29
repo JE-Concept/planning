@@ -6,20 +6,20 @@
   :root {
     color-scheme: light;
 
-    /* Overgenomen uit je-concept/src/styles/tokens.css */
-    --ink: #0B1626;
-    --navy-dark: #112550;
-    --navy: #1A3A6B;
-    --navy-light: #243F75;
-    --powder: #4A7FC1;
-    --powder-light: #7AAAD6;
-    --sky: #B8D4F0;
-    --gold: #C9A84C;
+    /* Afgeleid van de JE Concept-tokens (src/styles/je-ds.css). */
+    --ink: #00172E;
+    --navy-dark: #00172E;
+    --navy: #1B3A6B;
+    --navy-light: #2A4E86;
+    --powder: #3E67A3;
+    --powder-light: #6C8CBE;
+    --sky: #C6D3E8;
+    --gold: #B4761B;
     --gold-soft: #E8D89C;
-    --bone: #FAF8F4;
-    --sand: #F5EFE3;
+    --bone: #F8F9FB;
+    --sand: #EEF2F8;
 
-    --gradient-navy: linear-gradient(135deg, #112550 0%, #1A3A6B 60%, #243F75 100%);
+    --gradient-navy: linear-gradient(180deg, #00172E 0%, #002246 100%);
   }
 
   html,
@@ -30,12 +30,16 @@
 
   body {
     @apply bg-ink-50 text-ink-900 antialiased;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 1.5;
     padding-top: env(safe-area-inset-top, 0px);
   }
 
   /* A work tool lives in dense lists — the focus ring has to stay obvious. */
   :focus-visible {
-    @apply outline-none ring-2 ring-accent-500 ring-offset-1 ring-offset-white;
+    outline: none;
+    box-shadow: var(--ring-focus);
   }
 
   ::-webkit-scrollbar {

@@ -164,6 +164,11 @@ function taak(id, listId, statuses, statusName, o = {}) {
     customerId: o.customerId ?? null,
     customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
     socialStage: o.socialStage ?? null,
+    // Wat de fiche uit het design toont: gasten, formule, type, offerte, dag.
+    eventDate: o.eventDate ?? (o.parentId ? null : o.dueDate ?? null),
+    pax: o.pax ?? null, kids: o.kids ?? null, formule: o.formule ?? null,
+    eventType: o.eventType ?? null, quoteAmount: o.budget ?? null,
+    draaiboek: o.draaiboek ?? null, checklist: o.checklist ?? [], repeat: o.repeat ?? null,
     socialWanted: o.socialWanted ?? null,
     position: (pos += 1024),
     archived: false, completedAt: s.kind === 'closed' || s.kind === 'done' ? dag(-20) : null,
@@ -172,7 +177,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
   })
 }
 
-taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', {
+taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],
   title: 'Trouw Niels en Inez', assignees: ['u-jasper', 'u-elke'], priority: 2, customerId: 'k-niels-inez',
   dueDate: dag(6), budget: 16399, location: 'Hoeve Vanhove, Kortessem',
   estimate: 480, tracked: 20700, comments: 2, tags: ['losse events'],
@@ -182,7 +187,7 @@ taak('t-trouw-1', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw',
 taak('t-trouw-2', 'l-overview', OVERVIEW, 'complete',     { parentId: 't-trouw', title: 'Locatiebezoek inplannen', assignees: ['u-jasper'] })
 taak('t-trouw-3', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Prijs open bar apart opgeven', assignees: ['u-elke'] })
 
-taak('t-blum', 'l-overview', OVERVIEW, 'offer accepted', {
+taak('t-blum', 'l-overview', OVERVIEW, 'offer accepted', { pax: 180, formule: 'Receptie + diner + dansfeest', eventType: 'Bedrijfsevent',
   title: 'Blum België — 20-jarig bestaan', assignees: ['u-jasper'], priority: 2, customerId: 'k-blum',
   dueDate: dag(82), budget: 24800, location: 'Cultureel Centrum, Sint-Truiden',
   tracked: 35100, comments: 1, tags: ['losse events'],
@@ -192,7 +197,7 @@ taak('t-blum-1', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum',
 taak('t-blum-2', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Allergieënlijst opvragen bij HR', assignees: ['u-jasper'] })
 taak('t-blum-3', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Herasdoeken laten bedrukken', assignees: ['u-jasper'] })
 
-taak('t-haspengouw', 'l-overview', OVERVIEW, 'planning ready', {
+taak('t-haspengouw', 'l-overview', OVERVIEW, 'planning ready', { pax: 600, formule: 'Standen + centrale bar', eventType: 'Stadsevent',
   title: 'Haspengouw Culinair — Grote Markt', assignees: ['u-jasper', 'u-anneleen'], customerId: 'k-borgloon',
   dueDate: dag(-7), budget: 38900, location: 'Grote Markt, Borgloon', tracked: 85500,
   tags: ['losse events'], priority: 2,
@@ -201,49 +206,69 @@ taak('t-haspengouw', 'l-overview', OVERVIEW, 'planning ready', {
 taak('t-haspengouw-1', 'l-overview', OVERVIEW, 'complete', { parentId: 't-haspengouw', title: 'Crewbandjes voorzien — 45 stuks', assignees: ['u-anneleen'] })
 taak('t-haspengouw-2', 'l-overview', OVERVIEW, 'planning ready', { parentId: 't-haspengouw', title: 'Vrijwilligersverzekering aangeven', assignees: ['u-elke'], priority: 1 })
 
-taak('t-optimum', 'l-overview', OVERVIEW, 'planning ongoing', {
+taak('t-optimum', 'l-overview', OVERVIEW, 'planning ongoing', { pax: 250, formule: 'Pipe & drape + bar', eventType: 'Bedrijfsevent',
   title: '20 m Pipe & Drape — Optimum Sorting — Opbouw', assignees: ['u-jasper', 'u-anneleen'],
   dueDate: dag(40), budget: 14800, priority: 2, tracked: 7200, location: 'Geel',
 })
-taak('t-vinne', 'l-overview', OVERVIEW, 'offer accepted', {
+taak('t-vinne', 'l-overview', OVERVIEW, 'offer accepted', { pax: 320, formule: 'Wandelbar + soep', eventType: 'Wandelzondag',
   title: 'Wandelzondag Vinne', assignees: ['u-anneleen'], dueDate: dag(27),
   budget: 9800, brandId: 'meer', tags: ['meer'], tracked: 12600,
 })
-taak('t-vrijwilligers', 'l-overview', OVERVIEW, 'offer send', {
+taak('t-vrijwilligers', 'l-overview', OVERVIEW, 'offer send', { pax: 140, formule: 'Krukken en statafels', eventType: 'Verhuur', customerId: 'k-borgloon',
   title: 'Vrijwilligersfeest — 140 krukken | Cultureel Centrum', assignees: ['u-jasper'], budget: 1840, dueDate: dag(12),
 })
-taak('t-canon', 'l-overview', OVERVIEW, 'ready to invoice', {
+taak('t-canon', 'l-overview', OVERVIEW, 'ready to invoice', { pax: 15, formule: 'Vergaderzaal + lunch', eventType: 'Vergadering',
   title: 'Canon Event — Vergaderzaal | 10–15 personen', assignees: ['u-jasper', 'u-elke'],
   dueDate: dag(-29), budget: 1250, brandId: 'meer', priority: 1, tracked: 5400,
   // Tien man in een vergaderzaal levert geen content op; bewust uitgezet.
   socialWanted: false,
 })
-taak('t-loonse', 'l-overview', OVERVIEW, 'ready to invoice', {
+taak('t-loonse', 'l-overview', OVERVIEW, 'ready to invoice', { pax: 2400, formule: 'Drie dagen bar, 8 tappunten', eventType: 'Stadsevent',
   title: 'Loonse Feesten 2026', assignees: ['u-jasper', 'u-elke'], dueDate: dag(-30),
   budget: 21500, priority: 1, tracked: 138600, comments: 1, customerId: 'k-borgloon',
   socialStage: 'ready',
 })
-taak('t-ruben', 'l-overview', OVERVIEW, 'request', {
+taak('t-ruben', 'l-overview', OVERVIEW, 'request', { pax: 40, kids: 10, eventType: 'Communie', eventDate: new Date('2027-04-25T12:00:00'),
   title: 'Ruben Theuwen — 25 april 2027', assignees: ['u-jasper'], tags: ['feestbeest'], brandId: 'feestbeest',
   description: 'Aanvraag per mail: communie eind april 2027, veertigtal personen waarvan een tiental kinderen.',
 })
-taak('t-jolien', 'l-overview', OVERVIEW, 'request', {
+taak('t-jolien', 'l-overview', OVERVIEW, 'request', { pax: 60, eventType: 'Verjaardag',
   title: 'Verjaardag & doopsel — 15 november (Jolien en Bernd)', assignees: ['u-jasper'],
   dueDate: dag(48), brandId: 'feestbeest', tags: ['feestbeest'],
 })
-taak('t-astrid', 'l-overview', OVERVIEW, 'invoiced', {
+taak('t-astrid', 'l-overview', OVERVIEW, 'invoiced', { pax: 110, formule: 'Buffet', eventType: 'Huwelijk', eventDate: dag(-40),
   title: 'Astrid Odeurs — trouwfeest', assignees: ['u-elke'], budget: 14250, tracked: 28800,
   socialStage: 'posted',
 })
-taak('t-magirus', 'l-overview', OVERVIEW, 'invoiced', {
+taak('t-magirus', 'l-overview', OVERVIEW, 'invoiced', { pax: 90, eventType: 'Bedrijfsevent', eventDate: dag(-60),
   title: 'Magirus — opbouw 29 mei, gebruik 30 mei', assignees: ['u-elke'], budget: 12600, tracked: 23400,
 })
-taak('t-winterbar', 'l-overview', OVERVIEW, 'planning ongoing', {
+taak('t-winterbar', 'l-overview', OVERVIEW, 'planning ongoing', { pax: 600, formule: 'Chalets + après-ski bar', eventType: 'Eigen event', budget: 18000,
   title: 'Winterbar', assignees: ['u-anneleen'], tags: ['wintermoods'], brandId: 'wintermoods', dueDate: dag(55),
 })
-taak('t-menukaart', 'l-overview', OVERVIEW, 'request', {
+taak('t-menukaart', 'l-overview', OVERVIEW, 'request', { eventType: 'Intern',
   title: 'Menukaart drukken + prijzen ingeven', assignees: ['u-elke'], brandId: 'meer',
 })
+
+
+// Taken met een deadline in de komende dagen: Mijn taken en de werklast.
+taak('t-trouw-4', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Tent en vloer bevestigen bij verhuur', assignees: ['u-elke'], dueDate: dag(2), priority: 2, estimate: 90, comments: 1,
+  checklist: [{ text: 'Offerte tent 12×24 m', done: true }, { text: 'Vloer + verlichting', done: false }, { text: 'Levering daags voordien', done: false }] })
+taak('t-trouw-5', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Drankenlijst finaliseren', assignees: ['u-jasper'], dueDate: dag(3), estimate: 120,
+  checklist: [{ text: 'Bubbels onthaal', done: true }, { text: 'Wijnen diner', done: false }, { text: 'Afterparty', done: false }] })
+taak('t-trouw-6', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Opbouwploeg inplannen', assignees: ['u-jasper'], dueDate: dag(1), estimate: 60 })
+taak('t-trouw-7', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Menukeuze doorgeven aan traiteur', assignees: ['u-anneleen'], dueDate: dag(0), estimate: 60 })
+taak('t-blum-4', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Offertes leveranciers opvragen', assignees: ['u-elke'], dueDate: dag(3), estimate: 180,
+  checklist: [{ text: 'Verhuur', done: true }, { text: 'Catering', done: true }, { text: 'Sanitair', done: false }, { text: 'Drank', done: false }] })
+taak('t-blum-5', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Plaatsbezoek loods', assignees: ['u-jasper'], dueDate: dag(4), estimate: 120 })
+taak('t-winterbar-1', 'l-overview', OVERVIEW, 'planning ongoing', { parentId: 't-winterbar', title: 'Vergunning stad Tongeren', assignees: ['u-anneleen'], dueDate: dag(-4), priority: 1, estimate: 120 })
+taak('t-winterbar-2', 'l-overview', OVERVIEW, 'planning ongoing', { parentId: 't-winterbar', title: 'Chalets bestellen', assignees: ['u-jasper'], dueDate: dag(17), estimate: 180 })
+taak('t-canon-1', 'l-overview', OVERVIEW, 'ready to invoice', { parentId: 't-canon', title: 'Factuur opmaken', assignees: ['u-elke'], dueDate: dag(1), priority: 1, estimate: 30 })
+taak('t-loonse-1', 'l-overview', OVERVIEW, 'ready to invoice', { parentId: 't-loonse', title: 'Factuur opmaken', assignees: ['u-elke'], dueDate: dag(-2), priority: 1, estimate: 30 })
+taak('t-vinne-1', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-vinne', title: 'Aankondiging socials', assignees: ['u-charish'], dueDate: dag(0), estimate: 90, repeat: 'Wekelijks' })
+taak('t-vinne-2', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-vinne', title: 'Personeelsplanning bar', assignees: ['u-anneleen'], dueDate: dag(2), estimate: 120 })
+taak('t-vrijwilligers-1', 'l-overview', OVERVIEW, 'offer send', { parentId: 't-vrijwilligers', title: 'Opvolgen offerte', assignees: ['u-jasper'], dueDate: dag(2), estimate: 15, repeat: 'Na 3 dagen' })
+taak('t-jolien-1', 'l-overview', OVERVIEW, 'request', { parentId: 't-jolien', title: 'Klant terugbellen', assignees: ['u-elke'], dueDate: dag(0), estimate: 15 })
 
 // Socials
 taak('t-soc-1', 'l-socials', SOCIALS, 'in progress', { title: 'JE Concept (28 sep – 4 okt)', assignees: ['u-charish'], tags: ['je concept'] })
@@ -286,12 +311,13 @@ tijd('u-charish', null, null, 4, 'Reels monteren Haspengouw Culinair', 2, false)
 tijd('u-elke', 't-loonse', 'Loonse Feesten 2026', 1.75, 'Eindafrekening', 4)
 tijd('u-jasper', 't-optimum', '20 m Pipe & Drape — Optimum Sorting — Opbouw', 2, 'Plaatsbezoek', 5)
 
-// Een lopende timer, zodat de kop van de app meteen leeft.
-const loopt = new Date(NU.getTime() - 84 * 60000)
+// Een lopende timer, zodat de zijbalk meteen leeft — vanaf nu gerekend, niet
+// vanaf de vaste demodag, anders staat hij op een dag en meer.
+const loopt = new Date(Date.now() - (23 * 60 + 12) * 1000)
 seedDoc('runningTimers', 'u-jasper', {
-  profileId: 'u-jasper', taskId: 't-trouw', taskTitle: 'Trouw Niels en Inez',
+  profileId: 'u-jasper', taskId: 't-trouw-5', taskTitle: 'Drankenlijst finaliseren',
   listId: 'l-overview', listName: 'Events', brandId: null,
-  description: 'Offerte afwerken', startedAt: loopt, billable: true,
+  description: '', startedAt: loopt, billable: true,
 })
 
 // ─── Social posts ───────────────────────────────────────────────────────────

@@ -16,6 +16,11 @@ import Login from '@pages/Login'
  */
 const Dashboard      = lazy(() => import('@pages/Dashboard'))
 const MyWork         = lazy(() => import('@pages/MyWork'))
+const Events         = lazy(() => import('@pages/Events'))
+const EventDetail    = lazy(() => import('@pages/EventDetail'))
+const MyTasks        = lazy(() => import('@pages/MyTasks'))
+const Workload       = lazy(() => import('@pages/Workload'))
+const More           = lazy(() => import('@pages/More'))
 const Board          = lazy(() => import('@pages/Board'))
 const SocialCalendar = lazy(() => import('@pages/SocialCalendar'))
 const Checklists     = lazy(() => import('@pages/Checklists'))
@@ -80,8 +85,14 @@ function Authenticated() {
       <AppShell>
         <Pages>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Events />} />
+            <Route path="/kalender" element={<Events />} />
+            <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/mijn-taken" element={<MyTasks />} />
             <Route path="/mijn-werk" element={<MyWork />} />
+            <Route path="/werklast" element={<Workload />} />
+            <Route path="/vandaag" element={<Dashboard />} />
+            <Route path="/meer" element={<More />} />
             <Route path="/bord/:listId" element={<Board />} />
             <Route path="/social" element={<SocialCalendar />} />
             <Route path="/klanten" element={<Customers />} />

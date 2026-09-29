@@ -45,6 +45,10 @@ function millis(value) {
 export function ruleFires(rule, { task, before = null }) {
   if (!rule || rule.enabled === false) return false
   if (rule.listId && rule.listId !== task.listId) return false
+  // Regels gaan over events, niet over de taken eronder. Zonder deze grens
+  // kreeg elke taak uit een template bij een nieuwe aanvraag de toewijzing en
+  // de deadline van de aanvraagregel, en verdween wat het template instelde.
+  if (task.parentId) return false
 
   const trigger = rule.trigger ?? {}
   const nieuw = !before

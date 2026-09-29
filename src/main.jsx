@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, HashRouter } from 'react-router-dom'
 import App from './App'
+import './styles/je-ds.css'
+import './styles/app.css'
 import './index.css'
 
 /**

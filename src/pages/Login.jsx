@@ -1,84 +1,128 @@
-import { Button, Spinner } from '@ui/index'
+import { Button, Icon, Logotype } from '@components/ds'
+import { Spinner } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
 
-const GoogleMark = () => (
-  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z" />
-    <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3a7.2 7.2 0 0 1-10.7-3.8h-4v3.1A12 12 0 0 0 12 24z" />
-    <path fill="#FBBC05" d="M5.4 14.3a7.1 7.1 0 0 1 0-4.6v-3.1h-4a12 12 0 0 0 0 10.8l4-3.1z" />
-    <path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.4 6.6l4 3.1A7.2 7.2 0 0 1 12 4.8z" />
-  </svg>
-)
-
+/**
+ * Aanmelden, zoals in het design: één witte kaart op nachtblauw, één knop.
+ * Google is de enige manier; wie geen toegang heeft, ziet waarom.
+ */
 export default function Login() {
   const { state, signIn, error, logOut, user } = useAuth()
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-gradient-navy px-4 py-12">
-      <div className="w-full max-w-sm rounded-xl bg-white p-7 shadow-xl">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-600 text-sm font-bold text-white">
-            JE
-          </span>
-          <div>
-            <p className="font-display text-lg font-extrabold text-ink-900">JE Plan</p>
-            <p className="text-xs text-ink-500">Interne planning voor JE Concept</p>
+    <div
+      className="je-night"
+      style={{ minHeight: '100%', background: 'var(--navy-950)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          background: 'var(--white)',
+          borderRadius: 4,
+          boxShadow: 'var(--shadow-3)',
+          padding: 'var(--space-8) var(--space-7)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-6)',
+          '--text-1': 'var(--navy-950)',
+          '--text-2': 'var(--slate-500)',
+          '--text-3': 'var(--slate-300)',
+          '--text-accent': 'var(--navy-700)',
+          '--accent': 'var(--navy-700)',
+          '--accent-hover': 'var(--navy-600)',
+          '--accent-press': 'var(--navy-900)',
+          '--accent-quiet': 'rgba(27,58,107,.07)',
+          '--text-on-accent': 'var(--white)',
+          '--border-hairline': 'rgba(0,48,96,.14)',
+          '--border-subtle': 'rgba(0,48,96,.22)',
+          '--border-accent': 'var(--navy-700)',
+          '--canvas': 'var(--white)',
+          color: 'var(--navy-950)',
+        }}
+      >
+        <Logotype size={44} />
+        <div>
+          <div className="je-eyebrow" style={{ color: 'var(--navy-700)' }}>
+            JE Plan
           </div>
+          <h1 style={{ font: 'var(--type-h2)', textTransform: 'uppercase', letterSpacing: 'var(--ls-h2)', margin: '8px 0 0', color: 'var(--navy-950)' }}>
+            Aanmelden
+          </h1>
         </div>
 
         {state === 'misconfigured' ? (
-          <p className="mt-6 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-            De Firebase-configuratie ontbreekt in deze build. Zet de{' '}
-            <code className="rounded bg-amber-100 px-1">VITE_FIREBASE_*</code> variabelen en
-            deploy opnieuw.
-          </p>
+          <Notice>
+            De Firebase-configuratie ontbreekt in deze build. Zet de <code>VITE_FIREBASE_*</code> variabelen en deploy
+            opnieuw.
+          </Notice>
         ) : null}
 
         {state === 'denied' ? (
-          <div className="mt-6 space-y-3">
-            <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-              {user?.email ? <strong>{user.email}</strong> : 'Dit account'} heeft geen toegang tot
-              JE Plan. Vraag een beheerder om een uitnodiging.
-            </p>
-
+          <>
+            <Notice>
+              {user?.email ? <strong>{user.email}</strong> : 'Dit account'} heeft geen toegang. Vraag een beheerder om een
+              uitnodiging.
+            </Notice>
             {/*
               "Geen toegang" is maar één van de redenen waarom dit scherm
               verschijnt: een functie die niet uitgerold is, een netwerkfout of
               een geweigerde regel komen hier ook terecht. Zonder de echte
               melding erbij lijkt elk van die gevallen op een ontbrekende
-              uitnodiging, en zoek je op de verkeerde plek.
+              uitnodiging.
             */}
             {error ? (
-              <details className="rounded-md bg-ink-50 px-3 py-2 text-xs text-ink-600">
-                <summary className="cursor-pointer font-semibold">Technische melding</summary>
-                <p className="mt-1.5 break-words font-mono text-[11px] text-ink-700">{error}</p>
+              <details style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--slate-500)' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Technische melding</summary>
+                <p style={{ marginTop: 6, fontFamily: 'var(--font-mono, monospace)', wordBreak: 'break-word' }}>{error}</p>
               </details>
             ) : null}
-            <Button variant="secondary" className="w-full" onClick={logOut}>
+            <Button variant="secondary" size="lg" block onClick={logOut}>
               Met een ander account aanmelden
             </Button>
-          </div>
+          </>
         ) : null}
 
         {state === 'signed-out' ? (
-          <div className="mt-6 space-y-3">
-            <Button variant="primary" size="lg" className="w-full" onClick={signIn}>
-              <GoogleMark />
+          <>
+            <Button size="lg" block iconLeft="log-in" onClick={signIn}>
               Aanmelden met Google
             </Button>
-            {error ? <p className="text-sm text-red-700">{error}</p> : null}
-            <p className="text-center text-xs text-ink-500">
+            {error ? <Notice>{error}</Notice> : null}
+            <p style={{ margin: 0, font: 'var(--type-caption)', fontWeight: 400, color: 'var(--slate-500)', textAlign: 'center' }}>
               Enkel voor @jeconcept.be en @kenjeklanten.be, of op uitnodiging.
             </p>
-          </div>
+          </>
         ) : null}
 
         {state === 'loading' ? (
-          <div className="mt-8 flex items-center justify-center gap-2 text-sm text-ink-500">
+          <div className="je-muted-caption" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <Spinner /> Even geduld…
           </div>
         ) : null}
       </div>
+    </div>
+  )
+}
+
+function Notice({ children }) {
+  return (
+    <div
+      role="alert"
+      style={{
+        display: 'flex',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-4) var(--space-5)',
+        border: '1px solid rgba(179,53,47,.4)',
+        borderRadius: 2,
+        font: 'var(--type-body-sm)',
+        color: 'var(--navy-950)',
+      }}
+    >
+      <span style={{ color: 'var(--red-600)', display: 'flex', marginTop: 2 }}>
+        <Icon name="alert-triangle" size={16} />
+      </span>
+      <span>{children}</span>
     </div>
   )
 }

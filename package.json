@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "JE Plan \u2014 interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
+  "description": "JE Plan — interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
   "engines": {
     "node": ">=20"
   },
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "firebase": "^11.0.2",
+    "lucide-react": "^0.454.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2"

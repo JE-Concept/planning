@@ -5,6 +5,7 @@ import { defineSecret } from 'firebase-functions/params'
 import { logger } from 'firebase-functions'
 import { matchAssignee } from './match.js'
 import { summariseTranscript } from './summarise.js'
+import { assistantTurn } from './assistant.js'
 
 /**
  * Teamoverleg: van transcript naar een dossier met actiepunten.
@@ -213,5 +214,47 @@ export const summariseMeeting = onCall(
 
     logger.info('Overleg toegevoegd', resultaat)
     return resultaat
+  }
+)
+
+/**
+ * De assistent in de app: één modelbeurt per aanroep.
+ *
+ * Voor het team, niet voor personeel. Hoogstens vijftien beurten per minuut
+ * per persoon — een tool-lus die blijft draaien, stopt hier en niet op de
+ * factuur.
+ */
+const beurten = new Map()
+
+export const assistant = onCall(
+  { region: REGION, secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 120, memory: '512MiB' },
+  async (request) => {
+    const { auth, data } = request
+    if (!auth) throw new HttpsError('unauthenticated', 'Meld je eerst aan.')
+
+    const profiel = await db.collection('profiles').doc(auth.uid).get()
+    const p = profiel.data()
+    if (!p || p.active === false || p.role === 'staff') {
+      throw new HttpsError('permission-denied', 'De assistent is er voor het planningsteam.')
+    }
+
+    const nu = Date.now()
+    const recent = (beurten.get(auth.uid) ?? []).filter((t) => nu - t < 60_000)
+    if (recent.length >= 15) {
+      throw new HttpsError('resource-exhausted', 'Even rustig: probeer het over een minuutje opnieuw.')
+    }
+    beurten.set(auth.uid, [...recent, nu])
+
+    try {
+      return await assistantTurn({
+        apiKey: ANTHROPIC_API_KEY.value(),
+        system: data?.system,
+        messages: data?.messages,
+        tools: data?.tools,
+      })
+    } catch (err) {
+      logger.error('Assistent mislukt', { message: err.message })
+      throw new HttpsError('internal', 'De assistent kon niet antwoorden.')
+    }
   }
 )

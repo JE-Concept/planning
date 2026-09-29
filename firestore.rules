@@ -130,6 +130,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Eventtemplates: het team leest ze bij een nieuw event, een beheerder
+    // bepaalt wat erin staat.
+    match /templates/{id} {
+      allow read:  if isTeam();
+      allow write: if isAdmin();
+    }
+
     match /checklists/{id} {
       allow read:  if isMember();
       allow write: if isAdmin();

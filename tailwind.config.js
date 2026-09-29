@@ -1,73 +1,99 @@
 /** @type {import('tailwindcss').Config} */
 
 /*
- * De JE Concept-huisstijl, overgenomen uit Kenjeklanten/je-concept
- * (src/styles/tokens.css + tailwind.config.js). De schalen `ink` en `accent`
- * zijn hier de dragers: de app gebruikt ze al overal, dus door ze op de
- * merkwaarden te zetten staat de hele tool in één keer in huisstijl.
- * De merknamen staan er los naast voor waar een specifieke kleur hoort.
+ * De JE Concept-huisstijl zoals het design ze vastlegt (Claude Design, "JE
+ * Concept Design System"): navy uit het logo, koele papiergrond, Oswald voor
+ * koppen en Source Sans 3 voor tekst, en strakke hoeken.
+ *
+ * De tokens zelf staan in src/styles/je-ds.css. Hier worden de Tailwind-schalen
+ * die de app al overal gebruikt (`ink`, `accent`) op die tokens gezet, zodat ook
+ * de schermen die niet in het design staan meteen in dezelfde stijl staan.
  */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        // ── Merkkleuren, letterlijk uit tokens.css ──────────────────────────
-        navy:   { DEFAULT: '#1A3A6B', dark: '#112550', light: '#243F75' },
-        powder: { DEFAULT: '#4A7FC1', light: '#7AAAD6' },
-        sky:    '#B8D4F0',
-        gold:   { DEFAULT: '#C9A84C', soft: '#E8D89C' },
-        bone:   '#FAF8F4',
-        sand:   '#F5EFE3',
+        // ── Merk, letterlijk uit het design system ─────────────────────────
+        navy: {
+          DEFAULT: '#1B3A6B',
+          dark: '#00172E',
+          light: '#2A4E86',
+          50: '#EEF2F8',
+          100: '#DCE4F0',
+          200: '#C6D3E8',
+          300: '#9DB3D5',
+          400: '#6C8CBE',
+          500: '#3E67A3',
+          600: '#2A4E86',
+          700: '#1B3A6B',
+          800: '#003060',
+          900: '#002246',
+          950: '#00172E',
+        },
+        paper: '#F8F9FB',
+        powder: { DEFAULT: '#3E67A3', light: '#6C8CBE' },
+        sky: '#C6D3E8',
+        gold: { DEFAULT: '#B4761B', soft: '#E8D89C' },
+        bone: '#F8F9FB',
+        sand: '#EEF2F8',
 
-        // ── Neutralen: warme grond, koele grijstrap, ink als tekstkleur ─────
+        // ── Neutralen: papier als grond, navy-slate als tekst ───────────────
         ink: {
-          50:  '#FAF8F4', // bone — de grond van de app
-          100: '#F1F5F9',
-          200: '#E2E8F0',
-          300: '#CBD5E1',
-          400: '#94A3B8',
-          500: '#64748B',
-          600: '#475569',
-          700: '#334155',
-          800: '#1E293B',
-          900: '#0B1626', // --ink — primaire tekst
-          950: '#060D16', // schaduwlagen achter dialogen
+          50: '#F8F9FB', // paper — de grond van de app
+          100: '#EEF2F8',
+          200: '#E6E9EE',
+          300: '#C9CFD8',
+          400: '#98A1B0',
+          500: '#5C6779',
+          600: '#2E3744',
+          700: '#2E3744',
+          800: '#002246',
+          900: '#00172E', // navy-950 — primaire tekst
+          950: '#00172E',
         },
 
-        // ── Actie: powder voor focus en rand, navy voor de primaire knop ────
+        // ── Actie: navy-700 is de primaire knop ─────────────────────────────
         accent: {
-          50:  '#EAF1FA',
-          100: '#D6E6F6',
-          200: '#B8D4F0', // sky
-          300: '#7AAAD6', // powder-light
-          400: '#5C92CB',
-          500: '#4A7FC1', // powder
-          600: '#1A3A6B', // navy
-          700: '#112550', // navy-dark
-          800: '#0E1F44',
-          900: '#0B1938',
+          50: '#EEF2F8',
+          100: '#DCE4F0',
+          200: '#C6D3E8',
+          300: '#9DB3D5',
+          400: '#6C8CBE',
+          500: '#3E67A3',
+          600: '#1B3A6B',
+          700: '#002246',
+          800: '#00172E',
+          900: '#00172E',
         },
       },
       fontFamily: {
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
-        sans:    ['Nunito', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        mono:    ['"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+        display: ['Oswald', '"Helvetica Neue Condensed"', '"Arial Narrow"', 'sans-serif'],
+        sans: ['"Source Sans 3"', '"Helvetica Neue"', 'Helvetica', 'system-ui', 'sans-serif'],
+        script: ['Parisienne', 'cursive'],
+        serif: ['Prata', 'Didot', '"Times New Roman"', 'serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
+      // Het merk leest strak, niet vriendelijk-rond: de bestaande afrondingen
+      // worden allemaal klein, zonder elke klasse in de app te herschrijven.
       borderRadius: {
-        '2xl': '16px',
-        '3xl': '20px',
-        '4xl': '24px',
+        sm: '2px',
+        DEFAULT: '2px',
+        md: '2px',
+        lg: '4px',
+        xl: '4px',
+        '2xl': '4px',
+        '3xl': '8px',
+        '4xl': '8px',
       },
       boxShadow: {
-        // Warm getint, zoals de JE Concept-elevatieschaal
-        card:   '0 1px 3px rgba(11, 22, 38, 0.06)',
-        'cue-md': '0 6px 24px rgba(11, 22, 38, 0.08)',
-        'cue-lg': '0 16px 48px rgba(11, 22, 38, 0.12)',
-        drawer: '-8px 0 48px rgba(11, 22, 38, 0.18)',
+        card: '0 1px 2px rgba(0,23,46,.05), 0 6px 16px -12px rgba(0,23,46,.18)',
+        'cue-md': '0 2px 4px rgba(0,23,46,.06), 0 18px 40px -24px rgba(0,23,46,.28)',
+        'cue-lg': '0 4px 8px rgba(0,23,46,.07), 0 40px 80px -36px rgba(0,23,46,.34)',
+        drawer: '-8px 0 48px rgba(0,23,46,.18)',
       },
       backgroundImage: {
-        'gradient-navy': 'linear-gradient(135deg, #112550 0%, #1A3A6B 60%, #243F75 100%)',
+        'gradient-navy': 'linear-gradient(180deg, #00172E 0%, #002246 100%)',
       },
     },
   },

@@ -34,6 +34,7 @@ export const COL = {
   postReviews: 'postReviews',
   automations: 'automations',
   activity: 'activity',
+  templates: 'templates',
 }
 
 export const col = (name) => collection(db, name)
@@ -50,7 +51,7 @@ export function toDate(value) {
 }
 
 const DATE_FIELDS = new Set([
-  'createdAt', 'updatedAt', 'completedAt', 'dueDate', 'startDate',
+  'createdAt', 'updatedAt', 'completedAt', 'dueDate', 'startDate', 'eventDate',
   'startedAt', 'endedAt', 'scheduledAt', 'lastSeenAt',
   'reviewRequestedAt', 'reviewedAt',
 ])

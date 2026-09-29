@@ -109,8 +109,14 @@ const bevat = (tekst, naald) => tekst.toLowerCase().includes(naald.toLowerCase()
 // ─── 1. Elke pagina opent ───────────────────────────────────────────────────
 
 const PAGINAS = [
-  ['Vandaag', '/', 'Dag Jasper'],
-  ['Mijn werk', '/mijn-werk', 'Mijn werk'],
+  ['Events', '/', 'Events'],
+  ['Events als lijst', '/?weergave=lijst', 'Aanvraag tot offerte'],
+  ['Kalender', '/kalender', 'Kalender'],
+  ['Event', '/events/t-trouw', 'Trouw Niels en Inez'],
+  ['Mijn taken', '/mijn-taken', 'Mijn taken'],
+  ['Taken per persoon', '/mijn-werk', 'Mijn werk'],
+  ['Werklast', '/werklast', 'Werklast'],
+  ['Vandaag', '/vandaag', 'Dag Jasper'],
   ['Bord Events', '/bord/l-overview', 'Events'],
   ['Bord Socials', '/bord/l-socials', 'Socials'],
   ['Socials', '/social', 'Socials'],
@@ -129,7 +135,7 @@ for (const [naam, pad, verwacht] of PAGINAS) {
     const page = await tabblad(pad)
     const tekst = await inhoud(page)
     zouden(tekst.length > 40, `leeg scherm op ${pad}`)
-    zouden(tekst.includes(verwacht), `"${verwacht}" staat niet op ${pad}`)
+    zouden(bevat(tekst, verwacht), `"${verwacht}" staat niet op ${pad}`)
     zouden(page.fouten.length === 0, `fouten op ${pad}: ${page.fouten.slice(0, 2).join(' | ')}`)
     await page.close()
   })
@@ -141,13 +147,14 @@ await test('een verdwenen pagina geeft geen wit scherm maar een uitleg', async (
   const page = await tabblad('/')
   verdwenen.add('/assets/Goals-')
 
+  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
   await page.getByRole('link', { name: 'Goals', exact: true }).first().click()
   await page.waitForTimeout(2500)
 
   const tekst = await inhoud(page)
   zouden(tekst.length > 40, 'het scherm is wit geworden')
   zouden(tekst.includes('opnieuw laden'), `geen uitleg, wel: ${tekst.slice(0, 80)}`)
-  zouden(tekst.includes('Vandaag'), 'de zijbalk is verdwenen; je kunt nergens heen')
+  zouden(tekst.includes('Mijn taken'), 'de zijbalk is verdwenen; je kunt nergens heen')
 
   verdwenen.delete('/assets/Goals-')
   await page.close()
@@ -164,16 +171,17 @@ await test('een kapotte pagina laat de rest van de tool staan', async () => {
   const page = await tabblad('/')
   verdwenen.add('/assets/TimeTracking-')
 
+  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
   await page.getByRole('link', { name: 'Uren' }).first().click()
   await page.waitForTimeout(2200)
   zouden((await inhoud(page)).includes('opnieuw laden'), 'geen uitleg na de fout')
 
   // En je kunt gewoon verder: een andere pagina hoort de melding weg te halen.
-  await page.getByRole('link', { name: 'Mijn werk' }).first().click()
+  await page.getByRole('link', { name: 'Mijn taken' }).first().click()
   await page.waitForTimeout(1200)
   const tekst = await inhoud(page)
   zouden(!tekst.includes('opnieuw laden'), 'de foutmelding bleef staan na het wegklikken')
-  zouden(tekst.includes('Mijn werk'), 'Mijn werk opende niet')
+  zouden(tekst.includes('Te laat') || tekst.includes('Vandaag'), 'Mijn taken opende niet')
 
   verdwenen.delete('/assets/TimeTracking-')
   await page.close()
@@ -199,10 +207,10 @@ await test('het socialbord toont de events vanaf ready to invoice', async () => 
 
 await test('de kalender en de posts blijven bestaan naast het eventbord', async () => {
   const page = await tabblad('/social')
-  await page.getByRole('button', { name: 'Kalender' }).click()
+  await page.getByRole('tab', { name: 'Kalender' }).click()
   await page.waitForTimeout(900)
   zouden((await inhoud(page)).includes('posts in'), 'de kalender opent niet')
-  await page.getByRole('button', { name: 'Posts', exact: true }).click()
+  await page.getByRole('tab', { name: 'Posts', exact: true }).click()
   await page.waitForTimeout(900)
   zouden(bevat(await inhoud(page), 'Goedgekeurd'), 'het postenbord opent niet')
   await page.close()
@@ -285,7 +293,7 @@ await test('het verloop van een doel is uit te klappen', async () => {
 
 await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   const page = await tabblad('/instellingen')
-  await page.getByRole('button', { name: 'Dagelijkse lijsten' }).click()
+  await page.getByRole('tab', { name: 'Dagelijkse lijsten' }).click()
   await page.waitForTimeout(800)
   // De titels staan in invoervelden, dus niet in de tekst van de pagina.
   const groepen = await page
@@ -303,6 +311,7 @@ await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   await page.waitForTimeout(600)
 
   // En het komt ook echt op de lijst van vandaag terecht.
+  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
   await page.getByRole('link', { name: 'Openen & sluiten' }).first().click()
   await page.waitForTimeout(1000)
   zouden(
@@ -315,7 +324,7 @@ await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
 
 await test('de business rules staan in de instellingen', async () => {
   const page = await tabblad('/instellingen')
-  await page.getByRole('button', { name: 'Business rules' }).click()
+  await page.getByRole('tab', { name: 'Business rules' }).click()
   await page.waitForTimeout(800)
   const tekst = await inhoud(page)
   zouden(tekst.includes('ready to invoice'), 'de facturatieregel ontbreekt')
@@ -325,7 +334,7 @@ await test('de business rules staan in de instellingen', async () => {
 
 await test('Mijn werk en Uren hebben een kalender', async () => {
   const werk = await tabblad('/mijn-werk')
-  await werk.getByRole('button', { name: 'Kalender' }).click()
+  await werk.getByRole('tab', { name: 'Kalender' }).click()
   await werk.waitForTimeout(900)
   const wt = await inhoud(werk)
   zouden(bevat(wt, 'ma'), 'geen weekdagen in de kalender')
@@ -334,7 +343,7 @@ await test('Mijn werk en Uren hebben een kalender', async () => {
   await werk.close()
 
   const uren = await tabblad('/uren')
-  await uren.getByRole('button', { name: 'Kalender' }).click()
+  await uren.getByRole('tab', { name: 'Kalender' }).click()
   await uren.waitForTimeout(900)
   zouden(bevat(await inhoud(uren), 'deze maand'), 'geen maandtotaal op de urenkalender')
   zouden(uren.fouten.length === 0, `fouten: ${uren.fouten[0]}`)
@@ -343,7 +352,7 @@ await test('Mijn werk en Uren hebben een kalender', async () => {
 
 await test('een punt kan om een datum vragen, en die blijft staan', async () => {
   const page = await tabblad('/openen-sluiten')
-  await page.getByRole('button', { name: 'FAVV-registraties' }).click()
+  await page.getByRole('tab', { name: 'FAVV-registraties' }).click()
   await page.waitForTimeout(900)
 
   const veld = page.getByLabel(/Laatst vervangen op voor Frituurolie/)
@@ -357,7 +366,7 @@ await test('een punt kan om een datum vragen, en die blijft staan', async () => 
 
 await test('een onderwerp op de socialkalender komt bij Charish', async () => {
   const page = await tabblad('/social')
-  await page.getByRole('button', { name: 'Kalender' }).click()
+  await page.getByRole('tab', { name: 'Kalender' }).click()
   await page.waitForTimeout(900)
 
   const veld = page.getByLabel('Onderwerp toevoegen')
@@ -383,10 +392,58 @@ await test('een subtaak opent zijn eigen fiche', async () => {
   await page.close()
 })
 
-await test('de lopende timer staat in de bovenbalk', async () => {
-  const page = await tabblad('/bord/l-overview')
-  const balk = await page.locator('header').first().innerText()
-  zouden(/\d+:\d\d:\d\d/.test(balk), `geen loper in de balk: ${balk.replace(/\n/g, ' ')}`)
+await test('de lopende timer staat in de zijbalk', async () => {
+  const page = await tabblad('/')
+  const balk = await page.locator('aside').first().innerText()
+  zouden(/\d+:\d\d:\d\d/.test(balk), `geen loper in de zijbalk: ${balk.replace(/\n/g, ' ')}`)
+  zouden(balk.includes('Drankenlijst finaliseren'), 'de taak van de timer staat er niet')
+  await page.close()
+})
+
+// ─── Het design: events, pijplijn, templates ────────────────────────────────
+
+await test('een aanvraag zonder klant, gasten en offerte gaat niet naar de offertestap', async () => {
+  const page = await tabblad('/events/t-ruben')
+  const knop = page.getByRole('button', { name: /Naar offerte maken/i })
+  zouden(await knop.isDisabled(), 'de knop naar de offertestap is niet geblokkeerd')
+  zouden((await inhoud(page)).includes('Vul klant, datum, aantal gasten en offertebedrag in'), 'geen uitleg bij de blokkering')
+  await page.close()
+})
+
+await test('een nieuw event uit een template krijgt zijn taken met deadlines', async () => {
+  const page = await tabblad('/')
+  await page.getByRole('button', { name: 'Nieuw event' }).click()
+  await page.getByPlaceholder('bv. Trouw Tom en Sara').fill('Trouw Tom en Sara')
+  await page.getByRole('button', { name: /Huwelijk/ }).click()
+  await page.getByRole('button', { name: 'Event aanmaken' }).click()
+  await page.waitForTimeout(1200)
+  const tekst = await inhoud(page)
+  zouden(tekst.includes('Trouw Tom en Sara'), 'het event opende niet')
+  zouden(tekst.includes('Voorschot 40% ontvangen'), 'de taken uit het template staan er niet')
+  zouden(bevat(tekst, 'Taken · 8'), `niet alle acht taken: ${tekst.match(/Taken · \d+/i)?.[0]}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een taak afvinken telt mee in de voortgang', async () => {
+  const page = await tabblad('/events/t-trouw')
+  const voor = (await inhoud(page)).match(/Taken · (\d+)/i)?.[1]
+  await page.locator('.je-check').first().click()
+  await page.waitForTimeout(600)
+  const na = (await inhoud(page)).match(/Taken · (\d+)/i)?.[1]
+  zouden(Number(na) === Number(voor) - 1, `open taken ${voor} → ${na}`)
+  await page.close()
+})
+
+await test('de zoekbalk vindt events en taken', async () => {
+  const page = await tabblad('/')
+  await page.getByLabel('Zoeken').fill('drankenlijst')
+  await page.waitForTimeout(400)
+  const tekst = await inhoud(page)
+  zouden(tekst.includes('Drankenlijst finaliseren'), 'de taak wordt niet gevonden')
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(800)
+  zouden((await inhoud(page)).includes('Trouw Niels en Inez'), 'Enter opent het event niet')
   await page.close()
 })
 

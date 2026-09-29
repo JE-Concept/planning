@@ -84,6 +84,8 @@ describe('wanneer een regel vuurt', () => {
     const r = regel({ trigger: { kind: 'created' }, actions: [{ kind: 'priority', value: 2 }] })
     expect(ruleFires(r, { task: taak(), before: null })).toBe(true)
     expect(ruleFires(r, { task: taak(), before: taak({ statusName: 'request' }) })).toBe(false)
+    // Een taak onder een event valt buiten de regels.
+    expect(ruleFires(r, { task: taak({ parentId: 'event-1' }), before: null })).toBe(false)
   })
 
   it('geeft een lege patch wanneer er niets te veranderen valt', () => {

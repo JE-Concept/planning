@@ -1,33 +1,56 @@
 import { cn } from '@lib/cn'
+import { Icon } from '@components/ds'
+import { Link } from 'react-router-dom'
 
-export default function PageHeader({ title, subtitle, actions, tabs, className }) {
+/**
+ * De kop van elk scherm, zoals in het design: een eyebrow in brede kapitalen,
+ * de titel in Oswald, en de acties rechts onderaan uitgelijnd.
+ *
+ * Schermen die nog geen eyebrow meegeven (de oudere pagina's) tonen hun
+ * ondertitel als een rustige regel onder de titel.
+ */
+export default function PageHeader({ title, eyebrow, subtitle, actions, tabs, back, className }) {
   return (
-    <div className={cn('border-b border-ink-200 bg-white px-4 pt-4 sm:px-6', className)}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="truncate font-display text-xl font-extrabold text-ink-900">{title}</h1>
-          {subtitle ? <p className="mt-0.5 text-sm text-ink-500">{subtitle}</p> : null}
-        </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    <header className={cn('je-pagehead', className)}>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        {back ? (
+          <Link
+            to={back.to}
+            className="je-plainbtn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 'var(--space-4)',
+              color: 'var(--text-2)',
+              font: 'var(--type-body-sm)',
+              textDecoration: 'none',
+            }}
+          >
+            <Icon name="chevron-left" size={16} />
+            {back.label}
+          </Link>
+        ) : null}
+        {eyebrow ? <div className="je-eyebrow">{eyebrow}</div> : null}
+        <h1>{title}</h1>
+        {subtitle ? <p className="je-muted-caption" style={{ marginTop: 4, fontSize: 13 }}>{subtitle}</p> : null}
       </div>
-      {tabs ? <div className="mt-3 flex gap-1 overflow-x-auto">{tabs}</div> : null}
-      {!tabs ? <div className="h-4" /> : null}
-    </div>
+      {actions ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>{actions}</div>
+      ) : null}
+      {tabs ? (
+        <div className="je-tabs je-tabs--scroll" style={{ flexBasis: '100%', marginBottom: 'calc(-1 * var(--space-6) - 1px)', border: 0 }}>
+          {tabs}
+        </div>
+      ) : null}
+    </header>
   )
 }
 
+/** Tab in de kop van een ouder scherm; zelfde vorm als de tabs in het design. */
 export function Tab({ active, children, ...props }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        'whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors',
-        active
-          ? 'border-accent-600 font-medium text-accent-700'
-          : 'border-transparent text-ink-500 hover:text-ink-800'
-      )}
-      {...props}
-    >
+    <button type="button" role="tab" aria-selected={!!active} className={cn('je-tab', active && 'je-tab--active')} {...props}>
       {children}
     </button>
   )

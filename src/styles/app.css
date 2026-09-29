@@ -1,0 +1,472 @@
+/*
+ * De bouwstenen van de JE Plan-schermen, afgeleid van de inline stijlen in het
+ * design (Planning.dc.html). Elke waarde is een token uit je-ds.css; wat hier
+ * staat, staat daar ook — alleen één keer benoemd in plaats van per element.
+ */
+
+/* ── Kleine vormen ─────────────────────────────────────────────────────── */
+
+.je-hexchip {
+  clip-path: var(--clip-hex);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+}
+
+.je-caps {
+  font: var(--type-caption);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.je-muted-caption {
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.je-bar {
+  display: block;
+  background: var(--surface-2);
+}
+.je-bar > span {
+  display: block;
+  height: 100%;
+}
+
+.je-tabs--scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.je-tabs--scroll::-webkit-scrollbar {
+  display: none;
+}
+.je-tab {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Vlakken ───────────────────────────────────────────────────────────── */
+
+.je-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  min-width: 0;
+}
+.je-panel__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-panel__sub {
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+}
+.je-panel__right {
+  margin-left: auto;
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+.je-row + .je-row {
+  border-top: 1px solid var(--border-hairline);
+}
+
+.je-stat {
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  padding: var(--space-5) var(--space-6);
+}
+.je-stat__value {
+  font: var(--type-h2);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.je-plainbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.je-hover-quiet:hover {
+  background: var(--accent-quiet);
+}
+
+.je-underline-input {
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  outline: none;
+  background: transparent;
+  font: var(--type-body-sm);
+  color: var(--text-1);
+  padding: 4px 0;
+}
+.je-underline-input:focus {
+  border-bottom-color: var(--accent);
+  box-shadow: none;
+}
+
+/* ── De schil ──────────────────────────────────────────────────────────── */
+
+.je-shell {
+  display: flex;
+  height: 100%;
+  background: var(--canvas);
+  color: var(--text-1);
+  font: var(--type-body);
+  overflow: hidden;
+  position: relative;
+}
+
+.je-side {
+  width: 248px;
+  flex: 0 0 248px;
+  background: var(--navy-950);
+  padding: var(--space-6) 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.je-side__logo {
+  padding: 0 var(--space-6) var(--space-7);
+  display: block;
+  border: 0;
+}
+.je-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 11px var(--space-6);
+  background: transparent;
+  border: 0;
+  border-left: 2px solid transparent;
+  color: var(--navy-300);
+  font: var(--type-body-sm);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  transition: var(--transition-control);
+}
+.je-nav:hover {
+  color: var(--white);
+}
+.je-nav--on {
+  background: var(--accent-quiet);
+  border-left-color: var(--navy-100);
+  color: var(--white);
+}
+.je-nav__count {
+  margin-left: auto;
+  font: var(--type-caption);
+  color: var(--navy-400);
+}
+.je-nav--minor {
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 13px;
+}
+.je-side__group {
+  margin: var(--space-6) var(--space-6) var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: calc(100% - 2 * var(--space-6));
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: var(--type-eyebrow);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--navy-400);
+}
+.je-side__group:hover {
+  color: var(--navy-200);
+}
+.je-side__timer {
+  margin: var(--space-7) var(--space-6) 0;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.je-side__clock {
+  font: var(--fw-medium) 34px/1 var(--font-display);
+  color: var(--white);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.je-side__me {
+  margin-top: auto;
+  padding: var(--space-6);
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  position: relative;
+}
+
+.je-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.je-mobilebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--navy-950);
+}
+.je-mobilebar__timer {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--accent-quiet);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  color: var(--white);
+  padding: 6px 10px;
+  font: var(--fw-medium) 15px/1 var(--font-display);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.je-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-8);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-hairline);
+  position: relative;
+  z-index: 30;
+}
+
+.je-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--canvas);
+  border: 1px solid var(--border-hairline);
+  border-radius: 2px;
+  color: var(--text-2);
+  transition: border-color 160ms var(--ease-brand);
+}
+.je-search--open {
+  border-color: var(--border-accent);
+}
+.je-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: var(--type-body-sm);
+  color: var(--text-1);
+}
+.je-search input:focus-visible {
+  box-shadow: none;
+}
+.je-kbd {
+  font: var(--type-caption);
+  color: var(--text-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: 2px;
+  padding: 0 6px;
+  line-height: 18px;
+}
+.je-results {
+  position: absolute;
+  top: 46px;
+  left: 0;
+  right: 0;
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  box-shadow: var(--shadow-2);
+  max-height: 440px;
+  overflow-y: auto;
+  padding: var(--space-3) 0;
+}
+
+.je-pagehead {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-8);
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--surface-1);
+}
+.je-pagehead h1 {
+  font: var(--type-h2);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-h2);
+  margin: 6px 0 0;
+  text-wrap: pretty;
+}
+.je-pagebody {
+  padding: var(--space-7) var(--space-8);
+}
+
+.je-bottomnav {
+  display: grid;
+  border-top: 1px solid var(--border-hairline);
+  background: var(--surface-1);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.je-bottomnav a,
+.je-bottomnav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 12px;
+  min-height: 56px;
+  background: none;
+  border: 0;
+  border-top: 2px solid transparent;
+  color: var(--text-2);
+  font: var(--type-caption);
+  cursor: pointer;
+  text-decoration: none;
+}
+.je-bottomnav .je-on {
+  border-top-color: var(--navy-700);
+  color: var(--text-accent);
+}
+
+.je-chat {
+  width: 380px;
+  flex: 0 0 380px;
+  height: 100%;
+  z-index: 40;
+  background: var(--surface-1);
+  border-left: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+}
+
+.je-menu {
+  position: absolute;
+  bottom: calc(100% - 8px);
+  left: var(--space-5);
+  right: var(--space-5);
+  background: var(--surface-1);
+  color: var(--text-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  box-shadow: var(--shadow-2);
+  padding: var(--space-2) 0;
+  z-index: 50;
+}
+.je-menu button {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: var(--space-3) var(--space-5);
+  font: var(--type-body-sm);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.je-menu button:hover {
+  background: var(--accent-quiet);
+}
+
+/* Smal scherm: de schil wordt een app met een balk onderaan. */
+@media (max-width: 999px) {
+  .je-topbar {
+    padding-left: var(--space-5);
+    padding-right: var(--space-5);
+  }
+  .je-pagehead {
+    padding: var(--space-5);
+  }
+  .je-pagebody {
+    padding: var(--space-5);
+  }
+  .je-chat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    flex: none;
+  }
+}
+
+/* ── Events ────────────────────────────────────────────────────────────── */
+
+.je-boardcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  padding: var(--space-4);
+  transition: border-color 160ms var(--ease-brand), box-shadow 160ms var(--ease-brand);
+  cursor: pointer;
+}
+.je-boardcard:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-1);
+}
+.je-calchip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  background: var(--navy-50);
+  border: 1px solid var(--border-hairline);
+  border-radius: 2px;
+  padding: 3px 6px;
+  cursor: pointer;
+  font: var(--type-caption);
+  color: var(--text-1);
+  text-align: left;
+}
+.je-calchip:hover {
+  border-color: var(--border-accent);
+}
+.je-fiche {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.je-fiche > * {
+  padding: var(--space-4) var(--space-5);
+  border-right: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
+  margin: 0 -1px -1px 0;
+}
+.je-fiche button:hover {
+  background: var(--accent-quiet);
+}
+.je-link-quiet:hover {
+  color: var(--text-accent) !important;
+}

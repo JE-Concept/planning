@@ -1,33 +1,56 @@
-import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import { Avatar, Button, Spinner } from '@ui/index'
+import { useEffect, useMemo } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { cn } from '@lib/cn'
+import { formatDuration } from '@lib/format'
+import { indexOf } from '@lib/pipeline'
+import { useNarrow } from '@lib/useNarrow'
+import { Button, Icon, IconButton, Logotype } from '@components/ds'
+import { Spinner } from '@ui/index'
+import { AssistantProvider, useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
-import { useWorkspace } from '@context/WorkspaceProvider'
-import { useNavCounts } from '@data/counts'
 import { useToast } from '@context/ToastProvider'
+import { useWorkspace } from '@context/WorkspaceProvider'
+import { EventsProvider, useEvents } from '@data/events'
+import { useNavCounts } from '@data/counts'
+import { stopTimer, useRunningTimer } from '@data/time'
 import { luisterNaarMeldingen } from '@lib/push'
-import Sidebar from './Sidebar'
-import TimerWidget from './TimerWidget'
-import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
+import AssistantPanel from './AssistantPanel'
+import GlobalSearch from './GlobalSearch'
+import Sidebar, { mainNav } from './Sidebar'
 
+/**
+ * De schil uit het design: donkere zijbalk links, een witte balk met zoeken
+ * en de assistent bovenaan, het scherm, en de assistent als paneel rechts.
+ * Onder 1000px breed: een donkere balk met logo en timer bovenaan, en de
+ * navigatie als balk onderaan.
+ */
 export default function AppShell({ children }) {
-  const { profile, logOut, isStaff } = useAuth()
+  return (
+    <EventsProvider>
+      <AssistantProvider>
+        <Shell>{children}</Shell>
+      </AssistantProvider>
+    </EventsProvider>
+  )
+}
+
+function Shell({ children }) {
+  const { isStaff, isAdmin, uid } = useAuth()
   const { loading, error } = useWorkspace()
-  const counts = useNavCounts()
+  const { events } = useEvents()
+  const navCounts = useNavCounts()
   const toast = useToast()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [accountOpen, setAccountOpen] = useState(false)
+  const narrow = useNarrow()
   const location = useLocation()
+  const { open, setOpen } = useAssistant()
 
-  // A tap on a sidebar link should not leave the drawer covering the page.
-  useEffect(() => {
-    setMenuOpen(false)
-    setAccountOpen(false)
-  }, [location.pathname])
+  // Zoals in het design: op een breed scherm staat de assistent open tot je
+  // hem sluit (dat wordt onthouden), op een telefoon dicht — daar zou hij het
+  // hele scherm afdekken.
+  const chatOpen = !isStaff && (narrow ? open === true : open ?? true)
 
-  // Een melding terwijl de app open staat toont de browser niet zelf — en een
-  // systeempopup met de app voor je neus is ook overdreven. Hier wordt het een
-  // toast, zodat je het wel ziet.
+  // Een melding terwijl de app open staat toont de browser niet zelf — dan
+  // wordt het een toast.
   useEffect(() => {
     let stop = () => {}
     luisterNaarMeldingen(({ title, body }) => toast.success([title, body].filter(Boolean).join(' — ')))
@@ -38,97 +61,58 @@ export default function AppShell({ children }) {
     return () => stop()
   }, [toast])
 
+  // Wie op een telefoon naar een ander scherm gaat, wil de assistent niet
+  // eroverheen zien liggen.
+  useEffect(() => {
+    if (narrow) setOpen((o) => (o === true ? null : o))
+  }, [location.pathname, narrow, setOpen])
+
+  const counts = useMemo(
+    () => ({
+      ...navCounts,
+      '/': events.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice')).length || null,
+    }),
+    [navCounts, events]
+  )
+
+  const nav = mainNav({ isAdmin, isStaff })
+
   return (
-    <div className="flex h-full">
-      <div className="hidden md:block">
-        <Sidebar counts={counts} />
-      </div>
+    <div className="je-shell">
+      {narrow ? null : <Sidebar counts={counts} />}
 
-      {menuOpen ? (
-        <div className="fixed inset-0 z-40 flex md:hidden">
-          <div
-            className="absolute inset-0 bg-ink-950/50"
-            onClick={() => setMenuOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="relative z-10">
-            <Sidebar counts={counts} onNavigate={() => setMenuOpen(false)} />
+      <main className="je-main">
+        {narrow ? <MobileBar uid={uid} isStaff={isStaff} /> : null}
+
+        {isStaff ? null : (
+          <div className="je-topbar">
+            <GlobalSearch narrow={narrow} />
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              {narrow ? (
+                <IconButton icon="sparkles" label="Assistent" variant="outline" onClick={() => setOpen(!chatOpen)} />
+              ) : (
+                <Button variant={chatOpen ? 'primary' : 'secondary'} size="sm" iconLeft="sparkles" onClick={() => setOpen(!chatOpen)}>
+                  Assistent
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      ) : null}
+        )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-ink-200 bg-white px-3 sm:px-5">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Menu openen"
-          >
-            ☰
-          </Button>
-
-          <div className="flex-1" />
-
-          {/* Personeel registreert geen uren in dit tool, en mag de lopende
-              timers niet lezen — de widget zou dus enkel een rechtenfout
-              opleveren. */}
-          {isStaff ? null : <TimerWidget />}
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setAccountOpen((o) => !o)}
-              aria-expanded={accountOpen}
-              aria-haspopup="menu"
-              className="flex items-center gap-2 rounded-md p-1 hover:bg-ink-100"
-            >
-              <Avatar profile={profile} size="md" />
-            </button>
-
-            {accountOpen ? (
-              <div
-                role="menu"
-                className="absolute right-0 top-11 z-40 w-56 rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
-              >
-                <div className="border-b border-ink-100 px-3 py-2">
-                  <p className="truncate text-sm font-medium text-ink-900">
-                    {profile?.fullName || profile?.email}
-                  </p>
-                  <p className="truncate text-xs text-ink-500">{profile?.email}</p>
-                </div>
-                <InstallMenuItem />
-                <PushMenuItem />
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={logOut}
-                  className="w-full px-3 py-2 text-left text-sm text-ink-700 hover:bg-ink-50"
-                >
-                  Afmelden
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </header>
-
-        <main className="min-h-0 flex-1 overflow-y-auto">
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {loading ? (
-            <div className="flex h-full items-center justify-center gap-2 text-sm text-ink-500">
+            <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }} className="je-muted-caption">
               <Spinner /> Werkruimte laden…
             </div>
           ) : error ? (
-            <div className="flex h-full items-center justify-center p-6 text-center">
-              <div className="max-w-sm">
-                <p className="font-display text-lg font-extrabold text-ink-900">
-                  De werkruimte laadt niet
+            <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
+              <div style={{ maxWidth: 380 }}>
+                <h2 style={{ font: 'var(--type-h3)', textTransform: 'uppercase' }}>De werkruimte laadt niet</h2>
+                <p style={{ marginTop: 8, font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
+                  Er ging iets mis bij het ophalen van de lijsten en de mensen. Herlaad de pagina; blijft het staan, geef
+                  dan deze melding door: {error.code ?? error.message}
                 </p>
-                <p className="mt-2 text-sm text-ink-600">
-                  Er ging iets mis bij het ophalen van de lijsten en de mensen. Herlaad de pagina;
-                  blijft het staan, geef dan deze melding door: {error.code ?? error.message}
-                </p>
-                <Button variant="primary" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+                <Button size="sm" style={{ marginTop: 16 }} onClick={() => window.location.reload()}>
                   Herladen
                 </Button>
               </div>
@@ -136,8 +120,63 @@ export default function AppShell({ children }) {
           ) : (
             children
           )}
-        </main>
-      </div>
+        </div>
+
+        {narrow && nav.length > 1 ? (
+          <nav className="je-bottomnav" style={{ gridTemplateColumns: `repeat(${nav.length}, 1fr)` }}>
+            {nav.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) => cn((item.match ? item.match(location.pathname) : isActive) && 'je-on')}
+              >
+                <Icon name={item.icon} size={20} />
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        ) : null}
+      </main>
+
+      {chatOpen ? <AssistantPanel /> : null}
+    </div>
+  )
+}
+
+function MobileBar({ uid, isStaff }) {
+  const { timer, elapsed } = useRunningTimer(isStaff ? null : uid)
+  const toast = useToast()
+  const { logOut } = useAuth()
+
+  return (
+    <div className="je-mobilebar je-night">
+      <NavLink to="/" style={{ border: 0 }}>
+        <Logotype size={28} invert />
+      </NavLink>
+      {timer ? (
+        <button
+          type="button"
+          className="je-mobilebar__timer"
+          onClick={async () => {
+            const id = await stopTimer(uid)
+            toast.success(id ? `Gestopt — ${formatDuration(elapsed)} geboekt.` : 'Te kort, niets geboekt.')
+          }}
+          aria-label="Timer stoppen en boeken"
+        >
+          <Icon name="square" size={14} />
+          {formatDuration(elapsed, { withSeconds: true })}
+        </button>
+      ) : null}
+      {/* Afmelden en de extra schermen: op een telefoon via Meer. */}
+      <span style={{ marginLeft: timer ? 0 : 'auto', color: 'var(--navy-300)', display: 'flex', gap: 4 }}>
+        {isStaff ? null : (
+          <NavLink to="/meer" aria-label="Meer" className="je-iconbtn je-iconbtn--sm" style={{ color: 'inherit', border: 0 }}>
+            <Icon name="menu" size={16} />
+          </NavLink>
+        )}
+        <IconButton icon="log-out" label="Afmelden" size="sm" onClick={logOut} />
+      </span>
     </div>
   )
 }

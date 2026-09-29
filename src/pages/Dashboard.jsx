@@ -83,7 +83,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            <Link to="/mijn-werk" className="mt-3 inline-block text-xs font-medium text-accent-700 hover:underline">
+            <Link to="/mijn-taken" className="mt-3 inline-block text-xs font-medium text-accent-700 hover:underline">
               Alles bekijken →
             </Link>
           </section>

@@ -1,9 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { onSnapshot, orderBy, query } from 'firebase/firestore'
-import { COL, col, fromQuery } from '@lib/collections'
+import { doc, onSnapshot, orderBy, query } from 'firebase/firestore'
+import { COL, col, fromQuery, normalise } from '@lib/collections'
+import { db } from '@lib/firebase'
+import { isPipelineList } from '@lib/pipeline'
+import { DEFAULT_TEMPLATES } from '@data/templates'
 import { useAuth } from './AuthProvider'
 
 const WorkspaceContext = createContext(null)
+
+/** Tijd boeken zonder event (briefing §7: "Internal work" is een kostenplaats). */
+export const DEFAULT_COST_CENTERS = [
+  { name: 'Intern werk', billable: false },
+  { name: 'Administratie & facturatie', billable: false },
+  { name: 'Socials algemeen', billable: true },
+]
 
 /**
  * The small, slow-moving collections — people, brands, spaces, lists, tags.
@@ -19,6 +29,9 @@ export function WorkspaceProvider({ children }) {
     folders: [],
     lists: [],
     tags: [],
+    templates: [],
+    access: null,
+    workspaceConfig: null,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -31,7 +44,7 @@ export function WorkspaceProvider({ children }) {
     // rechtenfouten op in plaats van een lijst.
     const pending = isStaff
       ? new Set(['profiles'])
-      : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags'])
+      : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags', 'templates'])
     const settle = (key) => {
       pending.delete(key)
       if (pending.size === 0) setLoading(false)
@@ -67,6 +80,20 @@ export function WorkspaceProvider({ children }) {
             subscribe('folders', query(col(COL.folders), orderBy('position'))),
             subscribe('lists', query(col(COL.lists), orderBy('position'))),
             subscribe('tags', query(col(COL.tags), orderBy('name'))),
+            subscribe('templates', query(col(COL.templates), orderBy('position'))),
+            // Instellingen die het design toont: de toegelaten domeinen en de
+            // kostenplaatsen. Twee kleine documenten; ontbreken ze, dan gelden
+            // de standaarden. Ze tellen niet mee voor "geladen".
+            onSnapshot(
+              doc(db, COL.config, 'access'),
+              (snap) => setData((c) => ({ ...c, access: snap.exists() ? snap.data() : null })),
+              () => {}
+            ),
+            onSnapshot(
+              doc(db, COL.config, 'workspace'),
+              (snap) => setData((c) => ({ ...c, workspaceConfig: snap.exists() ? normalise(snap.data()) : null })),
+              () => {}
+            ),
           ]),
     ]
 
@@ -76,9 +103,17 @@ export function WorkspaceProvider({ children }) {
   const value = useMemo(() => {
     const byId = (items) => Object.fromEntries(items.map((i) => [i.id, i]))
     const activeLists = data.lists.filter((l) => !l.archived)
+    const eventsList = activeLists.find(isPipelineList) ?? null
+    const templates = data.templates.length ? data.templates : DEFAULT_TEMPLATES
 
     return {
       ...data,
+      templates,
+      templatesStored: data.templates.length > 0,
+      eventsList,
+      eventStatuses: [...(eventsList?.statuses ?? [])].sort((a, b) => a.position - b.position),
+      allowedDomains: data.access?.allowedDomains ?? ['jeconcept.be', 'kenjeklanten.be'],
+      costCenters: data.workspaceConfig?.costCenters ?? DEFAULT_COST_CENTERS,
       loading,
       error,
       activeLists,

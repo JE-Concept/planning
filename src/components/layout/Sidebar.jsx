@@ -1,130 +1,237 @@
 import { useMemo, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@lib/cn'
-import { Dot } from '@ui/index'
+import { formatDuration } from '@lib/format'
+import { periodKeys } from '@lib/time-math'
+import { Button, Hex, Icon, IconButton, Logotype, initialsOf } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
+import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
+import { useEvents, useWeekEntries } from '@data/events'
+import { stopTimer, useRunningTimer } from '@data/time'
+import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
 
-const MAIN = [
-  { to: '/', label: 'Vandaag', end: true, icon: '◴' },
-  { to: '/mijn-werk', label: 'Mijn werk', icon: '☑' },
-  { to: '/klanten', label: 'Klanten', icon: '☗' },
-  { to: '/social', label: 'Socials', icon: '▦' },
-  { to: '/openen-sluiten', label: 'Openen & sluiten', icon: '☑' },
-  { to: '/overleg', label: 'Teamoverleg', icon: '✎' },
-  { to: '/uren', label: 'Uren', icon: '⏱' },
-  { to: '/goals', label: 'Goals', icon: '◎' },
+/**
+ * De hoofdnavigatie uit het design: vijf plekken, en wat verder bestaat (de
+ * oudere schermen en de andere borden) onder "Meer", zodat niets verdwijnt
+ * maar ook niets in de weg staat.
+ */
+export function mainNav({ isAdmin, isStaff }) {
+  if (isStaff) return [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' }]
+  return [
+    { to: '/', icon: 'layout-dashboard', label: 'Events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
+    { to: '/mijn-taken', icon: 'check-circle', label: 'Mijn taken' },
+    { to: '/kalender', icon: 'calendar-days', label: 'Kalender' },
+    { to: '/werklast', icon: 'users', label: 'Werklast' },
+    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', label: 'Instellingen' }] : []),
+  ]
+}
+
+export const MORE = [
+  { to: '/vandaag', icon: 'sun', label: 'Vandaag' },
+  { to: '/mijn-werk', icon: 'list-checks', label: 'Taken per persoon' },
+  { to: '/klanten', icon: 'building', label: 'Klanten' },
+  { to: '/social', icon: 'share-2', label: 'Socials' },
+  { to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' },
+  { to: '/overleg', icon: 'messages-square', label: 'Teamoverleg' },
+  { to: '/uren', icon: 'timer', label: 'Uren' },
+  { to: '/goals', icon: 'target', label: 'Goals' },
 ]
 
-function itemClass({ isActive }) {
-  return cn(
-    'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors',
-    isActive
-      ? 'bg-ink-800 font-medium text-white'
-      : 'text-ink-300 hover:bg-ink-800/60 hover:text-white'
+export const ROLE_LABEL = {
+  owner: 'Eigenaar',
+  admin: 'Beheerder',
+  member: 'Lid',
+  staff: 'Personeel',
+  guest: 'Gast',
+}
+
+export default function Sidebar({ counts = {} }) {
+  const { isAdmin, isStaff } = useAuth()
+  const { boards, eventsList } = useWorkspace()
+  const location = useLocation()
+  const otherBoards = boards.filter((l) => l.id !== eventsList?.id)
+  const moreActive = [...MORE.map((m) => m.to), '/bord'].some((p) => location.pathname.startsWith(p))
+  const [moreOpen, setMoreOpen] = useState(moreActive)
+
+  const nav = mainNav({ isAdmin, isStaff })
+
+  return (
+    <aside className="je-side je-night" aria-label="Hoofdnavigatie">
+      <NavLink to="/" className="je-side__logo">
+        <Logotype size={38} invert />
+      </NavLink>
+
+      <nav style={{ display: 'flex', flexDirection: 'column' }}>
+        {nav.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              cn('je-nav', (item.match ? item.match(location.pathname) : isActive) && 'je-nav--on')
+            }
+          >
+            <Icon name={item.icon} size={17} />
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {counts[item.to] ? <span className="je-nav__count">{counts[item.to]}</span> : null}
+          </NavLink>
+        ))}
+      </nav>
+
+      {isStaff ? null : (
+        <>
+          <button
+            type="button"
+            className="je-side__group"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen((o) => !o)}
+          >
+            <span style={{ flex: 1, textAlign: 'left' }}>Meer</span>
+            <Icon name={moreOpen ? 'chevron-down' : 'chevron-right'} size={14} />
+          </button>
+          {moreOpen ? (
+            <nav style={{ display: 'flex', flexDirection: 'column' }}>
+              {MORE.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => cn('je-nav je-nav--minor', isActive && 'je-nav--on')}
+                >
+                  <Icon name={item.icon} size={15} />
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {counts[item.to] ? <span className="je-nav__count">{counts[item.to]}</span> : null}
+                </NavLink>
+              ))}
+              {otherBoards.map((list) => (
+                <NavLink
+                  key={list.id}
+                  to={`/bord/${list.id}`}
+                  className={({ isActive }) => cn('je-nav je-nav--minor', isActive && 'je-nav--on')}
+                >
+                  <Icon name="kanban" size={15} />
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {list.name}
+                  </span>
+                </NavLink>
+              ))}
+            </nav>
+          ) : null}
+
+          <SideTimer />
+        </>
+      )}
+
+      <Me />
+    </aside>
   )
 }
 
-export default function Sidebar({ onNavigate, counts = {} }) {
-  const { spaces, boards, folderById } = useWorkspace()
-  const { isStaff } = useAuth()
-  const [collapsed, setCollapsed] = useState({})
+/** De timer onderaan de zijbalk: altijd zichtbaar, want een timer die je moet gaan zoeken vergeet je. */
+function SideTimer() {
+  const { uid } = useAuth()
+  const toast = useToast()
+  const { timer, elapsed } = useRunningTimer(uid)
+  const { tasks, eventById } = useEvents()
+  const week = periodKeys(new Date()).week
+  const entries = useWeekEntries(week)
+  const [busy, setBusy] = useState(false)
 
-  const main = isStaff ? MAIN.filter((item) => item.to === '/openen-sluiten') : MAIN
+  const booked = useMemo(
+    () => entries.filter((e) => e.profileId === uid).reduce((a, e) => a + (e.durationSeconds ?? 0), 0),
+    [entries, uid]
+  )
 
-  // Boards hang under their space; a space with no boards is noise in a
-  // sidebar, so it only appears once it has one.
-  const grouped = useMemo(() => {
-    return spaces
-      .map((space) => ({
-        space,
-        lists: boards
-          .filter((l) => l.spaceId === space.id)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
-      }))
-      .filter((group) => group.lists.length > 0)
-  }, [spaces, boards])
+  const task = timer?.taskId ? tasks.find((t) => t.id === timer.taskId) : null
+  const eventName = task ? eventById[task.parentId]?.name : eventById[timer?.taskId]?.name ?? timer?.listName
+
+  const stop = async () => {
+    setBusy(true)
+    try {
+      const id = await stopTimer(uid)
+      toast.success(id ? `Gestopt — ${formatDuration(elapsed)} geboekt.` : 'Te kort, niets geboekt.')
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
-    <nav
-      aria-label="Hoofdnavigatie"
-      className="flex h-full w-60 shrink-0 flex-col gap-4 overflow-y-auto bg-navy-dark px-3 py-4"
-    >
-      <NavLink to="/" onClick={onNavigate} className="flex items-center gap-2 px-2.5">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-600 text-xs font-bold text-white">
-          JE
-        </span>
-        <span className="text-sm font-semibold text-white">Plan</span>
-      </NavLink>
-
-      <ul className="space-y-0.5">
-        {main.map((item) => (
-          <li key={item.to}>
-            <NavLink to={item.to} end={item.end} className={itemClass} onClick={onNavigate}>
-              <span aria-hidden="true" className="w-4 text-center text-ink-400">
-                {item.icon}
-              </span>
-              <span className="flex-1 truncate">{item.label}</span>
-              {counts[item.to] ? (
-                <span
-                  className="shrink-0 text-xs font-semibold tabular-nums text-ink-400"
-                  aria-label={`${counts[item.to]} openstaand`}
-                >
-                  {counts[item.to]}
-                </span>
-              ) : null}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-
-      <div className="space-y-3">
-        {(isStaff ? [] : grouped).map(({ space, lists }) => (
-          <div key={space.id}>
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => ({ ...c, [space.id]: !c[space.id] }))}
-              aria-expanded={!collapsed[space.id]}
-              className="flex w-full items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-400 hover:text-ink-200"
-            >
-              <span aria-hidden="true">{collapsed[space.id] ? '▸' : '▾'}</span>
-              <Dot color={space.color} />
-              <span className="truncate">{space.name}</span>
-            </button>
-
-            {!collapsed[space.id] ? (
-              <ul className="space-y-0.5">
-                {lists.map((list) => (
-                  <li key={list.id}>
-                    <NavLink
-                      to={`/bord/${list.id}`}
-                      className={itemClass}
-                      onClick={onNavigate}
-                      title={folderById[list.folderId]?.name}
-                    >
-                      <span aria-hidden="true" className="w-4 text-center text-ink-500">
-                        ▤
-                      </span>
-                      <span className="truncate">{list.name}</span>
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+    <div className="je-side__timer">
+      <span className="je-eyebrow" style={{ color: 'var(--navy-300)' }}>
+        Timer
+      </span>
+      {timer ? (
+        <>
+          <div className="je-side__clock">{formatDuration(elapsed, { withSeconds: true })}</div>
+          <div style={{ font: 'var(--type-body-sm)', color: 'var(--navy-200)' }}>
+            {timer.taskTitle || timer.description || 'Losse tijd'}
           </div>
-        ))}
-      </div>
+          <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
+            {[eventName, timer.billable === false ? 'intern' : 'billable'].filter(Boolean).join(' · ')}
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              iconLeft="square"
+              onClick={stop}
+              loading={busy}
+              style={{ color: 'var(--white)', borderColor: 'var(--border-strong)' }}
+            >
+              Stop en boek
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ font: 'var(--type-body-sm)', color: 'var(--navy-300)' }}>
+            Start een timer vanaf een taak, of boek tijd op een kostenplaats.
+          </div>
+          <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
+            Deze week geboekt: {formatDuration(booked)}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
-      <div className="mt-auto">
-        {isStaff ? null : (
-        <NavLink to="/instellingen" className={itemClass} onClick={onNavigate}>
-          <span aria-hidden="true" className="w-4 text-center text-ink-400">
-            ⚙
-          </span>
-          Instellingen
-        </NavLink>
-        )}
-      </div>
-    </nav>
+function Me() {
+  const { profile, logOut } = useAuth()
+  const [menu, setMenu] = useState(false)
+
+  return (
+    <div className="je-side__me">
+      <Hex size={34} tone="ink">{initialsOf(profile)}</Hex>
+      <button
+        type="button"
+        className="je-plainbtn"
+        style={{ minWidth: 0, flex: 1 }}
+        onClick={() => setMenu((m) => !m)}
+        aria-haspopup="menu"
+        aria-expanded={menu}
+      >
+        <div style={{ font: 'var(--type-body-sm)', color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {profile?.fullName || profile?.email}
+        </div>
+        <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
+          {ROLE_LABEL[profile?.role] ?? profile?.role}
+        </div>
+      </button>
+      <span style={{ color: 'var(--navy-300)' }}>
+        <IconButton icon="log-out" label="Afmelden" size="sm" onClick={logOut} />
+      </span>
+      {menu ? (
+        <div className="je-menu" role="menu" onClick={() => setMenu(false)}>
+          <InstallMenuItem />
+          <PushMenuItem />
+          <button type="button" role="menuitem" onClick={logOut}>
+            Afmelden
+          </button>
+        </div>
+      ) : null}
+    </div>
   )
 }
