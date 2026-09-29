@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   arrayUnion,
   deleteDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -78,6 +79,43 @@ export function useRunsForDay(day) {
     () => ({ runs, byChecklist: Object.fromEntries(runs.map((r) => [r.checklistId, r])), loading }),
     [runs, loading]
   )
+}
+
+/**
+ * De runs van een reeks dagen, voor het verslag.
+ *
+ * Eén vraag voor een hele maand in plaats van dertig. Er zit geen `onSnapshot`
+ * op: een verslag over augustus verandert niet meer, en een abonnement dat
+ * dertig documenten live houdt terwijl je een rapport leest, kost leesbewerkingen
+ * zonder dat er iets aan verandert.
+ */
+export function useRunsInRange(van, tot) {
+  const [runs, setRuns] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!van || !tot) return undefined
+    let gestopt = false
+    setLoading(true)
+
+    getDocs(query(col(COL.checklistRuns), where('day', '>=', van), where('day', '<=', tot)))
+      .then((snap) => {
+        if (gestopt) return
+        setRuns(fromQuery(snap))
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (gestopt) return
+        console.error('JE Plan: de dagen zijn niet op te halen', err)
+        setLoading(false)
+      })
+
+    return () => {
+      gestopt = true
+    }
+  }, [van, tot])
+
+  return { runs, loading }
 }
 
 /**

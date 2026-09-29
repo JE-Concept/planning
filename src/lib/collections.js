@@ -1,5 +1,6 @@
 import { collection, doc } from 'firebase/firestore'
 import { db } from './firebase'
+import { normalise } from './normalise'
 
 /**
  * Every collection the app touches, named once.
@@ -41,28 +42,7 @@ export const col = (name) => collection(db, name)
 export const ref = (name, id) => doc(db, name, id)
 export const newRef = (name) => doc(collection(db, name))
 
-/** Firestore Timestamp | Date | string → Date, or null. */
-export function toDate(value) {
-  if (!value) return null
-  if (value instanceof Date) return value
-  if (typeof value.toDate === 'function') return value.toDate()
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-const DATE_FIELDS = new Set([
-  'createdAt', 'updatedAt', 'completedAt', 'dueDate', 'startDate', 'eventDate',
-  'startedAt', 'endedAt', 'scheduledAt', 'lastSeenAt',
-  'reviewRequestedAt', 'reviewedAt',
-])
-
-export function normalise(data) {
-  const out = { ...data }
-  for (const key of DATE_FIELDS) {
-    if (key in out) out[key] = toDate(out[key])
-  }
-  return out
-}
+export { normalise, toDate } from './normalise'
 
 export function fromQuery(snapshot) {
   return snapshot.docs.map((d) => normalise({ id: d.id, ...d.data() }))

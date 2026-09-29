@@ -189,9 +189,9 @@ export const FAVV = {
       id: 'temperaturen',
       title: 'Temperaturen',
       items: [
-        { id: 'temp-koelkasten', label: 'Temperatuur koelkasten genoteerd', hint: 'Max 7 °C, bij voorkeur 4 °C. Noteer de gemeten waarde, niet enkel "ok".', who: 'keuken' },
-        { id: 'temp-diepvries', label: 'Temperatuur diepvriezers genoteerd', hint: 'Max −18 °C.', who: 'keuken' },
-        { id: 'temp-koelcel', label: 'Temperatuur koelcel genoteerd', who: 'keuken' },
+        { id: 'temp-koelkasten', label: 'Temperatuur koelkasten', hint: 'Bij voorkeur 4 °C.', who: 'keuken', veld: { kind: 'getal', label: 'Gemeten', eenheid: '°C', max: 7 } },
+        { id: 'temp-diepvries', label: 'Temperatuur diepvriezers', who: 'keuken', veld: { kind: 'getal', label: 'Gemeten', eenheid: '°C', max: -18 } },
+        { id: 'temp-koelcel', label: 'Temperatuur koelcel', who: 'keuken', veld: { kind: 'getal', label: 'Gemeten', eenheid: '°C', max: 7 } },
         { id: 'temp-afwijking', label: 'Afwijkingen en genomen maatregelen genoteerd', hint: 'Alleen invullen als er iets buiten de grenzen lag.', who: 'keuken' },
       ],
     },
@@ -199,7 +199,7 @@ export const FAVV = {
       id: 'ontvangst',
       title: 'Ontvangst van goederen',
       items: [
-        { id: 'levering-temp', label: 'Temperatuur bij levering gecontroleerd', hint: 'Gekoeld max 7 °C, diepvries max −18 °C.', who: 'keuken' },
+        { id: 'levering-temp', label: 'Temperatuur bij levering, gekoeld', hint: 'Diepvries hoort bij het punt hieronder.', who: 'keuken', veld: { kind: 'getal', label: 'Gemeten', eenheid: '°C', max: 7 } },
         { id: 'levering-staat', label: 'Verpakking, houdbaarheid en staat van de levering gecontroleerd', who: 'keuken' },
         { id: 'levering-bon', label: 'Leveringsbon bewaard', hint: 'Traceerbaarheid: wie leverde wat, wanneer.', who: 'keuken' },
       ],
@@ -210,7 +210,7 @@ export const FAVV = {
       items: [
         { id: 'etikettering', label: 'Bereide gerechten geëtiketteerd met datum', who: 'keuken' },
         { id: 'frituurolie', label: 'Frituurolie beoordeeld', hint: 'Kleur, geur en rook.', who: 'keuken', veld: { kind: 'datum', label: 'Laatst vervangen op' } },
-        { id: 'kerntemperatuur', label: 'Kerntemperatuur van risicobereidingen gemeten', hint: 'Min 75 °C in de kern.', who: 'keuken' },
+        { id: 'kerntemperatuur', label: 'Kerntemperatuur van risicobereidingen', hint: 'In de kern van het dikste stuk.', who: 'keuken', veld: { kind: 'getal', label: 'Gemeten', eenheid: '°C', min: 75 } },
       ],
     },
     {
@@ -310,6 +310,47 @@ export const VELDSOORTEN = [
   { kind: 'datum', label: 'Een datum' },
   { kind: 'getal', label: 'Een getal' },
 ]
+
+/**
+ * Ligt de gemeten waarde binnen de grenzen?
+ *
+ * Een vinkje bij "temperatuur koelkast gecontroleerd" zegt dat er iemand gekeken
+ * heeft. Het zegt niet dat de koelkast koud genoeg was, en dat is precies wat een
+ * FAVV-controleur wil zien. Vandaar een grens op het veld: onder `min` of boven
+ * `max` is het punt niet in orde, hoe het vinkje ook staat.
+ *
+ * Een lege waarde is geen overschrijding maar een ontbrekende meting; die twee
+ * hebben elk hun eigen antwoord, want "niet gemeten" en "te warm" vragen iets
+ * anders van wie het leest.
+ */
+export function meetOordeel(veld, waarde) {
+  if (!veld || veld.kind !== 'getal') return { staat: 'nvt' }
+  if (waarde === '' || waarde === null || waarde === undefined) return { staat: 'leeg' }
+
+  const getal = Number(waarde)
+  if (Number.isNaN(getal)) return { staat: 'onleesbaar' }
+
+  const onder = veld.min != null && getal < Number(veld.min)
+  const boven = veld.max != null && getal > Number(veld.max)
+  if (!onder && !boven) return { staat: 'ok', getal }
+
+  return {
+    staat: 'buiten',
+    getal,
+    grens: onder ? Number(veld.min) : Number(veld.max),
+    richting: onder ? 'onder' : 'boven',
+  }
+}
+
+/** De grens in één regel, zoals ze onder het invoerveld staat. */
+export function grensTekst(veld) {
+  if (!veld || veld.kind !== 'getal') return ''
+  const eenheid = veld.eenheid ? ` ${veld.eenheid}` : ''
+  if (veld.min != null && veld.max != null) return `tussen ${veld.min} en ${veld.max}${eenheid}`
+  if (veld.max != null) return `max ${veld.max}${eenheid}`
+  if (veld.min != null) return `min ${veld.min}${eenheid}`
+  return veld.eenheid ? `in ${veld.eenheid}` : ''
+}
 
 export const AFDELINGEN = [
   { key: 'iedereen', label: 'Iedereen' },

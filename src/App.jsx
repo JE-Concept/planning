@@ -15,10 +15,9 @@ import Login from '@pages/Login'
  * pagina nog wil ophalen — daar staat de ErrorBoundary hieronder voor.
  */
 const Dashboard      = lazy(() => import('@pages/Dashboard'))
-const MyWork         = lazy(() => import('@pages/MyWork'))
+const Tasks          = lazy(() => import('@pages/Tasks'))
 const Events         = lazy(() => import('@pages/Events'))
 const EventDetail    = lazy(() => import('@pages/EventDetail'))
-const MyTasks        = lazy(() => import('@pages/MyTasks'))
 const Workload       = lazy(() => import('@pages/Workload'))
 const More           = lazy(() => import('@pages/More'))
 const Board          = lazy(() => import('@pages/Board'))
@@ -88,10 +87,15 @@ function Authenticated() {
             <Route path="/" element={<Events />} />
             <Route path="/kalender" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
-            <Route path="/mijn-taken" element={<MyTasks />} />
-            <Route path="/mijn-werk" element={<MyWork />} />
+            <Route path="/tasks" element={<Tasks />} />
+            {/* De twee oude adressen blijven werken: ze staan in bladwijzers,
+                in mails en in de adresbalk van wie de tool dagelijks gebruikt. */}
+            <Route path="/mijn-taken" element={<Navigate to="/tasks" replace />} />
+            <Route path="/mijn-werk" element={<Navigate to="/tasks" replace />} />
             <Route path="/werklast" element={<Workload />} />
-            <Route path="/vandaag" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            {/* "Vandaag" heette het eerder; dat adres blijft werken. */}
+            <Route path="/vandaag" element={<Navigate to="/dashboard" replace />} />
             <Route path="/meer" element={<More />} />
             <Route path="/bord/:listId" element={<Board />} />
             <Route path="/social" element={<SocialCalendar />} />

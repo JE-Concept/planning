@@ -50,12 +50,66 @@ export const app = initializeApp(config)
  * Long polling auto-detect houdt het realtime-kanaal overeind achter proxies
  * die de streaming-verbinding dichtknijpen.
  */
+const ZONDER_CACHE = 'je-plan:zonder-cache'
+
+/** Staat deze sessie bewust zonder schijfcache? */
+function cacheOvergeslagen() {
+  try {
+    return sessionStorage.getItem(ZONDER_CACHE) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Opnieuw beginnen zonder schijfcache.
+ *
+ * De cache van Firestore werkt met een slot in IndexedDB, zodat maar één
+ * tabblad tegelijk de baas is. Sluit een tabblad niet netjes af — een telefoon
+ * die de app wegzwiept, een browser die crasht — dan blijft dat slot staan als
+ * "zombie" en wacht het volgende tabblad erop. Er komt dan nooit een antwoord
+ * op de eerste leesactie en de app blijft op zijn spinnertje staan.
+ *
+ * Dit is de uitweg: de databases weggooien, één keer zonder cache herstarten.
+ * Er gaat niets verloren — de cache is een kopie, de database staat elders.
+ */
+export async function herstelZonderCache() {
+  try {
+    sessionStorage.setItem(ZONDER_CACHE, '1')
+  } catch {
+    /* Zonder sessionStorage lukt het herstarten alleen, en dat is al winst. */
+  }
+  try {
+    const namen = (await indexedDB.databases?.()) ?? []
+    await Promise.all(
+      namen
+        .map((d) => d.name)
+        .filter((naam) => naam && naam.startsWith('firestore'))
+        .map(
+          (naam) =>
+            new Promise((klaar) => {
+              const verzoek = indexedDB.deleteDatabase(naam)
+              verzoek.onsuccess = klaar
+              verzoek.onerror = klaar
+              verzoek.onblocked = klaar
+            })
+        )
+    )
+  } catch {
+    /* Lukt het wissen niet, dan helpt de vlag alleen ook. */
+  }
+  window.location.reload()
+}
+
 function maakFirestore() {
   const basis = { experimentalAutoDetectLongPolling: true }
 
   // Privémodus en oudere browsers hebben geen IndexedDB. Dan maar zonder
-  // cache: trager is beter dan een tool die niet opent.
-  if (typeof indexedDB === 'undefined') return initializeFirestore(app, basis)
+  // cache: trager is beter dan een tool die niet opent. Hetzelfde geldt voor de
+  // sessie na een herstel: die start bewust zonder.
+  if (typeof indexedDB === 'undefined' || cacheOvergeslagen()) {
+    return initializeFirestore(app, basis)
+  }
 
   try {
     return initializeFirestore(app, {

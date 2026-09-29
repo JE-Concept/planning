@@ -113,10 +113,10 @@ const PAGINAS = [
   ['Events als lijst', '/?weergave=lijst', 'Aanvraag tot offerte'],
   ['Kalender', '/kalender', 'Kalender'],
   ['Event', '/events/t-trouw', 'Trouw Niels en Inez'],
-  ['Mijn taken', '/mijn-taken', 'Mijn taken'],
-  ['Taken per persoon', '/mijn-werk', 'Mijn werk'],
+  ['Tasks', '/tasks', 'Tasks'],
   ['Werklast', '/werklast', 'Werklast'],
-  ['Vandaag', '/vandaag', 'Dag Jasper'],
+  ['Dashboard', '/dashboard', 'Dashboard'],
+  ['Het oude adres van Vandaag', '/vandaag', 'Dashboard'],
   ['Bord Events', '/bord/l-overview', 'Events'],
   ['Bord Socials', '/bord/l-socials', 'Socials'],
   ['Socials', '/social', 'Socials'],
@@ -147,14 +147,14 @@ await test('een verdwenen pagina geeft geen wit scherm maar een uitleg', async (
   const page = await tabblad('/')
   verdwenen.add('/assets/Goals-')
 
-  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Tasks/ }).first().click()
   await page.getByRole('link', { name: 'Goals', exact: true }).first().click()
   await page.waitForTimeout(2500)
 
   const tekst = await inhoud(page)
   zouden(tekst.length > 40, 'het scherm is wit geworden')
   zouden(tekst.includes('opnieuw laden'), `geen uitleg, wel: ${tekst.slice(0, 80)}`)
-  zouden(tekst.includes('Mijn taken'), 'de zijbalk is verdwenen; je kunt nergens heen')
+  zouden(tekst.includes('Tasks'), 'de zijbalk is verdwenen; je kunt nergens heen')
 
   verdwenen.delete('/assets/Goals-')
   await page.close()
@@ -171,17 +171,17 @@ await test('een kapotte pagina laat de rest van de tool staan', async () => {
   const page = await tabblad('/')
   verdwenen.add('/assets/TimeTracking-')
 
-  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Team/ }).first().click()
   await page.getByRole('link', { name: 'Uren' }).first().click()
   await page.waitForTimeout(2200)
   zouden((await inhoud(page)).includes('opnieuw laden'), 'geen uitleg na de fout')
 
   // En je kunt gewoon verder: een andere pagina hoort de melding weg te halen.
-  await page.getByRole('link', { name: 'Mijn taken' }).first().click()
+  await page.getByRole('link', { name: /^Tasks/ }).first().click()
   await page.waitForTimeout(1200)
   const tekst = await inhoud(page)
   zouden(!tekst.includes('opnieuw laden'), 'de foutmelding bleef staan na het wegklikken')
-  zouden(tekst.includes('Te laat') || tekst.includes('Vandaag'), 'Mijn taken opende niet')
+  zouden(tekst.includes('Te laat') || tekst.includes('Vandaag'), 'Tasks opende niet')
 
   verdwenen.delete('/assets/TimeTracking-')
   await page.close()
@@ -291,6 +291,19 @@ await test('het verloop van een doel is uit te klappen', async () => {
   await page.close()
 })
 
+await test('de vorige dag van een dagelijkse lijst opent zonder te crashen', async () => {
+  // Dit was een wit scherm: de tijdstippen van gisteren komen als Timestamp
+  // terug, niet als Date, en Intl gooide daarop RangeError tijdens het tekenen.
+  const page = await tabblad('/openen-sluiten')
+  await page.getByRole('button', { name: 'Vorige dag' }).click()
+  await page.waitForTimeout(900)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Openen'), 'de lijst van gisteren staat er niet')
+  zouden(bevat(tekst, 'Lotte'), `wie afvinkte staat er niet: ${tekst.slice(0, 200)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   const page = await tabblad('/instellingen')
   await page.getByRole('tab', { name: 'Dagelijkse lijsten' }).click()
@@ -311,13 +324,35 @@ await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   await page.waitForTimeout(600)
 
   // En het komt ook echt op de lijst van vandaag terecht.
-  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Bistro/ }).first().click()
   await page.getByRole('link', { name: 'Openen & sluiten' }).first().click()
   await page.waitForTimeout(1000)
   zouden(
     (await inhoud(page)).includes('Terrasverwarmer nakijken'),
     'het nieuwe punt staat niet op de dagelijkse lijst'
   )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('het dashboard geeft een overzicht over de hele applicatie', async () => {
+  const page = await tabblad('/dashboard')
+  const tekst = await inhoud(page)
+  for (const naald of [
+    'Te laat',
+    'Te factureren',
+    'Events deze maand',
+    'Wat er aankomt',
+    'Wat bij jou ligt',
+    'Bistro vandaag',
+    'Socials deze week',
+  ]) {
+    zouden(bevat(tekst, naald), `"${naald}" staat niet op het dashboard`)
+  }
+  // Elk cijfer is een link naar de plek waar je het oplost.
+  await page.getByRole('link', { name: /Te factureren/ }).first().click()
+  await page.waitForTimeout(800)
+  zouden(bevat(await inhoud(page), 'Events'), 'het cijfer bracht je nergens')
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
@@ -358,8 +393,8 @@ await test('de business rules staan in de instellingen', async () => {
   await page.close()
 })
 
-await test('Mijn werk en Uren hebben een kalender', async () => {
-  const werk = await tabblad('/mijn-werk')
+await test('Tasks en Uren hebben een kalender', async () => {
+  const werk = await tabblad('/tasks')
   await werk.getByRole('tab', { name: 'Kalender' }).click()
   await werk.waitForTimeout(900)
   const wt = await inhoud(werk)
@@ -374,6 +409,29 @@ await test('Mijn werk en Uren hebben een kalender', async () => {
   zouden(bevat(await inhoud(uren), 'deze maand'), 'geen maandtotaal op de urenkalender')
   zouden(uren.fouten.length === 0, `fouten: ${uren.fouten[0]}`)
   await uren.close()
+})
+
+await test('een te warme koelkast wordt meteen aangegeven', async () => {
+  const page = await tabblad('/openen-sluiten')
+  await page.getByRole('tab', { name: 'FAVV-registraties' }).click()
+  await page.waitForTimeout(900)
+
+  const veld = page.getByLabel(/Gemeten voor Temperatuur koelkasten/)
+  zouden((await veld.count()) === 1, 'het meetveld bij de koelkasten ontbreekt')
+  zouden(bevat(await inhoud(page), 'max 7'), 'de grens staat er niet bij')
+
+  await veld.fill('9')
+  await veld.blur()
+  await page.waitForTimeout(600)
+  zouden(bevat(await inhoud(page), 'Boven de grens'), 'een te warme koelkast geeft geen waarschuwing')
+
+  // Binnen de grens hoort er niets te staan — anders leert men de melding negeren.
+  await veld.fill('4')
+  await veld.blur()
+  await page.waitForTimeout(600)
+  zouden(!bevat(await inhoud(page), 'Boven de grens'), 'de waarschuwing blijft staan bij een goede meting')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
 })
 
 await test('een punt kan om een datum vragen, en die blijft staan', async () => {

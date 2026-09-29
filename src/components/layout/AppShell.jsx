@@ -1,9 +1,11 @@
 import { useEffect, useMemo } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@lib/cn'
+import { herstelZonderCache } from '@lib/firebase'
 import { formatDuration } from '@lib/format'
 import { indexOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
+import { useNieuweVersie } from '@lib/useNieuweVersie'
 import { Button, Icon, IconButton, Logotype } from '@components/ds'
 import { Spinner } from '@ui/index'
 import { AssistantProvider, useAssistant } from '@context/AssistantProvider'
@@ -36,13 +38,14 @@ export default function AppShell({ children }) {
 
 function Shell({ children }) {
   const { isStaff, isAdmin, uid } = useAuth()
-  const { loading, error } = useWorkspace()
+  const { loading, error, vastgelopen } = useWorkspace()
   const { events } = useEvents()
   const navCounts = useNavCounts()
   const toast = useToast()
   const narrow = useNarrow()
   const location = useLocation()
   const { open, setOpen } = useAssistant()
+  const nieuweVersie = useNieuweVersie()
 
   // Zoals in het design: op een breed scherm staat de assistent open tot je
   // hem sluit (dat wordt onthouden), op een telefoon dicht — daar zou hij het
@@ -82,6 +85,22 @@ function Shell({ children }) {
       {narrow ? null : <Sidebar counts={counts} />}
 
       <main className="je-main">
+        {/*
+          Een tabblad dat openstaat tijdens een uitrol vraagt straks een bestand
+          op dat niet meer bestaat. Dat was een wit scherm; nu is het een regel
+          bovenaan, en herlaad je op je eigen moment in plaats van middenin een
+          lijst afvinken.
+        */}
+        {nieuweVersie ? (
+          <div className="je-updatebar" role="status">
+            <Icon name="sparkles" size={15} />
+            <span>Er staat een nieuwe versie van JE Plan klaar.</span>
+            <Button size="sm" variant="secondary" onClick={() => window.location.reload()}>
+              Herladen
+            </Button>
+          </div>
+        ) : null}
+
         {narrow ? <MobileBar uid={uid} isStaff={isStaff} /> : null}
 
         {isStaff ? null : (
@@ -100,7 +119,22 @@ function Shell({ children }) {
         )}
 
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          {loading ? (
+          {loading && vastgelopen ? (
+            // Geen fout en geen gegevens: de opgeslagen kopie op dit toestel
+            // antwoordt niet. Eerder bleef hier alleen een molentje draaien.
+            <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
+              <div style={{ maxWidth: 380 }}>
+                <h2 style={{ font: 'var(--type-h3)', textTransform: 'uppercase' }}>Dit duurt te lang</h2>
+                <p style={{ marginTop: 8, font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
+                  De gegevens die op dit toestel bewaard zijn, antwoorden niet. Opnieuw beginnen lost het op — er gaat
+                  niets verloren, want alles staat ook online.
+                </p>
+                <Button size="sm" style={{ marginTop: 16 }} onClick={herstelZonderCache}>
+                  Opnieuw beginnen
+                </Button>
+              </div>
+            </div>
+          ) : loading ? (
             <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }} className="je-muted-caption">
               <Spinner /> Werkruimte laden…
             </div>

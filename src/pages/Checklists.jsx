@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { addDays, dayKey, formatDate, formatTime, isToday } from '@lib/dates'
-import { afdelingLabel, dueOn, repeatLabel, runProgress, visibleTo } from '@lib/checklist-templates'
+import { afdelingLabel, dueOn, grensTekst, meetOordeel, repeatLabel, runProgress, visibleTo } from '@lib/checklist-templates'
 import { Avatar, Badge, Button, EmptyState, Input, ProgressBar, Spinner, Textarea } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
@@ -273,28 +273,9 @@ function Item({ item, state, onToggle, onValue }) {
           ) : null}
 
           {/* Bij sommige punten is "afgevinkt" niet het hele antwoord: bij
-              frituurolie gaat het om wanneer ze vervangen is. */}
-          {item.veld ? (
-            <span
-              className="mt-1.5 flex flex-wrap items-center gap-2"
-              onClick={(e) => e.preventDefault()}
-            >
-              <span className="text-xs text-ink-600">{item.veld.label ?? 'Waarde'}</span>
-              <Input
-                type={item.veld.kind === 'getal' ? 'number' : 'date'}
-                step={item.veld.kind === 'getal' ? 'any' : undefined}
-                defaultValue={state?.waarde ?? ''}
-                onBlur={(e) => onValue(item, e.target.value)}
-                aria-label={`${item.veld.label ?? 'Waarde'} voor ${item.label}`}
-                className="h-8 max-w-[11rem] text-sm"
-              />
-              {state?.waardeByName ? (
-                <span className="text-[11px] text-ink-400">
-                  ingevuld door {state.waardeByName}
-                </span>
-              ) : null}
-            </span>
-          ) : null}
+              frituurolie gaat het om wanneer ze vervangen is, en bij een koelkast
+              om hoe koud hij was. */}
+          {item.veld ? <Meetveld item={item} state={state} onValue={onValue} /> : null}
 
           {done && state?.byName ? (
             <span className="mt-1 flex items-center gap-1.5 text-[11px] text-ink-500">
@@ -306,5 +287,61 @@ function Item({ item, state, onToggle, onValue }) {
         </span>
       </label>
     </li>
+  )
+}
+
+/**
+ * Het veld naast een vinkje, met de grens erbij.
+ *
+ * Een vinkje bij "temperatuur koelkast gecontroleerd" zegt dat er iemand gekeken
+ * heeft. Het zegt niet dat de koelkast koud genoeg was, en dat is precies wat een
+ * controleur wil zien. Daarom staat de grens onder het veld en kleurt de waarde
+ * rood zodra ze eroverheen gaat — meteen, terwijl de persoon er nog staat, niet
+ * pas op een rapport dat een maand later gelezen wordt.
+ *
+ * Er wordt niets tegengehouden. Een te warme koelkast is een feit dat genoteerd
+ * moet worden, geen invoerfout; hem weigeren zou de meting laten verdwijnen in
+ * plaats van het probleem.
+ */
+function Meetveld({ item, state, onValue }) {
+  const [waarde, setWaarde] = useState(state?.waarde ?? '')
+  const oordeel = meetOordeel(item.veld, waarde)
+  const grens = grensTekst(item.veld)
+  const naam = `${item.veld.label ?? 'Waarde'} voor ${item.label}`
+
+  return (
+    <span className="mt-1.5 block" onClick={(e) => e.preventDefault()}>
+      <span className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-ink-600">{item.veld.label ?? 'Waarde'}</span>
+        <Input
+          type={item.veld.kind === 'getal' ? 'number' : 'date'}
+          step={item.veld.kind === 'getal' ? 'any' : undefined}
+          value={waarde}
+          onChange={(e) => setWaarde(e.target.value)}
+          onBlur={(e) => onValue(item, e.target.value)}
+          aria-label={naam}
+          aria-invalid={oordeel.staat === 'buiten' ? 'true' : undefined}
+          className="h-8 max-w-[9rem] text-sm"
+          style={oordeel.staat === 'buiten' ? { borderColor: 'var(--danger)', color: 'var(--danger)' } : undefined}
+        />
+        {item.veld.eenheid ? <span className="text-xs text-ink-500">{item.veld.eenheid}</span> : null}
+        {grens ? <span className="text-[11px] text-ink-400">{grens}</span> : null}
+        {state?.waardeByName ? (
+          <span className="text-[11px] text-ink-400">ingevuld door {state.waardeByName}</span>
+        ) : null}
+      </span>
+
+      {oordeel.staat === 'buiten' ? (
+        <span
+          role="alert"
+          className="mt-1 block text-[11px] font-medium"
+          style={{ color: 'var(--danger)' }}
+        >
+          {oordeel.richting === 'boven' ? 'Boven' : 'Onder'} de grens van {oordeel.grens}
+          {item.veld.eenheid ? ` ${item.veld.eenheid}` : ''}. Noteer welke maatregel je genomen hebt bij
+          “Afwijkingen en genomen maatregelen”.
+        </span>
+      ) : null}
+    </span>
   )
 }

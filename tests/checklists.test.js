@@ -6,7 +6,9 @@ import {
   OPENING,
   POETSPLAN,
   dueOn,
+  grensTekst,
   isWeekend,
+  meetOordeel,
   repeatLabel,
   requiredItems,
   runId,
@@ -218,5 +220,64 @@ describe('samen afvinken in dezelfde run', () => {
     const data = (await getDoc(ref)).data()
     expect(data.items.tap_dicht.done).toBe(true)
     expect(data.items.glazen.done).toBe(false)
+  })
+})
+
+describe('meetOordeel', () => {
+  const koelkast = { kind: 'getal', label: 'Temperatuur', eenheid: '°C', max: 7 }
+  const diepvries = { kind: 'getal', label: 'Temperatuur', eenheid: '°C', max: -18 }
+  const kern = { kind: 'getal', label: 'Kerntemperatuur', eenheid: '°C', min: 75 }
+
+  it('keurt goed wat binnen de grens ligt', () => {
+    expect(meetOordeel(koelkast, 4).staat).toBe('ok')
+    expect(meetOordeel(koelkast, 7).staat).toBe('ok')
+  })
+
+  // Het punt van de hele oefening: een vinkje zegt dat er gekeken is, niet dat
+  // het koud genoeg was.
+  it('keurt af wat erboven ligt', () => {
+    const uit = meetOordeel(koelkast, 9)
+    expect(uit.staat).toBe('buiten')
+    expect(uit.richting).toBe('boven')
+    expect(uit.grens).toBe(7)
+  })
+
+  it('rekent met negatieve grenzen zoals een diepvries die heeft', () => {
+    expect(meetOordeel(diepvries, -20).staat).toBe('ok')
+    expect(meetOordeel(diepvries, -15).staat).toBe('buiten')
+  })
+
+  it('keurt af wat eronder ligt', () => {
+    const uit = meetOordeel(kern, 68)
+    expect(uit.staat).toBe('buiten')
+    expect(uit.richting).toBe('onder')
+  })
+
+  // "Niet gemeten" en "te warm" vragen iets anders van wie het leest.
+  it('houdt niet gemeten en buiten de grens uit elkaar', () => {
+    expect(meetOordeel(koelkast, '').staat).toBe('leeg')
+    expect(meetOordeel(koelkast, null).staat).toBe('leeg')
+    expect(meetOordeel(koelkast, 'warm').staat).toBe('onleesbaar')
+  })
+
+  it('zegt niets over een punt zonder getalveld', () => {
+    expect(meetOordeel(null, 4).staat).toBe('nvt')
+    expect(meetOordeel({ kind: 'datum' }, '2026-09-01').staat).toBe('nvt')
+  })
+
+  it('leest nul als een waarde en niet als leeg', () => {
+    expect(meetOordeel(koelkast, 0).staat).toBe('ok')
+  })
+})
+
+describe('grensTekst', () => {
+  it('schrijft een bovengrens uit', () => {
+    expect(grensTekst({ kind: 'getal', max: 7, eenheid: '°C' })).toBe('max 7 °C')
+  })
+  it('schrijft een bereik uit', () => {
+    expect(grensTekst({ kind: 'getal', min: 0, max: 7, eenheid: '°C' })).toBe('tussen 0 en 7 °C')
+  })
+  it('zwijgt over een veld zonder grens', () => {
+    expect(grensTekst({ kind: 'getal' })).toBe('')
   })
 })

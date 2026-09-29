@@ -9,7 +9,8 @@ export default [
     files: ['**/*.{js,jsx,mjs}'],
     languageOptions: {
       ecmaVersion: 2022,
-      globals: { ...globals.browser, ...globals.node },
+      // Wordt door Vite ingevuld met het nummer van deze build.
+      globals: { ...globals.browser, ...globals.node, __BUILD_ID__: 'readonly' },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },

@@ -138,7 +138,17 @@
   padding: var(--space-6) 0 0;
   display: flex;
   flex-direction: column;
+  /* De zijbalk zelf schuift niet meer: deed ze dat wel, dan schoof de timer
+     onderaan het scherm uit zodra het menu langer werd dan de hoogte. */
+  overflow: hidden;
+}
+/* Het enige dat mag schuiven, en met het tweede navigatieniveau hoeft dat op
+   een pc niet meer. Op een lage laptop is het er dan nog wel. */
+.je-side__scroll {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
 .je-side__logo {
   padding: 0 var(--space-6) var(--space-7);
@@ -197,8 +207,9 @@
   color: var(--navy-200);
 }
 .je-side__timer {
-  margin: var(--space-7) var(--space-6) 0;
-  padding-top: var(--space-6);
+  flex: 0 0 auto;
+  margin: var(--space-5) var(--space-6) 0;
+  padding-top: var(--space-5);
   border-top: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
@@ -211,8 +222,9 @@
   font-variant-numeric: tabular-nums;
 }
 .je-side__me {
-  margin-top: auto;
-  padding: var(--space-6);
+  flex: 0 0 auto;
+  margin-top: var(--space-5);
+  padding: var(--space-5) var(--space-6);
   border-top: 1px solid var(--border-hairline);
   display: flex;
   align-items: center;
@@ -469,4 +481,350 @@
 }
 .je-link-quiet:hover {
   color: var(--text-accent) !important;
+}
+
+/* ── Tasks ─────────────────────────────────────────────────────────────── */
+
+/* De balk met de weergavekeuzes. Wikkelt op een smal scherm in plaats van
+   horizontaal weg te schuiven: een keuze die je niet ziet, maak je niet. */
+.je-displaybar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--surface-1);
+}
+.je-displaybar__velden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.je-displaybar__zoek {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-3);
+}
+.je-displaybar__zoek .je-input {
+  width: 180px;
+}
+/* Compacte vorm van een veld in een werkbalk, naast knoppen van dezelfde hoogte.
+
+   De velden van het systeem zijn standaard zo breed als hun vak, want ze staan
+   normaal onder elkaar in een formulier. In een werkbalk moeten ze naast elkaar
+   en niet breder dan hun inhoud — anders krijg je zeven regels onder elkaar waar
+   één balk hoort te staan. */
+.je-compact {
+  width: auto;
+  max-width: 100%;
+  height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font: var(--type-body-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding-inline: 9px;
+  background-color: var(--surface-1);
+}
+select.je-compact { padding-right: 24px; }
+.je-displaybar .je-tabs {
+  gap: var(--space-5);
+  padding-bottom: 2px;
+}
+
+.je-tasklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.je-tasklist > li + li {
+  border-top: 1px solid var(--border-hairline);
+}
+.je-taskline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-5);
+  text-align: left;
+  transition: background 120ms var(--ease-brand);
+}
+.je-taskline:hover {
+  background: var(--surface-2);
+}
+.je-taskline__prio {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  flex: 0 0 8px;
+}
+.je-taskline__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-body-sm);
+  color: var(--text-1);
+}
+.je-taskline__list,
+.je-taskline__time,
+.je-taskline__due {
+  flex: 0 0 auto;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+  text-align: right;
+  white-space: nowrap;
+}
+.je-taskline__list {
+  width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.je-taskline__time {
+  width: 56px;
+  font-variant-numeric: tabular-nums;
+}
+.je-taskline__due {
+  width: 104px;
+}
+@media (max-width: 720px) {
+  .je-taskline__list,
+  .je-taskline__time {
+    display: none;
+  }
+}
+
+/* Kolommen naast elkaar die verder lopen dan het scherm breed is.
+   Zonder deze schuifbalk waren de laatste kolommen onbereikbaar. */
+.je-boardscroll {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--space-5) var(--space-6);
+  scroll-snap-type: x proximity;
+}
+.je-boardcol {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  width: 268px;
+  flex: 0 0 268px;
+  scroll-snap-align: start;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+}
+.je-boardcol__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-boardcol__head > .je-eyebrow {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-boardcol__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Een taak in een dagvakje van de kalender. */
+.je-calitem {
+  display: block;
+  width: 100%;
+  padding: 1px 4px;
+  border-left: 2px solid var(--border-subtle);
+  background: var(--surface-1);
+  border-radius: 2px;
+  font: var(--type-caption);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: var(--shadow-1);
+}
+.je-calitem:hover {
+  background: var(--surface-2);
+}
+
+/* ── Dashboard ─────────────────────────────────────────────────────────── */
+
+/* De bovenste rij: vijf getallen die samen zeggen hoe het ervoor staat.
+   auto-fit zodat het van vijf naar twee naar één zakt zonder mediaquery's. */
+.je-dash__cijfers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: var(--space-4);
+}
+.je-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-top: 2px solid var(--border-subtle);
+  border-radius: 4px;
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 160ms var(--ease-brand), box-shadow 160ms var(--ease-brand);
+}
+.je-kpi:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-1);
+}
+/* De kleur zit in de bovenrand en niet in het getal: een rood cijfer naast een
+   zwart cijfer leest als twee soorten gegevens in plaats van als een waarschuwing. */
+.je-kpi--slecht { border-top-color: var(--danger); }
+.je-kpi--letop { border-top-color: var(--warning, #d98324); }
+.je-kpi--goed { border-top-color: var(--success, #3db88b); }
+.je-kpi__waarde {
+  font: var(--fw-medium) 32px/1.05 var(--font-display);
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* Twee kolommen op een breed scherm, één op een smal. De linkerkolom is breder:
+   daar staat wat je leest, rechts wat je controleert. */
+.je-dash__kolommen {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .je-dash__kolommen { grid-template-columns: minmax(0, 1fr); }
+}
+.je-dash__kolom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/* De dag van een event, als blokje links in de rij. */
+.je-dash__dag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  flex: 0 0 34px;
+}
+.je-dash__dag > b {
+  font: var(--fw-medium) 19px/1 var(--font-display);
+  color: var(--text-1);
+}
+.je-dash__dag > span {
+  font: var(--type-eyebrow);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.je-dash__sub {
+  display: block;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-dash__wanneer {
+  flex: 0 0 46px;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+}
+.je-dash__groep {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: var(--space-4) var(--space-5) 2px;
+  font: var(--type-eyebrow);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.je-dash__groep > span {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+/* Een lijst met een balkje per regel: de dagelijkse lijsten en de goals. */
+.je-dash__lijsten {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.je-dash__lijstkop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font: var(--type-body-sm);
+  color: var(--text-1);
+  margin-bottom: 5px;
+}
+.je-dash__lijstkop > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-dash__getal {
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+/* Een leeg vlak dat zegt dat er niets is, en niet gewoon leeg blijft. */
+.je-dash__leeg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-5);
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+.je-dash__leeg > svg { color: var(--success, #3db88b); flex: 0 0 auto; }
+
+/* De kop van een paneel: titel links, knop rechts, elk op één regel. Zonder dit
+   brak "Wacht op een beoordeling" over drie regels omdat de knop ernaast stond. */
+.je-panel__head > .je-eyebrow {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.je-panel__head > .je-panel__right { flex: 0 0 auto; }
+
+/* Op een telefoon is de naam van het event belangrijker dan het aantal open
+   taken erachter; anders blijft er van "Vrijwilligersfeest — 140 krukken" niet
+   veel over. */
+@media (max-width: 560px) {
+  .je-dash__kolom .je-taskline__due { display: none; }
 }

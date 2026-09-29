@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { addMonths, dayKey, startOfDay, startOfMonth } from '@lib/dates'
 import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
@@ -6,16 +6,15 @@ import { useNarrow } from '@lib/useNarrow'
 import { Bar, Button, Icon, IconButton, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
+import EventRow from '@components/events/EventRow'
+import EventBoardCard from '@components/events/EventBoardCard'
 import {
   MONTHS_FULL,
   StatusBadge,
   TeamHexes,
   dayLabel,
   euro,
-  monthShort,
-  paxLabel,
   progressOf,
-  shortDate,
 } from '@components/events/parts'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -143,6 +142,8 @@ export default function Events() {
 
 function ListView({ events, all, tasksByEvent, profileById, statuses, narrow }) {
   const navigate = useNavigate()
+  // Vast, zodat de gememoriseerde rijen niet hertekenen bij elke render.
+  const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
   const today = startOfDay()
 
   const open = all.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice'))
@@ -201,69 +202,19 @@ function ListView({ events, all, tasksByEvent, profileById, statuses, narrow }) 
               {g.events.length} {g.events.length === 1 ? 'event' : 'events'}
             </span>
           </div>
-          {g.events.map((e, i) => {
-            const p = progressOf(tasksByEvent[e.id])
-            const meta = [e.customerName || 'Klant onbekend', e.concept?.split(' — ')[0] ?? 'Los event', e.eventType]
-              .filter(Boolean)
-              .join(' · ')
-            return (
-              <button
-                key={e.id}
-                type="button"
-                onClick={() => navigate(`/events/${e.id}`)}
-                className="je-plainbtn je-hover-quiet"
-                style={{
-                  width: '100%',
-                  display: 'grid',
-                  gridTemplateColumns: cols,
-                  alignItems: 'center',
-                  gap: 'var(--space-5)',
-                  padding: 'var(--space-4) var(--space-6)',
-                  borderTop: i ? '1px solid var(--border-hairline)' : 'none',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-                  <span style={{ font: 'var(--fw-medium) 24px/1 var(--font-display)', color: 'var(--text-1)' }}>
-                    {e.eventDate ? new Date(e.eventDate).getDate() : '—'}
-                  </span>
-                  <span className="je-eyebrow" style={{ letterSpacing: '.14em', color: 'var(--text-2)', marginTop: 3 }}>
-                    {e.eventDate ? monthShort(e.eventDate) : ''}
-                  </span>
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {e.name}
-                  </div>
-                  <div className="je-muted-caption" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {meta}
-                  </div>
-                  {narrow ? (
-                    <div style={{ marginTop: 6 }}>
-                      <StatusBadge statusName={e.statusName} statuses={statuses} />
-                    </div>
-                  ) : null}
-                </div>
-                {narrow ? null : (
-                  <>
-                    <span style={{ font: 'var(--type-body-sm)', color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums' }}>
-                      {paxLabel(e)}
-                    </span>
-                    <span>
-                      <StatusBadge statusName={e.statusName} statuses={statuses} />
-                    </span>
-                    <TeamHexes ids={e.team} profileById={profileById} />
-                    <span style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span className="je-muted-caption">{p.label}</span>
-                      <Bar pct={p.pct} />
-                    </span>
-                  </>
-                )}
-                <span style={{ color: 'var(--text-3)', display: 'flex', justifyContent: 'flex-end' }}>
-                  <Icon name="chevron-right" size={16} />
-                </span>
-              </button>
-            )
-          })}
+          {g.events.map((e, i) => (
+            <EventRow
+              key={e.id}
+              event={e}
+              progress={progressOf(tasksByEvent[e.id])}
+              statuses={statuses}
+              profileById={profileById}
+              columns={cols}
+              narrow={narrow}
+              first={i === 0}
+              onOpen={openEvent}
+            />
+          ))}
         </section>
       ))}
 
@@ -278,9 +229,23 @@ function ListView({ events, all, tasksByEvent, profileById, statuses, narrow }) 
 
 function BoardView({ events, tasksByEvent, profileById, statuses }) {
   const navigate = useNavigate()
+
+  // Vaste functies: de kaarten zijn gememoriseerd en hertekenen anders alsnog
+  // bij elke muisbeweging tijdens het slepen.
+  const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
   const toast = useToast()
   const [dragging, setDragging] = useState(null)
   const [over, setOver] = useState(null)
+
+  const beginSleep = useCallback((e, id) => {
+    e.dataTransfer.effectAllowed = 'move'
+    setDragging(id)
+  }, [])
+
+  const eindSleep = useCallback(() => {
+    setDragging(null)
+    setOver(null)
+  }, [])
 
   // Afgerond staat niet op het bord: dat is het archief.
   const columns = PIPELINE.slice(0, 8).map((step, i) => ({
@@ -342,40 +307,18 @@ function BoardView({ events, tasksByEvent, profileById, statuses }) {
             <span style={{ marginLeft: 'auto', font: 'var(--type-caption)', color: 'var(--text-2)' }}>{col.events.length}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-3)', minHeight: 80 }}>
-            {col.events.map((e) => {
-              const p = progressOf(tasksByEvent[e.id])
-              return (
-                <button
-                  key={e.id}
-                  type="button"
-                  draggable
-                  onDragStart={(ev) => {
-                    ev.dataTransfer.effectAllowed = 'move'
-                    setDragging(e.id)
-                  }}
-                  onDragEnd={() => {
-                    setDragging(null)
-                    setOver(null)
-                  }}
-                  onClick={() => navigate(`/events/${e.id}`)}
-                  className="je-plainbtn je-boardcard"
-                  style={{ opacity: dragging === e.id ? 0.4 : 1 }}
-                >
-                  <span className="je-eyebrow" style={{ letterSpacing: '.14em' }}>
-                    {[e.concept?.split(' — ')[0] ?? 'Los event', shortDate(e.eventDate)].filter(Boolean).join(' · ')}
-                  </span>
-                  <span style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>{e.name}</span>
-                  <span className="je-muted-caption" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <Icon name="users" size={14} />
-                    {paxLabel(e)}
-                    <span style={{ marginLeft: 'auto' }}>
-                      <TeamHexes ids={e.team} profileById={profileById} size={22} />
-                    </span>
-                  </span>
-                  <Bar pct={p.pct} />
-                </button>
-              )
-            })}
+            {col.events.map((e) => (
+              <EventBoardCard
+                key={e.id}
+                event={e}
+                progress={progressOf(tasksByEvent[e.id])}
+                profileById={profileById}
+                dragging={dragging === e.id}
+                onOpen={openEvent}
+                onDragStart={beginSleep}
+                onDragEnd={eindSleep}
+              />
+            ))}
           </div>
         </div>
       ))}

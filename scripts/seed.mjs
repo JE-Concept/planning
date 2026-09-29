@@ -71,6 +71,7 @@ const columns = (rows) =>
 
 const aangemaakt = []
 const overgeslagen = []
+const aangevuld = []
 
 /**
  * Schrijft alleen wanneer het document nog niet bestaat.
@@ -198,11 +199,14 @@ async function main() {
     )
   }
 
+  await vulMeetveldenAan()
+
   await seedFacturatieRegel()
 
   console.log(
     aangemaakt.length ? `Aangemaakt: ${aangemaakt.join(', ')}.` : 'Niets nieuws aan te maken.'
   )
+  if (aangevuld.length) console.log(`Meetvelden aangevuld — ${aangevuld.join(' | ')}.`)
   if (overgeslagen.length) {
     console.log(`Ongemoeid gelaten (bestaat al, is van de app): ${overgeslagen.join(', ')}.`)
   }
@@ -218,6 +222,51 @@ async function main() {
  * bestaat pas nadat ze één keer is ingelogd. Zolang dat niet zo is, slaan we
  * over en zegt de seed dat ook.
  */
+/**
+ * Geeft bestaande punten hun meetveld, zonder iets anders aan te raken.
+ *
+ * De lijsten zijn van de database zodra ze bestaan — dat is met opzet, want het
+ * team past ze aan en een uitrol hoort dat niet te overschrijven. Maar de
+ * FAVV-punten kregen een grens die er eerder niet was ("max 7 °C" in plaats van
+ * een vinkje), en die staat in de sjablonen hier.
+ *
+ * Dit vult alleen aan: een punt dat al een `veld` heeft blijft zoals het is, een
+ * punt dat het sjabloon niet kent wordt niet aangeraakt, en er verdwijnt niets.
+ * Wat wel gebeurt staat in het logboek van de uitrol, per punt, zodat je achteraf
+ * kunt nagaan wat er veranderd is.
+ */
+async function vulMeetveldenAan() {
+  for (const template of CHECKLIST_TEMPLATES) {
+    const ref = db.collection('checklists').doc(template.id)
+    const snap = await ref.get()
+    if (!snap.exists) continue
+
+    const velden = new Map()
+    for (const sectie of template.sections) {
+      for (const punt of sectie.items) if (punt.veld) velden.set(punt.id, punt.veld)
+    }
+    if (velden.size === 0) continue
+
+    const secties = snap.data().sections ?? []
+    const bijgewerkt = []
+
+    const nieuw = secties.map((sectie) => ({
+      ...sectie,
+      items: (sectie.items ?? []).map((punt) => {
+        const veld = velden.get(punt.id)
+        if (!veld || punt.veld) return punt
+        bijgewerkt.push(punt.id)
+        return { ...punt, veld }
+      }),
+    }))
+
+    if (bijgewerkt.length === 0) continue
+
+    await ref.set({ sections: nieuw, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    aangevuld.push(`${template.name}: ${bijgewerkt.join(', ')}`)
+  }
+}
+
 async function seedFacturatieRegel() {
   const marker = db.collection('config').doc('seeded')
   if ((await marker.get()).data()?.automationReadyToInvoice) return

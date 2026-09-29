@@ -7,7 +7,7 @@ import { useAuth } from '@context/AuthProvider'
  * Google is de enige manier; wie geen toegang heeft, ziet waarom.
  */
 export default function Login() {
-  const { state, signIn, error, logOut, user } = useAuth()
+  const { state, signIn, error, logOut, user, herstelZonderCache } = useAuth()
 
   return (
     <div
@@ -92,6 +92,29 @@ export default function Login() {
             <p style={{ margin: 0, font: 'var(--type-caption)', fontWeight: 400, color: 'var(--slate-500)', textAlign: 'center' }}>
               Enkel voor @jeconcept.be en @kenjeklanten.be, of op uitnodiging.
             </p>
+          </>
+        ) : null}
+
+        {/*
+          Vastgelopen is geen weigering en geen fout: er komt niets terug. Dat
+          gebeurt wanneer het cacheslot van een tabblad dat niet netjes afsloot
+          blijft staan en dit tabblad erop wacht. Eerder draaide de spinner dan
+          eeuwig door, en wie dat een paar keer meemaakt vertrouwt de tool niet
+          meer. Hier staat wat er aan de hand is en één knop die het oplost.
+        */}
+        {state === 'stuck' ? (
+          <>
+            <Notice>
+              JE Plan krijgt geen antwoord van de opgeslagen gegevens op dit toestel. Dat gebeurt als een
+              eerder tabblad niet netjes afgesloten werd. Opnieuw beginnen lost het op — er gaat niets
+              verloren.
+            </Notice>
+            <Button size="lg" block onClick={herstelZonderCache}>
+              Opnieuw beginnen
+            </Button>
+            <Button variant="ghost" size="md" block onClick={logOut}>
+              Afmelden
+            </Button>
           </>
         ) : null}
 

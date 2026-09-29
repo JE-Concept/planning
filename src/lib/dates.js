@@ -19,25 +19,47 @@ const monthFmt = new Intl.DateTimeFormat('nl-BE', {
 
 export const WEEKDAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo']
 
-export function formatDay(value) {
-  return value ? dayFmt.format(new Date(value)) : ''
+/**
+ * Wat er ook binnenkomt, er komt een Date of niets uit.
+ *
+ * `Intl` gooit `RangeError: Invalid time value` op een ongeldige datum, en
+ * omdat dit in de render gebeurt neemt die fout het hele scherm mee — één rare
+ * waarde uit de database en de pagina is wit. Een Firestore-Timestamp die nog
+ * niet omgezet is, is precies zo'n waarde; die wordt hier alsnog omgezet.
+ *
+ * Bij twijfel liever een leeg vakje dan een wit scherm: een ontbrekend tijdstip
+ * is te zien en te verhelpen, een verdwenen pagina niet.
+ */
+function asDate(value) {
+  if (value == null || value === '') return null
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value
+  if (typeof value === 'object' && typeof value.toDate === 'function') {
+    try {
+      return asDate(value.toDate())
+    } catch {
+      return null
+    }
+  }
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
 }
-export function formatDate(value) {
-  return value ? dateFmt.format(new Date(value)) : ''
+
+export { asDate }
+
+const formatteer = (fmt) => (value) => {
+  const d = asDate(value)
+  return d ? fmt.format(d) : ''
 }
-export function formatDateTime(value) {
-  return value ? dateTimeFmt.format(new Date(value)) : ''
-}
-export function formatTime(value) {
-  return value ? timeFmt.format(new Date(value)) : ''
-}
-export function formatMonth(value) {
-  return value ? monthFmt.format(new Date(value)) : ''
-}
+
+export const formatDay = formatteer(dayFmt)
+export const formatDate = formatteer(dateFmt)
+export const formatDateTime = formatteer(dateTimeFmt)
+export const formatTime = formatteer(timeFmt)
+export const formatMonth = formatteer(monthFmt)
 
 /** "vandaag", "morgen", "over 3 dagen", "5 dagen te laat" — board-card language. */
 export function relativeDay(value) {
-  if (!value) return ''
+  if (!asDate(value)) return ''
   const days = daysUntil(value)
   if (days === 0) return 'vandaag'
   if (days === 1) return 'morgen'
@@ -47,13 +69,14 @@ export function relativeDay(value) {
 }
 
 export function daysUntil(value) {
-  const target = startOfDay(new Date(value))
-  const today = startOfDay(new Date())
-  return Math.round((target - today) / 86400000)
+  const d = asDate(value)
+  if (!d) return 0
+  return Math.round((startOfDay(d) - startOfDay(new Date())) / 86400000)
 }
 
 export function isOverdue(value) {
-  return Boolean(value) && new Date(value).getTime() < Date.now()
+  const d = asDate(value)
+  return Boolean(d) && d.getTime() < Date.now()
 }
 
 export function startOfDay(date = new Date()) {
@@ -123,12 +146,14 @@ export function sameDay(a, b) {
 }
 
 export function isToday(value) {
-  return sameDay(new Date(value), new Date())
+  const d = asDate(value)
+  return Boolean(d) && sameDay(d, new Date())
 }
 
 /** "2026-09-15" in local time — the key a calendar grid buckets on. */
 export function dayKey(value) {
-  const d = new Date(value)
+  const d = asDate(value)
+  if (!d) return ''
   return [
     d.getFullYear(),
     String(d.getMonth() + 1).padStart(2, '0'),
@@ -138,14 +163,14 @@ export function dayKey(value) {
 
 /** `<input type="datetime-local">` wants local time without a zone suffix. */
 export function toLocalInput(value) {
-  if (!value) return ''
-  const d = new Date(value)
+  const d = asDate(value)
+  if (!d) return ''
   const pad = (n) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 export function fromLocalInput(value) {
-  return value ? new Date(value).toISOString() : null
+  return asDate(value)?.toISOString() ?? null
 }
 
 export function toDateInput(value) {

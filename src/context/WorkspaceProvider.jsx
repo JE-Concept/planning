@@ -35,6 +35,7 @@ export function WorkspaceProvider({ children }) {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [vastgelopen, setVastgelopen] = useState(false)
 
   useEffect(() => {
     if (state !== 'ready') return undefined
@@ -47,10 +48,21 @@ export function WorkspaceProvider({ children }) {
       : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags', 'templates'])
     const settle = (key) => {
       pending.delete(key)
-      if (pending.size === 0) setLoading(false)
+      if (pending.size === 0) {
+        clearTimeout(klok)
+        setLoading(false)
+      }
     }
 
     setError(null)
+    setVastgelopen(false)
+
+    // Een fout meldt zich; een vastgelopen cache doet dat niet. Dan komt er
+    // simpelweg nooit een eerste antwoord, en bleef "Werkruimte laden…" staan.
+    // Deze klok maakt van dat stilzwijgen een scherm met een uitweg.
+    const klok = setTimeout(() => {
+      if (pending.size > 0) setVastgelopen(true)
+    }, 15000)
 
     // Elk abonnement moet ook bij een fout "klaar" melden. Anders blijft er
     // eentje openstaan in de teller en blijft het hele scherm hangen op
@@ -97,7 +109,10 @@ export function WorkspaceProvider({ children }) {
           ]),
     ]
 
-    return () => unsubscribers.forEach((stop) => stop())
+    return () => {
+      clearTimeout(klok)
+      unsubscribers.forEach((stop) => stop())
+    }
   }, [state, isStaff])
 
   const value = useMemo(() => {
@@ -116,6 +131,7 @@ export function WorkspaceProvider({ children }) {
       costCenters: data.workspaceConfig?.costCenters ?? DEFAULT_COST_CENTERS,
       loading,
       error,
+      vastgelopen,
       activeLists,
       boards: activeLists.filter((l) => l.kind !== 'social'),
       socialLists: activeLists.filter((l) => l.kind === 'social'),
@@ -130,7 +146,7 @@ export function WorkspaceProvider({ children }) {
           (a, b) => a.position - b.position
         ),
     }
-  }, [data, loading, error])
+  }, [data, loading, error, vastgelopen])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
 }
