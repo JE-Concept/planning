@@ -138,7 +138,17 @@
   padding: var(--space-6) 0 0;
   display: flex;
   flex-direction: column;
+  /* De zijbalk zelf schuift niet meer: deed ze dat wel, dan schoof de timer
+     onderaan het scherm uit zodra het menu langer werd dan de hoogte. */
+  overflow: hidden;
+}
+/* Het enige dat mag schuiven, en met het tweede navigatieniveau hoeft dat op
+   een pc niet meer. Op een lage laptop is het er dan nog wel. */
+.je-side__scroll {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
 .je-side__logo {
   padding: 0 var(--space-6) var(--space-7);
@@ -197,8 +207,9 @@
   color: var(--navy-200);
 }
 .je-side__timer {
-  margin: var(--space-7) var(--space-6) 0;
-  padding-top: var(--space-6);
+  flex: 0 0 auto;
+  margin: var(--space-5) var(--space-6) 0;
+  padding-top: var(--space-5);
   border-top: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
@@ -211,8 +222,9 @@
   font-variant-numeric: tabular-nums;
 }
 .je-side__me {
-  margin-top: auto;
-  padding: var(--space-6);
+  flex: 0 0 auto;
+  margin-top: var(--space-5);
+  padding: var(--space-5) var(--space-6);
   border-top: 1px solid var(--border-hairline);
   display: flex;
   align-items: center;
@@ -469,4 +481,170 @@
 }
 .je-link-quiet:hover {
   color: var(--text-accent) !important;
+}
+
+/* ── Tasks ─────────────────────────────────────────────────────────────── */
+
+/* De balk met de weergavekeuzes. Wikkelt op een smal scherm in plaats van
+   horizontaal weg te schuiven: een keuze die je niet ziet, maak je niet. */
+.je-displaybar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--surface-1);
+}
+.je-displaybar__velden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.je-displaybar__zoek {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-3);
+}
+.je-displaybar__zoek .je-input {
+  width: 180px;
+}
+/* Compacte vorm van een veld in een werkbalk, naast knoppen van dezelfde hoogte. */
+.je-compact {
+  height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font: var(--type-body-sm);
+}
+
+.je-tasklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.je-tasklist > li + li {
+  border-top: 1px solid var(--border-hairline);
+}
+.je-taskline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-5);
+  text-align: left;
+  transition: background 120ms var(--ease-brand);
+}
+.je-taskline:hover {
+  background: var(--surface-2);
+}
+.je-taskline__prio {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  flex: 0 0 8px;
+}
+.je-taskline__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-body-sm);
+  color: var(--text-1);
+}
+.je-taskline__list,
+.je-taskline__time,
+.je-taskline__due {
+  flex: 0 0 auto;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+  text-align: right;
+  white-space: nowrap;
+}
+.je-taskline__list {
+  width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.je-taskline__time {
+  width: 56px;
+  font-variant-numeric: tabular-nums;
+}
+.je-taskline__due {
+  width: 104px;
+}
+@media (max-width: 720px) {
+  .je-taskline__list,
+  .je-taskline__time {
+    display: none;
+  }
+}
+
+/* Kolommen naast elkaar die verder lopen dan het scherm breed is.
+   Zonder deze schuifbalk waren de laatste kolommen onbereikbaar. */
+.je-boardscroll {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--space-5) var(--space-6);
+  scroll-snap-type: x proximity;
+}
+.je-boardcol {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  width: 268px;
+  flex: 0 0 268px;
+  scroll-snap-align: start;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+}
+.je-boardcol__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-boardcol__head > .je-eyebrow {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-boardcol__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Een taak in een dagvakje van de kalender. */
+.je-calitem {
+  display: block;
+  width: 100%;
+  padding: 1px 4px;
+  border-left: 2px solid var(--border-subtle);
+  background: var(--surface-1);
+  border-radius: 2px;
+  font: var(--type-caption);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: var(--shadow-1);
+}
+.je-calitem:hover {
+  background: var(--surface-2);
 }

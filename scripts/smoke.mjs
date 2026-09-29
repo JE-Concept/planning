@@ -113,8 +113,7 @@ const PAGINAS = [
   ['Events als lijst', '/?weergave=lijst', 'Aanvraag tot offerte'],
   ['Kalender', '/kalender', 'Kalender'],
   ['Event', '/events/t-trouw', 'Trouw Niels en Inez'],
-  ['Mijn taken', '/mijn-taken', 'Mijn taken'],
-  ['Taken per persoon', '/mijn-werk', 'Mijn werk'],
+  ['Tasks', '/tasks', 'Tasks'],
   ['Werklast', '/werklast', 'Werklast'],
   ['Vandaag', '/vandaag', 'Dag Jasper'],
   ['Bord Events', '/bord/l-overview', 'Events'],
@@ -147,14 +146,14 @@ await test('een verdwenen pagina geeft geen wit scherm maar een uitleg', async (
   const page = await tabblad('/')
   verdwenen.add('/assets/Goals-')
 
-  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Tasks/ }).first().click()
   await page.getByRole('link', { name: 'Goals', exact: true }).first().click()
   await page.waitForTimeout(2500)
 
   const tekst = await inhoud(page)
   zouden(tekst.length > 40, 'het scherm is wit geworden')
   zouden(tekst.includes('opnieuw laden'), `geen uitleg, wel: ${tekst.slice(0, 80)}`)
-  zouden(tekst.includes('Mijn taken'), 'de zijbalk is verdwenen; je kunt nergens heen')
+  zouden(tekst.includes('Tasks'), 'de zijbalk is verdwenen; je kunt nergens heen')
 
   verdwenen.delete('/assets/Goals-')
   await page.close()
@@ -171,17 +170,17 @@ await test('een kapotte pagina laat de rest van de tool staan', async () => {
   const page = await tabblad('/')
   verdwenen.add('/assets/TimeTracking-')
 
-  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Team/ }).first().click()
   await page.getByRole('link', { name: 'Uren' }).first().click()
   await page.waitForTimeout(2200)
   zouden((await inhoud(page)).includes('opnieuw laden'), 'geen uitleg na de fout')
 
   // En je kunt gewoon verder: een andere pagina hoort de melding weg te halen.
-  await page.getByRole('link', { name: 'Mijn taken' }).first().click()
+  await page.getByRole('link', { name: /^Tasks/ }).first().click()
   await page.waitForTimeout(1200)
   const tekst = await inhoud(page)
   zouden(!tekst.includes('opnieuw laden'), 'de foutmelding bleef staan na het wegklikken')
-  zouden(tekst.includes('Te laat') || tekst.includes('Vandaag'), 'Mijn taken opende niet')
+  zouden(tekst.includes('Te laat') || tekst.includes('Vandaag'), 'Tasks opende niet')
 
   verdwenen.delete('/assets/TimeTracking-')
   await page.close()
@@ -324,7 +323,7 @@ await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   await page.waitForTimeout(600)
 
   // En het komt ook echt op de lijst van vandaag terecht.
-  await page.getByLabel('Hoofdnavigatie').getByRole('button', { name: 'Meer' }).click()
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Bistro/ }).first().click()
   await page.getByRole('link', { name: 'Openen & sluiten' }).first().click()
   await page.waitForTimeout(1000)
   zouden(
@@ -371,8 +370,8 @@ await test('de business rules staan in de instellingen', async () => {
   await page.close()
 })
 
-await test('Mijn werk en Uren hebben een kalender', async () => {
-  const werk = await tabblad('/mijn-werk')
+await test('Tasks en Uren hebben een kalender', async () => {
+  const werk = await tabblad('/tasks')
   await werk.getByRole('tab', { name: 'Kalender' }).click()
   await werk.waitForTimeout(900)
   const wt = await inhoud(werk)

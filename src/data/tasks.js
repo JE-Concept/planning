@@ -251,6 +251,52 @@ export function useMyTasks(uid) {
 }
 
 /**
+ * De taken voor de Tasks-pagina, met de keuzes die daar gemaakt worden.
+ *
+ * Dit bestaat naast `useMyTasks` omdat die pagina meer kan dan één lijstje van
+ * één persoon: van jezelf naar een collega naar iedereen, en met of zonder wat
+ * al afgerond is. Elk van die combinaties is een andere vraag aan Firestore, en
+ * de vraag hier stellen is beter dan alles ophalen en in de browser weggooien —
+ * leesbewerkingen worden per stuk gefactureerd.
+ *
+ * `who` is een gebruikers-id of `'iedereen'`. Er zit een plafond op: wie alles
+ * van iedereen inclusief afgerond opvraagt, vraagt om de hele geschiedenis, en
+ * daar is de pagina niet voor. Het archief is dat wel.
+ */
+export function useTaskBoard({ who, open = true, max = 500 } = {}) {
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!who) {
+      setTasks([])
+      setLoading(false)
+      return undefined
+    }
+
+    const filters = [
+      ...(who === 'iedereen' ? [] : [where('assignees', 'array-contains', who)]),
+      ...(open ? [where('open', '==', true)] : []),
+    ]
+
+    setLoading(true)
+    return onSnapshot(
+      query(col(COL.tasks), ...filters, orderBy('dueDate'), limit(max)),
+      (snap) => {
+        setTasks(fromQuery(snap))
+        setLoading(false)
+      },
+      (err) => {
+        console.error('JE Plan: de taken zijn niet op te halen', err)
+        setLoading(false)
+      }
+    )
+  }, [who, open, max])
+
+  return { tasks, loading }
+}
+
+/**
  * Open tasks to pick from — the project a social post hangs on.
  *
  * Firestore has no text search, so the recent open tasks are subscribed once

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { dayKey } from '@lib/dates'
-import { isWeekend, runProgress } from '@lib/checklist-templates'
+import { runProgress } from '@lib/checklist-templates'
 import { useAuth } from '@context/AuthProvider'
 import { useChecklists, useRunsForDay } from '@data/checklists'
 import { useReviewQueue } from '@data/social'
@@ -18,28 +18,39 @@ import { useMyTasks } from '@data/tasks'
  * hem te negeren.
  */
 export function useNavCounts() {
-  const { uid, isStaff } = useAuth()
+  const { uid, isStaff, profile } = useAuth()
 
   const { tasks } = useMyTasks(isStaff ? null : uid)
   const review = useReviewQueue(undefined, { enabled: !isStaff })
 
   const today = dayKey()
-  const weekend = isWeekend()
   const { checklists } = useChecklists()
   const { byChecklist } = useRunsForDay(today)
 
+  /*
+    Met dezelfde ogen tellen als de pagina zelf.
+
+    Dit stond eerder los van wie er kijkt, en dan telt `runProgress` alleen de
+    punten die voor iedereen zijn. De zijbalk zei dan 5 terwijl er op de pagina
+    24, 36, 12 en 5 open stonden — vier lijsten met werk, en een cijfer waar je
+    niets aan kon afleiden. Een teller die niet klopt is erger dan geen teller,
+    want je leert hem wegkijken.
+  */
   const openChecklistItems = useMemo(
     () =>
       checklists.reduce((total, list) => {
-        const { done, total: n } = runProgress(list, byChecklist[list.id], { weekend })
+        const { done, total: n } = runProgress(list, byChecklist[list.id], {
+          date: new Date(),
+          person: profile,
+        })
         return total + (n - done)
       }, 0),
-    [checklists, byChecklist, weekend]
+    [checklists, byChecklist, profile]
   )
 
   return useMemo(
     () => ({
-      '/mijn-taken': tasks.length,
+      '/tasks': tasks.length,
       '/social': review.length,
       '/openen-sluiten': openChecklistItems,
     }),

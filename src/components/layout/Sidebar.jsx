@@ -12,24 +12,92 @@ import { stopTimer, useRunningTimer } from '@data/time'
 import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
 
 /**
- * De hoofdnavigatie uit het design: vijf plekken, en wat verder bestaat (de
- * oudere schermen en de andere borden) onder "Meer", zodat niets verdwijnt
- * maar ook niets in de weg staat.
+ * De navigatie in twee niveaus.
+ *
+ * Er waren twaalf bestemmingen onder elkaar plus de borden eronder, en op een
+ * laptop paste dat niet: je moest in de zijbalk scrollen om bij Instellingen te
+ * komen, en de timer onderaan was dan helemaal weg. Scrollen in een menu is een
+ * menu dat te lang is.
+ *
+ * Nu staan er zes plekken, elk met zijn eigen tweede niveau, en dat tweede
+ * niveau staat er alleen voor de sectie waar je in zit. Wat je ziet gaat dus over
+ * waar je bent, en het aantal regels blijft ruim onder wat op een scherm past.
+ *
+ * `match` bestaat omdat het pad niet altijd het menu-item is: /events/<id> hoort
+ * bij Events, en /bord/<id> bij het bord waar je op klikte.
  */
+export function navSecties({ isAdmin, isStaff, boards = [], eventsListId = null }) {
+  if (isStaff) {
+    return [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten', kinderen: [] }]
+  }
+
+  const andereBorden = boards
+    .filter((l) => l.id !== eventsListId)
+    .map((l) => ({ to: `/bord/${l.id}`, icon: 'kanban', label: l.name }))
+
+  return [
+    { to: '/vandaag', icon: 'sun', label: 'Vandaag', kinderen: [] },
+    {
+      to: '/',
+      icon: 'layout-dashboard',
+      label: 'Events',
+      end: true,
+      match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten' || p === '/social',
+      kinderen: [
+        { to: '/', icon: 'kanban', label: 'Bord', end: true, match: (p) => p === '/' || p.startsWith('/events') },
+        { to: '/kalender', icon: 'calendar-days', label: 'Kalender' },
+        { to: '/klanten', icon: 'building', label: 'Klanten' },
+        { to: '/social', icon: 'share-2', label: 'Socials' },
+      ],
+    },
+    {
+      to: '/tasks',
+      icon: 'check-circle',
+      label: 'Tasks',
+      match: (p) => p === '/tasks' || p === '/werklast' || p === '/goals' || p.startsWith('/bord'),
+      kinderen: [
+        { to: '/tasks', icon: 'list-checks', label: 'Alle taken' },
+        { to: '/werklast', icon: 'users', label: 'Werklast' },
+        { to: '/goals', icon: 'target', label: 'Goals' },
+        ...andereBorden,
+      ],
+    },
+    {
+      to: '/openen-sluiten',
+      icon: 'clipboard-check',
+      label: 'Bistro',
+      match: (p) => p.startsWith('/openen-sluiten'),
+      kinderen: [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' }],
+    },
+    {
+      to: '/overleg',
+      icon: 'messages-square',
+      label: 'Team',
+      match: (p) => p === '/overleg' || p === '/uren',
+      kinderen: [
+        { to: '/overleg', icon: 'messages-square', label: 'Teamoverleg' },
+        { to: '/uren', icon: 'timer', label: 'Uren' },
+      ],
+    },
+    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', label: 'Instellingen', kinderen: [] }] : []),
+  ]
+}
+
+/** De platte lijst die de onderbalk op een telefoon nodig heeft. */
 export function mainNav({ isAdmin, isStaff }) {
   if (isStaff) return [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' }]
   return [
     { to: '/', icon: 'layout-dashboard', label: 'Events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
-    { to: '/mijn-taken', icon: 'check-circle', label: 'Mijn taken' },
+    { to: '/tasks', icon: 'check-circle', label: 'Tasks' },
     { to: '/kalender', icon: 'calendar-days', label: 'Kalender' },
     { to: '/werklast', icon: 'users', label: 'Werklast' },
     ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', label: 'Instellingen' }] : []),
   ]
 }
 
+/** Alles wat niet in de onderbalk past, voor het scherm "Meer" op een telefoon. */
 export const MORE = [
   { to: '/vandaag', icon: 'sun', label: 'Vandaag' },
-  { to: '/mijn-werk', icon: 'list-checks', label: 'Taken per persoon' },
   { to: '/klanten', icon: 'building', label: 'Klanten' },
   { to: '/social', icon: 'share-2', label: 'Socials' },
   { to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' },
@@ -50,11 +118,22 @@ export default function Sidebar({ counts = {} }) {
   const { isAdmin, isStaff } = useAuth()
   const { boards, eventsList } = useWorkspace()
   const location = useLocation()
-  const otherBoards = boards.filter((l) => l.id !== eventsList?.id)
-  const moreActive = [...MORE.map((m) => m.to), '/bord'].some((p) => location.pathname.startsWith(p))
-  const [moreOpen, setMoreOpen] = useState(moreActive)
 
-  const nav = mainNav({ isAdmin, isStaff })
+  const secties = useMemo(
+    () => navSecties({ isAdmin, isStaff, boards, eventsListId: eventsList?.id ?? null }),
+    [isAdmin, isStaff, boards, eventsList?.id]
+  )
+
+  const actief = (item, pad) => (item.match ? item.match(pad) : item.end ? pad === item.to : pad.startsWith(item.to))
+
+  /*
+    Het tweede niveau staat er voor de sectie waar je in zit — niet voor alle
+    secties tegelijk, want dan is het weer één lange lijst. Wie ergens anders
+    heen wil, klikt de sectie aan en ziet er de onderdelen van.
+  */
+  const [geopend, setGeopend] = useState(null)
+  const huidige = secties.find((sectie) => actief(sectie, location.pathname))
+  const openSectie = geopend ?? huidige?.to ?? null
 
   return (
     <aside className="je-side je-night" aria-label="Hoofdnavigatie">
@@ -62,65 +141,56 @@ export default function Sidebar({ counts = {} }) {
         <Logotype size={38} invert />
       </NavLink>
 
-      <nav style={{ display: 'flex', flexDirection: 'column' }}>
-        {nav.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              cn('je-nav', (item.match ? item.match(location.pathname) : isActive) && 'je-nav--on')
-            }
-          >
-            <Icon name={item.icon} size={17} />
-            <span style={{ flex: 1 }}>{item.label}</span>
-            {counts[item.to] ? <span className="je-nav__count">{counts[item.to]}</span> : null}
-          </NavLink>
-        ))}
-      </nav>
+      {/* De navigatie is het enige dat mag schuiven; de timer en jouw naam
+          blijven staan, want een timer die je moet gaan zoeken vergeet je. */}
+      <div className="je-side__scroll">
+        <nav style={{ display: 'flex', flexDirection: 'column' }}>
+          {secties.map((sectie) => {
+            const aan = actief(sectie, location.pathname)
+            const uitgeklapt = sectie.kinderen.length > 0 && openSectie === sectie.to
 
-      {isStaff ? null : (
-        <>
-          <button
-            type="button"
-            className="je-side__group"
-            aria-expanded={moreOpen}
-            onClick={() => setMoreOpen((o) => !o)}
-          >
-            <span style={{ flex: 1, textAlign: 'left' }}>Meer</span>
-            <Icon name={moreOpen ? 'chevron-down' : 'chevron-right'} size={14} />
-          </button>
-          {moreOpen ? (
-            <nav style={{ display: 'flex', flexDirection: 'column' }}>
-              {MORE.map((item) => (
+            return (
+              <div key={sectie.to}>
                 <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) => cn('je-nav je-nav--minor', isActive && 'je-nav--on')}
+                  to={sectie.to}
+                  end={sectie.end}
+                  onClick={() => setGeopend(sectie.to)}
+                  className={cn('je-nav', aan && 'je-nav--on')}
+                  aria-expanded={sectie.kinderen.length ? uitgeklapt : undefined}
                 >
-                  <Icon name={item.icon} size={15} />
-                  <span style={{ flex: 1 }}>{item.label}</span>
-                  {counts[item.to] ? <span className="je-nav__count">{counts[item.to]}</span> : null}
+                  <Icon name={sectie.icon} size={17} />
+                  <span style={{ flex: 1 }}>{sectie.label}</span>
+                  {counts[sectie.to] ? <span className="je-nav__count">{counts[sectie.to]}</span> : null}
+                  {sectie.kinderen.length ? (
+                    <Icon name={uitgeklapt ? 'chevron-down' : 'chevron-right'} size={13} />
+                  ) : null}
                 </NavLink>
-              ))}
-              {otherBoards.map((list) => (
-                <NavLink
-                  key={list.id}
-                  to={`/bord/${list.id}`}
-                  className={({ isActive }) => cn('je-nav je-nav--minor', isActive && 'je-nav--on')}
-                >
-                  <Icon name="kanban" size={15} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {list.name}
-                  </span>
-                </NavLink>
-              ))}
-            </nav>
-          ) : null}
 
-          <SideTimer />
-        </>
-      )}
+                {uitgeklapt ? (
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {sectie.kinderen.map((kind) => (
+                      <NavLink
+                        key={kind.to + kind.label}
+                        to={kind.to}
+                        end={kind.end}
+                        className={cn('je-nav je-nav--minor', actief(kind, location.pathname) && 'je-nav--on')}
+                      >
+                        <Icon name={kind.icon} size={15} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {kind.label}
+                        </span>
+                        {counts[kind.to] ? <span className="je-nav__count">{counts[kind.to]}</span> : null}
+                      </NavLink>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            )
+          })}
+        </nav>
+      </div>
+
+      {isStaff ? null : <SideTimer />}
 
       <Me />
     </aside>
