@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Dialog, Switch } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { pushIngesteld, pushMogelijk, pushStaatAan } from '@lib/push'
 import { KANALEN, SOORT_UITLEG, voorkeurenVan, zetVoorkeur } from '@data/meldingen'
@@ -18,6 +19,7 @@ import { KANALEN, SOORT_UITLEG, voorkeurenVan, zetVoorkeur } from '@data/melding
  */
 export default function MeldingsVoorkeuren({ open, onClose }) {
   const { uid, profile } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
   const [bezig, setBezig] = useState(null)
 
@@ -40,31 +42,29 @@ export default function MeldingsVoorkeuren({ open, onClose }) {
     <Dialog
       open={open}
       onClose={onClose}
-      title="Meldingen"
+      title={t('melding.titel')}
       width={560}
       footer={
         <Button variant="primary" onClick={onClose}>
-          Klaar
+          {t('melding.klaar')}
         </Button>
       }
     >
       <div className="je-meldpref">
-        <p className="je-meldpref__intro">
-          Wat je wil horen, en hoe. Dit geldt voor jou, op al je toestellen.
-        </p>
+        <p className="je-meldpref__intro">{t('melding.intro')}</p>
 
         <ul className="je-meldpref__lijst">
           {SOORT_UITLEG.map((soort) => (
             <li key={soort.key} className="je-meldpref__rij">
               <span className="je-meldpref__tekst">
-                <span className="je-meldpref__titel">{soort.titel}</span>
-                <span className="je-meldpref__uitleg">{soort.uitleg}</span>
+                <span className="je-meldpref__titel">{t(soort.titel)}</span>
+                <span className="je-meldpref__uitleg">{t(soort.uitleg)}</span>
               </span>
               <span className="je-meldpref__schakelaars">
                 {KANALEN.map((kanaal) => (
                   <Switch
                     key={kanaal.key}
-                    label={kanaal.label}
+                    label={t(kanaal.label)}
                     checked={huidig[soort.key][kanaal.key]}
                     disabled={bezig === `${soort.key}.${kanaal.key}`}
                     onChange={(e) => zet(soort.key, kanaal.key, e.target.checked)}
@@ -78,16 +78,10 @@ export default function MeldingsVoorkeuren({ open, onClose }) {
         {/* Een schakelaar die aanstaat terwijl er niets aankomt, is erger dan
             geen schakelaar: dan zoekt iemand de fout bij zichzelf. */}
         {pushMogelijk() && !pushIngesteld() ? (
-          <p className="je-meldpref__waarschuwing">
-            Meldingen op je toestel zijn voor deze installatie nog niet ingesteld. Tot dat gebeurt
-            komt alles per e-mail binnen.
-          </p>
+          <p className="je-meldpref__waarschuwing">{t('melding.push_niet_ingesteld')}</p>
         ) : null}
         {pushIngesteld() && pushMogelijk() && !pushStaatAan() ? (
-          <p className="je-meldpref__waarschuwing">
-            Meldingen staan nog uit op dit toestel. Zet ze aan via “Meldingen aanzetten” in dit
-            menu, anders komt alleen de e-mail aan.
-          </p>
+          <p className="je-meldpref__waarschuwing">{t('melding.push_uit')}</p>
         ) : null}
       </div>
     </Dialog>

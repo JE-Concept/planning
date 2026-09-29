@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { addDays, dayKey, formatDate, startOfWeek } from '@lib/dates'
+import { addDays, dayKey, formatDate, formatWeekday, startOfWeek } from '@lib/dates'
 import { geplandTegenoverGeboekt, roosterVan, urenTekst } from '@lib/rooster'
 import { Icon } from '@components/ds'
 import { Button, Field, Input, Modal, Select, Spinner } from '@ui/index'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { deleteShift, kopieerWeek, saveShift, useShifts } from '@data/rooster'
@@ -27,6 +28,7 @@ import { useTimeEntries } from '@data/time'
 export default function Rooster() {
   const { isAdmin, uid } = useAuth()
   const { profiles, brands, brandById } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
 
   const [maandag, setMaandag] = useState(() => startOfWeek())
@@ -46,6 +48,11 @@ export default function Rooster() {
     () => roosterVan({ shifts, profiles: mensen, datum: maandag }),
     [shifts, mensen, maandag]
   )
+
+  // De dagnaam wordt hier opgemaakt en niet uit `rooster` gelezen: dat raster
+  // wordt maar herrekend wanneer de week of de diensten veranderen, en dan
+  // zouden de namen na een taalwissel in de oude taal blijven staan.
+  const dagnaam = (dag) => formatWeekday(dag.datum)
 
   const maand = dayKey(maandag).slice(0, 7)
   const { entries } = useTimeEntries({ month: maand })
@@ -76,11 +83,7 @@ export default function Rooster() {
     setBezig(true)
     try {
       const n = await kopieerWeek({ shifts, vanDatum: maandag, naarDatum: addDays(maandag, 7) })
-      toast.success(
-        n === 0
-          ? 'Deze week is leeg; er viel niets te kopiëren.'
-          : `${n} ${n === 1 ? 'dienst' : 'diensten'} naar volgende week gekopieerd.`
-      )
+      toast.success(n === 0 ? t('rooster.niets_te_kopieren') : t('rooster.gekopieerd', { aantal: n }))
       setMaandag(addDays(maandag, 7))
     } catch (err) {
       toast.error(err.message)
@@ -93,22 +96,22 @@ export default function Rooster() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <PageHeader
         eyebrow={`${formatDate(rooster.dagen[0].datum)} — ${formatDate(rooster.dagen[6].datum)}`}
-        title="Rooster"
-        subtitle={`${urenTekst(rooster.minuten)} ingepland`}
+        title={t('nav.rooster')}
+        subtitle={t('rooster.ingepland', { uren: urenTekst(rooster.minuten) })}
         actions={
           <>
-            <Button variant="secondary" size="sm" onClick={() => setMaandag(addDays(maandag, -7))} aria-label="Vorige week">
+            <Button variant="secondary" size="sm" onClick={() => setMaandag(addDays(maandag, -7))} aria-label={t('rooster.vorige_week')}>
               ‹
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setMaandag(startOfWeek())}>
-              Deze week
+              {t('rooster.deze_week')}
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMaandag(addDays(maandag, 7))} aria-label="Volgende week">
+            <Button variant="secondary" size="sm" onClick={() => setMaandag(addDays(maandag, 7))} aria-label={t('rooster.volgende_week')}>
               ›
             </Button>
             {isAdmin ? (
               <Button variant="secondary" size="sm" onClick={kopieer} disabled={bezig}>
-                Kopieer naar volgende week
+                {t('rooster.kopieer')}
               </Button>
             ) : null}
           </>
@@ -118,10 +121,8 @@ export default function Rooster() {
       {rooster.botsingen.length ? (
         <p className="je-rooster__waarschuwing" role="alert">
           <Icon name="alert-triangle" size={15} />
-          {rooster.botsingen.length === 1
-            ? 'Eén iemand staat twee keer tegelijk ingepland.'
-            : `${rooster.botsingen.length} keer staat iemand twee keer tegelijk ingepland.`}{' '}
-          Dat merk je anders pas op de dag zelf.
+          {t('rooster.botsing', { aantal: rooster.botsingen.length })}{' '}
+          {t('rooster.botsing_staart')}
         </p>
       ) : null}
 
@@ -134,14 +135,14 @@ export default function Rooster() {
           <table className="je-rooster__tabel">
             <thead>
               <tr>
-                <th scope="col">Wie</th>
+                <th scope="col">{t('rooster.wie')}</th>
                 {rooster.dagen.map((dag) => (
                   <th key={dag.sleutel} scope="col" className={dag.sleutel === dayKey(new Date()) ? 'je-rooster__vandaag' : undefined}>
-                    <span className="je-rooster__dagnaam">{dag.naam}</span>
+                    <span className="je-rooster__dagnaam">{dagnaam(dag)}</span>
                     <span className="je-rooster__dagnr">{dag.nummer}</span>
                   </th>
                 ))}
-                <th scope="col">Week</th>
+                <th scope="col">{t('rooster.week')}</th>
               </tr>
             </thead>
             <tbody>
@@ -184,7 +185,11 @@ export default function Rooster() {
                             <button
                               type="button"
                               className="je-plainbtn je-rooster__plus"
-                              aria-label={`Dienst toevoegen voor ${rij.persoon.fullName || rij.persoon.email} op ${dag.naam} ${dag.nummer}`}
+                              aria-label={t('rooster.dienst_toevoegen_voor', {
+                                wie: rij.persoon.fullName || rij.persoon.email,
+                                dag: dagnaam(dag),
+                                nummer: dag.nummer,
+                              })}
                               onClick={() =>
                                 setBewerk({ profileId: rij.persoon.id, date: dag.sleutel, start: '17:00', end: '23:00' })
                               }
@@ -203,10 +208,10 @@ export default function Rooster() {
                       {cijfers && cijfers.geboekteMinuten > 0 ? (
                         <span
                           className="je-muted-caption"
-                          title={`${urenTekst(cijfers.geboekteMinuten)} geboekt`}
+                          title={t('rooster.geboekt', { uren: urenTekst(cijfers.geboekteMinuten) })}
                         >
                           {cijfers.verschilMinuten === 0
-                            ? 'precies geboekt'
+                            ? t('rooster.precies')
                             : `${cijfers.verschilMinuten > 0 ? '+' : '−'}${urenTekst(Math.abs(cijfers.verschilMinuten))}`}
                         </span>
                       ) : null}
@@ -217,7 +222,7 @@ export default function Rooster() {
             </tbody>
             <tfoot>
               <tr>
-                <th scope="row">Per dag</th>
+                <th scope="row">{t('rooster.per_dag')}</th>
                 {rooster.dagen.map((dag) => (
                   <td key={dag.sleutel} className="je-rooster__totaal">
                     {rooster.perDag[dag.sleutel].minuten ? urenTekst(rooster.perDag[dag.sleutel].minuten) : '—'}
@@ -251,6 +256,7 @@ export default function Rooster() {
  * bewaart krijgt ze bij een zomeruurwissel een uur verschoven te zien.
  */
 function DienstDialoog({ dienst, mensen, brands, onKlaar, onFout }) {
+  const { t } = useTaal()
   const [f, setF] = useState({
     profileId: dienst.profileId,
     date: dienst.date,
@@ -291,26 +297,26 @@ function DienstDialoog({ dienst, mensen, brands, onKlaar, onFout }) {
     <Modal
       open
       onClose={onKlaar}
-      title={dienst.id ? 'Dienst aanpassen' : 'Dienst toevoegen'}
+      title={dienst.id ? t('rooster.dienst_aanpassen') : t('rooster.dienst_toevoegen')}
       width="max-w-md"
       footer={
         <>
           {dienst.id ? (
             <Button variant="ghost" onClick={weg} disabled={bezig}>
-              Weghalen
+              {t('rooster.weghalen')}
             </Button>
           ) : null}
           <Button variant="ghost" onClick={onKlaar}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button variant="primary" onClick={bewaar} disabled={!geldig || bezig}>
-            {bezig ? <Spinner className="h-3 w-3" /> : null} Bewaren
+            {bezig ? <Spinner className="h-3 w-3" /> : null} {t('alg.opslaan')}
           </Button>
         </>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Wie" className="sm:col-span-2">
+        <Field label={t('rooster.wie')} className="sm:col-span-2">
           <Select value={f.profileId} onChange={zet('profileId')}>
             {mensen.map((p) => (
               <option key={p.id} value={p.id}>
@@ -319,18 +325,18 @@ function DienstDialoog({ dienst, mensen, brands, onKlaar, onFout }) {
             ))}
           </Select>
         </Field>
-        <Field label="Van" hint="Zoals het op de deur hangt, bijvoorbeeld 17:00.">
+        <Field label={t('rooster.van')} hint={t('rooster.van_hint')}>
           <Input value={f.start} onChange={zet('start')} placeholder="17:00" />
         </Field>
-        <Field label="Tot" hint="Loopt het over middernacht, vul dan gewoon 03:00 in.">
+        <Field label={t('rooster.tot')} hint={t('rooster.tot_hint')}>
           <Input value={f.end} onChange={zet('end')} placeholder="23:00" />
         </Field>
-        <Field label="Pauze" hint="In minuten; telt niet mee in de uren.">
+        <Field label={t('rooster.pauze')} hint={t('rooster.pauze_hint')}>
           <Input type="number" min="0" step="5" value={f.breakMinutes} onChange={zet('breakMinutes')} />
         </Field>
-        <Field label="Waar">
+        <Field label={t('rooster.waar')}>
           <Select value={f.brandId} onChange={zet('brandId')}>
-            <option value="">Geen plek gekozen</option>
+            <option value="">{t('rooster.geen_plek')}</option>
             {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -338,8 +344,8 @@ function DienstDialoog({ dienst, mensen, brands, onKlaar, onFout }) {
             ))}
           </Select>
         </Field>
-        <Field label="Notitie" className="sm:col-span-2">
-          <Input value={f.note} onChange={zet('note')} placeholder="Opbouw, avondbar, keuken…" />
+        <Field label={t('rooster.notitie')} className="sm:col-span-2">
+          <Input value={f.note} onChange={zet('note')} placeholder={t('rooster.notitie_hint')} />
         </Field>
       </div>
     </Modal>

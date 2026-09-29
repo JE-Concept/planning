@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Hex, Icon, IconButton, Tag } from '@components/ds'
 import { SUGGESTIONS, useAssistant } from '@context/AssistantProvider'
+import { useTaal } from '@context/TaalProvider'
 
 /** Het paneel rechts (schermvullend op een telefoon) met het gesprek. */
 export default function AssistantPanel() {
   const { messages, busy, ask, setOpen } = useAssistant()
+  const { t } = useTaal()
   const navigate = useNavigate()
   const [draft, setDraft] = useState('')
   const scrollRef = useRef(null)
@@ -22,7 +24,7 @@ export default function AssistantPanel() {
   }
 
   return (
-    <aside className="je-chat" aria-label="Assistent">
+    <aside className="je-chat" aria-label={t('schil.assistent')}>
       <div
         style={{
           display: 'flex',
@@ -36,12 +38,12 @@ export default function AssistantPanel() {
           <Icon name="sparkles" size={16} />
         </Hex>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="je-eyebrow">Assistent</div>
+          <div className="je-eyebrow">{t('schil.assistent')}</div>
           <div className="je-muted-caption" style={{ marginTop: 4 }}>
-            Beantwoordt vragen en voert acties uit in de planning.
+            {t('dashboard.assistent_wat')}
           </div>
         </div>
-        <IconButton icon="x" label="Sluiten" size="sm" onClick={() => setOpen(false)} />
+        <IconButton icon="x" label={t('alg.sluiten')} size="sm" onClick={() => setOpen(false)} />
       </div>
 
       <div
@@ -101,7 +103,7 @@ export default function AssistantPanel() {
                       style={{ font: 'var(--type-caption)', color: 'var(--text-accent)' }}
                       onClick={() => navigate(`/events/${a.eventId}`)}
                     >
-                      Openen
+                      {t('dashboard.assistent_openen')}
                     </button>
                   ) : null}
                 </div>
@@ -113,13 +115,13 @@ export default function AssistantPanel() {
         {busy ? (
           <div className="je-muted-caption" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <Icon name="loader" size={14} className="animate-spin" />
-            Even kijken in de planning
+            {t('dashboard.assistent_kijkt')}
           </div>
         ) : null}
 
         {messages.length === 1 && !busy ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
-            <span className="je-caps">Probeer</span>
+            <span className="je-caps">{t('dashboard.assistent_probeer')}</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
               {SUGGESTIONS.map((s) => (
                 <Tag key={s} selectable onClick={() => ask(s)}>
@@ -156,14 +158,21 @@ export default function AssistantPanel() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') send()
             }}
-            placeholder="Vraag of opdracht"
-            aria-label="Bericht aan de assistent"
+            placeholder={t('dashboard.assistent_vraag')}
+            aria-label={t('dashboard.assistent_bericht')}
             style={{ flex: 1, minWidth: 0, border: 0, outline: 'none', background: 'transparent', font: 'var(--type-body-sm)', color: 'var(--text-1)', height: 36, boxShadow: 'none' }}
           />
-          <IconButton icon="arrow-up" label="Versturen" variant="accent" size="sm" disabled={!draft.trim() || busy} onClick={send} />
+          <IconButton
+            icon="arrow-up"
+            label={t('dashboard.assistent_versturen')}
+            variant="accent"
+            size="sm"
+            disabled={!draft.trim() || busy}
+            onClick={send}
+          />
         </div>
         <span className="je-muted-caption" style={{ color: 'var(--text-3)' }}>
-          De assistent kan zich vergissen. Acties zie je meteen in de planning.
+          {t('dashboard.assistent_vergissen')}
         </span>
       </div>
     </aside>
