@@ -16,6 +16,7 @@ import {
   mailVoorTeLaat,
   mailVoorToewijzing,
 } from '../functions/mail.js'
+import { ontbrekendeVertalingen, taalVan } from '../functions/teksten.js'
 
 /**
  * Wie een bericht krijgt, gaat stil fout. Een bericht te veel merkt iemand
@@ -68,16 +69,16 @@ describe('wie een bericht krijgt', () => {
 
   it('stuurt naar beide kanalen van wie niets instelde', () => {
     const uit = bepaal(['u-elke'])
-    expect(uit.push).toEqual(['u-elke'])
-    expect(uit.email).toEqual([{ id: 'u-elke', adres: 'elke@kenjeklanten.be' }])
+    expect(ids(uit.push)).toEqual(['u-elke'])
+    expect(uit.email).toEqual([{ id: 'u-elke', adres: 'elke@kenjeklanten.be', taal: 'nl' }])
   })
 
   it('nooit naar wie het zelf deed', () => {
-    expect(bepaal(['u-elke', 'u-jasper'], { behalve: 'u-elke' }).push).toEqual(['u-jasper'])
+    expect(ids(bepaal(['u-elke', 'u-jasper'], { behalve: 'u-elke' }).push)).toEqual(['u-jasper'])
   })
 
   it('één bericht per persoon, ook als hij twee keer in de lijst staat', () => {
-    expect(bepaal(['u-elke', 'u-elke']).push).toEqual(['u-elke'])
+    expect(ids(bepaal(['u-elke', 'u-elke']).push)).toEqual(['u-elke'])
   })
 
   it('niet naar een gearchiveerd profiel', () => {
@@ -97,7 +98,7 @@ describe('wie een bericht krijgt', () => {
 
   it('geen mail zonder adres, maar wel een melding', () => {
     const uit = bepaal(['u-stagiair'])
-    expect(uit.push).toEqual(['u-stagiair'])
+    expect(ids(uit.push)).toEqual(['u-stagiair'])
     expect(uit.email).toEqual([])
   })
 
@@ -106,7 +107,7 @@ describe('wie een bericht krijgt', () => {
       p.id === 'u-elke' ? { ...p, prefs: { meldingen: { toewijzing: { email: false } } } } : p
     )
     const uit = bepaalOntvangers({ soort: 'toewijzing', kandidaten: ['u-elke'], profielen })
-    expect(uit.push).toEqual(['u-elke'])
+    expect(ids(uit.push)).toEqual(['u-elke'])
     expect(uit.email).toEqual([])
   })
 
@@ -264,3 +265,57 @@ describe('de teksten', () => {
     expect(mailVoorTeLaat({ taken: [], link, nu: NU })).toBeNull()
   })
 })
+
+describe('in welke taal de server schrijft', () => {
+  const link = 'https://planning.jeconcept.be/#/tasks'
+  const NU = new Date('2026-09-30T05:30:00Z')
+
+  it('kent elke Nederlandse tekst ook in het Engels', () => {
+    expect(ontbrekendeVertalingen('en')).toEqual([])
+  })
+
+  // Wie de tool op Engels zet en 's ochtends een Nederlandse mail krijgt over
+  // zijn te-laat-lijst, heeft geen Engelse tool.
+  it('zet de taal van de ontvanger bij de ontvangers', () => {
+    const profielen = TEAM.map((p) => (p.id === 'u-elke' ? { ...p, prefs: { taal: 'en' } } : p))
+    const uit = bepaalOntvangers({ soort: 'toewijzing', kandidaten: ['u-elke', 'u-jasper'], profielen })
+    expect(uit.push).toEqual([
+      { id: 'u-elke', taal: 'en' },
+      { id: 'u-jasper', taal: 'nl' },
+    ])
+    expect(uit.email.map((r) => r.taal)).toEqual(['en', 'nl'])
+  })
+
+  it('valt terug op het Nederlands bij een taal die niet bestaat', () => {
+    expect(taalVan({ prefs: { taal: 'de' } })).toBe('nl')
+    expect(taalVan(null)).toBe('nl')
+  })
+
+  it('schrijft een toewijzing in het Engels', () => {
+    const mail = mailVoorToewijzing({
+      taak: { title: 'Drink list', customerName: 'Blum België' },
+      link,
+      taal: 'en',
+    })
+    expect(mail.onderwerp).toBe('A new task for you: Drink list')
+    expect(mail.tekst).toContain('Customer: Blum België')
+    expect(mail.tekst).toContain('Open: ')
+  })
+
+  it('telt de dagen te laat in het Engels', () => {
+    const mail = mailVoorTeLaat({
+      taken: [{ title: 'Floor plan', dueDate: new Date('2026-09-27T12:00:00') }],
+      link,
+      nu: NU,
+      taal: 'en',
+    })
+    expect(mail.onderwerp).toBe('1 task is overdue')
+    expect(mail.tekst).toContain('3 days overdue')
+  })
+
+  it('schrijft Nederlands wanneer er geen taal meegegeven is', () => {
+    // Een aanroep die dit vergeet, hoort een leesbare mail te maken en niet geen.
+    expect(mailVoorDeadline({ taken: [{ title: 'Een' }], link, nu: NU }).onderwerp).toBe('Morgen: Een')
+  })
+})
+

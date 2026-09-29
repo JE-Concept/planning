@@ -22,6 +22,7 @@ import {
   mailVoorTeLaat,
   mailVoorToewijzing,
 } from './mail.js'
+import { taalVan, zeg } from './teksten.js'
 
 initializeApp()
 const db = getFirestore()
@@ -338,12 +339,27 @@ async function alleProfielen() {
 async function verstuur({ soort, kandidaten, behalve = null, profielen, push, mail }) {
   const ontvangers = bepaalOntvangers({ soort, kandidaten, profielen, behalve })
 
-  const verstuurd = push ? await stuurMelding(ontvangers.push, push) : 0
+  /*
+    Push gaat in één keer naar veel toestellen met één tekst erin, en die tekst
+    hangt nu aan de taal van de ontvanger. Dus eerst op taal groeperen en dan
+    per groep versturen — met één taal (het gewone geval) blijft dat precies één
+    verzending, zoals eerst.
+  */
+  const perTaal = new Map()
+  for (const { id, taal } of ontvangers.push) {
+    if (!perTaal.has(taal)) perTaal.set(taal, [])
+    perTaal.get(taal).push(id)
+  }
+
+  let verstuurd = 0
+  if (push) {
+    for (const [taal, ids] of perTaal) verstuurd += await stuurMelding(ids, push(taal))
+  }
 
   const batch = db.batch()
   let gemaild = 0
-  for (const { id, adres } of ontvangers.email) {
-    const inhoud = mail ? mail(adres) : null
+  for (const { id, adres, taal } of ontvangers.email) {
+    const inhoud = mail ? mail(taal, adres) : null
     if (!inhoud) continue
     batch.set(db.collection('mailQueue').doc(), {
       aan: adres,
@@ -385,13 +401,13 @@ export const notifyAssignment = onDocumentWritten(
       soort: 'toewijzing',
       kandidaten: nieuw,
       profielen: await alleProfielen(),
-      push: {
-        title: 'Nieuwe taak voor jou',
+      push: (taal) => ({
+        title: zeg(taal, 'push.toewijzing'),
         body: kort(na.title),
-        url: '/mijn-werk',
+        url: '/tasks',
         tag: `taak-${event.params.taskId}`,
-      },
-      mail: () => mailVoorToewijzing({ taak, link: `${APP}/#/tasks` }),
+      }),
+      mail: (taal) => mailVoorToewijzing({ taak, link: `${APP}/#/tasks`, taal }),
     })
 
     if (uitkomst.push || uitkomst.email) {
@@ -411,8 +427,11 @@ export const notifyReviewRequest = onDocumentWritten(
     const reviewer = nieuweReviewer(voor, na)
     if (!reviewer) return
 
+    // Deze gaat buiten `verstuur` om — één persoon, geen voorkeuren — dus hier
+    // wordt de taal van dat ene profiel zelf opgezocht.
+    const profiel = (await db.collection('profiles').doc(reviewer).get()).data()
     const verstuurd = await stuurMelding([reviewer], {
-      title: 'Een post wacht op jouw review',
+      title: zeg(taalVan(profiel), 'push.review'),
       body: kort(na.title),
       url: '/social',
       tag: `post-${event.params.postId}`,
@@ -494,13 +513,13 @@ export const notifyComment = onDocumentCreated(
       soort: 'reactie',
       kandidaten,
       profielen,
-      push: {
-        title: `${reactie.authorName || 'Iemand'} reageerde`,
+      push: (taal) => ({
+        title: zeg(taal, 'push.reactie', { wie: reactie.authorName || zeg(taal, 'push.iemand') }),
         body: kort(reactie.body),
         url: '/tasks',
         tag: `taak-${reactie.taskId}`,
-      },
-      mail: () => mailVoorReactie({ taak, reactie, link: `${APP}/#/tasks` }),
+      }),
+      mail: (taal) => mailVoorReactie({ taak, reactie, link: `${APP}/#/tasks`, taal }),
     })
 
     if (uitkomst.push || uitkomst.email) {
@@ -554,13 +573,13 @@ export const notifyDueTomorrow = onSchedule(
         soort: 'deadline',
         kandidaten: [uid],
         profielen,
-        push: {
-          title: taken.length === 1 ? 'Morgen te doen' : `Morgen vervallen ${taken.length} taken`,
+        push: (taal) => ({
+          title: zeg(taal, 'push.deadline', { aantal: taken.length }),
           body: kort(taken[0].title),
           url: '/tasks',
           tag: 'deadline-morgen',
-        },
-        mail: () => mailVoorDeadline({ taken, link: `${APP}/#/tasks`, nu }),
+        }),
+        mail: (taal) => mailVoorDeadline({ taken, link: `${APP}/#/tasks`, nu, taal }),
       })
       if (uitkomst.push || uitkomst.email) mensen += 1
     }
@@ -609,13 +628,13 @@ export const notifyOverdueDigest = onSchedule(
         soort: 'telaat',
         kandidaten: [uid],
         profielen,
-        push: {
-          title: `${taken.length} ${taken.length === 1 ? 'taak staat' : 'taken staan'} te laat`,
+        push: (taal) => ({
+          title: zeg(taal, 'push.telaat', { aantal: taken.length }),
           body: kort(taken[0].title),
           url: '/tasks',
           tag: 'te-laat',
-        },
-        mail: () => mailVoorTeLaat({ taken, link: `${APP}/#/tasks`, nu }),
+        }),
+        mail: (taal) => mailVoorTeLaat({ taken, link: `${APP}/#/tasks`, nu, taal }),
       })
       if (uitkomst.push || uitkomst.email) mensen += 1
     }

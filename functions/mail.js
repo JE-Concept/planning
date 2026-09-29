@@ -36,9 +36,15 @@
  * Wat je moet doen, staat in één regel; de rest staat in de tool, achter de
  * link. Een opgemaakte mail zou dat niet duidelijker maken en wel per
  * mailprogramma anders vallen.
+ *
+ * ── In welke taal ─────────────────────────────────────────────────────────
+ * In die van de ontvanger. Elke functie hier krijgt daarom `taal` mee; wie
+ * niets meegeeft, krijgt Nederlands, zodat een aanroep die dit vergeet nog
+ * altijd een leesbare mail maakt in plaats van geen mail.
  */
 
 import { alsDatum, dagSleutel } from './notify.js'
+import { STANDAARDTAAL, zeg } from './teksten.js'
 
 const lijst = (v) => (Array.isArray(v) ? v.filter(Boolean) : [])
 
@@ -51,16 +57,14 @@ export const AFZENDERNAAM = 'JE Plan'
  * De datum staat erbij als dagelijkse taal ("3 dagen te laat") en niet als
  * 30/09/2026: wie 's ochtends zes regels leest, telt niet graag dagen.
  */
-export function taakregel(taak, { nu = new Date(), toon = 'telaat' } = {}) {
-  const titel = (taak?.title ?? '').trim() || 'Taak zonder titel'
+export function taakregel(taak, { nu = new Date(), toon = 'telaat', taal = STANDAARDTAAL } = {}) {
+  const titel = (taak?.title ?? '').trim() || zeg(taal, 'mail.geen_titel')
   const waar = taak?.customerName || taak?.listName || null
   const dagen = dagenVerschil(taak?.dueDate, nu)
 
   const wanneer =
-    toon === 'telaat'
-      ? dagen === null
-        ? ''
-        : ` — ${Math.abs(dagen)} ${Math.abs(dagen) === 1 ? 'dag' : 'dagen'} te laat`
+    toon === 'telaat' && dagen !== null
+      ? ` — ${zeg(taal, 'mail.telaat', { aantal: Math.abs(dagen) })}`
       : ''
 
   return `• ${titel}${waar ? ` (${waar})` : ''}${wanneer}`
@@ -80,54 +84,59 @@ function dagenVerschil(waarde, nu) {
   return dag(sleutel) - dag(dagSleutel(alsDatum(nu) ?? new Date()))
 }
 
-const voet = (link) =>
-  `\n\n—\n${AFZENDERNAAM} · ${link}\nDeze berichten zet je per soort aan of uit bij Meldingen in de app.`
+const voet = (link, taal) => `\n\n—\n${AFZENDERNAAM} · ${link}\n${zeg(taal, 'mail.voet')}`
 
 /** "Er staat iets voor jou klaar." */
-export function mailVoorToewijzing({ taak, link }) {
-  const titel = (taak?.title ?? '').trim() || 'een taak'
+export function mailVoorToewijzing({ taak, link, taal = STANDAARDTAAL }) {
+  const titel = (taak?.title ?? '').trim() || zeg(taal, 'mail.een_taak')
   return {
-    onderwerp: `Nieuwe taak voor jou: ${titel}`,
+    onderwerp: zeg(taal, 'mail.toewijzing.onderwerp', { titel }),
     tekst: [
-      `${titel} staat nu op jouw naam.`,
-      taak?.customerName ? `Klant: ${taak.customerName}` : null,
-      taak?.listName ? `Bord: ${taak.listName}` : null,
+      zeg(taal, 'mail.toewijzing.regel', { titel }),
+      taak?.customerName ? zeg(taal, 'mail.klant', { naam: taak.customerName }) : null,
+      taak?.listName ? zeg(taal, 'mail.bord', { naam: taak.listName }) : null,
       '',
-      `Openen: ${link}`,
+      zeg(taal, 'mail.openen', { link }),
     ]
       .filter((r) => r !== null)
-      .join('\n') + voet(link),
+      .join('\n') + voet(link, taal),
   }
 }
 
 /** "Er is op je taak gereageerd." */
-export function mailVoorReactie({ taak, reactie, link }) {
-  const titel = (taak?.title ?? '').trim() || 'een taak'
-  const wie = (reactie?.authorName ?? '').trim() || 'Iemand'
+export function mailVoorReactie({ taak, reactie, link, taal = STANDAARDTAAL }) {
+  const titel = (taak?.title ?? '').trim() || zeg(taal, 'mail.een_taak')
+  const wie = (reactie?.authorName ?? '').trim() || zeg(taal, 'mail.iemand')
   return {
-    onderwerp: `${wie} reageerde op ${titel}`,
-    tekst: [`${wie} schreef bij "${titel}":`, '', (reactie?.body ?? '').trim(), '', `Antwoorden: ${link}`].join(
-      '\n'
-    ) + voet(link),
+    onderwerp: zeg(taal, 'mail.reactie.onderwerp', { wie, titel }),
+    tekst:
+      [
+        zeg(taal, 'mail.reactie.regel', { wie, titel }),
+        '',
+        (reactie?.body ?? '').trim(),
+        '',
+        zeg(taal, 'mail.antwoorden', { link }),
+      ].join('\n') + voet(link, taal),
   }
 }
 
 /** "Dit vervalt morgen." */
-export function mailVoorDeadline({ taken, link, nu = new Date() }) {
+export function mailVoorDeadline({ taken, link, nu = new Date(), taal = STANDAARDTAAL }) {
   const rijen = lijst(taken)
   const aantal = rijen.length
   return {
-    onderwerp:
-      aantal === 1
-        ? `Morgen: ${(rijen[0].title ?? '').trim() || 'een taak'}`
-        : `Morgen vervallen ${aantal} taken`,
-    tekst: [
-      aantal === 1 ? 'Dit staat morgen op je naam te vervallen:' : 'Deze taken vervallen morgen:',
-      '',
-      ...rijen.map((t) => taakregel(t, { nu, toon: 'deadline' })),
-      '',
-      `Openen: ${link}`,
-    ].join('\n') + voet(link),
+    onderwerp: zeg(taal, 'mail.deadline.onderwerp', {
+      aantal,
+      titel: (rijen[0]?.title ?? '').trim() || zeg(taal, 'mail.een_taak'),
+    }),
+    tekst:
+      [
+        zeg(taal, 'mail.deadline.regel', { aantal }),
+        '',
+        ...rijen.map((t) => taakregel(t, { nu, toon: 'deadline', taal })),
+        '',
+        zeg(taal, 'mail.openen', { link }),
+      ].join('\n') + voet(link, taal),
   }
 }
 
@@ -139,18 +148,19 @@ export function mailVoorDeadline({ taken, link, nu = new Date() }) {
  * iets staat mee weg. Vandaar dat deze functie niets teruggeeft bij een lege
  * lijst, in plaats van een vriendelijke mail te maken die niemand wil.
  */
-export function mailVoorTeLaat({ taken, link, nu = new Date() }) {
+export function mailVoorTeLaat({ taken, link, nu = new Date(), taal = STANDAARDTAAL }) {
   const rijen = lijst(taken)
   if (rijen.length === 0) return null
 
   return {
-    onderwerp: `${rijen.length} ${rijen.length === 1 ? 'taak staat' : 'taken staan'} te laat`,
-    tekst: [
-      'Dit staat op jouw naam over tijd:',
-      '',
-      ...rijen.map((t) => taakregel(t, { nu, toon: 'telaat' })),
-      '',
-      `Openen: ${link}`,
-    ].join('\n') + voet(link),
+    onderwerp: zeg(taal, 'mail.telaat.onderwerp', { aantal: rijen.length }),
+    tekst:
+      [
+        zeg(taal, 'mail.telaat.regel'),
+        '',
+        ...rijen.map((t) => taakregel(t, { nu, toon: 'telaat', taal })),
+        '',
+        zeg(taal, 'mail.openen', { link }),
+      ].join('\n') + voet(link, taal),
   }
 }

@@ -7,6 +7,8 @@
  * zelf een taak naar jezelf zette, is hoe mensen meldingen uitzetten.
  */
 
+import { taalVan } from './teksten.js'
+
 const lijst = (v) => (Array.isArray(v) ? v.filter(Boolean) : [])
 
 /** Wie er nieuw op de taak kwam te staan — de dader niet meegerekend. */
@@ -115,7 +117,9 @@ export function wilBericht(profile, soort, kanaal) {
  *  - voor e-mail: wie geen adres heeft. Zonder adres is er niets te sturen.
  *
  * Geeft de twee kanalen apart terug, omdat de verzending dat ook is: push gaat
- * per persoon naar al zijn toestellen, e-mail naar één adres.
+ * per persoon naar al zijn toestellen, e-mail naar één adres. De taal van de
+ * ontvanger staat erbij: wie de tool op Engels zet en 's ochtends een
+ * Nederlandse mail krijgt over zijn te-laat-lijst, heeft geen Engelse tool.
  */
 export function bepaalOntvangers({ soort, kandidaten, profielen, behalve = null }) {
   const profielVan = new Map((profielen ?? []).map((p) => [p.id, p]))
@@ -131,10 +135,11 @@ export function bepaalOntvangers({ soort, kandidaten, profielen, behalve = null 
     if (!profiel || profiel.active === false) continue
     if (profiel.role === 'staff') continue
 
-    if (wilBericht(profiel, soort, 'push')) push.push(uid)
+    const taal = taalVan(profiel)
+    if (wilBericht(profiel, soort, 'push')) push.push({ id: uid, taal })
 
     const adres = (profiel.email ?? '').trim()
-    if (adres && wilBericht(profiel, soort, 'email')) email.push({ id: uid, adres })
+    if (adres && wilBericht(profiel, soort, 'email')) email.push({ id: uid, adres, taal })
   }
 
   return { push, email }
