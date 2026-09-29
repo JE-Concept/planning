@@ -85,6 +85,8 @@ function matches(data, c) {
     case '>':              return left != null && val(left) > val(c.value)
     case '<':              return left != null && val(left) < val(c.value)
     case 'array-contains': return Array.isArray(left) && left.includes(c.value)
+    case 'in':             return Array.isArray(c.value) && c.value.some((v) => val(v) === val(left))
+    case 'not-in':         return Array.isArray(c.value) && !c.value.some((v) => val(v) === val(left))
     default:               return true
   }
 }

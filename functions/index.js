@@ -294,3 +294,33 @@ export const notifyReviewRequest = onDocumentWritten(
     if (verstuurd) logger.info('Reviewmelding verstuurd', { postId: event.params.postId, verstuurd })
   }
 )
+
+/**
+ * Trekt een nieuwe klantnaam door naar de events die eraan hangen.
+ *
+ * Dezelfde reden als bij een lijstnaam: een event draagt de naam van zijn klant
+ * mee zodat een bord niet per kaart een tweede document hoeft te lezen. Wordt
+ * de klant hernoemd — een bvba die van naam verandert, een tikfout — dan moet
+ * die kopie mee, anders staat op het bord jarenlang de oude naam.
+ */
+export const spreadCustomerRename = onDocumentUpdated(
+  { region: REGION, document: 'customers/{customerId}' },
+  async (event) => {
+    const oud = event.data?.before?.data()?.name ?? null
+    const nieuw = event.data?.after?.data()?.name ?? null
+    if (!nieuw || oud === nieuw) return
+
+    const snap = await db
+      .collection('tasks')
+      .where('customerId', '==', event.params.customerId)
+      .get()
+
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const batch = db.batch()
+      snap.docs.slice(i, i + 400).forEach((doc) => batch.update(doc.ref, { customerName: nieuw }))
+      await batch.commit()
+    }
+
+    logger.info('Klant hernoemd', { customerId: event.params.customerId, oud, nieuw, events: snap.size })
+  }
+)

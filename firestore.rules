@@ -92,6 +92,11 @@ service cloud.firestore {
     match /lists/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
     match /tags/{id}        { allow read: if isTeam(); allow write: if isTeam(); }
     match /tasks/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
+
+    // Klanten: bedrijfsgegevens, contactpersonen en wat er aan documenten bij
+    // hoort. Hetzelfde recht als de events die eraan hangen — wie de planning
+    // doet, doet de klant.
+    match /customers/{id}   { allow read: if isTeam(); allow write: if isTeam(); }
     match /comments/{id}    { allow read: if isTeam(); allow write: if isTeam(); }
     match /attachments/{id} { allow read: if isTeam(); allow write: if isTeam(); }
     match /goals/{id}       { allow read: if isTeam(); allow write: if isTeam(); }

@@ -1,8 +1,17 @@
 #!/usr/bin/env node
 /**
- * First-run seed: the brands, the access config and the two boards that carry
- * the business. Safe to run again — every document has a stable id and is
- * merged, so a second run repairs rather than duplicates.
+ * De eerste vulling: de merken, de toegangsinstellingen en de borden.
+ *
+ * Draait bij elke uitrol, en dat stelt één harde eis: **niets overschrijven
+ * wat in de app te wijzigen is.** Kolommen op een bord, de punten van een
+ * dagelijkse lijst, de naam van een merk — dat staat in de app en dus in de
+ * database, en de repo is daar niet de baas over. Een document dat al bestaat
+ * blijft hier onaangeroerd; alleen wat ontbreekt wordt aangemaakt.
+ *
+ * Dat was eerder niet zo: alles werd met merge geschreven, en een merge
+ * vervangt een veld dat een lijst is in zijn geheel. Elke uitrol zette de
+ * bordkolommen en de dagelijkse lijsten terug naar de versie uit de repo. Met
+ * de tool in gebruik is dat gegevensverlies.
  *
  *   GOOGLE_APPLICATION_CREDENTIALS=./service-account.json node scripts/seed.mjs
  */
@@ -60,11 +69,29 @@ const columns = (rows) =>
     position,
   }))
 
-async function main() {
-  const batch = db.batch()
+const aangemaakt = []
+const overgeslagen = []
 
-  batch.set(
-    db.collection('config').doc('access'),
+/**
+ * Schrijft alleen wanneer het document nog niet bestaat.
+ *
+ * Geen merge: een bestaand document is van de app, niet van de repo.
+ */
+async function zetAlsNieuw(ref, data, label) {
+  const snap = await ref.get()
+  if (snap.exists) {
+    overgeslagen.push(label)
+    return false
+  }
+  await ref.set({ ...data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
+  aangemaakt.push(label)
+  return true
+}
+
+async function main() {
+  // De toegangsinstellingen zijn het enige wat de repo wél mag bijwerken: ze
+  // staan nergens in de app en een nieuw teamlid erbij moet hier kunnen.
+  await db.collection('config').doc('access').set(
     {
       allowedDomains: ['jeconcept.be', 'kenjeklanten.be'],
       // Wie de lege werkruimte mag claimen. Zonder dit wordt dat "wie het eerst
@@ -82,21 +109,24 @@ async function main() {
     { merge: true }
   )
 
-  BRANDS.forEach((brand, position) => {
-    batch.set(
+  // Alles hieronder is in de app te wijzigen — merknamen, bordkolommen, de
+  // punten van een dagelijkse lijst. Bestaat het al, dan blijft het zoals het
+  // team het gezet heeft.
+  for (const [position, brand] of BRANDS.entries()) {
+    await zetAlsNieuw(
       db.collection('brands').doc(brand.id),
       { key: brand.id, name: brand.name, color: brand.color, position, archived: false },
-      { merge: true }
+      `merk ${brand.name}`
     )
-  })
+  }
 
-  batch.set(
+  await zetAlsNieuw(
     db.collection('spaces').doc('je-concept'),
     { name: 'JE Concept', color: '#1d57f5', position: 1, archived: false },
-    { merge: true }
+    'ruimte JE Concept'
   )
 
-  batch.set(
+  await zetAlsNieuw(
     db.collection('lists').doc('overview-planning'),
     {
       spaceId: 'je-concept',
@@ -109,10 +139,10 @@ async function main() {
       archived: false,
       statuses: columns(OVERVIEW_STATUSES),
     },
-    { merge: true }
+    'bord Events'
   )
 
-  batch.set(
+  await zetAlsNieuw(
     db.collection('lists').doc('socials'),
     {
       spaceId: 'je-concept',
@@ -125,11 +155,11 @@ async function main() {
       archived: false,
       statuses: columns(SOCIAL_STATUSES),
     },
-    { merge: true }
+    'bord Socials'
   )
 
   // Het bord waarop de overlegverslagen en hun actiepunten landen.
-  batch.set(
+  await zetAlsNieuw(
     db.collection('lists').doc('overleg'),
     {
       spaceId: 'je-concept',
@@ -147,13 +177,11 @@ async function main() {
         ['afgerond', '#008844', 'closed'],
       ]),
     },
-    { merge: true }
+    'bord Tasks'
   )
 
-  // De openings- en sluitingslijst. Merge, zodat een aangepaste lijst niet bij
-  // elke seed terugvalt op de versie uit de repo.
-  CHECKLIST_TEMPLATES.forEach((template, position) => {
-    batch.set(
+  for (const [position, template] of CHECKLIST_TEMPLATES.entries()) {
+    await zetAlsNieuw(
       db.collection('checklists').doc(template.id),
       {
         key: template.key,
@@ -163,15 +191,19 @@ async function main() {
         sections: template.sections,
         position,
         archived: false,
-        updatedAt: FieldValue.serverTimestamp(),
       },
-      { merge: true }
+      `lijst ${template.name}`
     )
-  })
+  }
 
-  await batch.commit()
   await seedFacturatieRegel()
-  console.log('Seed klaar: merken, toegangsdomeinen, de twee borden en de dagelijkse lijsten staan klaar.')
+
+  console.log(
+    aangemaakt.length ? `Aangemaakt: ${aangemaakt.join(', ')}.` : 'Niets nieuws aan te maken.'
+  )
+  if (overgeslagen.length) {
+    console.log(`Ongemoeid gelaten (bestaat al, is van de app): ${overgeslagen.join(', ')}.`)
+  }
 }
 
 /**

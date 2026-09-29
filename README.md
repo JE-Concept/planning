@@ -40,7 +40,9 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 |---|---|
 | `profiles/{uid}` | Bestaat pas na goedkeuring. **Een profiel hebben = lid zijn**; de rules kijken naar niets anders. |
 | `lists/{id}` | De bordkolommen (`statuses`) zitten **in** het lijstdocument: één read per bord in plaats van één per kolom. |
-| `tasks/{id}` | Draagt een kopie van `statusName/statusColor/statusKind` en `listName`, plus `open` (niet afgerond). Daardoor hoeft geen enkele kaart een extra read te doen. Wordt bijgehouden door `src/data/tasks.js`; nergens anders met de hand zetten. |
+| `customers/{id}` | Bedrijfsgegevens, adres en contactpersonen. Events verwijzen ernaar met `customerId` en dragen `customerName` mee; die kopie wordt server-side bijgewerkt als de klant hernoemd wordt. |
+| `attachments/{id}` | Documenten: aan een klant (`customerId`) óf aan een event (`taskId`). Het bestand staat in Storage; deze rij houdt naam, type, grootte en de link bij. |
+| `tasks/{id}` | Draagt een kopie van `statusName/statusColor/statusKind`, `listName` en `customerName`, plus `open` (niet afgerond) en de socialstand (`socialStage`, `socialWanted`). Daardoor hoeft geen enkele kaart een extra read te doen. Wordt bijgehouden door `src/data/tasks.js`; nergens anders met de hand zetten. |
 | `timeEntries/{id}` | Draagt `day`, `week` en `month`. Daardoor is "uren van september" één indexquery in plaats van een range-scan met groeperen in de browser. |
 | `runningTimers/{uid}` | De lopende timer, **op uid gesleuteld**: "één timer per persoon" is zo een eigenschap van de data, geen afspraak. |
 | `goals/{id}` | Key results zitten in het goal-document (er zijn er een handvol, ze worden nooit apart opgevraagd). Check-ins staan los in `goalUpdates`, want die groeien oneindig. |
@@ -50,6 +52,16 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `pushTokens/{token}` | Eén rij per toestel dat meldingen wil, gesleuteld op het token. Je beheert en leest alleen je eigen rijen; versturen doet een Cloud Function. |
 | `automations/{id}` | De business rules: wanneer ze vuren en wat ze doen. Beheerders bewerken ze in Instellingen; uitvoeren doet een Cloud Function. |
 | `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde en met welke opmerking. Wordt aangevuld, nooit gewijzigd. |
+
+---
+
+## De seed en bestaande gegevens
+
+`scripts/seed.mjs` draait bij **elke** uitrol, en dat stelt één harde eis: niets overschrijven wat in de app te wijzigen is. Bordkolommen, de punten van een dagelijkse lijst, merknamen — dat staat in de app en dus in de database, en de repo is daar niet de baas over. De seed maakt aan wat ontbreekt en laat de rest met rust.
+
+Dat was eerder niet zo. Alles ging met `merge: true`, en een merge vervangt een veld dat een lijst is *in zijn geheel*: elke uitrol zette de bordkolommen en de dagelijkse lijsten terug naar de versie uit de repo. Met de tool in gebruik is dat gegevensverlies, en het was niet zichtbaar tot iemand zijn wijziging kwijt was.
+
+Alleen `config/access` wordt nog bijgewerkt: die staat nergens in de app, en een nieuw teamlid erbij moet via de repo kunnen.
 
 ---
 
@@ -115,7 +127,9 @@ Voeg in de Firebase-console (**Hosting → Aangepast domein**) `planning.jeconce
 
 ---
 
-## Social kalender
+## De posts en hun review
+
+Dit is de kalenderkant van **Socials** (de tabs *Kalender* en *Posts*); het eventbord staat verderop.
 
 ### De review
 
@@ -154,6 +168,38 @@ Dat samen afvinken hangt aan twee keuzes. De run heeft een **vaste id** `<lijst>
 **Toegangscodes** staan in het `hint`-veld met `secret: true`: de app toont ze pas na een klik, zodat ze niet zomaar op een scherm staan waar een gast op meekijkt. Een test bewaakt dat er nooit een code in een `label` sluipt, want dat staat altijd zichtbaar.
 
 De lijsten staan in `src/lib/checklist-templates.js` — één bron voor de seed én de demo. Daarna is de database leidend: een beheerder past ze aan in de app en de seed overschrijft dat niet (`merge`).
+
+---
+
+## Klanten
+
+Een klant stond tot nu in de titel van een event — "Trouw Niels en Inez", "Blum België" — en verder nergens. Daarmee is "wat deden we vorig jaar voor Blum", "waar staat hun btw-nummer" en "hebben we hun logo nog" geen van drieën te beantwoorden.
+
+Nu staan ze apart, met bedrijfsgegevens, adres en zoveel contactpersonen als nodig. Een event wijst naar zijn klant en draagt de naam mee (zelfde reden als bij een lijstnaam: Firestore joint niet). Hernoemen gebeurt op één plek; een trigger trekt de nieuwe naam door naar alle events van die klant.
+
+**Documenten** hangen aan een klant óf aan een event, en dat onderscheid is het hele punt: een logo en een huisstijlgids horen bij de klant en niet bij het feest van vorig jaar, een grondplan hoort wél bij dat ene event. De Storage-SDK wordt pas ingeladen op het moment dat er echt een bestand gaat — wie nooit iets uploadt, betaalt er ook geen laadtijd voor.
+
+Een klant wordt **uit gebruik genomen**, niet gewist, zolang er events aan hangen: anders staat er in de geschiedenis een naam zonder gegevens.
+
+---
+
+## Socials
+
+Twee dingen die uit elkaar gehaald horen te worden: de **content per event** en de **posts per dag**.
+
+De tab **Events** is een bord van elk event dat content moet opleveren, in drie stappen:
+
+| Stap | Betekent |
+|---|---|
+| Social content delivery | beeld en tekst moeten nog binnenkomen |
+| Social content ready | klaar om te plaatsen |
+| Social content posted | staat online |
+
+Een event komt daar vanzelf op te staan zodra het op **ready to invoice** komt (en blijft staan bij *invoiced* en *complete*). Niet elk event levert content op — een vergaderzaal voor tien man meestal niet — dus staat er in het event zelf een schakelaar om het uit te zetten, of net eerder aan.
+
+Dat "vanzelf" gebeurt zonder migratie en zonder trigger: het bord kijkt naar de status én naar de stand, en een event zonder stand begint in de eerste kolom. Wat vandaag op *invoiced* staat, staat er dus meteen op — er hoeft niets aan bestaande gegevens veranderd te worden.
+
+De tabs **Kalender** en **Posts** zijn de contentkalender zoals die was: posts per merk, met de reviewronde eraan.
 
 ---
 

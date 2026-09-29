@@ -15,6 +15,7 @@ import {
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { byPosition, needsRebalance, positionFor, rebalance } from '@lib/position'
+import { SOCIAL_STAGE_KEYS, SOCIAL_VANAF, heeftSocial } from '@lib/social-stage'
 
 /**
  * A task carries a copy of its column (`statusName`, `statusColor`,
@@ -290,6 +291,74 @@ export function useTaskSearch(term, { max = 250, enabled = true } = {}) {
   }, [tasks, term])
 
   return { results, loading }
+}
+
+/**
+ * De events op het socialbord.
+ *
+ * Twee abonnementen, en dat is met opzet. Een event komt op dit bord doordat
+ * het ver genoeg staat op het eventbord (status), of doordat er al een stand
+ * voor social op staat. Alleen het tweede volgen zou betekenen dat er eerst
+ * iets moet gebeuren voor een event zichtbaar wordt — en dan is een bord dat
+ * leeg blijft niet te onderscheiden van een bord dat niets te doen heeft.
+ *
+ * Zo werkt het ook zonder dat er iets aan de bestaande gegevens veranderd
+ * wordt: wat vandaag op "invoiced" staat, staat morgen op dit bord, zonder
+ * migratie.
+ */
+export function useSocialEvents() {
+  const [perStatus, setPerStatus] = useState([])
+  const [metStand, setMetStand] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const klaar = new Set(['status', 'stand'])
+    const af = (welke) => {
+      klaar.delete(welke)
+      if (klaar.size === 0) setLoading(false)
+    }
+
+    const stop1 = onSnapshot(
+      query(
+        col(COL.tasks),
+        where('statusName', 'in', SOCIAL_VANAF),
+        where('archived', '==', false),
+        orderBy('position')
+      ),
+      (snap) => {
+        setPerStatus(fromQuery(snap))
+        af('status')
+      },
+      () => af('status')
+    )
+
+    const stop2 = onSnapshot(
+      query(
+        col(COL.tasks),
+        where('socialStage', 'in', SOCIAL_STAGE_KEYS),
+        where('archived', '==', false),
+        orderBy('position')
+      ),
+      (snap) => {
+        setMetStand(fromQuery(snap))
+        af('stand')
+      },
+      () => af('stand')
+    )
+
+    return () => {
+      stop1()
+      stop2()
+    }
+  }, [])
+
+  const events = useMemo(() => {
+    const perId = new Map()
+    for (const taak of [...perStatus, ...metStand]) perId.set(taak.id, taak)
+    return [...perId.values()].filter((taak) => !taak.parentId && heeftSocial(taak)).sort(byPosition)
+  }, [perStatus, metStand])
+
+  return { events, loading }
 }
 
 export { statusFields }

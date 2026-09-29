@@ -18,6 +18,7 @@ export const COL = {
   folders: 'folders',
   lists: 'lists',
   tags: 'tags',
+  customers: 'customers',
   tasks: 'tasks',
   comments: 'comments',
   attachments: 'attachments',

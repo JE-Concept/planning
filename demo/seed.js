@@ -97,6 +97,66 @@ seedDoc('folders', 'f-platform', { spaceId: 's-je', name: 'Platform Development'
   ['barvue', '#B8860B'], ['feestbeest', '#E8578A']].forEach(([id, color]) =>
   seedDoc('tags', id, { name: id.replace(/-/g, ' '), color }))
 
+// ─── Klanten ────────────────────────────────────────────────────────────────
+const KLANTEN = [
+  {
+    id: 'k-blum', name: 'Blum België', vatNumber: 'BE 0456.789.123',
+    email: 'events@blum.be', phone: '011 22 33 44', website: 'https://www.blum.com',
+    brandId: 'je-concept',
+    address: { street: 'Industrieweg 12', postalCode: '3800', city: 'Sint-Truiden', country: 'België' },
+    contacts: [
+      { id: 'c-blum-1', name: 'Karen Vandeput', role: 'HR-manager', email: 'karen@blum.be', phone: '0478 12 34 56' },
+      { id: 'c-blum-2', name: 'Tom Peeters', role: 'Boekhouding', email: 'facturen@blum.be', phone: '' },
+    ],
+    notes: 'Factuur altijd naar boekhouding, nooit naar HR. Vegetarisch aanbod is een vast punt.',
+  },
+  {
+    id: 'k-niels-inez', name: 'Niels & Inez', vatNumber: '',
+    email: 'niels.inez@telenet.be', phone: '0495 66 77 88', website: '',
+    brandId: 'feestbeest',
+    address: { street: 'Hoeve Vanhove', postalCode: '3720', city: 'Kortessem', country: 'België' },
+    contacts: [{ id: 'c-ni-1', name: 'Inez Claes', role: 'Bruid', email: 'inez@telenet.be', phone: '0495 66 77 88' }],
+    notes: 'Regenplan in de schuur. Dansvloer breder dan bij de Odeurs-trouw.',
+  },
+  {
+    id: 'k-borgloon', name: 'Stad Borgloon', vatNumber: 'BE 0207.474.933',
+    email: 'evenementen@borgloon.be', phone: '012 67 36 55', website: 'https://www.borgloon.be',
+    brandId: null,
+    address: { street: 'Speelhof 10', postalCode: '3840', city: 'Borgloon', country: 'België' },
+    contacts: [
+      { id: 'c-bl-1', name: 'Marleen Gijsen', role: 'Dienst evenementen', email: 'marleen@borgloon.be', phone: '012 67 36 60' },
+    ],
+    notes: 'Standenplan moet twee weken vooraf bij de dienst liggen.',
+  },
+]
+
+const KLANTNAMEN = Object.fromEntries(KLANTEN.map((k) => [k.id, k.name]))
+
+KLANTEN.forEach((klant, i) =>
+  seedDoc('customers', klant.id, {
+    ...klant, archived: false, createdBy: 'u-jasper',
+    createdAt: dag(-120 + i * 10), updatedAt: dag(-5),
+  }))
+
+// Een logo bij de klant: in de demo een tekening in de URL zelf, zodat het
+// miniatuur toont zonder dat er iets geüpload hoeft te worden.
+const LOGO =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><rect width="120" height="60" rx="8" fill="#112550"/><text x="60" y="38" font-family="Georgia" font-size="26" font-weight="700" fill="#fff" text-anchor="middle">BLUM</text></svg>'
+  )
+
+;[
+  ['d-blum-logo', 'k-blum', null, 'blum-logo.svg', 'image/svg+xml', 2480, LOGO],
+  ['d-blum-huisstijl', 'k-blum', null, 'huisstijlgids-blum-2026.pdf', 'application/pdf', 1_840_000, '#'],
+  ['d-borgloon-plan', 'k-borgloon', null, 'standenplan-grote-markt.pdf', 'application/pdf', 620_000, '#'],
+  ['d-trouw-grondplan', null, 't-trouw', 'grondplan-hoeve-vanhove.pdf', 'application/pdf', 410_000, '#'],
+].forEach(([id, customerId, taskId, name, contentType, size, url], i) =>
+  seedDoc('attachments', id, {
+    customerId, taskId, postId: null, name, label: '', storagePath: `attachments/demo/${name}`,
+    contentType, size, url, uploadedBy: 'u-jasper', createdAt: dag(-30 + i),
+  }))
+
 // ─── Taken ──────────────────────────────────────────────────────────────────
 let pos = 0
 function taak(id, listId, statuses, statusName, o = {}) {
@@ -113,6 +173,10 @@ function taak(id, listId, statuses, statusName, o = {}) {
     timeEstimateMinutes: o.estimate ?? null,
     budget: o.budget ?? null, location: o.location ?? null,
     assignees: o.assignees ?? [], tags: o.tags ?? [],
+    customerId: o.customerId ?? null,
+    customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
+    socialStage: o.socialStage ?? null,
+    socialWanted: o.socialWanted ?? null,
     position: (pos += 1024),
     archived: false, completedAt: s.kind === 'closed' || s.kind === 'done' ? dag(-20) : null,
     trackedSeconds: o.tracked ?? 0, commentCount: o.comments ?? 0,
@@ -121,7 +185,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
 }
 
 taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', {
-  title: 'Trouw Niels en Inez', assignees: ['u-jasper', 'u-elke'], priority: 2,
+  title: 'Trouw Niels en Inez', assignees: ['u-jasper', 'u-elke'], priority: 2, customerId: 'k-niels-inez',
   dueDate: dag(6), budget: 16399, location: 'Hoeve Vanhove, Kortessem',
   estimate: 480, tracked: 20700, comments: 2, tags: ['losse events'],
   description: '**Fiche evenement**\n\n- Opbouw zaterdag 3 juli vanaf 14.00 — tent, vloer, verlichting\n- Ceremonie 15.30 in de boomgaard, plan B in de schuur bij regen\n- Receptie 16.30 · walking dinner 18.30 · avondbar tot 03.00\n- 140 personen, waarvan 12 kinderen\n\n**Openstaande punten**\n\n- Regenplan bevestigen met de eigenaar\n- Aantal vegetarische gasten navragen',
@@ -131,7 +195,7 @@ taak('t-trouw-2', 'l-overview', OVERVIEW, 'complete',     { parentId: 't-trouw',
 taak('t-trouw-3', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Prijs open bar apart opgeven', assignees: ['u-elke'] })
 
 taak('t-blum', 'l-overview', OVERVIEW, 'offer accepted', {
-  title: 'Blum België — 20-jarig bestaan', assignees: ['u-jasper'], priority: 2,
+  title: 'Blum België — 20-jarig bestaan', assignees: ['u-jasper'], priority: 2, customerId: 'k-blum',
   dueDate: dag(82), budget: 24800, location: 'Cultureel Centrum, Sint-Truiden',
   tracked: 35100, comments: 1, tags: ['losse events'],
   description: '180 medewerkers + partners. Onthaal 18.30 · diner 20.00 · dansfeest tot 02.00.\n\nOpbouw donderdag 18 december vanaf 09.00.',
@@ -141,7 +205,7 @@ taak('t-blum-2', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum',
 taak('t-blum-3', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Herasdoeken laten bedrukken', assignees: ['u-jasper'] })
 
 taak('t-haspengouw', 'l-overview', OVERVIEW, 'planning ready', {
-  title: 'Haspengouw Culinair — Grote Markt', assignees: ['u-jasper', 'u-anneleen'],
+  title: 'Haspengouw Culinair — Grote Markt', assignees: ['u-jasper', 'u-anneleen'], customerId: 'k-borgloon',
   dueDate: dag(-7), budget: 38900, location: 'Grote Markt, Borgloon', tracked: 85500,
   tags: ['losse events'], priority: 2,
   description: '8 standen met eigen stroomafname, centrale bar 12 m met 6 tappunten. 600 bezoekers verwacht.',
@@ -163,10 +227,13 @@ taak('t-vrijwilligers', 'l-overview', OVERVIEW, 'offer send', {
 taak('t-canon', 'l-overview', OVERVIEW, 'ready to invoice', {
   title: 'Canon Event — Vergaderzaal | 10–15 personen', assignees: ['u-jasper', 'u-elke'],
   dueDate: dag(-29), budget: 1250, brandId: 'meer', priority: 1, tracked: 5400,
+  // Tien man in een vergaderzaal levert geen content op; bewust uitgezet.
+  socialWanted: false,
 })
 taak('t-loonse', 'l-overview', OVERVIEW, 'ready to invoice', {
   title: 'Loonse Feesten 2026', assignees: ['u-jasper', 'u-elke'], dueDate: dag(-30),
-  budget: 21500, priority: 1, tracked: 138600, comments: 1,
+  budget: 21500, priority: 1, tracked: 138600, comments: 1, customerId: 'k-borgloon',
+  socialStage: 'ready',
 })
 taak('t-ruben', 'l-overview', OVERVIEW, 'request', {
   title: 'Ruben Theuwen — 25 april 2027', assignees: ['u-jasper'], tags: ['feestbeest'], brandId: 'feestbeest',
@@ -178,6 +245,7 @@ taak('t-jolien', 'l-overview', OVERVIEW, 'request', {
 })
 taak('t-astrid', 'l-overview', OVERVIEW, 'invoiced', {
   title: 'Astrid Odeurs — trouwfeest', assignees: ['u-elke'], budget: 14250, tracked: 28800,
+  socialStage: 'posted',
 })
 taak('t-magirus', 'l-overview', OVERVIEW, 'invoiced', {
   title: 'Magirus — opbouw 29 mei, gebruik 30 mei', assignees: ['u-elke'], budget: 12600, tracked: 23400,

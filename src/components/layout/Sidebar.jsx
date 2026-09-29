@@ -8,7 +8,8 @@ import { useWorkspace } from '@context/WorkspaceProvider'
 const MAIN = [
   { to: '/', label: 'Vandaag', end: true, icon: '◴' },
   { to: '/mijn-werk', label: 'Mijn werk', icon: '☑' },
-  { to: '/social', label: 'Social kalender', icon: '▦' },
+  { to: '/klanten', label: 'Klanten', icon: '☗' },
+  { to: '/social', label: 'Socials', icon: '▦' },
   { to: '/openen-sluiten', label: 'Openen & sluiten', icon: '☑' },
   { to: '/overleg', label: 'Teamoverleg', icon: '✎' },
   { to: '/uren', label: 'Uren', icon: '⏱' },

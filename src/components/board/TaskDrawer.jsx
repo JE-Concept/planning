@@ -15,6 +15,9 @@ import {
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
+import Documents from '@components/common/Documents'
+import { useCustomers } from '@data/customers'
+import { SOCIAL_STAGES, heeftSocial, isSocialEligible, stageOf } from '@lib/social-stage'
 import {
   archiveTask,
   createTask,
@@ -190,7 +193,11 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
               placeholder="Adres of zaal"
             />
           </Field>
+
+          <KlantVeld task={task} />
         </div>
+
+        <SocialContent task={task} />
 
         <section>
           <h3 className="label">Toegewezen aan</h3>
@@ -248,6 +255,8 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 
         <TimeSection task={task} list={list} uid={uid} toast={toast} profileById={profileById} />
 
+        <Documents taskId={task.id} titel="Documenten bij dit event" />
+
         <SocialSection taskId={task.id} />
 
         <CommentSection taskId={task.id} profile={profile} />
@@ -257,6 +266,111 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 }
 
 // ─── Social ─────────────────────────────────────────────────────────────────
+
+/**
+ * De klant achter dit event.
+ *
+ * Tot nu stond die in de titel — "Trouw Niels en Inez", "Blum België" — en
+ * daar kun je niets mee opzoeken. Dit is dezelfde informatie, maar dan zo dat
+ * je van de klant naar zijn events kunt en terug. De naam gaat als kopie mee op
+ * de taak, want een bord dat per kaart de klant moet ophalen leest zich scheef.
+ */
+function KlantVeld({ task }) {
+  const { customers } = useCustomers()
+
+  return (
+    <Field label="Klant" className="sm:col-span-2">
+      <Select
+        aria-label="Klant van dit event"
+        value={task.customerId ?? ''}
+        onChange={(e) => {
+          const klant = customers.find((c) => c.id === e.target.value) ?? null
+          updateTask(task.id, {
+            customerId: klant?.id ?? null,
+            customerName: klant?.name ?? null,
+          })
+        }}
+      >
+        <option value="">Geen klant</option>
+        {customers.map((klant) => (
+          <option key={klant.id} value={klant.id}>
+            {klant.name}
+          </option>
+        ))}
+        {/* Hoort de taak bij een klant die intussen uit gebruik is, dan blijft
+            die hier staan in plaats van stilletjes op "geen klant" te vallen. */}
+        {task.customerId && !customers.some((c) => c.id === task.customerId) ? (
+          <option value={task.customerId}>{task.customerName ?? 'Klant uit gebruik'}</option>
+        ) : null}
+      </Select>
+    </Field>
+  )
+}
+
+/**
+ * Social content voor dit event.
+ *
+ * Elk event kan content opleveren, maar niet elk event doet dat — een
+ * vergaderzaal voor tien man meestal niet. Vandaar de schakelaar: aan vanaf het
+ * moment dat er gefactureerd kan worden, en met één klik eraf voor wat er niet
+ * bij hoort. Wat aanstaat verschijnt op het socialbord.
+ */
+function SocialContent({ task }) {
+  if (task.parentId) return null
+
+  const meedoen = heeftSocial(task)
+  const vanzelf = isSocialEligible(task)
+
+  return (
+    <section>
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="label mb-0">Social content</h3>
+        <label className="ml-auto flex items-center gap-2 text-sm text-ink-700">
+          <input
+            type="checkbox"
+            checked={meedoen}
+            onChange={(e) =>
+              updateTask(task.id, {
+                socialWanted: e.target.checked,
+                // Aanzetten vóór de factuurfase geeft het meteen een plek op
+                // het bord; uitzetten laat de stand staan voor als het terugkomt.
+                socialStage: e.target.checked ? (task.socialStage ?? 'delivery') : task.socialStage ?? null,
+              })
+            }
+            className="h-4 w-4 rounded border-ink-300"
+          />
+          Dit event levert social content op
+        </label>
+      </div>
+
+      {meedoen ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Select
+            value={stageOf(task)}
+            onChange={(e) => updateTask(task.id, { socialStage: e.target.value })}
+            aria-label="Stand van de social content"
+            className="max-w-[16rem]"
+          >
+            {SOCIAL_STAGES.map((stap) => (
+              <option key={stap.key} value={stap.key}>
+                {stap.label}
+              </option>
+            ))}
+          </Select>
+          <span className="text-xs text-ink-400">
+            {SOCIAL_STAGES.find((s) => s.key === stageOf(task))?.hint}
+          </span>
+        </div>
+      ) : (
+        <p className="mt-1 text-sm text-ink-500">
+          {vanzelf
+            ? 'Uitgezet voor dit event.'
+            : 'Komt er vanzelf bij zodra het event op “ready to invoice” staat.'}
+        </p>
+      )}
+    </section>
+  )
+}
 
 /**
  * The posts hanging on this project.

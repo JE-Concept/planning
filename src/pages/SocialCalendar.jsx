@@ -13,6 +13,7 @@ import { Badge, Button, EmptyState, Select, Spinner } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import PostCard from '@components/social/PostCard'
 import PostDrawer from '@components/social/PostDrawer'
+import SocialEventsBoard from '@components/social/SocialEventsBoard'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -36,7 +37,9 @@ export default function SocialCalendar() {
   const toast = useToast()
 
   const [month, setMonth] = useState(() => startOfMonth())
-  const [view, setView] = useState('calendar')
+  // Het eventbord staat vooraan: dat is de vraag waarmee de week begint —
+  // van welke events moet er nog content komen?
+  const [view, setView] = useState('events')
   const [brandFilter, setBrandFilter] = useState([])
   const [projectFilter, setProjectFilter] = useState('')
   const [reviewOnly, setReviewOnly] = useState(false)
@@ -131,9 +134,12 @@ export default function SocialCalendar() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Social kalender"
-        subtitle={`${shown.length} posts in ${formatMonth(month)}`}
+        title="Socials"
+        subtitle={
+          view === 'events' ? 'Events met social content' : `${shown.length} posts in ${formatMonth(month)}`
+        }
         actions={
+          view === 'events' ? null : (
           <>
             <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, -1))} aria-label="Vorige maand">
               ‹
@@ -148,19 +154,24 @@ export default function SocialCalendar() {
               + Post
             </Button>
           </>
+          )
         }
         tabs={
           <>
+            <Tab active={view === 'events'} onClick={() => setView('events')}>
+              Events
+            </Tab>
             <Tab active={view === 'calendar'} onClick={() => setView('calendar')}>
               Kalender
             </Tab>
             <Tab active={view === 'board'} onClick={() => setView('board')}>
-              Productie
+              Posts
             </Tab>
           </>
         }
       />
 
+      {view === 'events' ? null : (
       <div className="flex flex-wrap items-center gap-1.5 border-b border-ink-200 bg-white px-4 py-2 sm:px-6">
         {brands.map((brand) => (
           <button key={brand.id} type="button" onClick={() => toggleBrand(brand.id)} aria-pressed={brandFilter.includes(brand.id)}>
@@ -205,8 +216,11 @@ export default function SocialCalendar() {
           </Button>
         ) : null}
       </div>
+      )}
 
-      {loading ? (
+      {view === 'events' ? (
+        <SocialEventsBoard />
+      ) : loading ? (
         <div className="flex flex-1 items-center justify-center">
           <Spinner className="h-6 w-6" />
         </div>

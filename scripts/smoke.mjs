@@ -102,6 +102,10 @@ async function tabblad(pad = '/', { breedte = 1280, hoogte = 900 } = {}) {
 
 const inhoud = async (page) => (await page.locator('body').innerText()).trim()
 
+// De app zet koppen in kapitalen via CSS, en innerText geeft terug wat er
+// staat — dus vergelijken zonder op hoofdletters te letten.
+const bevat = (tekst, naald) => tekst.toLowerCase().includes(naald.toLowerCase())
+
 // ─── 1. Elke pagina opent ───────────────────────────────────────────────────
 
 const PAGINAS = [
@@ -109,7 +113,8 @@ const PAGINAS = [
   ['Mijn werk', '/mijn-werk', 'Mijn werk'],
   ['Bord Events', '/bord/l-overview', 'Events'],
   ['Bord Socials', '/bord/l-socials', 'Socials'],
-  ['Social kalender', '/social', 'Social kalender'],
+  ['Socials', '/social', 'Socials'],
+  ['Klanten', '/klanten', 'Klanten'],
   ['Openen & sluiten', '/openen-sluiten', 'Openen'],
   ['Teamoverleg', '/overleg', 'Teamoverleg'],
   ['Uren', '/uren', 'Uren'],
@@ -175,6 +180,66 @@ await test('een kapotte pagina laat de rest van de tool staan', async () => {
 })
 
 // ─── 3. De dingen die mensen op die schermen doen ───────────────────────────
+
+await test('het socialbord toont de events vanaf ready to invoice', async () => {
+  const page = await tabblad('/social')
+  const tekst = await inhoud(page)
+  for (const kolom of ['Social content delivery', 'Social content ready', 'Social content posted']) {
+    zouden(bevat(tekst, kolom), `kolom "${kolom}" ontbreekt`)
+  }
+  zouden(!bevat(tekst, 'Stripe Connect'), 'een taak van een ander bord staat op het socialbord')
+  // Staat op "invoiced" met stand posted, en op "ready to invoice" met stand ready.
+  zouden(tekst.includes('Astrid Odeurs'), 'een gefactureerd event ontbreekt op het bord')
+  zouden(tekst.includes('Loonse Feesten'), 'een event met stand "ready" ontbreekt')
+  // Bewust uitgezet: een vergaderzaal voor tien man levert geen content op.
+  zouden(!tekst.includes('Canon Event'), 'een uitgezet event staat er toch op')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de kalender en de posts blijven bestaan naast het eventbord', async () => {
+  const page = await tabblad('/social')
+  await page.getByRole('button', { name: 'Kalender' }).click()
+  await page.waitForTimeout(900)
+  zouden((await inhoud(page)).includes('posts in'), 'de kalender opent niet')
+  await page.getByRole('button', { name: 'Posts', exact: true }).click()
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Goedgekeurd'), 'het postenbord opent niet')
+  await page.close()
+})
+
+await test('een klant toont zijn gegevens, events en documenten', async () => {
+  const page = await tabblad('/klanten')
+  const tekst = await inhoud(page)
+  zouden(tekst.includes('Blum België'), 'de klanten staan er niet')
+
+  await page.getByText('Blum België').first().click()
+  await page.waitForTimeout(900)
+  const paneel = page.getByRole('dialog')
+  const paneeltekst = await paneel.innerText()
+  // De contactgegevens staan in invoervelden en dus niet in de tekst.
+  const velden = await paneel.locator('input').evaluateAll((els) => els.map((e) => e.value))
+  zouden(velden.includes('Karen Vandeput'), `contactpersoon ontbreekt: ${velden.slice(0, 6).join(' | ')}`)
+  zouden(velden.includes('BE 0456.789.123'), 'het btw-nummer ontbreekt')
+  zouden(paneeltekst.includes('blum-logo.svg'), 'het logo ontbreekt bij de klant')
+  zouden(paneeltekst.includes('20-jarig bestaan'), 'het event van deze klant ontbreekt')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een event toont zijn klant en zijn social-schakelaar', async () => {
+  const page = await tabblad('/bord/l-overview')
+  await page.locator('main').getByText('Blum België — 20-jarig bestaan').first().click()
+  await page.waitForTimeout(900)
+  const paneel = page.getByRole('dialog')
+  const tekst = await paneel.innerText()
+  zouden(bevat(tekst, 'Social content'), 'de social-sectie ontbreekt')
+  zouden(bevat(tekst, 'Documenten bij dit event'), 'de documenten ontbreken')
+
+  const klant = await paneel.getByLabel('Klant van dit event').inputValue()
+  zouden(klant === 'k-blum', `de klant staat niet gekozen: ${klant}`)
+  await page.close()
+})
 
 await test('een taak opent in het zijpaneel', async () => {
   const page = await tabblad('/bord/l-overview')
