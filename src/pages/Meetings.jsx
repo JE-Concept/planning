@@ -220,7 +220,10 @@ function Agenda({ items }) {
       setOmschrijving('')
       setMinuten(10)
     } catch (err) {
-      toast.error(leesFunctieFout(err, 'Het samenvatten'))
+      // Stond eerder op "Het samenvatten", maar dit is het toevoegen van een
+      // agendapunt — en een foutmelding die iets anders benoemt dan wat je net
+      // deed, stuurt de lezer de verkeerde kant op.
+      toast.error(leesFunctieFout(err, t('overleg.punt_toevoegen')))
     } finally {
       setBusy(false)
     }
