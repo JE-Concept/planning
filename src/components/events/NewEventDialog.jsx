@@ -4,6 +4,7 @@ import { addDays, dayKey } from '@lib/dates'
 import { bestelTekst, bestellijstVan, prijsVan, standaardKeuzes } from '@lib/formules'
 import { Button, Dialog, Field, Icon, Input, Select, Tabs } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createEventFromTemplate } from '@data/events'
@@ -25,6 +26,7 @@ const euro = (bedrag) =>
 export default function NewEventDialog({ open, onClose }) {
   const { eventsList, brands, templates, formules, profiles } = useWorkspace()
   const { uid } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
   const navigate = useNavigate()
 
@@ -80,7 +82,7 @@ export default function NewEventDialog({ open, onClose }) {
         keuzes: modus === 'formule' ? keuzes : null,
         pax: modus === 'formule' ? pax : null,
       })
-      toast.success(`${name.trim()} staat in de planning.`)
+      toast.success(t('events.nieuw.gemaakt', { naam: name.trim() }))
       setName('')
       setKlant({ customerId: '', customerName: '' })
       onClose()
@@ -96,34 +98,32 @@ export default function NewEventDialog({ open, onClose }) {
     <Dialog
       open={open}
       onClose={onClose}
-      title="Nieuw event"
+      title={t('events.nieuw')}
       width={modus === 'formule' ? 640 : 560}
       className="je-formule-dialog"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         {!eventsList ? (
-          <p className="je-muted-caption">
-            Er is nog geen eventlijst met de statuspijplijn. Maak ze aan in Instellingen → Lijsten.
-          </p>
+          <p className="je-muted-caption">{t('events.nieuw.geen_lijst')}</p>
         ) : null}
 
         <Tabs
           items={[
-            { value: 'custom', label: 'Custom event' },
-            { value: 'formule', label: 'Bestaande formule' },
+            { value: 'custom', label: t('events.nieuw.custom') },
+            { value: 'formule', label: t('events.nieuw.uit_formule') },
           ]}
           value={modus}
           onChange={setModus}
         />
 
-        <Field label="Naam" required>
+        <Field label={t('events.velden.naam')} required>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') create()
             }}
-            placeholder="bv. Trouw Tom en Sara"
+            placeholder={t('events.nieuw.naam_hint')}
             autoFocus
           />
         </Field>
@@ -132,21 +132,24 @@ export default function NewEventDialog({ open, onClose }) {
           customerName={klant.customerName}
           onChange={setKlant}
         />
-        <Field label="Datum event" hint="Deadlines van het template tellen hiervan terug">
+        <Field label={t('events.velden.datum')} hint={t('events.nieuw.datum_hint')}>
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        <Field label="Concept">
+        <Field label={t('events.velden.concept')}>
           <Select
             value={brandId}
             onChange={(e) => setBrandId(e.target.value)}
-            options={[{ value: '', label: 'Los event' }, ...concepts.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[
+              { value: '', label: t('events.los_event') },
+              ...concepts.map((b) => ({ value: b.id, label: b.name })),
+            ]}
           />
         </Field>
 
         {modus === 'custom' ? (
           <div>
             <div className="je-caps" style={{ marginBottom: 'var(--space-3)' }}>
-              Start van template
+              {t('events.nieuw.template')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--border-hairline)', borderRadius: 2 }}>
               {templates.map((tp, i) => (
@@ -178,16 +181,14 @@ export default function NewEventDialog({ open, onClose }) {
         )}
 
         <div className="je-muted-caption">
-          {modus === 'formule'
-            ? 'De prijs en de bestellijst staan meteen op het event. Alles blijft daarna aanpasbaar.'
-            : 'Gasten en offerte vul je aan op de fiche. Samen met klant en datum zijn ze verplicht vanaf de offertestap.'}
+          {modus === 'formule' ? t('events.nieuw.uitleg_formule') : t('events.nieuw.uitleg_custom')}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button size="sm" disabled={!klaar} loading={busy} onClick={create}>
-            Event aanmaken
+            {t('events.nieuw.aanmaken')}
           </Button>
         </div>
       </div>
@@ -238,19 +239,17 @@ function FormuleKeuze({
   bestellijst,
   template,
 }) {
+  const { t } = useTaal()
+
   if (formules.length === 0) {
-    return (
-      <p className="je-muted-caption">
-        Er zijn nog geen formules. Een beheerder maakt ze aan in Instellingen → Formules.
-      </p>
-    )
+    return <p className="je-muted-caption">{t('events.nieuw.geen_formules')}</p>
   }
 
   return (
     <>
       <div>
         <div className="je-caps" style={{ marginBottom: 'var(--space-3)' }}>
-          Formule
+          {t('events.fiche.formule')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--border-hairline)', borderRadius: 2 }}>
           {formules.map((f, i) => (
@@ -269,7 +268,7 @@ function FormuleKeuze({
 
       {formule ? (
         <>
-          <Field label="Aantal personen" required hint="Hierop wordt de bestellijst berekend">
+          <Field label={t('events.nieuw.personen')} required hint={t('events.nieuw.personen_hint')}>
             <Input type="number" min="1" step="1" value={personen} onChange={(e) => onPersonen(e.target.value)} />
           </Field>
 
@@ -290,38 +289,41 @@ function FormuleKeuze({
             <div className="je-formule-rekening__rij">
               <span>
                 {prijs.personen} × {euro(prijs.perPersoon)}
-                {prijs.vast ? ` + ${euro(prijs.vast)} vast` : ''}
+                {prijs.vast ? t('events.nieuw.vast', { bedrag: euro(prijs.vast) }) : ''}
               </span>
               <strong>{euro(prijs.exclBtw)}</strong>
             </div>
             {prijs.btwRegels.map((r) => (
               <div key={r.percent} className="je-formule-rekening__rij je-muted-caption">
-                <span>
-                  btw {r.percent}% op {euro(r.basis)}
-                </span>
+                <span>{t('events.nieuw.btw', { percent: r.percent, basis: euro(r.basis) })}</span>
                 <span>{euro(r.btw)}</span>
               </div>
             ))}
             <div className="je-formule-rekening__rij je-formule-rekening__totaal">
-              <span>Totaal incl. btw</span>
+              <span>{t('events.nieuw.totaal')}</span>
               <strong>{euro(prijs.inclBtw)}</strong>
             </div>
           </div>
 
           <div>
             <div className="je-caps" style={{ marginBottom: 'var(--space-3)' }}>
-              Bestellijst · {bestellijst.length} regels
+              {t('events.nieuw.bestellijst', { aantal: bestellijst.length })}
             </div>
             <div className="je-muted-caption">
               {bestellijst.length === 0
-                ? 'Nog niets te bestellen — vul een aantal personen in.'
+                ? t('events.nieuw.niets_bestellen')
                 : `${bestellijst
                     .slice(0, 4)
                     .map((r) => `${bestelTekst(r)} ${r.item.toLowerCase()}`)
-                    .join(', ')}${bestellijst.length > 4 ? `, en ${bestellijst.length - 4} meer` : ''}.`}
+                    .join(', ')}${
+                    bestellijst.length > 4 ? t('events.nieuw.en_meer', { aantal: bestellijst.length - 4 }) : ''
+                  }.`}
             </div>
             <div className="je-muted-caption" style={{ marginTop: 'var(--space-2)' }}>
-              Taken: {template?.name ?? 'geen'} · {templateSummary(template ?? {})}
+              {t('events.nieuw.taken', {
+                template: template?.name ?? t('events.nieuw.geen_template'),
+                samenvatting: templateSummary(template ?? {}),
+              })}
             </div>
           </div>
         </>

@@ -17,6 +17,7 @@ import { Checkbox } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import Documents from '@components/common/Documents'
 import TaskDrawer from '@components/board/TaskDrawer'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
@@ -41,6 +42,7 @@ import {
 export default function Customers() {
   const { customers, loading } = useCustomers({ includeArchived: true })
   const { brandById } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
   const [zoek, setZoek] = useState('')
   const [open, setOpen] = useState(null)
@@ -60,10 +62,14 @@ export default function Customers() {
 
   const maak = async () => {
     try {
+      // De naam die in de database terechtkomt blijft Nederlands: hij is
+      // vanaf dat moment een gegeven, en een fiche die voor de ene collega
+      // "Nieuwe klant" heet en voor de andere "New customer" is dezelfde
+      // fiche niet.
       const id = await createCustomer({ name: 'Nieuwe klant', address: leegAdres() })
       setNieuw(false)
       setOpen(id)
-      toast.success('Klant aangemaakt.')
+      toast.success(t('klant.aangemaakt'))
     } catch (err) {
       toast.error(err.message)
     }
@@ -72,8 +78,8 @@ export default function Customers() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Klanten"
-        subtitle={`${customers.filter((c) => !c.archived).length} actief`}
+        title={t('nav.klanten')}
+        subtitle={t('klant.actief', { aantal: customers.filter((c) => !c.archived).length })}
         actions={
           <>
             {/* De tekst in het veld paste niet in het veld: hij liep dood op
@@ -81,12 +87,12 @@ export default function Customers() {
             <Input
               value={zoek}
               onChange={(e) => setZoek(e.target.value)}
-              placeholder="Zoek op naam, btw of stad"
+              placeholder={t('klant.zoek_hint')}
               className="je-zoekveld h-8 text-sm"
-              aria-label="Zoeken op naam, btw-nummer, stad of contactpersoon"
+              aria-label={t('klant.zoek_label')}
             />
             <Button variant="primary" size="sm" onClick={maak} disabled={nieuw}>
-              + Klant
+              {t('klant.nieuw')}
             </Button>
           </>
         }
@@ -99,7 +105,7 @@ export default function Customers() {
           </div>
         ) : zichtbaar.length === 0 ? (
           <p className="card px-4 py-8 text-center text-sm text-ink-500">
-            {zoek ? 'Geen klant gevonden.' : 'Nog geen klanten. Maak er een aan met “+ Klant”.'}
+            {zoek ? t('klant.geen_gevonden') : t('klant.leeg')}
           </p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -116,7 +122,7 @@ export default function Customers() {
                     </span>
                     {klant.archived ? (
                       <Badge color="#8593a9" subtle>
-                        uit
+                        {t('klant.uit')}
                       </Badge>
                     ) : klant.brandId && brandById[klant.brandId] ? (
                       <Badge color={brandById[klant.brandId].color} subtle>
@@ -125,7 +131,7 @@ export default function Customers() {
                     ) : null}
                   </div>
                   <p className="mt-0.5 truncate text-xs text-ink-500">
-                    {[klant.address?.city, klant.vatNumber].filter(Boolean).join(' · ') || 'Geen gegevens'}
+                    {[klant.address?.city, klant.vatNumber].filter(Boolean).join(' · ') || t('klant.geen_gegevens')}
                   </p>
                   {klant.contacts?.length ? (
                     <p className="mt-1 truncate text-xs text-ink-400">
@@ -148,6 +154,7 @@ export default function Customers() {
 // ─── Eén klant ──────────────────────────────────────────────────────────────
 
 function KlantPaneel({ id, onClose, toast }) {
+  const { t } = useTaal()
   const { customers } = useCustomers({ includeArchived: true })
   const { brands, eventsList } = useWorkspace()
   const klant = customers.find((c) => c.id === id)
@@ -188,7 +195,7 @@ function KlantPaneel({ id, onClose, toast }) {
         // Het antwoord op "wat zijn die waard voor ons" hoort in de kop te
         // staan, niet pas onderaan het paneel.
         historiek.aantal
-          ? `${historiek.aantal} event${historiek.aantal === 1 ? '' : 's'} · ${formatCurrency(historiek.totaal)}`
+          ? t('klant.kop', { aantal: historiek.aantal, bedrag: formatCurrency(historiek.totaal) })
           : null,
       ]
         .filter(Boolean)
@@ -197,17 +204,17 @@ function KlantPaneel({ id, onClose, toast }) {
         <>
           {klant.archived ? (
             <Button variant="ghost" size="sm" onClick={() => restoreCustomer(id)}>
-              Terughalen
+              {t('klant.terughalen')}
             </Button>
           ) : (
             <ConfirmButton
               variant="ghost"
               size="sm"
               className="text-ink-400"
-              question="Klant uit gebruik nemen? De events blijven bewaard."
+              question={t('klant.uit_gebruik_vraag')}
               onConfirm={() => archiveCustomer(id)}
             >
-              Uit gebruik nemen
+              {t('klant.uit_gebruik')}
             </ConfirmButton>
           )}
           {tasks.length === 0 ? (
@@ -215,22 +222,20 @@ function KlantPaneel({ id, onClose, toast }) {
               variant="ghost"
               size="sm"
               className="text-red-700"
-              question="Deze klant definitief verwijderen?"
+              question={t('klant.weg_vraag')}
               onConfirm={() => deleteCustomer(id).then(onClose)}
             >
-              Verwijderen
+              {t('alg.verwijderen')}
             </ConfirmButton>
           ) : (
-            <span className="text-xs text-ink-400">
-              {tasks.length} event{tasks.length === 1 ? '' : 's'} — daarom niet te verwijderen
-            </span>
+            <span className="text-xs text-ink-400">{t('klant.niet_weg', { aantal: tasks.length })}</span>
           )}
         </>
       }
     >
       <div className="space-y-5 px-5 py-4">
         <section className="grid gap-2 sm:grid-cols-2">
-          <Field label="Bedrijfsnaam" className="sm:col-span-2">
+          <Field label={t('klant.bedrijfsnaam')} className="sm:col-span-2">
             <Input
               defaultValue={klant.name}
               onBlur={(e) => e.target.value.trim() && zet({ name: e.target.value.trim() })}
@@ -239,7 +244,7 @@ function KlantPaneel({ id, onClose, toast }) {
           {/* Wat je typt wordt netjes gezet, niet geweigerd: een half nummer
               is beter dan een leeg veld, en de opmerking eronder zegt waarom
               het nagekeken moet worden. */}
-          <Field label="Btw-nummer" hint={vatHint(klant.vatNumber)}>
+          <Field label={t('klant.btw')} hint={vatHint(klant.vatNumber)}>
             <Input
               key={klant.vatNumber}
               defaultValue={klant.vatNumber}
@@ -247,9 +252,9 @@ function KlantPaneel({ id, onClose, toast }) {
               onBlur={(e) => zet({ vatNumber: formatVat(e.target.value) })}
             />
           </Field>
-          <Field label="Merk" hint="Onder welk merk valt deze klant meestal?">
+          <Field label={t('klant.merk')} hint={t('klant.merk_hint')}>
             <Select value={klant.brandId ?? ''} onChange={(e) => zet({ brandId: e.target.value || null })}>
-              <option value="">Geen</option>
+              <option value="">{t('alg.geen')}</option>
               {brands.map((merk) => (
                 <option key={merk.id} value={merk.id}>
                   {merk.name}
@@ -257,37 +262,37 @@ function KlantPaneel({ id, onClose, toast }) {
               ))}
             </Select>
           </Field>
-          <Field label="E-mail">
+          <Field label={t('klant.email')}>
             <Input type="email" defaultValue={klant.email} onBlur={(e) => zet({ email: e.target.value.trim() })} />
           </Field>
-          <Field label="Telefoon">
+          <Field label={t('klant.telefoon')}>
             <Input defaultValue={klant.phone} onBlur={(e) => zet({ phone: e.target.value.trim() })} />
           </Field>
-          <Field label="Website" className="sm:col-span-2">
+          <Field label={t('klant.website')} className="sm:col-span-2">
             <Input defaultValue={klant.website} onBlur={(e) => zet({ website: e.target.value.trim() })} />
           </Field>
         </section>
 
         <section className="grid gap-2 sm:grid-cols-4">
-          <Field label="Straat en nummer" className="sm:col-span-4">
+          <Field label={t('klant.straat')} className="sm:col-span-4">
             <Input
               defaultValue={klant.address?.street ?? ''}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, street: e.target.value } })}
             />
           </Field>
-          <Field label="Postcode">
+          <Field label={t('klant.postcode')}>
             <Input
               defaultValue={klant.address?.postalCode ?? ''}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, postalCode: e.target.value } })}
             />
           </Field>
-          <Field label="Gemeente" className="sm:col-span-2">
+          <Field label={t('klant.gemeente')} className="sm:col-span-2">
             <Input
               defaultValue={klant.address?.city ?? ''}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, city: e.target.value } })}
             />
           </Field>
-          <Field label="Land">
+          <Field label={t('klant.land')}>
             <Input
               defaultValue={klant.address?.country ?? 'België'}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, country: e.target.value } })}
@@ -301,43 +306,45 @@ function KlantPaneel({ id, onClose, toast }) {
             die stil uit elkaar lopen. */}
         <section className="grid gap-2 sm:grid-cols-4">
           <h3 className="label mb-0 sm:col-span-4">
-            Facturatie
+            {t('klant.facturatie')}
             <span className="ml-2 font-normal normal-case text-ink-400">
-              {factuur.eigen || factuurMail.eigen
-                ? 'Wijkt af van de gegevens hierboven'
-                : 'Leeg = dezelfde gegevens als hierboven'}
+              {factuur.eigen || factuurMail.eigen ? t('klant.facturatie_anders') : t('klant.facturatie_leeg')}
             </span>
           </h3>
-          <Field label="Factuur-e-mail" className="sm:col-span-2" hint={factuurMail.email ? `Facturen naar ${factuurMail.email}` : null}>
+          <Field
+            label={t('klant.factuur_email')}
+            className="sm:col-span-2"
+            hint={factuurMail.email ? t('klant.factuur_email_hint', { email: factuurMail.email }) : null}
+          >
             <Input
               type="email"
               defaultValue={klant.billingEmail ?? ''}
-              placeholder={klant.email || 'boekhouding@…'}
+              placeholder={klant.email || t('klant.factuur_email_plaats')}
               onBlur={(e) => zet({ billingEmail: e.target.value.trim() })}
             />
           </Field>
-          <Field label="Straat en nummer" className="sm:col-span-2">
+          <Field label={t('klant.straat')} className="sm:col-span-2">
             <Input
               defaultValue={klant.billingAddress?.street ?? ''}
               placeholder={klant.address?.street ?? ''}
               onBlur={zetFactuuradres('street')}
             />
           </Field>
-          <Field label="Postcode">
+          <Field label={t('klant.postcode')}>
             <Input
               defaultValue={klant.billingAddress?.postalCode ?? ''}
               placeholder={klant.address?.postalCode ?? ''}
               onBlur={zetFactuuradres('postalCode')}
             />
           </Field>
-          <Field label="Gemeente" className="sm:col-span-2">
+          <Field label={t('klant.gemeente')} className="sm:col-span-2">
             <Input
               defaultValue={klant.billingAddress?.city ?? ''}
               placeholder={klant.address?.city ?? ''}
               onBlur={zetFactuuradres('city')}
             />
           </Field>
-          <Field label="Land">
+          <Field label={t('klant.land')}>
             <Input
               defaultValue={klant.billingAddress?.country ?? ''}
               placeholder={klant.address?.country ?? 'België'}
@@ -345,7 +352,7 @@ function KlantPaneel({ id, onClose, toast }) {
             />
           </Field>
           <p className="sm:col-span-4 text-xs text-ink-500">
-            Factuur naar {addressLine(factuur.adres) || 'nog geen adres'}
+            {t('klant.factuur_naar', { adres: addressLine(factuur.adres) || t('klant.geen_adres') })}
             {factuurMail.email ? ` · ${factuurMail.email}` : ''}
           </p>
         </section>
@@ -353,8 +360,12 @@ function KlantPaneel({ id, onClose, toast }) {
         <section>
           <div className="flex items-center gap-2">
             <h3 className="label mb-0">
-              Contactpersonen ({klant.contacts?.length ?? 0})
-              {hoofd?.name ? <span className="ml-2 font-normal normal-case text-ink-400">bel {hoofd.name}</span> : null}
+              {t('klant.contacten', { aantal: klant.contacts?.length ?? 0 })}
+              {hoofd?.name ? (
+                <span className="ml-2 font-normal normal-case text-ink-400">
+                  {t('klant.bel', { naam: hoofd.name })}
+                </span>
+              ) : null}
             </h3>
             <Button
               variant="ghost"
@@ -362,33 +373,33 @@ function KlantPaneel({ id, onClose, toast }) {
               className="ml-auto"
               onClick={() => zet({ contacts: [...(klant.contacts ?? []), nieuwContact()] })}
             >
-              + Contact
+              {t('klant.contact_nieuw')}
             </Button>
           </div>
 
           <ul className="mt-2 space-y-2">
             {(klant.contacts ?? []).map((contact) => (
               <li key={contact.id} className="grid gap-2 rounded-lg bg-ink-50 p-2.5 sm:grid-cols-2">
-                <Field label="Naam">
+                <Field label={t('klant.contact_naam')}>
                   <Input
                     defaultValue={contact.name}
                     onBlur={(e) => zetContact(contact.id, { name: e.target.value })}
                   />
                 </Field>
-                <Field label="Rol" hint="Zaakvoerder, eventmanager, boekhouding…">
+                <Field label={t('klant.contact_rol')} hint={t('klant.contact_rol_hint')}>
                   <Input
                     defaultValue={contact.role}
                     onBlur={(e) => zetContact(contact.id, { role: e.target.value })}
                   />
                 </Field>
-                <Field label="E-mail">
+                <Field label={t('klant.email')}>
                   <Input
                     type="email"
                     defaultValue={contact.email}
                     onBlur={(e) => zetContact(contact.id, { email: e.target.value })}
                   />
                 </Field>
-                <Field label="Telefoon">
+                <Field label={t('klant.telefoon')}>
                   <Input
                     defaultValue={contact.phone}
                     onBlur={(e) => zetContact(contact.id, { phone: e.target.value })}
@@ -399,7 +410,7 @@ function KlantPaneel({ id, onClose, toast }) {
                       groep met één naam, en deze staan per contactpersoon in
                       een eigen kaartje. Aanvinken duidt de andere vanzelf af. */}
                   <Checkbox
-                    label="Hoofdcontactpersoon"
+                    label={t('klant.hoofdcontact')}
                     checked={hoofd?.id === contact.id}
                     onChange={() =>
                       zet({
@@ -414,32 +425,30 @@ function KlantPaneel({ id, onClose, toast }) {
                     variant="ghost"
                     size="sm"
                     className="ml-auto text-ink-400"
-                    question="Deze contactpersoon verwijderen?"
+                    question={t('klant.contact_weg_vraag')}
                     onConfirm={() =>
                       zet({ contacts: (klant.contacts ?? []).filter((c) => c.id !== contact.id) })
                     }
                   >
-                    Contact weg
+                    {t('klant.contact_weg')}
                   </ConfirmButton>
                 </div>
               </li>
             ))}
             {(klant.contacts ?? []).length === 0 ? (
-              <li className="text-sm text-ink-500">Nog geen contactpersonen.</li>
+              <li className="text-sm text-ink-500">{t('klant.geen_contacten')}</li>
             ) : null}
           </ul>
         </section>
 
-        <Documents customerId={id} titel="Logo's en documenten" />
+        <Documents customerId={id} titel={t('klant.documenten')} />
 
         {/* Waar de module om bestaat: wat deden we voor hen, en wat staat er
             nog open richting facturatie. Het stond tot nu alleen op het bord,
             per event, en dus nergens bij elkaar. */}
         {historiek.teFactureren.aantal > 0 ? (
           <section className="je-klant-factureren">
-            <h3 className="label mb-0">
-              Nog te factureren ({historiek.teFactureren.aantal})
-            </h3>
+            <h3 className="label mb-0">{t('klant.te_factureren', { aantal: historiek.teFactureren.aantal })}</h3>
             <ul>
               {historiek.teFactureren.events.map((ev) => (
                 <li key={ev.id} className="je-klant-rij">
@@ -452,24 +461,22 @@ function KlantPaneel({ id, onClose, toast }) {
               ))}
             </ul>
             <p className="je-klant-totaal">
-              <span>Openstaand</span>
+              <span>{t('klant.openstaand')}</span>
               <strong>{formatCurrency(historiek.teFactureren.totaal)}</strong>
             </p>
           </section>
         ) : null}
 
         <section>
-          <h3 className="label">Historiek ({historiek.aantal} event{historiek.aantal === 1 ? '' : 's'})</h3>
+          <h3 className="label">{t('klant.historiek', { aantal: historiek.aantal })}</h3>
           {historiek.aantal === 0 ? (
-            <p className="text-sm text-ink-500">
-              Nog niets. Koppel een event aan deze klant op de fiche van dat event.
-            </p>
+            <p className="text-sm text-ink-500">{t('klant.historiek_leeg')}</p>
           ) : (
             <>
               <ul className="mt-1 divide-y divide-ink-100">
                 {historiek.events.map((ev) => (
                   <li key={ev.id} className="je-klant-rij py-2">
-                    <span className="je-klant-rij__datum">{ev.date ? formatDate(ev.date) : 'geen datum'}</span>
+                    <span className="je-klant-rij__datum">{ev.date ? formatDate(ev.date) : t('klant.geen_datum')}</span>
                     {/* Het event zelf open, niet het bord eromheen: wie hier
                         klikt wil de fiche, niet de kolommen. */}
                     <button type="button" onClick={() => setOpenEvent(ev.id)} className="je-klant-rij__naam">
@@ -485,7 +492,7 @@ function KlantPaneel({ id, onClose, toast }) {
                 ))}
               </ul>
               <p className="je-klant-totaal">
-                <span>Samen aan offertes</span>
+                <span>{t('klant.samen_offertes')}</span>
                 <strong>{formatCurrency(historiek.totaal)}</strong>
               </p>
             </>
@@ -494,7 +501,7 @@ function KlantPaneel({ id, onClose, toast }) {
 
         {losseTaken.length > 0 ? (
           <section>
-            <h3 className="label">Losse taken ({losseTaken.length})</h3>
+            <h3 className="label">{t('klant.losse_taken', { aantal: losseTaken.length })}</h3>
             <ul className="mt-1 divide-y divide-ink-100">
               {losseTaken.map((taak) => (
                 <li key={taak.id} className="flex items-center gap-2 py-2">
@@ -518,12 +525,12 @@ function KlantPaneel({ id, onClose, toast }) {
           <TaskDrawer taskId={openEvent} onClose={() => setOpenEvent(null)} />
         ) : null}
 
-        <Field label="Notities">
+        <Field label={t('klant.notities')}>
           <Textarea
             defaultValue={klant.notes}
             rows={4}
             onBlur={(e) => zet({ notes: e.target.value })}
-            placeholder="Afspraken, voorkeuren, gevoeligheden…"
+            placeholder={t('klant.notities_hint')}
           />
         </Field>
       </div>

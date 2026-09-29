@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
+import { useTaal } from '@context/TaalProvider'
 import { StatusBadge, TeamHexes, monthShort, paxLabel } from './parts'
 
 /**
@@ -16,9 +17,10 @@ import { StatusBadge, TeamHexes, monthShort, paxLabel } from './parts'
  * hier berekend in plaats van in de pagina.
  */
 function EventRow({ event, progress, statuses, profileById, columns, narrow, first, onOpen }) {
+  const { t } = useTaal()
   const meta = [
-    event.customerName || 'Klant onbekend',
-    event.concept?.split(' — ')[0] ?? 'Los event',
+    event.customerName || t('events.klant_onbekend'),
+    event.concept?.split(' — ')[0] ?? t('events.los_event'),
     event.eventType,
   ]
     .filter(Boolean)
@@ -92,7 +94,11 @@ function EventRow({ event, progress, statuses, profileById, columns, narrow, fir
           </span>
           <TeamHexes ids={event.team} profileById={profileById} />
           <span style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span className="je-muted-caption">{progress.label}</span>
+            <span className="je-muted-caption">
+              {progress.total
+                ? t('events.voortgang', { gedaan: progress.done, totaal: progress.total })
+                : t('events.geen_taken')}
+            </span>
             <Bar pct={progress.pct} />
           </span>
         </>

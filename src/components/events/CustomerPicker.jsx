@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { formatVat, vatHint } from '@lib/klanten'
 import { Button, Field, Input, Select } from '@components/ds'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { createCustomer, useCustomers } from '@data/customers'
 
@@ -27,6 +28,7 @@ export const NIEUWE_KLANT = '__nieuw'
  */
 export default function CustomerPicker({ customerId, customerName, onChange, required = false }) {
   const { customers } = useCustomers()
+  const { t } = useTaal()
   const toast = useToast()
   const [nieuw, setNieuw] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -58,7 +60,7 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
       })
       onChange({ customerId: id, customerName: naam })
       setNieuw(null)
-      toast.success(`${naam} staat nu bij de klanten.`)
+      toast.success(t('klant.kiezen.toegevoegd', { naam }))
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -69,12 +71,12 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <Field
-        label="Klant"
+        label={t('events.fiche.klant')}
         required={required}
         hint={
           gekozen
-            ? `Gekoppeld — historiek en facturatie staan op de fiche van ${gekozen.name}.`
-            : 'Kies een klant, maak er een aan, of typ een naam voor een particulier.'
+            ? t('klant.kiezen.gekoppeld', { naam: gekozen.name })
+            : t('klant.kiezen.hint')
         }
       >
         <Select
@@ -82,28 +84,28 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
           // het zichtbare label is "Klant" en dat staat ook op het vrije veld
           // eronder, dus met alleen dat label weet een voorleesprogramma — en
           // een browsertest — niet welk van de twee het is.
-          aria-label="Klant van dit event"
+          aria-label={t('klant.kiezen.veld')}
           value={nieuw ? NIEUWE_KLANT : (customerId ?? '')}
           onChange={(e) => kies(e.target.value)}
           options={[
-            { value: '', label: 'Geen klant uit de lijst' },
+            { value: '', label: t('klant.kiezen.geen') },
             ...zichtbaar.map((c) => ({ value: c.id, label: c.name })),
-            { value: NIEUWE_KLANT, label: '+ Nieuwe klant aanmaken…' },
+            { value: NIEUWE_KLANT, label: t('klant.kiezen.nieuw') },
           ]}
         />
       </Field>
 
       {nieuw ? (
         <div className="je-klantnieuw">
-          <Field label="Naam van de klant" required>
+          <Field label={t('klant.kiezen.naam')} required>
             <Input
               value={nieuw.name}
               onChange={(e) => setNieuw((x) => ({ ...x, name: e.target.value }))}
-              placeholder="bv. Blum België"
+              placeholder={t('klant.kiezen.naam_hint')}
               autoFocus
             />
           </Field>
-          <Field label="Btw-nummer" hint={vatHint(nieuw.vatNumber)}>
+          <Field label={t('klant.btw')} hint={vatHint(nieuw.vatNumber)}>
             <Input
               value={nieuw.vatNumber}
               onChange={(e) => setNieuw((x) => ({ ...x, vatNumber: e.target.value }))}
@@ -111,7 +113,7 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
               placeholder="BE 0123.456.789"
             />
           </Field>
-          <Field label="E-mail" hint="De rest van de gegevens vul je aan op de klantfiche.">
+          <Field label={t('klant.email')} hint={t('klant.kiezen.email_hint')}>
             <Input
               type="email"
               value={nieuw.email}
@@ -120,21 +122,21 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
           </Field>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
             <Button variant="ghost" size="sm" onClick={() => setNieuw(null)}>
-              Annuleren
+              {t('alg.annuleren')}
             </Button>
             <Button size="sm" loading={busy} disabled={!nieuw.name.trim()} onClick={maak}>
-              Klant aanmaken
+              {t('klant.kiezen.aanmaken')}
             </Button>
           </div>
         </div>
       ) : null}
 
       {!customerId && !nieuw ? (
-        <Field label="Klantnaam" hint="Zonder fiche: geen historiek, geen btw-nummer.">
+        <Field label={t('klant.kiezen.vrije_naam')} hint={t('klant.kiezen.vrije_hint')}>
           <Input
             value={customerName ?? ''}
             onChange={(e) => onChange({ customerId: '', customerName: e.target.value })}
-            placeholder="bv. Familie Peeters"
+            placeholder={t('klant.kiezen.vrije_plaats')}
           />
         </Field>
       ) : null}

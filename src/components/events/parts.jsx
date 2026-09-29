@@ -1,4 +1,5 @@
 import { Badge, Bar, Hex, initialsOf } from '@components/ds'
+import { asDate, huidigeLocaleVan } from '@lib/dates'
 import { labelOf, toneOf } from '@lib/pipeline'
 import { isDone } from '@data/events'
 
@@ -7,19 +8,53 @@ import { isDone } from '@data/events'
  * team als zeshoekjes, de voortgang van een event.
  */
 
-const MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
-const WD = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za']
-export const MONTHS_FULL = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december']
-export const WD_FULL = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
+/*
+  De datums volgen de gekozen taal.
 
-export const shortDate = (d) => (d ? `${new Date(d).getDate()} ${MONTHS[new Date(d).getMonth()]}` : null)
-export const dayLabel = (d) => (d ? `${WD[new Date(d).getDay()]} ${shortDate(d)}` : null)
-export const longDate = (d) => {
-  if (!d) return null
-  const x = new Date(d)
-  return `${WD_FULL[x.getDay()]} ${x.getDate()} ${MONTHS_FULL[x.getMonth()]}`
+  Hier stonden tabellen met "jan, feb, mrt" en "maandag, dinsdag" in. Die
+  blijven Nederlands zodra iemand in het Engels werkt, en dan staat er een
+  woord op het scherm dat de lezer niet kent. De opmaaktaal komt uit
+  `@lib/dates`, waar ze bij een taalwissel gezet wordt — één bron voor elke
+  datum in de tool.
+
+  De formatters worden per taal één keer gebouwd: `Intl.DateTimeFormat` is
+  duurder dan het lijkt, en deze helpers draaien per rij van een lijst met
+  honderden events.
+*/
+const TZ = 'Europe/Brussels'
+const VORMEN = {
+  dagmaand: { day: 'numeric', month: 'short' },
+  dagkort: { weekday: 'short', day: 'numeric', month: 'short' },
+  daglang: { weekday: 'long', day: 'numeric', month: 'long' },
+  maand: { month: 'long' },
+  maandkort: { month: 'short' },
+  weekdag: { weekday: 'short' },
 }
-export const monthShort = (d) => MONTHS[new Date(d).getMonth()]
+const formatters = new Map()
+
+function formatter(vorm) {
+  const sleutel = `${huidigeLocaleVan()}|${vorm}`
+  let f = formatters.get(sleutel)
+  if (!f) {
+    f = new Intl.DateTimeFormat(huidigeLocaleVan(), { ...VORMEN[vorm], timeZone: TZ })
+    formatters.set(sleutel, f)
+  }
+  return f
+}
+
+// Via `asDate`, want een ongeldige waarde laat `Intl` met een RangeError
+// omvallen en die neemt tijdens het tekenen de hele pagina mee.
+const opmaak = (vorm) => (d) => {
+  const datum = asDate(d)
+  return datum ? formatter(vorm).format(datum) : null
+}
+
+export const shortDate = opmaak('dagmaand')
+export const dayLabel = opmaak('dagkort')
+export const longDate = opmaak('daglang')
+export const monthShort = (d) => opmaak('maandkort')(d) ?? ''
+export const maandNaam = (d) => opmaak('maand')(d) ?? ''
+export const weekdagKort = (d) => opmaak('weekdag')(d) ?? ''
 
 export const euro = (n) => (n == null || n === '' ? null : `€ ${Number(n).toLocaleString('nl-BE')}`)
 
@@ -52,13 +87,14 @@ export function TeamHexes({ ids = [], profileById, size = 26 }) {
   )
 }
 
+// De tekst erbij ("3/8 taken") wordt gemaakt waar ze getekend wordt: hier is
+// geen `t` en een tekst die van de taal afhangt hoort niet in een rekensom.
 export function progressOf(tasks = []) {
   const done = tasks.filter(isDone).length
   return {
     done,
     total: tasks.length,
     pct: tasks.length ? Math.round((done / tasks.length) * 100) : 0,
-    label: tasks.length ? `${done}/${tasks.length} taken` : 'Geen taken',
   }
 }
 

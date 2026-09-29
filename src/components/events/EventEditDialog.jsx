@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { dayKey, fromDateInput } from '@lib/dates'
 import { missingForOffer } from '@lib/pipeline'
 import { Button, Checkbox, Dialog, Field, Input, Select } from '@components/ds'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { updateEvent } from '@data/events'
@@ -16,6 +17,7 @@ const num = (v) => (v === '' || v == null ? null : Number(v))
  */
 export default function EventEditDialog({ open, onClose, ev }) {
   const { brands, profiles } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
   const [f, setF] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -80,9 +82,9 @@ export default function EventEditDialog({ open, onClose, ev }) {
   const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-5)' }
 
   return (
-    <Dialog open={open} onClose={onClose} title="Fiche bewerken" width={640}>
+    <Dialog open={open} onClose={onClose} title={t('events.fiche.bewerken')} width={640}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-        <Field label="Naam" required>
+        <Field label={t('events.velden.naam')} required>
           <Input value={f.title} onChange={set('title')} />
         </Field>
 
@@ -94,45 +96,48 @@ export default function EventEditDialog({ open, onClose, ev }) {
         />
 
         <div style={grid}>
-          <Field label="Datum event" required>
+          <Field label={t('events.velden.datum')} required>
             <Input type="date" value={f.eventDate} onChange={set('eventDate')} />
           </Field>
-          <Field label="Gasten" required>
+          <Field label={t('events.fiche.gasten')} required>
             <Input type="number" min="0" value={f.pax} onChange={set('pax')} />
           </Field>
-          <Field label="Waarvan kinderen">
+          <Field label={t('events.velden.kinderen')}>
             <Input type="number" min="0" value={f.kids} onChange={set('kids')} />
           </Field>
-          <Field label="Offerte (€)" required>
+          <Field label={t('events.velden.offerte')} required>
             <Input type="number" min="0" step="1" value={f.quoteAmount} onChange={set('quoteAmount')} />
           </Field>
         </div>
 
         <div style={grid}>
-          <Field label="Locatie">
+          <Field label={t('events.fiche.locatie')}>
             <Input value={f.location} onChange={set('location')} />
           </Field>
-          <Field label="Formule">
-            <Input value={f.formule} onChange={set('formule')} placeholder="bv. Walking dinner" />
+          <Field label={t('events.fiche.formule')}>
+            <Input value={f.formule} onChange={set('formule')} placeholder={t('events.velden.formule_hint')} />
           </Field>
         </div>
 
         <div style={grid}>
-          <Field label="Concept">
+          <Field label={t('events.velden.concept')}>
             <Select
               value={f.brandId}
               onChange={set('brandId')}
-              options={[{ value: '', label: 'Los event' }, ...brands.filter((b) => !b.archived || b.id === f.brandId).map((b) => ({ value: b.id, label: b.name }))]}
+              options={[
+                { value: '', label: t('events.los_event') },
+                ...brands.filter((b) => !b.archived || b.id === f.brandId).map((b) => ({ value: b.id, label: b.name })),
+              ]}
             />
           </Field>
-          <Field label="Type">
-            <Input value={f.eventType} onChange={set('eventType')} placeholder="bv. Huwelijk" />
+          <Field label={t('events.velden.type')}>
+            <Input value={f.eventType} onChange={set('eventType')} placeholder={t('events.velden.type_hint')} />
           </Field>
         </div>
 
         <div>
           <div className="je-caps" style={{ marginBottom: 'var(--space-3)' }}>
-            Team
+            {t('events.fiche.team')}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3) var(--space-6)' }}>
             {team.map((p) => (
@@ -153,16 +158,16 @@ export default function EventEditDialog({ open, onClose, ev }) {
 
         {missing.length ? (
           <div className="je-muted-caption" style={{ color: 'var(--warning)' }}>
-            Dit event staat voorbij de aanvraag; {missing.join(', ')} ontbreekt nog.
+            {t('events.velden.ontbreekt', { wat: missing.map((m) => t(`events.ontbreekt.${m}`)).join(', ') })}
           </div>
         ) : null}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button size="sm" loading={busy} disabled={!f.title.trim()} onClick={save}>
-            Bewaren
+            {t('alg.opslaan')}
           </Button>
         </div>
       </div>
