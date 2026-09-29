@@ -615,8 +615,121 @@ await test('de business rules staan in de instellingen', async () => {
   await page.getByRole('tab', { name: 'Business rules' }).click()
   await page.waitForTimeout(800)
   const tekst = await inhoud(page)
+  // De eerste twee regels staan nog in de oude, enkelvoudige vorm in de
+  // database. Ze horen gewoon gelezen en uitgelegd te worden.
   zouden(tekst.includes('ready to invoice'), 'de facturatieregel ontbreekt')
-  zouden(tekst.includes('wordt de enige toegewezene'), 'de regel wordt niet uitgelegd')
+  zouden(bevat(tekst, 'wordt de enige'), 'de regel wordt niet uitgelegd')
+  // En de nieuwe vormen ernaast.
+  zouden(bevat(tekst, 'Wie maakt de offerte'), 'de beslissingstabel ontbreekt')
+  zouden(bevat(tekst, '3 rijen'), 'de tabel wordt niet uitgelegd')
+  zouden(bevat(tekst, 'groot huwelijk'), 'het logboek zegt niet welke rij vuurde')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een samengestelde regel is in het scherm op te bouwen', async () => {
+  // Niet alleen op taken: deze gaat over klanten, met twee voorwaarden die met
+  // OF aan elkaar hangen. Dat was voordien geen van beide mogelijk.
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.waitForTimeout(700)
+
+  const voor = await page.locator('li.card').count()
+  await page.getByRole('button', { name: 'Nieuwe regel' }).click()
+  const form = page.locator('form').filter({ hasText: 'Nieuwe regel' })
+  await form.getByLabel('Naam van de regel', { exact: true }).fill('Borgloon is voor JE Concept')
+  await form.getByLabel('Waarover gaat de regel', { exact: true }).selectOption('customer')
+  await page.waitForTimeout(300)
+
+  await form.getByLabel('Voorwaarden combineren', { exact: true }).selectOption('any')
+  await form.getByRole('button', { name: 'Voorwaarde erbij' }).click()
+  await form.getByRole('button', { name: 'Voorwaarde erbij' }).click()
+  await page.waitForTimeout(300)
+
+  await form.getByLabel('Veld', { exact: true }).nth(0).selectOption('address.city')
+  await form.getByLabel('Vergelijking', { exact: true }).nth(0).selectOption('is')
+  await form.getByLabel('Waarde', { exact: true }).nth(0).fill('Borgloon')
+
+  await form.getByLabel('Veld', { exact: true }).nth(1).selectOption('name')
+  await form.getByLabel('Vergelijking', { exact: true }).nth(1).selectOption('contains')
+  await form.getByLabel('Waarde', { exact: true }).nth(1).fill('Stad')
+  await page.waitForTimeout(300)
+
+  await form.getByLabel('Actie toevoegen', { exact: true }).selectOption('brand')
+  await page.waitForTimeout(300)
+  await form.getByLabel('Merk toewijzen', { exact: true }).selectOption('je-concept')
+  await page.waitForTimeout(300)
+
+  const uitleg = await form.locator('.je-regel-uitleg').innerText()
+  zouden(bevat(uitleg, ' of '), `de twee voorwaarden staan niet met OF in de zin: ${uitleg}`)
+  zouden(bevat(uitleg, 'Gemeente'), `de eerste voorwaarde staat niet in de zin: ${uitleg}`)
+
+  const knop = form.getByRole('button', { name: 'Regel aanzetten' })
+  const klachten = await form.locator('.text-amber-700').allInnerTexts()
+  zouden(!(await knop.isDisabled()), `de regel is niet te bewaren: ${klachten.join(' / ')}`)
+  await knop.click()
+  await page.waitForTimeout(700)
+
+  // De naam staat in een invoerveld en telt dus niet mee in `innerText`; wat je
+  // wél moet zien is de regel in gewone taal, onderaan de lijst.
+  zouden(
+    (await page.locator('li.card').count()) === voor + 1,
+    'de nieuwe regel staat niet in de lijst'
+  )
+  const na = await inhoud(page)
+  zouden(bevat(na, 'Gemeente is'), `de voorwaarde staat niet in de lijst: ${na.slice(-400)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een beslissingstabel is in het scherm op te bouwen', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.waitForTimeout(700)
+
+  const voor = await page.locator('li.card').count()
+  await page.getByRole('button', { name: 'Nieuwe beslissingstabel' }).click()
+  const form = page.locator('form').filter({ hasText: 'Nieuwe beslissingstabel' })
+  await form.getByLabel('Naam van de regel', { exact: true }).fill('Prioriteit per status')
+  await page.waitForTimeout(300)
+
+  // Eén kolom, twee rijen — dat is wat een verse tabel meebrengt.
+  const kolommen = await form.locator('thead th').count()
+  zouden(kolommen >= 3, `de tabel heeft geen kop: ${kolommen} kolommen`)
+
+  await form.getByLabel('Kolom 1 — veld', { exact: true }).selectOption('statusName')
+  await form.getByLabel('Kolom 1 — vergelijking', { exact: true }).selectOption('is')
+  await page.waitForTimeout(300)
+
+  await form.getByLabel('Naam van rij 1', { exact: true }).fill('facturatie')
+  await form.getByLabel(/^Rij 1, Status$/).selectOption('ready to invoice')
+  await form.getByLabel('Actie toevoegen', { exact: true }).nth(0).selectOption('priority')
+  await page.waitForTimeout(300)
+  await form.getByLabel('Prioriteit zetten', { exact: true }).nth(0).selectOption('1')
+
+  // Rij 2 laat de cel leeg: dat is "maakt niet uit", het vangnet onderaan.
+  await form.getByLabel('Naam van rij 2', { exact: true }).fill('de rest')
+  await form.getByLabel('Actie toevoegen', { exact: true }).nth(1).selectOption('priority')
+  await page.waitForTimeout(300)
+  await form.getByLabel('Prioriteit zetten', { exact: true }).nth(1).selectOption('3')
+  await page.waitForTimeout(300)
+
+  const uitleg = await form.locator('.je-regel-uitleg').innerText()
+  zouden(bevat(uitleg, '2 rijen'), `de tabel wordt niet uitgelegd: ${uitleg}`)
+
+  const knop = form.getByRole('button', { name: 'Regel aanzetten' })
+  const klachten = await form.locator('.text-amber-700').allInnerTexts()
+  zouden(!(await knop.isDisabled()), `de tabel is niet te bewaren: ${klachten.join(' / ')}`)
+  await knop.click()
+  await page.waitForTimeout(700)
+
+  zouden(
+    (await page.locator('li.card').count()) === voor + 1,
+    'de nieuwe tabel staat niet in de lijst'
+  )
+  const na = await inhoud(page)
+  zouden(bevat(na, '2 rijen'), `de tabel wordt niet uitgelegd in de lijst: ${na.slice(-400)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
 

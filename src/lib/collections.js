@@ -34,6 +34,7 @@ export const COL = {
   socialPosts: 'socialPosts',
   postReviews: 'postReviews',
   automations: 'automations',
+  automationRuns: 'automationRuns',
   activity: 'activity',
   templates: 'templates',
   shifts: 'shifts',

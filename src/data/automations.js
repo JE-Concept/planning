@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
-import { deleteDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import {
+  deleteDoc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 
 /**
@@ -29,6 +38,36 @@ export function useAutomations() {
   )
 
   return { rules, loading }
+}
+
+/**
+ * Het logboek: welke regel vuurde, op welk document, en bij een tabel op welke
+ * rij.
+ *
+ * Alleen de server schrijft hierin (zie `firestore.rules`), want alleen de
+ * server weet het. Het team leest mee: "waarom staat deze taak ineens bij
+ * iemand anders" is een vraag die een antwoord hoort te hebben, en dezelfde
+ * lijn als het activiteitenlog bij een taak — bijschrijven, nooit herschrijven.
+ */
+export function useAutomationRuns({ max = 25 } = {}) {
+  const [runs, setRuns] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(
+    () =>
+      onSnapshot(
+        query(col(COL.automationRuns), orderBy('firedAt', 'desc'), limit(max)),
+        (snap) => {
+          setRuns(fromQuery(snap))
+          setLoading(false)
+        },
+        // Een logboek dat niet laadt mag het beheerscherm niet meenemen.
+        () => setLoading(false)
+      ),
+    [max]
+  )
+
+  return { runs, loading }
 }
 
 export function createAutomation(rule) {

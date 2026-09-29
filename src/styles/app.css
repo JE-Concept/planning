@@ -1776,3 +1776,101 @@ select.je-compact { padding-right: 24px; }
 .je-taak-weg:focus-visible {
   color: var(--danger);
 }
+
+/* ── Business rules ────────────────────────────────────────────────────────
+   Een regel is sinds de uitbreiding geen enkele zin meer: een boom van
+   voorwaarden met groepen die in elkaar zitten, of een beslissingstabel met
+   kolommen en rijen. Wat die twee nodig hebben is niet meer of minder dan
+   inspringing en rustige lijnen — wie een regel schrijft, moet in één blik
+   zien wat bij wat hoort. */
+.je-regel-groep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border-hairline);
+  border-left-width: 3px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-1);
+}
+/* Een groep in een groep: dezelfde vorm, een tint dieper weggezet. */
+.je-regel-groep .je-regel-groep { background: var(--surface-2); }
+
+.je-regel-groep__kop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.je-regel-voorwaarde,
+.je-regel-actie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2);
+}
+
+.je-regel-datum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.je-regel-tabelblok {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.je-regel-kolommen,
+.je-regel-kolom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Een tabel met vier kolommen voorwaarden plus de acties past niet op een
+   telefoon, en hem laten inklappen maakt van een tabel een lijstje — precies
+   wat we niet wilden. Dus schuift hij horizontaal. */
+.je-regel-tabelrol { overflow-x: auto; }
+
+.je-regel-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.je-regel-tabel th,
+.je-regel-tabel td {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+.je-regel-tabel thead th {
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.je-regel-tabel__op { font-weight: 400; opacity: 0.7; }
+.je-regel-tabel__nummer {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+.je-regel-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.je-regel-log__kop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}

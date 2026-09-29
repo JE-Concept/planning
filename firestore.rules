@@ -141,9 +141,33 @@ service cloud.firestore {
     // Business rules: het team ziet waarom een taak ineens van eigenaar wisselt,
     // beheerders bepalen de regels. Uitvoeren doet een Cloud Function met
     // beheerdersrechten, dus wat hier staat gaat alleen over het beheer.
+    //
+    // De entiteit wordt hier afgegrensd en niet alleen in het scherm. Een regel
+    // draait met meer rechten dan wie hem schreef, dus "op welke collectie mag
+    // een regel staan" is een beveiligingsvraag, geen keuzelijstje. Wat een
+    // regel binnen die collectie mag aanraken, staat in `functions/rule-schema.js`:
+    // de motor voert alleen uit wat daar als actie beschreven is, en een rol of
+    // een toegang van een profiel staat daar bewust niet bij.
+    function bekendeEntiteit() {
+      return !('entity' in request.resource.data)
+        || request.resource.data.entity in
+             ['task', 'customer', 'socialPost', 'checklistRun', 'timeEntry', 'profile'];
+    }
+
     match /automations/{id} {
+      allow read:   if isTeam();
+      allow create, update: if isAdmin() && bekendeEntiteit();
+      allow delete: if isAdmin();
+    }
+
+    // Het logboek van de regels: welke regel vuurde, op welk document, en bij
+    // een beslissingstabel op welke rij. Alleen de server schrijft erin — zij is
+    // de enige die het weet — en niemand bewerkt achteraf wat er staat. Zelfde
+    // afspraak als bij het activiteitenlog: rechtzetten doe je door een regel
+    // bij te schrijven, niet door er een te herschrijven.
+    match /automationRuns/{id} {
       allow read:  if isTeam();
-      allow write: if isAdmin();
+      allow write: if false;
     }
 
     // Eventtemplates: het team leest ze bij een nieuw event, een beheerder

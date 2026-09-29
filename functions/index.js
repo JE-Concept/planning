@@ -5,7 +5,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { getMessaging } from 'firebase-admin/messaging'
 import { logger } from 'firebase-functions'
-import { planFor } from './automations.js'
+import { ENTITIES, RULE_STAMP, changedFields, isRuleEcho, planFor } from './automations.js'
 import {
   bepaalOntvangers,
   isTeLaat,
@@ -168,49 +168,102 @@ export const spreadListRename = onDocumentUpdated(
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 /**
- * Past de regels uit Instellingen toe op een taak die van status verandert.
+ * Past de regels uit Instellingen toe — op elke entiteit dezelfde manier.
  *
- * Alleen op dat moment, en op een nieuwe taak — niet op elke schrijving. Dat
- * houdt de trigger goedkoop (zonder statuswissel wordt de regelcollectie niet
- * eens gelezen) en het is ook inhoudelijk het juiste moment: wie na de wissel
- * bewust iemand anders toewijst, moet dat niet bij de volgende bewerking
- * teruggedraaid zien worden.
+ * Er stond hier één trigger, op taken, die alleen bij een statuswissel keek.
+ * Nu een regel over een klant, een post, een dag van de afvinklijst, een
+ * urenboeking of een profiel kan gaan, en over elk veld daarvan, kan die
+ * goedkope voorwaarde niet meer: welk veld ertoe doet, staat in de regel en
+ * niet in deze code. In de plaats daarvan staan er twee andere remmen, en die
+ * zijn ook de lusbeveiliging:
  *
- * Deze functie schrijft de taak die haar wakker maakte. Dat maakt haar opnieuw
- * wakker, met dezelfde status voor en na — en daar stopt het: de voorwaarde
- * hieronder is dan niet meer waar.
+ * 1. `isRuleEcho` — deze functie schrijft haar eigen resultaat weg en wordt
+ *    daar opnieuw wakker van. Die schrijfbeurt draagt `ruleStamp`, en daaraan
+ *    herkent ze zichzelf voor er ook maar één regel gelezen is.
+ * 2. Een lege patch. Wat al zo staat, wordt niet geschreven; zonder schrijving
+ *    geen tweede ronde. Dat was van in het begin de stop en dat blijft het,
+ *    ook wanneer een wijziging langs een andere weg terugkomt.
+ *
+ * De regels worden ongefilterd opgehaald en hier op entiteit gescheiden. Dat
+ * kost één leesbeurt van een kleine collectie, en het is de enige manier om de
+ * bestaande regels mee te nemen: die staan er zonder `entity` in, want toen
+ * bestond er maar één.
  */
-export const applyAutomations = onDocumentWritten(
-  { region: REGION, document: 'tasks/{taskId}' },
-  async (event) => {
-    const na = event.data?.after?.data()
-    if (!na) return
+function automatiseer(entity) {
+  return onDocumentWritten(
+    { region: REGION, document: `${entity.collection}/{docId}` },
+    async (event) => {
+      const na = event.data?.after?.data()
+      if (!na) return
 
-    const voor = event.data?.before?.exists ? event.data.before.data() : null
-    const statusGewijzigd = !voor || (voor.statusName ?? null) !== (na.statusName ?? null)
-    if (!statusGewijzigd) return
+      const voor = event.data?.before?.exists ? event.data.before.data() : null
+      if (isRuleEcho(voor, na)) return
+      if (voor && changedFields(voor, na, entity.key).length === 0) return
 
-    const regels = await db.collection('automations').where('enabled', '==', true).get()
-    if (regels.empty) return
+      const snap = await db.collection('automations').where('enabled', '==', true).get()
+      const rules = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((r) => (r.entity ?? 'task') === entity.key)
+      if (rules.length === 0) return
 
-    const { patch, fired } = planFor({
-      rules: regels.docs.map((d) => ({ id: d.id, ...d.data() })),
-      task: { id: event.params.taskId, ...na },
-      before: voor,
-      now: new Date(),
-    })
+      const docId = event.params.docId
+      const { patch, fired } = planFor({
+        rules,
+        entity: entity.key,
+        doc: { id: docId, ...na },
+        before: voor,
+        now: new Date(),
+      })
 
-    if (Object.keys(patch).length === 0) return
+      if (Object.keys(patch).length === 0) return
 
-    await event.data.after.ref.update({ ...patch, updatedAt: FieldValue.serverTimestamp() })
-    logger.info('Business rule toegepast', {
-      taskId: event.params.taskId,
-      status: na.statusName ?? null,
-      regels: fired,
-      velden: Object.keys(patch),
-    })
-  }
-)
+      await event.data.after.ref.update({
+        ...patch,
+        [RULE_STAMP]: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+
+      // Waarom staat deze taak ineens bij iemand anders? Het logboek beantwoordt
+      // dat, tot op de rij van de beslissingstabel die het deed. Zelfde lijn als
+      // het activiteitenlog bij een taak: bijschrijven, nooit herschrijven.
+      await db.collection('automationRuns').add({
+        entity: entity.key,
+        collection: entity.collection,
+        docId,
+        docTitle: na.title ?? na.name ?? na.fullName ?? na.checklistName ?? null,
+        rules: fired,
+        ruleIds: fired.map((f) => f.id).filter(Boolean),
+        fields: Object.keys(patch),
+        firedAt: FieldValue.serverTimestamp(),
+      })
+
+      logger.info('Business rule toegepast', {
+        entity: entity.key,
+        docId,
+        regels: fired,
+        velden: Object.keys(patch),
+      })
+    }
+  )
+}
+
+/**
+ * Eén trigger per collectie, met een vaste exportnaam per entiteit.
+ *
+ * Bewust uitgeschreven en niet met een lus over `ENTITIES` gegenereerd: Firebase
+ * leidt de naam van een functie af uit de naam van de export, en een export die
+ * pas bij het laden ontstaat, is er bij het uitrollen niet. `applyAutomations`
+ * houdt zijn naam, zodat de bestaande functie bijgewerkt wordt in plaats van
+ * dat er een tweede naast komt te staan die hetzelfde doet.
+ */
+const entiteit = (key) => ENTITIES.find((e) => e.key === key)
+
+export const applyAutomations = automatiseer(entiteit('task'))
+export const applyCustomerAutomations = automatiseer(entiteit('customer'))
+export const applySocialAutomations = automatiseer(entiteit('socialPost'))
+export const applyChecklistAutomations = automatiseer(entiteit('checklistRun'))
+export const applyTimeAutomations = automatiseer(entiteit('timeEntry'))
+export const applyProfileAutomations = automatiseer(entiteit('profile'))
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║ Meldingen                                                                ║
