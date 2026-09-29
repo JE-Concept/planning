@@ -411,6 +411,29 @@ await test('Tasks en Uren hebben een kalender', async () => {
   await uren.close()
 })
 
+await test('een te warme koelkast wordt meteen aangegeven', async () => {
+  const page = await tabblad('/openen-sluiten')
+  await page.getByRole('tab', { name: 'FAVV-registraties' }).click()
+  await page.waitForTimeout(900)
+
+  const veld = page.getByLabel(/Gemeten voor Temperatuur koelkasten/)
+  zouden((await veld.count()) === 1, 'het meetveld bij de koelkasten ontbreekt')
+  zouden(bevat(await inhoud(page), 'max 7'), 'de grens staat er niet bij')
+
+  await veld.fill('9')
+  await veld.blur()
+  await page.waitForTimeout(600)
+  zouden(bevat(await inhoud(page), 'Boven de grens'), 'een te warme koelkast geeft geen waarschuwing')
+
+  // Binnen de grens hoort er niets te staan — anders leert men de melding negeren.
+  await veld.fill('4')
+  await veld.blur()
+  await page.waitForTimeout(600)
+  zouden(!bevat(await inhoud(page), 'Boven de grens'), 'de waarschuwing blijft staan bij een goede meting')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een punt kan om een datum vragen, en die blijft staan', async () => {
   const page = await tabblad('/openen-sluiten')
   await page.getByRole('tab', { name: 'FAVV-registraties' }).click()

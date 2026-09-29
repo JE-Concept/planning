@@ -431,6 +431,56 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
             </Field>
           ) : null}
 
+          {/*
+            De grens waartussen de meting moet liggen.
+
+            Dit is wat een vinkje niet kan zeggen. "Temperatuur gecontroleerd"
+            betekent dat er iemand gekeken heeft; pas met een grens erbij weet je
+            of de koelkast koud genoeg was, en dat is wat een controleur vraagt.
+            Leeg laten mag: dan wordt er alleen genoteerd, niet beoordeeld. Een
+            diepvries heeft een negatieve bovengrens, dus min en max staan er
+            allebei los in in plaats van als "hoogstens".
+          */}
+          {punt.veld?.kind === 'getal' ? (
+            <>
+              <Field label="Eenheid" hint="Wat er achter het getal staat.">
+                <Input
+                  defaultValue={punt.veld.eenheid ?? ''}
+                  onBlur={(e) => onWijzig({ veld: { ...punt.veld, eenheid: e.target.value || null } })}
+                  placeholder="°C"
+                  disabled={!isAdmin}
+                />
+              </Field>
+              <Field label="Grenzen" hint="Leeg laten betekent: alleen noteren, niet beoordelen.">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <Input
+                    type="number"
+                    step="any"
+                    defaultValue={punt.veld.min ?? ''}
+                    onBlur={(e) =>
+                      onWijzig({ veld: { ...punt.veld, min: e.target.value === '' ? null : Number(e.target.value) } })
+                    }
+                    aria-label={`Ondergrens voor ${punt.label}`}
+                    placeholder="min"
+                    disabled={!isAdmin}
+                  />
+                  <span className="je-muted-caption">tot</span>
+                  <Input
+                    type="number"
+                    step="any"
+                    defaultValue={punt.veld.max ?? ''}
+                    onBlur={(e) =>
+                      onWijzig({ veld: { ...punt.veld, max: e.target.value === '' ? null : Number(e.target.value) } })
+                    }
+                    aria-label={`Bovengrens voor ${punt.label}`}
+                    placeholder="max"
+                    disabled={!isAdmin}
+                  />
+                </span>
+              </Field>
+            </>
+          ) : null}
+
           <Field label="Toelichting" className="sm:col-span-2">
             <Input
               defaultValue={punt.hint ?? ''}
