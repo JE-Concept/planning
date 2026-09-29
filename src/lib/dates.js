@@ -20,6 +20,7 @@ const VORMEN = {
     hour: '2-digit', minute: '2-digit', timeZone: TZ,
   },
   tijd: { hour: '2-digit', minute: '2-digit', timeZone: TZ },
+  dagnaam: { weekday: 'short', timeZone: TZ },
   maand: { month: 'long', year: 'numeric', timeZone: TZ },
 }
 
@@ -83,6 +84,11 @@ export const formatDate = formatteer('datum')
 export const formatDateTime = formatteer('datumtijd')
 export const formatTime = formatteer('tijd')
 export const formatMonth = formatteer('maand')
+/* De korte dagnaam in de taal waarin iemand werkt — een weekrooster met "ma"
+   boven de kolom leest voor wie geen Nederlands kent als een afkorting van
+   niets. `WEEKDAYS` hierboven blijft staan: dat is de vaste maandag-eerst
+   volgorde waar de kalenders hun rooster mee opbouwen. */
+export const formatWeekday = formatteer('dagnaam')
 
 /** "vandaag", "morgen", "over 3 dagen", "5 dagen te laat" — board-card language. */
 export function relativeDay(value) {

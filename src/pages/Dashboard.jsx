@@ -8,6 +8,7 @@ import { runProgress } from '@lib/checklist-templates'
 import { Badge, Bar, Button, Icon, ProgressBar, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { byEventDate, isDone, useEvents } from '@data/events'
 import { useChecklists, useRunsForDay } from '@data/checklists'
@@ -35,6 +36,7 @@ import { useGoals, goalProgress } from '@data/goals'
  */
 export default function Dashboard() {
   const { uid, profile } = useAuth()
+  const { t, locale } = useTaal()
   const { profileById, brandById } = useWorkspace()
 
   const { events, tasksByEvent, loading: eventsLoading } = useEvents()
@@ -133,51 +135,72 @@ export default function Dashboard() {
 
   const firstName = (profile?.fullName || profile?.email || '').split(/[\s@]/)[0]
 
+  // De datum bovenaan en de maand op de eventkaartjes volgen de gekozen taal;
+  // een Engelse pagina met "1 oktober" erop leest als een fout.
+  const vandaagVoluit = useMemo(
+    () => new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }),
+    [locale]
+  )
+  const maandKort = useMemo(() => new Intl.DateTimeFormat(locale, { month: 'short' }), [locale])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <PageHeader
-        eyebrow={new Intl.DateTimeFormat('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' }).format(
-          new Date()
-        )}
-        title="Dashboard"
-        subtitle={`Dag ${firstName}`}
+        eyebrow={vandaagVoluit.format(new Date())}
+        title={t('nav.dashboard')}
+        subtitle={t('dashboard.groet', { naam: firstName })}
       />
 
       <div className="je-pagebody">
         <div className="je-dash__cijfers">
           <Cijfer
-            label="Te laat"
+            label={t('dashboard.telaat')}
             waarde={overdue.length}
             naar="/tasks"
             toon={overdue.length ? 'slecht' : 'goed'}
-            onder={overdue.length ? 'op jouw naam' : 'niets over tijd'}
+            onder={overdue.length ? t('dashboard.telaat_onder') : t('dashboard.telaat_geen')}
           />
-          <Cijfer label="Vandaag af" waarde={dueToday.length} naar="/tasks" onder="deze dag" />
           <Cijfer
-            label="Te factureren"
+            label={t('dashboard.vandaag_af')}
+            waarde={dueToday.length}
+            naar="/tasks"
+            onder={t('dashboard.vandaag_af_onder')}
+          />
+          <Cijfer
+            label={t('dashboard.te_factureren')}
             waarde={teFactureren.length}
             naar="/"
             toon={teFactureren.length ? 'letop' : undefined}
-            onder="nog niet gefactureerd"
+            onder={t('dashboard.te_factureren_onder')}
           />
           <Cijfer
-            label="Niemand toegewezen"
+            label={t('dashboard.niemand_toegewezen')}
             waarde={zonderUitvoerder.length}
             naar="/tasks?weergave=lijst&groep=persoon&wie=iedereen"
             toon={zonderUitvoerder.length ? 'letop' : undefined}
-            onder="wacht op iemand"
+            onder={t('dashboard.niemand_toegewezen_onder')}
           />
-          <Cijfer label="Events deze maand" waarde={dezeMaand} naar="/kalender" onder="in de kalender" />
-          <Cijfer label="Deze week geboekt" waarde={formatDuration(weekSeconds)} naar="/uren" onder="jouw uren" />
+          <Cijfer
+            label={t('dashboard.events_deze_maand')}
+            waarde={dezeMaand}
+            naar="/kalender"
+            onder={t('dashboard.events_deze_maand_onder')}
+          />
+          <Cijfer
+            label={t('dashboard.week_geboekt')}
+            waarde={formatDuration(weekSeconds)}
+            naar="/uren"
+            onder={t('dashboard.week_geboekt_onder')}
+          />
         </div>
 
         <div className="je-dash__kolommen">
           <div className="je-dash__kolom">
             <Paneel
-              titel="Wat er aankomt"
+              titel={t('dashboard.aankomst')}
               naar="/"
-              naarLabel="Naar het bord"
-              leeg="Er staat geen event met een datum in de toekomst."
+              naarLabel={t('dashboard.aankomst_naar')}
+              leeg={t('dashboard.aankomst_leeg')}
               leegAls={!eventsLoading && komende.length === 0}
             >
               {eventsLoading ? (
@@ -190,7 +213,7 @@ export default function Dashboard() {
                         <span className="je-dash__dag">
                           <b>{new Date(event.eventDate).getDate()}</b>
                           <span>
-                            {new Intl.DateTimeFormat('nl-BE', { month: 'short' }).format(new Date(event.eventDate))}
+                            {maandKort.format(new Date(event.eventDate))}
                           </span>
                         </span>
                         <span className="je-taskline__title">
@@ -207,11 +230,13 @@ export default function Dashboard() {
                               borderColor: 'transparent',
                             }}
                           >
-                            {event.teLaat} te laat
+                            {t('dashboard.telaat_aantal', { aantal: event.teLaat })}
                           </Badge>
                         ) : null}
                         <span className="je-taskline__due">
-                          {event.openTaken ? `${event.openTaken} open` : 'klaar'}
+                          {event.openTaken
+                            ? t('dashboard.open_aantal', { aantal: event.openTaken })
+                            : t('dashboard.event_klaar')}
                         </span>
                       </Link>
                     </li>
@@ -221,19 +246,19 @@ export default function Dashboard() {
             </Paneel>
 
             <Paneel
-              titel="Wat bij jou ligt"
+              titel={t('dashboard.bij_jou')}
               naar="/tasks"
-              naarLabel="Alle taken"
-              leeg="Alles wat aan jou toegewezen is, is afgewerkt."
+              naarLabel={t('dashboard.bij_jou_naar')}
+              leeg={t('dashboard.bij_jou_leeg')}
               leegAls={!loading && tasks.length === 0}
             >
               {loading ? (
                 <Laden />
               ) : (
                 <div>
-                  <TaakGroep titel="Te laat" taken={overdue} slecht profileById={profileById} />
-                  <TaakGroep titel="Vandaag" taken={dueToday} profileById={profileById} />
-                  <TaakGroep titel="Deze week" taken={soon} profileById={profileById} />
+                  <TaakGroep titel={t('dashboard.telaat')} taken={overdue} slecht profileById={profileById} />
+                  <TaakGroep titel={t('alg.vandaag')} taken={dueToday} profileById={profileById} />
+                  <TaakGroep titel={t('dashboard.deze_week')} taken={soon} profileById={profileById} />
                 </div>
               )}
             </Paneel>
@@ -241,10 +266,10 @@ export default function Dashboard() {
 
           <div className="je-dash__kolom">
             <Paneel
-              titel="Bistro vandaag"
+              titel={t('dashboard.bistro')}
               naar="/openen-sluiten"
-              naarLabel="Naar de lijsten"
-              leeg="Er staan nog geen dagelijkse lijsten klaar."
+              naarLabel={t('dashboard.bistro_naar')}
+              leeg={t('dashboard.bistro_leeg')}
               leegAls={lijsten.length === 0}
             >
               <ul className="je-dash__lijsten">
@@ -259,12 +284,10 @@ export default function Dashboard() {
                     <Bar pct={Math.round(lijst.ratio * 100)} />
                     <span className="je-dash__sub">
                       {lijst.run?.closedAt
-                        ? `Afgerond door ${lijst.run.closedByName}`
+                        ? t('dashboard.afgerond_door', { wie: lijst.run.closedByName })
                         : lijst.run?.participants?.length
-                          ? `${lijst.run.participants.length} ${
-                              lijst.run.participants.length === 1 ? 'persoon' : 'personen'
-                            } bezig`
-                          : 'nog niemand begonnen'}
+                          ? t('dashboard.bezig', { aantal: lijst.run.participants.length })
+                          : t('dashboard.nog_niemand')}
                     </span>
                   </li>
                 ))}
@@ -272,7 +295,11 @@ export default function Dashboard() {
             </Paneel>
 
             {toReview.length ? (
-              <Paneel titel="Wacht op jou" naar="/social" naarLabel="Nakijken">
+              <Paneel
+                titel={t('dashboard.wacht_op_jou')}
+                naar="/social"
+                naarLabel={t('dashboard.wacht_op_jou_naar')}
+              >
                 <ul className="je-tasklist">
                   {toReview.slice(0, 5).map((post) => (
                     <li key={post.id}>
@@ -282,7 +309,7 @@ export default function Dashboard() {
                           style={{ background: brandById[post.brandId]?.color ?? 'var(--text-3)' }}
                         />
                         <span className="je-taskline__title">{post.title}</span>
-                        {post.reviewerId === uid ? <Badge>voor jou</Badge> : null}
+                        {post.reviewerId === uid ? <Badge>{t('dashboard.voor_jou')}</Badge> : null}
                       </Link>
                     </li>
                   ))}
@@ -291,10 +318,10 @@ export default function Dashboard() {
             ) : null}
 
             <Paneel
-              titel="Socials deze week"
+              titel={t('dashboard.socials')}
               naar="/social"
-              naarLabel="Naar de kalender"
-              leeg="Er staat niets ingepland deze week."
+              naarLabel={t('dashboard.socials_naar')}
+              leeg={t('dashboard.socials_leeg')}
               leegAls={posts.length === 0}
             >
               <ul className="je-tasklist">
@@ -322,10 +349,10 @@ export default function Dashboard() {
             </Paneel>
 
             <Paneel
-              titel="Goals die aandacht vragen"
+              titel={t('dashboard.goals')}
               naar="/goals"
-              naarLabel="Alle goals"
-              leeg="Alle lopende goals liggen op schema."
+              naarLabel={t('dashboard.goals_naar')}
+              leeg={t('dashboard.goals_leeg')}
               leegAls={atRisk.length === 0}
             >
               <ul className="je-dash__lijsten">
@@ -390,6 +417,7 @@ function Paneel({ titel, naar, naarLabel, leeg, leegAls = false, children }) {
 }
 
 function TaakGroep({ titel, taken, slecht }) {
+  const { t } = useTaal()
   if (taken.length === 0) return null
 
   return (
@@ -405,7 +433,7 @@ function TaakGroep({ titel, taken, slecht }) {
               <Link to={`/bord/${task.listId}`} className="je-plainbtn je-taskline">
                 <span
                   className="je-taskline__prio"
-                  title={prio?.label ?? 'Geen prioriteit'}
+                  title={prio?.label ?? t('dashboard.geen_prioriteit')}
                   style={{ background: prio?.color ?? 'transparent' }}
                 />
                 <span className="je-taskline__title">{task.title}</span>

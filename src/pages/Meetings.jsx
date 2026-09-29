@@ -19,6 +19,7 @@ import {
 } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { summariseMeeting, useAlleActiepunten, useMeetingTasks, useMeetings } from '@data/meetings'
@@ -41,6 +42,7 @@ import {
  */
 export default function Meetings() {
   const { uid, isAdmin } = useAuth()
+  const { t } = useTaal()
   const { meetings, loading } = useMeetings(uid)
   const { items: agenda } = useAgenda('open')
   const [tab, setTab] = useState('agenda')
@@ -67,31 +69,31 @@ export default function Meetings() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Teamoverleg"
+        title={t('nav.teamoverleg')}
         subtitle={
           tab === 'agenda'
-            ? `${agenda.length} ${agenda.length === 1 ? 'punt' : 'punten'} · ${totalMinutes(agenda)} min gepland`
+            ? t('overleg.agenda_samenvatting', { aantal: agenda.length, minuten: totalMinutes(agenda) })
             : zoek.trim()
-              ? `${gevonden.length} van ${meetings.length} ${meetings.length === 1 ? 'verslag' : 'verslagen'}`
-              : `${meetings.length} ${meetings.length === 1 ? 'verslag' : 'verslagen'}`
+              ? t('overleg.gevonden', { aantal: meetings.length, gevonden: gevonden.length })
+              : t('overleg.verslag_aantal', { aantal: meetings.length })
         }
         actions={
           tab === 'verslagen' && isAdmin ? (
             <Button variant="primary" onClick={() => setPasting(true)}>
-              Transcript samenvatten
+              {t('overleg.samenvatten')}
             </Button>
           ) : null
         }
         tabs={
           <>
             <Tab active={tab === 'agenda'} onClick={() => setTab('agenda')}>
-              Agenda
+              {t('overleg.agenda')}
               {agenda.length ? (
                 <span className="ml-1.5 tabular-nums text-[11px] text-ink-400">{agenda.length}</span>
               ) : null}
             </Tab>
             <Tab active={tab === 'verslagen'} onClick={() => setTab('verslagen')}>
-              Verslagen
+              {t('overleg.verslagen')}
             </Tab>
           </>
         }
@@ -103,8 +105,8 @@ export default function Meetings() {
         <div className="mx-auto max-w-3xl space-y-3 py-4">
           {meetings.length === 0 ? (
             <EmptyState
-              title="Nog geen verslagen"
-              description="Zodra er een overleg is samengevat, staat het hier met zijn actiepunten."
+              title={t('overleg.geen_verslagen')}
+              description={t('overleg.geen_verslagen_uitleg')}
             />
           ) : (
             <>
@@ -114,14 +116,14 @@ export default function Meetings() {
               <Input
                 value={zoek}
                 onChange={(e) => setZoek(e.target.value)}
-                placeholder="Zoek in de verslagen en de actiepunten…"
-                aria-label="Zoek in de verslagen"
+                placeholder={t('overleg.zoek')}
+                aria-label={t('overleg.zoek_label')}
               />
 
               {gevonden.length === 0 ? (
                 <EmptyState
-                  title="Niets gevonden"
-                  description={`Geen verslag met "${zoek.trim()}" in de samenvatting of de actiepunten.`}
+                  title={t('overleg.niets_gevonden')}
+                  description={t('overleg.niets_gevonden_uitleg', { term: zoek.trim() })}
                 />
               ) : (
                 <ul className="space-y-2">
@@ -146,17 +148,19 @@ export default function Meetings() {
                             regel moet je alsnog elk verslag openen. */}
                         {meeting.treffers?.length ? (
                           <ul className="je-verslagtreffers">
-                            {meeting.treffers.slice(0, 3).map((t, i) => (
-                              <li key={`${t.soort}-${i}`}>
+                            {meeting.treffers.slice(0, 3).map((treffer, i) => (
+                              <li key={`${treffer.soort}-${i}`}>
                                 <Badge subtle>
-                                  {t.soort === 'actiepunt' ? 'actiepunt' : 'besproken'}
+                                  {treffer.soort === 'actiepunt'
+                                    ? t('overleg.treffer_actiepunt')
+                                    : t('overleg.treffer_besproken')}
                                 </Badge>
-                                <span>{t.tekst || t.detail}</span>
+                                <span>{treffer.tekst || treffer.detail}</span>
                               </li>
                             ))}
                             {meeting.treffers.length > 3 ? (
                               <li className="text-ink-500">
-                                en {meeting.treffers.length - 3} andere
+                                {t('overleg.nog_andere', { aantal: meeting.treffers.length - 3 })}
                               </li>
                             ) : null}
                           </ul>
@@ -194,6 +198,7 @@ export default function Meetings() {
  */
 function Agenda({ items }) {
   const { uid, isAdmin } = useAuth()
+  const { t } = useTaal()
   const { profileById } = useWorkspace()
   const { items: besproken } = useAgenda('besproken')
   const toast = useToast()
@@ -227,52 +232,52 @@ function Agenda({ items }) {
     <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6">
       <div className="mx-auto max-w-3xl space-y-4 py-4">
         <form onSubmit={submit} className="card space-y-3 p-4">
-          <h2 className="label mb-0">Punt toevoegen</h2>
+          <h2 className="label mb-0">{t('overleg.punt_toevoegen')}</h2>
           <Input
             value={titel}
             onChange={(e) => setTitel(e.target.value)}
-            placeholder="Waarover gaat het?"
-            aria-label="Onderwerp"
+            placeholder={t('overleg.onderwerp_hint')}
+            aria-label={t('overleg.onderwerp')}
           />
           <Textarea
             rows={2}
             value={omschrijving}
             onChange={(e) => setOmschrijving(e.target.value)}
-            placeholder="Wat moet het overleg hierover weten of beslissen?"
-            aria-label="Omschrijving"
+            placeholder={t('overleg.omschrijving_hint')}
+            aria-label={t('overleg.omschrijving')}
           />
           <div className="flex flex-wrap items-end gap-3">
             {/* Geen eigenaarskeuze: wie het punt zet, is de eigenaar. */}
             <span className="flex items-center gap-1.5 text-xs text-ink-500">
               <Avatar profile={profileById[uid]} size="xs" />
-              Jij bent de eigenaar
+              {t('overleg.jij_eigenaar')}
             </span>
-            <Field label="Verwachte tijd" className="ml-auto w-32">
+            <Field label={t('overleg.verwachte_tijd')} className="ml-auto w-32">
               <Select value={minuten} onChange={(e) => setMinuten(Number(e.target.value))}>
                 {[5, 10, 15, 20, 30, 45, 60].map((m) => (
                   <option key={m} value={m}>
-                    {m} min
+                    {t('overleg.minuten', { minuten: m })}
                   </option>
                 ))}
               </Select>
             </Field>
             <Button type="submit" variant="primary" disabled={busy || !titel.trim()}>
-              Op de agenda
+              {t('overleg.op_de_agenda')}
             </Button>
           </div>
         </form>
 
         {items.length === 0 ? (
           <EmptyState
-            title="De agenda is leeg"
-            description="Iedereen kan hier een punt op zetten voor het volgende overleg."
+            title={t('overleg.agenda_leeg')}
+            description={t('overleg.agenda_leeg_uitleg')}
           />
         ) : (
           <>
             <div className="flex items-center justify-between px-1">
-              <h2 className="label mb-0">Volgende overleg</h2>
+              <h2 className="label mb-0">{t('overleg.volgende')}</h2>
               <span className={cn('text-xs font-semibold tabular-nums', totaal > 60 ? 'text-amber-700' : 'text-ink-500')}>
-                {totaal} min{totaal > 60 ? ' — past niet in een uur' : ''}
+                {totaal > 60 ? t('overleg.past_niet', { minuten: totaal }) : t('overleg.minuten', { minuten: totaal })}
               </span>
             </div>
 
@@ -290,7 +295,7 @@ function Agenda({ items }) {
                           </span>
                         ) : null}
                       </span>
-                      <Badge subtle>{item.minuten || 0} min</Badge>
+                      <Badge subtle>{t('overleg.minuten', { minuten: item.minuten || 0 })}</Badge>
                     </div>
 
                     <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -303,7 +308,7 @@ function Agenda({ items }) {
                         ) : (
                           // Punten van voor "wie zet is eigenaar" kunnen er nog
                           // zonder staan.
-                          <span className="text-ink-400">Geen eigenaar</span>
+                          <span className="text-ink-400">{t('overleg.geen_eigenaar')}</span>
                         )}
                       </span>
 
@@ -313,16 +318,16 @@ function Agenda({ items }) {
                         className="ml-auto"
                         onClick={() => setAfronden(item)}
                       >
-                        Besproken
+                        {t('overleg.besproken')}
                       </Button>
                       {item.ownerId === uid || isAdmin ? (
                         <ConfirmButton
                           variant="ghost"
                           size="sm"
-                          question="Dit punt verwijderen?"
+                          question={t('overleg.punt_verwijderen')}
                           onConfirm={() => deleteAgendaItem(item.id).catch((e) => toast.error(e.message))}
                         >
-                          Verwijderen
+                          {t('alg.verwijderen')}
                         </ConfirmButton>
                       ) : null}
                     </div>
@@ -342,7 +347,7 @@ function Agenda({ items }) {
               onClick={() => setToonBesproken((v) => !v)}
               className="text-xs font-semibold text-ink-500 hover:text-ink-800"
             >
-              {toonBesproken ? '▾' : '▸'} Al besproken ({besproken.length})
+              {toonBesproken ? '▾' : '▸'} {t('overleg.al_besproken', { aantal: besproken.length })}
             </button>
             {toonBesproken ? (
               <ul className="mt-2 space-y-1">
@@ -354,7 +359,7 @@ function Agenda({ items }) {
                     <span className="min-w-0 flex-1 truncate text-ink-600 line-through">{item.titel}</span>
                     {/* Of er werk uit kwam. Zonder dit is "besproken" niet te
                         onderscheiden van "besproken en vergeten". */}
-                    {item.taskId ? <Badge subtle>taak aangemaakt</Badge> : null}
+                    {item.taskId ? <Badge subtle>{t('overleg.taak_aangemaakt_badge')}</Badge> : null}
                     {item.besprokenOp ? (
                       <span className="text-[11px] text-ink-500">{formatDate(item.besprokenOp)}</span>
                     ) : null}
@@ -363,7 +368,7 @@ function Agenda({ items }) {
                       size="sm"
                       onClick={() => reopenAgendaItem(item.id).catch((e) => toast.error(e.message))}
                     >
-                      Terugzetten
+                      {t('overleg.terugzetten')}
                     </Button>
                   </li>
                 ))}
@@ -391,6 +396,7 @@ function Agenda({ items }) {
  * het bord dat het net overzichtelijk moest houden.
  */
 function Afronden({ item, onClose }) {
+  const { t } = useTaal()
   const { profiles, activeLists, profileById } = useWorkspace()
   const toast = useToast()
 
@@ -427,7 +433,9 @@ function Afronden({ item, onClose }) {
       })
       const wie = eigenaar ? profileById[eigenaar] : null
       toast.success(
-        wie ? `Taak aangemaakt voor ${wie.fullName || wie.email}.` : 'Taak aangemaakt.'
+        wie
+          ? t('overleg.taak_aangemaakt_voor', { wie: wie.fullName || wie.email })
+          : t('overleg.taak_aangemaakt')
       )
       onClose()
     } catch (err) {
@@ -441,31 +449,29 @@ function Afronden({ item, onClose }) {
     <Modal
       open
       onClose={onClose}
-      title="Besproken — en dan?"
+      title={t('overleg.afronden_titel')}
       footer={
         <>
           <Button variant="secondary" disabled={busy} onClick={alleenAfvinken}>
-            Alleen afvinken
+            {t('overleg.alleen_afvinken')}
           </Button>
           <Button variant="primary" disabled={busy || !titel.trim() || !lijst} onClick={metTaak}>
-            {busy ? 'Bezig…' : 'Taak aanmaken'}
+            {busy ? t('overleg.bezig') : t('overleg.taak_aanmaken')}
           </Button>
         </>
       }
     >
       <div className="space-y-3 px-5 py-4">
-        <p className="text-sm text-ink-600">
-          Van “{item.titel}” een taak maken, met een eigenaar en een deadline erbij.
-        </p>
+        <p className="text-sm text-ink-600">{t('overleg.afronden_uitleg', { titel: item.titel })}</p>
 
-        <Field label="Wat moet er gebeuren?">
+        <Field label={t('overleg.wat_gebeuren')}>
           <Input value={titel} onChange={(e) => setTitel(e.target.value)} />
         </Field>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Wie doet het?">
+          <Field label={t('overleg.wie_doet')}>
             <Select value={eigenaar} onChange={(e) => setEigenaar(e.target.value)}>
-              <option value="">Niemand — nog te verdelen</option>
+              <option value="">{t('overleg.nog_te_verdelen')}</option>
               {kandidaten.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.fullName || p.email}
@@ -474,25 +480,21 @@ function Afronden({ item, onClose }) {
             </Select>
           </Field>
           <label className="block">
-            <span className="label">Tegen wanneer?</span>
+            <span className="label">{t('overleg.tegen_wanneer')}</span>
             <input
               type="date"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
               className="field"
-              aria-label="Deadline van de taak"
+              aria-label={t('overleg.deadline_label')}
             />
           </label>
         </div>
 
         {lijst ? (
-          <p className="text-[11px] text-ink-500">
-            De taak komt op “{lijst.name}” te staan, en meteen in Mijn werk van wie ze krijgt.
-          </p>
+          <p className="text-[11px] text-ink-500">{t('overleg.taak_op_lijst', { lijst: lijst.name })}</p>
         ) : (
-          <p className="text-[11px] text-amber-700">
-            Er is nog geen takenlijst om dit op te zetten. Maak er een aan bij Instellingen.
-          </p>
+          <p className="text-[11px] text-amber-700">{t('overleg.geen_takenlijst')}</p>
         )}
       </div>
     </Modal>
@@ -500,6 +502,7 @@ function Afronden({ item, onClose }) {
 }
 
 function MeetingDetail({ meeting, onClose }) {
+  const { t } = useTaal()
   const tasks = useMeetingTasks(meeting.taskId)
   const { profileById } = useWorkspace()
 
@@ -517,7 +520,7 @@ function MeetingDetail({ meeting, onClose }) {
         </p>
 
         <section>
-          <h3 className="label">Deelnemers</h3>
+          <h3 className="label">{t('overleg.deelnemers')}</h3>
           <div className="flex flex-wrap gap-1.5">
             {(meeting.deelnemers ?? []).map((naam) => (
               <Badge key={naam} subtle>
@@ -528,7 +531,7 @@ function MeetingDetail({ meeting, onClose }) {
         </section>
 
         <section>
-          <h3 className="label">Besproken</h3>
+          <h3 className="label">{t('overleg.besproken_kop')}</h3>
           <ul className="space-y-2.5">
             {(meeting.samenvatting ?? []).map((punt) => (
               <li key={punt.onderwerp}>
@@ -540,7 +543,7 @@ function MeetingDetail({ meeting, onClose }) {
         </section>
 
         <section>
-          <h3 className="label">Actiepunten ({acties.length})</h3>
+          <h3 className="label">{t('overleg.actiepunten', { aantal: acties.length })}</h3>
           <ul className="space-y-1">
             {acties.map((taak) => {
               const wie = taak.assignees?.[0] ? profileById[taak.assignees[0]] : null
@@ -564,40 +567,36 @@ function MeetingDetail({ meeting, onClose }) {
                     <Badge color="#f59e0b" subtle>
                       {taak.voorgesteldeVerantwoordelijke
                         ? `${taak.voorgesteldeVerantwoordelijke}?`
-                        : 'niemand'}
+                        : t('overleg.geen_wie')}
                     </Badge>
                   )}
                 </li>
               )
             })}
             {acties.length === 0 ? (
-              <li className="px-1 py-2 text-sm text-ink-500">Geen actiepunten uit dit overleg.</li>
+              <li className="px-1 py-2 text-sm text-ink-500">{t('overleg.geen_actiepunten')}</li>
             ) : null}
           </ul>
-          <p className="mt-2 text-[11px] text-ink-500">
-            Actiepunten zijn gewone taken: wie er een kreeg, ziet hem ook in Mijn werk.
-          </p>
+          <p className="mt-2 text-[11px] text-ink-500">{t('overleg.actiepunten_zijn_taken')}</p>
         </section>
 
         {meeting.bron ? (
           <p className="text-xs text-ink-500">
-            Bron:{' '}
+            {t('overleg.bron')}:{' '}
             <a href={meeting.bron} target="_blank" rel="noreferrer" className="underline">
-              de opname
+              {t('overleg.de_opname')}
             </a>
           </p>
         ) : null}
 
-        <p className="rounded-xl bg-ink-50 px-3 py-2 text-[11px] text-ink-600">
-          Samengevat door AI. Lees na voor je erop voortgaat — wat er niet in stond, staat er ook
-          niet in.
-        </p>
+        <p className="rounded-xl bg-ink-50 px-3 py-2 text-[11px] text-ink-600">{t('overleg.door_ai')}</p>
       </div>
     </Modal>
   )
 }
 
 function PasteTranscript({ onClose }) {
+  const { t } = useTaal()
   const toast = useToast()
   const [transcript, setTranscript] = useState('')
   // dayKey rekent lokaal; toISOString gaf tussen middernacht en twee uur
@@ -611,7 +610,7 @@ function PasteTranscript({ onClose }) {
     try {
       const r = await summariseMeeting({ transcript, datum, bron: bron || null })
       toast.success(
-        `Verslag toegevoegd met ${r.actiepunten} actiepunt(en), waarvan ${r.toegewezen} toegewezen.`
+        t('overleg.verslag_toegevoegd', { aantal: r.actiepunten, toegewezen: r.toegewezen })
       )
       onClose()
     } catch (err) {
@@ -625,15 +624,15 @@ function PasteTranscript({ onClose }) {
     <Modal
       open
       onClose={onClose}
-      title="Transcript samenvatten"
+      title={t('overleg.samenvatten')}
       width="max-w-2xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button variant="primary" disabled={busy || transcript.trim().length < 200} onClick={submit}>
-            {busy ? 'Bezig…' : 'Samenvatten'}
+            {busy ? t('overleg.bezig') : t('overleg.samenvatten_knop')}
           </Button>
         </>
       }
@@ -641,7 +640,7 @@ function PasteTranscript({ onClose }) {
       <div className="space-y-3 px-5 py-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="label">Datum van het overleg</span>
+            <span className="label">{t('overleg.datum_overleg')}</span>
             <input
               type="date"
               value={datum}
@@ -650,7 +649,7 @@ function PasteTranscript({ onClose }) {
             />
           </label>
           <label className="block">
-            <span className="label">Link naar de opname</span>
+            <span className="label">{t('overleg.link_opname')}</span>
             <input
               type="url"
               value={bron}
@@ -662,19 +661,18 @@ function PasteTranscript({ onClose }) {
         </div>
 
         <label className="block">
-          <span className="label">Transcript</span>
+          <span className="label">{t('overleg.transcript')}</span>
           <Textarea
             rows={12}
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Plak hier het transcript van de Meet-opname…"
+            placeholder={t('overleg.transcript_hint')}
           />
         </label>
 
         {busy ? (
           <p className="flex items-center gap-2 text-xs text-ink-500">
-            <Spinner className="h-3 w-3" /> Het model leest het transcript. Dit duurt een halve
-            minuut tot enkele minuten.
+            <Spinner className="h-3 w-3" /> {t('overleg.model_leest')}
           </p>
         ) : null}
       </div>

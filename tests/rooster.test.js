@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { zetLocale } from '../src/lib/dates'
 import {
   botsingen,
   duurVan,
@@ -59,12 +60,27 @@ describe('duurVan', () => {
 })
 
 describe('weekDagen', () => {
+  // De dagnaam komt sinds de tweetaligheid uit de opmaaktaal. Daarom zet deze
+  // test hem zelf: anders zou de uitkomst afhangen van welke taal er elders
+  // gekozen werd, en dat is geen test maar een gok.
+  afterEach(() => zetLocale('nl-BE'))
+
   it('begint op maandag', () => {
+    zetLocale('nl-BE')
     const dagen = weekDagen(new Date('2026-10-01T12:00:00'))
     expect(dagen).toHaveLength(7)
     expect(dagen[0].naam).toBe('ma')
     expect(dagen[0].sleutel).toBe('2026-09-28')
     expect(dagen[6].sleutel).toBe('2026-10-04')
+  })
+
+  // Wie in het Engels werkt, hoort boven de kolom "Mon" te zien. De sleutel
+  // blijft de datum, want daar wordt op gegroepeerd.
+  it('geeft de dagnaam in de taal waarin iemand werkt', () => {
+    zetLocale('en-GB')
+    const dagen = weekDagen(new Date('2026-10-01T12:00:00'))
+    expect(dagen[0].naam).toBe('Mon')
+    expect(dagen[0].sleutel).toBe('2026-09-28')
   })
 })
 

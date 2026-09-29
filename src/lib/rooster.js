@@ -1,4 +1,4 @@
-import { WEEKDAYS, addDays, dayKey, startOfWeek } from './dates'
+import { addDays, dayKey, formatWeekday, startOfWeek } from './dates'
 
 /**
  * Het weekrooster: wie wanneer werkt.
@@ -50,12 +50,18 @@ export function duurVan(shift) {
 
 export const urenVan = (shift) => duurVan(shift) / 60
 
-/** De zeven dagen van de week waarin deze datum valt, maandag eerst. */
+/**
+ * De zeven dagen van de week waarin deze datum valt, maandag eerst.
+ *
+ * De naam komt uit de opmaaktaal en niet uit een vaste lijst: wie de tool in
+ * het Engels leest, hoort boven de kolom "Mon" te zien staan. De sleutel en het
+ * nummer veranderen niet mee — daar wordt op gerekend en gegroepeerd.
+ */
 export function weekDagen(datum = new Date()) {
   const maandag = startOfWeek(datum)
   return Array.from({ length: 7 }, (_, i) => {
     const dag = addDays(maandag, i)
-    return { sleutel: dayKey(dag), datum: dag, naam: WEEKDAYS[i], nummer: dag.getDate() }
+    return { sleutel: dayKey(dag), datum: dag, naam: formatWeekday(dag), nummer: dag.getDate() }
   })
 }
 

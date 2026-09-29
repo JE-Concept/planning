@@ -20,33 +20,23 @@ import { SOORTEN, STANDAARD, voorkeurenVan } from '../../functions/notify.js'
 
 export { SOORTEN, STANDAARD, voorkeurenVan }
 
-/** Wat er in het scherm staat: de naam van elk bericht en wanneer het komt. */
+/**
+ * Wat er in het scherm staat: de naam van elk bericht en wanneer het komt.
+ *
+ * Hier staan sleutels en geen zinnen, want dit scherm bestaat in twee talen. De
+ * teksten zelf staan in `src/lib/taal/team.js`; de volgorde en de `key` blijven
+ * hier, want die horen bij wat de server verstuurt en niet bij een taal.
+ */
 export const SOORT_UITLEG = [
-  {
-    key: 'toewijzing',
-    titel: 'Een taak komt op jouw naam',
-    uitleg: 'Zodra iemand je aan een taak toevoegt. Niet wanneer je dat zelf doet.',
-  },
-  {
-    key: 'reactie',
-    titel: 'Iemand reageert op je taak',
-    uitleg: 'Op taken die op jouw naam staan en op taken waar je zelf op reageerde.',
-  },
-  {
-    key: 'deadline',
-    titel: 'Een deadline van morgen',
-    uitleg: "Elke ochtend om zeven uur, alleen als er morgen iets van jou vervalt.",
-  },
-  {
-    key: 'telaat',
-    titel: 'Ochtendlijst van wat te laat staat',
-    uitleg: 'Om half acht, en alleen op de dagen dat er iets op jouw naam over tijd staat.',
-  },
+  { key: 'toewijzing', titel: 'melding.toewijzing_titel', uitleg: 'melding.toewijzing_uitleg' },
+  { key: 'reactie', titel: 'melding.reactie_titel', uitleg: 'melding.reactie_uitleg' },
+  { key: 'deadline', titel: 'melding.deadline_titel', uitleg: 'melding.deadline_uitleg' },
+  { key: 'telaat', titel: 'melding.telaat_titel', uitleg: 'melding.telaat_uitleg' },
 ]
 
 export const KANALEN = [
-  { key: 'push', label: 'Melding' },
-  { key: 'email', label: 'E-mail' },
+  { key: 'push', label: 'melding.kanaal_push' },
+  { key: 'email', label: 'melding.kanaal_email' },
 ]
 
 /**

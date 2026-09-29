@@ -16,6 +16,7 @@ import {
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import MonthCalendar from '@components/common/MonthCalendar'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { addManualEntry, deleteEntry, setEntryBillable, updateEntry, useTimeEntries } from '@data/time'
@@ -32,6 +33,7 @@ const monthKey = (date) => dayKey(date).slice(0, 7)
  */
 export default function TimeTracking() {
   const { uid, isAdmin } = useAuth()
+  const { t, locale } = useTaal()
   const { profileById, profiles, brandById, listById } = useWorkspace()
   const toast = useToast()
 
@@ -69,25 +71,28 @@ export default function TimeTracking() {
   const byList = useMemo(() => groupBy(entries, (e) => e.listId ?? 'zonder'), [entries])
   const byBrand = useMemo(() => groupBy(entries, (e) => e.brandId ?? 'zonder'), [entries])
 
-  const months = useMemo(() => lastMonths(12), [])
+  const months = useMemo(() => lastMonths(12, locale), [locale])
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Uren"
-        subtitle={`${formatDuration(total)} geboekt · ${formatDuration(billable)} factureerbaar`}
+        title={t('nav.uren')}
+        subtitle={t('uren.samenvatting', {
+          totaal: formatDuration(total),
+          factureerbaar: formatDuration(billable),
+        })}
         actions={
           <>
-            <Select value={month} onChange={(e) => setMonth(e.target.value)} className="w-auto" aria-label="Maand">
+            <Select value={month} onChange={(e) => setMonth(e.target.value)} className="w-auto" aria-label={t('uren.maand')}>
               {months.map((m) => (
                 <option key={m.key} value={m.key}>
                   {m.label}
                 </option>
               ))}
             </Select>
-            <Select value={who} onChange={(e) => setWho(e.target.value)} className="w-auto" aria-label="Persoon">
-              <option value={uid}>Mijn uren</option>
-              {isAdmin ? <option value="">Het hele team</option> : null}
+            <Select value={who} onChange={(e) => setWho(e.target.value)} className="w-auto" aria-label={t('uren.persoon')}>
+              <option value={uid}>{t('uren.mijn_uren')}</option>
+              {isAdmin ? <option value="">{t('uren.hele_team')}</option> : null}
               {isAdmin
                 ? profiles
                     .filter((p) => p.id !== uid)
@@ -98,24 +103,28 @@ export default function TimeTracking() {
                     ))
                 : null}
             </Select>
-            <Button variant="secondary" onClick={() => exportCsv(entries, profileById, month)} disabled={entries.length === 0}>
+            <Button
+              variant="secondary"
+              onClick={() => exportCsv(entries, profileById, month, t)}
+              disabled={entries.length === 0}
+            >
               CSV
             </Button>
             <Button variant="primary" onClick={() => setAdding(true)}>
-              + Tijd
+              {t('uren.tijd_kort')}
             </Button>
           </>
         }
         tabs={
           <>
             <Tab active={view === 'entries'} onClick={() => setView('entries')}>
-              Registraties
+              {t('uren.registraties')}
             </Tab>
             <Tab active={view === 'kalender'} onClick={() => setView('kalender')}>
-              Kalender
+              {t('uren.kalender')}
             </Tab>
             <Tab active={view === 'report'} onClick={() => setView('report')}>
-              Rapport
+              {t('uren.rapport')}
             </Tab>
           </>
         }
@@ -126,7 +135,11 @@ export default function TimeTracking() {
           month={startOfMonth(new Date(`${month}-01T12:00:00`))}
           onMonthChange={(m) => setMonth(monthKey(m))}
           itemsByDay={entriesPerDag}
-          legenda={<span className="text-xs text-ink-500">{formatDuration(total)} deze maand</span>}
+          legenda={
+            <span className="text-xs text-ink-500">
+              {t('uren.deze_maand', { tijd: formatDuration(total) })}
+            </span>
+          }
           renderDay={(dag, items) => {
             const seconden = items.reduce((s, e) => s + (e.durationSeconds ?? 0), 0)
             return seconden ? (
@@ -142,7 +155,7 @@ export default function TimeTracking() {
               className="flex w-full items-center gap-1 rounded bg-white px-1 py-0.5 text-left text-[11px] shadow-card hover:bg-ink-50"
             >
               <span className="min-w-0 flex-1 truncate text-ink-800">
-                {entry.taskTitle || entry.description || 'Tijd'}
+                {entry.taskTitle || entry.description || t('uren.tijd')}
               </span>
               <span className="shrink-0 tabular-nums text-ink-400">
                 {formatDuration(entry.durationSeconds)}
@@ -158,11 +171,11 @@ export default function TimeTracking() {
           </div>
         ) : entries.length === 0 ? (
           <EmptyState
-            title="Nog geen uren deze maand"
-            description="Start de timer in de bovenbalk of voeg tijd handmatig toe."
+            title={t('uren.leeg')}
+            description={t('uren.leeg_uitleg')}
             action={
               <Button variant="primary" onClick={() => setAdding(true)}>
-                Tijd toevoegen
+                {t('uren.tijd_toevoegen')}
               </Button>
             }
           />
@@ -185,7 +198,7 @@ export default function TimeTracking() {
                         <Avatar profile={profileById[entry.profileId]} size="sm" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-ink-900">
-                            {entry.taskTitle || entry.description || 'Losse tijd'}
+                            {entry.taskTitle || entry.description || t('timer.losse_tijd')}
                           </p>
                           <p className="truncate text-xs text-ink-500">
                             {[entry.listName, entry.taskTitle ? entry.description : null]
@@ -204,23 +217,28 @@ export default function TimeTracking() {
                             entry.billable ? 'bg-emerald-50 text-emerald-700' : 'bg-ink-100 text-ink-500'
                           )}
                         >
-                          {entry.billable ? 'factureerbaar' : 'intern'}
+                          {entry.billable ? t('uren.factureerbaar_klein') : t('uren.intern')}
                         </button>
                         <span className="w-16 text-right text-sm font-medium tabular-nums text-ink-900">
                           {formatDuration(entry.durationSeconds)}
                         </span>
                         {(entry.profileId === uid || isAdmin) ? (
                           <>
-                            <Button variant="ghost" size="sm" onClick={() => setEditing(entry)} aria-label="Bewerken">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditing(entry)}
+                              aria-label={t('alg.aanpassen')}
+                            >
                               ✎
                             </Button>
                             <ConfirmButton
                               variant="ghost"
                               size="sm"
                               className="text-ink-400"
-                              question="Registratie verwijderen?"
+                              question={t('uren.registratie_verwijderen')}
                               onConfirm={() => deleteEntry(entry).catch((e) => toast.error(e.message))}
-                              aria-label="Verwijderen"
+                              aria-label={t('alg.verwijderen')}
                             >
                               ✕
                             </ConfirmButton>
@@ -236,23 +254,23 @@ export default function TimeTracking() {
         ) : (
           <div className="grid gap-5 lg:grid-cols-2">
             <ReportTable
-              title="Per persoon"
+              title={t('uren.per_persoon')}
               rows={byPerson}
-              label={(id) => profileById[id]?.fullName || profileById[id]?.email || 'Onbekend'}
+              label={(id) => profileById[id]?.fullName || profileById[id]?.email || t('uren.onbekend')}
               rate={(id) => profileById[id]?.hourlyRate}
             />
             <ReportTable
-              title="Per lijst"
+              title={t('uren.per_lijst')}
               rows={byList}
-              label={(id) => listById[id]?.name ?? 'Zonder lijst'}
+              label={(id) => listById[id]?.name ?? t('uren.zonder_lijst')}
             />
             <ReportTable
-              title="Per merk"
+              title={t('uren.per_merk')}
               rows={byBrand}
-              label={(id) => brandById[id]?.name ?? 'Zonder merk'}
+              label={(id) => brandById[id]?.name ?? t('uren.zonder_merk')}
             />
             <ReportTable
-              title="Per dag"
+              title={t('uren.per_dag')}
               rows={groupBy(entries, (e) => e.day ?? dayKey(e.startedAt))}
               label={(key) => key}
             />
@@ -283,6 +301,7 @@ function groupBy(entries, keyOf) {
 }
 
 function ReportTable({ title, rows, label, rate }) {
+  const { t } = useTaal()
   const total = rows.reduce((s, [, v]) => s + v.seconds, 0)
 
   return (
@@ -312,7 +331,7 @@ function ReportTable({ title, rows, label, rate }) {
         <tfoot>
           <tr className="border-t border-ink-200 bg-ink-50">
             <td className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-600">
-              Totaal
+              {t('uren.totaal')}
             </td>
             <td colSpan={rate ? 2 : 1} />
             <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-ink-900">
@@ -325,24 +344,32 @@ function ReportTable({ title, rows, label, rate }) {
   )
 }
 
-function lastMonths(count) {
+function lastMonths(count, locale) {
+  const maand = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' })
   const out = []
   const now = startOfMonth()
   for (let i = 0; i < count; i += 1) {
     const d = new Date(now)
     d.setMonth(d.getMonth() - i)
-    out.push({
-      key: monthKey(d),
-      label: new Intl.DateTimeFormat('nl-BE', { month: 'long', year: 'numeric' }).format(d),
-    })
+    out.push({ key: monthKey(d), label: maand.format(d) })
   }
   return out
 }
 
 /** A timesheet that leaves the tool ends up in a spreadsheet, so give it one. */
-function exportCsv(entries, profileById, month) {
+function exportCsv(entries, profileById, month, t) {
   const rows = [
-    ['Datum', 'Persoon', 'Lijst', 'Taak', 'Omschrijving', 'Van', 'Tot', 'Uren', 'Factureerbaar'],
+    [
+      t('uren.csv_datum'),
+      t('uren.csv_persoon'),
+      t('uren.csv_lijst'),
+      t('uren.csv_taak'),
+      t('uren.csv_omschrijving'),
+      t('uren.csv_van'),
+      t('uren.csv_tot'),
+      t('uren.csv_uren'),
+      t('uren.csv_factureerbaar'),
+    ],
     ...entries.map((e) => [
       e.day ?? dayKey(e.startedAt),
       profileById[e.profileId]?.fullName || profileById[e.profileId]?.email || '',
@@ -352,7 +379,7 @@ function exportCsv(entries, profileById, month) {
       formatDateTime(e.startedAt),
       formatDateTime(e.endedAt),
       String(toDecimalHours(e.durationSeconds)).replace('.', ','),
-      e.billable ? 'ja' : 'nee',
+      e.billable ? t('uren.csv_ja') : t('uren.csv_nee'),
     ]),
   ]
 
@@ -371,6 +398,7 @@ function exportCsv(entries, profileById, month) {
 // ─── Add / edit ─────────────────────────────────────────────────────────────
 
 function EntryModal({ entry, uid, onClose }) {
+  const { t } = useTaal()
   const toast = useToast()
   const { activeLists } = useWorkspace()
   const [startedAt, setStartedAt] = useState(
@@ -407,7 +435,7 @@ function EntryModal({ entry, uid, onClose }) {
           billable,
         })
       }
-      toast.success('Opgeslagen.')
+      toast.success(t('uren.opgeslagen'))
       onClose()
     } catch (err) {
       toast.error(err.message)
@@ -419,28 +447,28 @@ function EntryModal({ entry, uid, onClose }) {
     <Modal
       open
       onClose={onClose}
-      title={entry ? 'Tijd aanpassen' : 'Tijd toevoegen'}
+      title={entry ? t('uren.aanpassen_titel') : t('uren.toevoegen_titel')}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button variant="primary" onClick={submit} disabled={saving}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} Opslaan
+            {saving ? <Spinner className="h-3 w-3" /> : null} {t('alg.opslaan')}
           </Button>
         </>
       }
     >
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Van">
+        <Field label={t('uren.van')}>
           <Input type="datetime-local" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} />
         </Field>
-        <Field label="Tot">
+        <Field label={t('uren.tot')}>
           <Input type="datetime-local" value={endedAt} onChange={(e) => setEndedAt(e.target.value)} />
         </Field>
-        <Field label="Lijst" className="sm:col-span-2">
+        <Field label={t('uren.lijst')} className="sm:col-span-2">
           <Select value={listId} onChange={(e) => setListId(e.target.value)}>
-            <option value="">Geen lijst</option>
+            <option value="">{t('uren.geen_lijst')}</option>
             {activeLists.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}
@@ -448,8 +476,12 @@ function EntryModal({ entry, uid, onClose }) {
             ))}
           </Select>
         </Field>
-        <Field label="Omschrijving" className="sm:col-span-2">
-          <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Waaraan gewerkt?" />
+        <Field label={t('uren.omschrijving')} className="sm:col-span-2">
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={t('uren.omschrijving_hint')}
+          />
         </Field>
         <label className="flex items-center gap-2 text-sm text-ink-700 sm:col-span-2">
           <input
@@ -458,7 +490,7 @@ function EntryModal({ entry, uid, onClose }) {
             onChange={(e) => setBillable(e.target.checked)}
             className="h-4 w-4 rounded border-ink-300 text-accent-600"
           />
-          Factureerbaar
+          {t('uren.factureerbaar')}
         </label>
       </form>
     </Modal>
