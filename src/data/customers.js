@@ -38,6 +38,9 @@ export const nieuwContact = () => ({
   role: '',
   email: '',
   phone: '',
+  // Eén van de contactpersonen is de hoofdcontactpersoon. Wie de eerste is bij
+  // een nieuwe klant, wordt het vanzelf — zie `primaryContact` in @lib/klanten.
+  primary: false,
 })
 
 export function useCustomers({ includeArchived = false } = {}) {
@@ -133,6 +136,11 @@ export function createCustomer(data) {
     phone: data.phone ?? '',
     website: data.website ?? '',
     address: data.address ?? leegAdres(),
+    // Facturatie gaat vaak ergens anders naartoe dan de post: een
+    // boekhoudkantoor, een hoofdzetel, een aparte mailbox. Leeg betekent
+    // "hetzelfde als hierboven" (zie `billingAddressOf`), niet "onbekend".
+    billingAddress: data.billingAddress ?? leegAdres(),
+    billingEmail: data.billingEmail ?? '',
     contacts: data.contacts ?? [],
     notes: data.notes ?? '',
     brandId: data.brandId ?? null,

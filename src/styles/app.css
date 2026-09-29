@@ -963,3 +963,78 @@ select.je-compact { padding-right: 24px; }
   padding: var(--space-3);
 }
 .je-archieflink:hover { color: var(--text-1); }
+
+/* ── Klanten ───────────────────────────────────────────────────────────── */
+
+/* De velden voor een klant die vanuit een event aangemaakt wordt. Ze staan in
+   een kadertje omdat het formulier middenin een ander formulier zit: zonder
+   rand leest "Naam" als de naam van het event. */
+.je-klantnieuw {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-2);
+}
+
+/* Een regel uit de historiek: datum, naam, status, bedrag. Grid en geen flex,
+   zodat de bedragen onder elkaar uitkomen — een kolom cijfers die niet
+   uitlijnt, tel je niet op met je oog. */
+.je-klant-rij {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+}
+.je-klant-rij__datum {
+  font: var(--type-caption);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.je-klant-rij__naam {
+  background: none;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  text-align: left;
+  cursor: pointer;
+  font: var(--type-body-sm);
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-klant-rij__naam:hover {
+  text-decoration: underline;
+}
+.je-klant-rij__bedrag {
+  font: var(--type-body-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.je-klant-totaal {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-hairline);
+  font: var(--type-body-sm);
+}
+.je-klant-totaal strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Wat er nog te factureren valt, staat apart en met een rand eromheen: het is
+   het enige op deze fiche waar iemand vandaag nog iets mee moet doen. */
+.je-klant-factureren {
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--warning);
+  padding: var(--space-4) var(--space-5);
+}
+.je-klant-factureren .je-klant-rij {
+  padding: var(--space-2) 0;
+}

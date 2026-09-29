@@ -156,7 +156,16 @@ export function toggleChecklistItem(task, index) {
  * tellen terug vanaf de eventdatum; wat daardoor al voorbij zou zijn, komt op
  * vandaag te staan in plaats van meteen te laat te beginnen.
  */
-export async function createEventFromTemplate({ list, name, eventDate, brandId, template, createdBy }) {
+export async function createEventFromTemplate({
+  list,
+  name,
+  eventDate,
+  brandId,
+  template,
+  createdBy,
+  customerId = null,
+  customerName = null,
+}) {
   const first = list.statuses?.find((s) => s.name === 'request') ?? list.statuses?.[0]
   const uid = createdBy ?? auth.currentUser?.uid ?? null
   const now = new Date()
@@ -197,6 +206,10 @@ export async function createEventFromTemplate({ list, name, eventDate, brandId, 
       title: name.trim(),
       eventDate: date,
       dueDate: date,
+      // De klant staat op het event en niet op zijn taken: anders telt de
+      // historiek op de klantfiche elk dossier zo vaak als het taken heeft.
+      customerId: customerId || null,
+      customerName: customerName?.trim() || null,
       eventType: template && template.id !== 'leeg' ? template.name : null,
       templateId: template?.id ?? null,
       priority: null,

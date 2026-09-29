@@ -88,12 +88,16 @@ seedDoc('lists', 'l-socials', {
 // ─── Klanten ────────────────────────────────────────────────────────────────
 const KLANTEN = [
   {
-    id: 'k-blum', name: 'Blum België', vatNumber: 'BE 0456.789.123',
+    id: 'k-blum', name: 'Blum België', vatNumber: 'BE 0456.789.133',
     email: 'events@blum.be', phone: '011 22 33 44', website: 'https://www.blum.com',
     brandId: 'je-concept',
     address: { street: 'Industrieweg 12', postalCode: '3800', city: 'Sint-Truiden', country: 'België' },
+    // De factuur gaat naar de boekhouding op de hoofdzetel, de post naar de
+    // vestiging. Precies het geval waarvoor het factuuradres apart staat.
+    billingEmail: 'facturen@blum.be',
+    billingAddress: { street: 'Boekhouding, Postbus 40', postalCode: '3800', city: 'Sint-Truiden', country: 'België' },
     contacts: [
-      { id: 'c-blum-1', name: 'Karen Vandeput', role: 'HR-manager', email: 'karen@blum.be', phone: '0478 12 34 56' },
+      { id: 'c-blum-1', name: 'Karen Vandeput', role: 'HR-manager', email: 'karen@blum.be', phone: '0478 12 34 56', primary: true },
       { id: 'c-blum-2', name: 'Tom Peeters', role: 'Boekhouding', email: 'facturen@blum.be', phone: '' },
     ],
     notes: 'Factuur altijd naar boekhouding, nooit naar HR. Vegetarisch aanbod is een vast punt.',
@@ -103,16 +107,16 @@ const KLANTEN = [
     email: 'niels.inez@telenet.be', phone: '0495 66 77 88', website: '',
     brandId: 'feestbeest',
     address: { street: 'Hoeve Vanhove', postalCode: '3720', city: 'Kortessem', country: 'België' },
-    contacts: [{ id: 'c-ni-1', name: 'Inez Claes', role: 'Bruid', email: 'inez@telenet.be', phone: '0495 66 77 88' }],
+    contacts: [{ id: 'c-ni-1', name: 'Inez Claes', role: 'Bruid', email: 'inez@telenet.be', phone: '0495 66 77 88', primary: true }],
     notes: 'Regenplan in de schuur. Dansvloer breder dan bij de Odeurs-trouw.',
   },
   {
-    id: 'k-borgloon', name: 'Stad Borgloon', vatNumber: 'BE 0207.474.933',
+    id: 'k-borgloon', name: 'Stad Borgloon', vatNumber: 'BE 0207.474.981',
     email: 'evenementen@borgloon.be', phone: '012 67 36 55', website: 'https://www.borgloon.be',
     brandId: null,
     address: { street: 'Speelhof 10', postalCode: '3840', city: 'Borgloon', country: 'België' },
     contacts: [
-      { id: 'c-bl-1', name: 'Marleen Gijsen', role: 'Dienst evenementen', email: 'marleen@borgloon.be', phone: '012 67 36 60' },
+      { id: 'c-bl-1', name: 'Marleen Gijsen', role: 'Dienst evenementen', email: 'marleen@borgloon.be', phone: '012 67 36 60', primary: true },
     ],
     notes: 'Standenplan moet twee weken vooraf bij de dienst liggen.',
   },
@@ -192,6 +196,16 @@ taak('t-blum', 'l-overview', OVERVIEW, 'offer accepted', { pax: 180, formule: 'R
   dueDate: dag(82), budget: 24800, location: 'Cultureel Centrum, Sint-Truiden',
   tracked: 35100, comments: 1, tags: ['losse events'],
   description: '180 medewerkers + partners. Onthaal 18.30 · diner 20.00 · dansfeest tot 02.00.\n\nOpbouw donderdag 18 december vanaf 09.00.',
+})
+// De historiek van Blum: twee afgeronde dossiers en één dat op de factuur wacht.
+// Zonder dat is een klantfiche een adresboekje.
+taak('t-blum-kerst', 'l-overview', OVERVIEW, 'invoiced', { pax: 120, formule: 'Winterreceptie', eventType: 'Bedrijfsevent',
+  title: 'Blum België — kerstborrel 2025', assignees: ['u-elke'], customerId: 'k-blum',
+  eventDate: D('2025-12-18T17:00:00'), dueDate: D('2025-12-18T17:00:00'), budget: 6800, tracked: 14400,
+})
+taak('t-blum-team', 'l-overview', OVERVIEW, 'ready to invoice', { pax: 60, formule: 'BBQ en randanimatie', eventType: 'Teambuilding',
+  title: 'Blum België — teambuilding productie', assignees: ['u-jasper', 'u-elke'], customerId: 'k-blum',
+  eventDate: dag(-18), dueDate: dag(-18), budget: 4150, tracked: 9000, priority: 1,
 })
 taak('t-blum-1', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Voorschot factureren — 40%', assignees: ['u-elke'], priority: 1, dueDate: dag(2) })
 taak('t-blum-2', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Allergieënlijst opvragen bij HR', assignees: ['u-jasper'] })

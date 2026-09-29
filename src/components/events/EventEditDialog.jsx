@@ -4,8 +4,8 @@ import { missingForOffer } from '@lib/pipeline'
 import { Button, Checkbox, Dialog, Field, Input, Select } from '@components/ds'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { useCustomers } from '@data/customers'
 import { updateEvent } from '@data/events'
+import CustomerPicker from './CustomerPicker'
 
 const num = (v) => (v === '' || v == null ? null : Number(v))
 
@@ -16,7 +16,6 @@ const num = (v) => (v === '' || v == null ? null : Number(v))
  */
 export default function EventEditDialog({ open, onClose, ev }) {
   const { brands, profiles } = useWorkspace()
-  const { customers } = useCustomers()
   const toast = useToast()
   const [f, setF] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -87,28 +86,17 @@ export default function EventEditDialog({ open, onClose, ev }) {
           <Input value={f.title} onChange={set('title')} />
         </Field>
 
+        <CustomerPicker
+          required
+          customerId={f.customerId}
+          customerName={f.customerName}
+          onChange={(klant) => setF((x) => ({ ...x, ...klant }))}
+        />
+
         <div style={grid}>
-          <Field label="Klant" required hint={f.customerId ? 'Gekoppeld aan de klantenlijst' : 'Kies een klant of typ een naam'}>
-            <Select
-              value={f.customerId}
-              onChange={(e) => {
-                const k = customers.find((c) => c.id === e.target.value)
-                setF((x) => ({ ...x, customerId: e.target.value, customerName: k?.name ?? x.customerName }))
-              }}
-              options={[{ value: '', label: 'Geen klant uit de lijst' }, ...customers.filter((c) => !c.archived || c.id === f.customerId).map((c) => ({ value: c.id, label: c.name }))]}
-            />
-          </Field>
-          {!f.customerId ? (
-            <Field label="Klantnaam">
-              <Input value={f.customerName} onChange={set('customerName')} placeholder="bv. Familie Peeters" />
-            </Field>
-          ) : null}
           <Field label="Datum event" required>
             <Input type="date" value={f.eventDate} onChange={set('eventDate')} />
           </Field>
-        </div>
-
-        <div style={grid}>
           <Field label="Gasten" required>
             <Input type="number" min="0" value={f.pax} onChange={set('pax')} />
           </Field>
