@@ -690,6 +690,19 @@ seedDoc('meetings', 't-overleg-1', {
   createdAt: dag(-7),
 })
 
+// Een tweede verslag, zodat de zoekfunctie ook echt iets te filteren heeft.
+seedDoc('meetings', 't-overleg-2', {
+  taskId: 't-overleg-2', titel: 'Maandoverleg bistro', datum: '2026-09-07',
+  deelnemers: ['Jasper Hansen', 'Elke Motmans'],
+  samenvatting: [
+    { onderwerp: 'Winterkaart Bar Vue', tekst: 'De nieuwe kaart gaat half oktober in. De wijnen worden herzien met de leverancier.' },
+    { onderwerp: 'Personeel zaal', tekst: 'Twee extra weekendkrachten gezocht voor november en december.' },
+  ],
+  bron: null,
+  viewerIds: ['u-jasper', 'u-anneleen', 'u-maxine', 'u-elke'],
+  createdAt: dag(-21),
+})
+
 // ─── Business rules ─────────────────────────────────────────────────────────
 // Uitvoeren doet de server; in de demo zie je de regels, ze veranderen hier
 // niets aan de taken.

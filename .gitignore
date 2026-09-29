@@ -3,6 +3,7 @@ dist/
 dist-demo
 dist-pwa
 functions-meetings/node_modules/
+functions-mail/node_modules/
 .env
 .env.local
 .env.*.local

@@ -89,6 +89,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // De postbak van de meldingen: één rij per e-mail die nog moet vertrekken.
+    //
+    // Dicht voor iedereen, ook voor beheerders. Er staan adressen en volledige
+    // berichtteksten in van het hele team, en geen enkel scherm heeft ze nodig:
+    // de triggers schrijven erin en de verzender leest eruit, allebei met
+    // beheerdersrechten, die deze regels sowieso overslaan. Wat hier staat is
+    // dus geen slot maar een bordje: dit is niets voor in een browser.
+    match /mailQueue/{id} {
+      allow read, write: if false;
+    }
+
     // ── The workspace itself ──────────────────────────────────────────────
 
     match /brands/{id}      { allow read: if isTeam(); allow write: if isTeam(); }

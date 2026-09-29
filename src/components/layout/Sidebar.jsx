@@ -8,7 +8,8 @@ import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useEvents, useWeekEntries } from '@data/events'
 import { stopTimer, useRunningTimer } from '@data/time'
-import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
+import { InstallMenuItem, MeldingsVoorkeurenMenuItem, PushMenuItem } from './AppMenuItems'
+import MeldingsVoorkeuren from '@components/notifications/MeldingsVoorkeuren'
 
 /**
  * De navigatie in twee niveaus.
@@ -282,6 +283,8 @@ function SideTimer() {
 function Me() {
   const { profile, logOut } = useAuth()
   const [menu, setMenu] = useState(false)
+  // Buiten het menu, want het menu klapt dicht bij de klik erop.
+  const [voorkeuren, setVoorkeuren] = useState(false)
 
   return (
     <div className="je-side__me">
@@ -308,11 +311,13 @@ function Me() {
         <div className="je-menu" role="menu" onClick={() => setMenu(false)}>
           <InstallMenuItem />
           <PushMenuItem />
+          <MeldingsVoorkeurenMenuItem onOpen={() => setVoorkeuren(true)} />
           <button type="button" role="menuitem" onClick={logOut}>
             Afmelden
           </button>
         </div>
       ) : null}
+      {voorkeuren ? <MeldingsVoorkeuren open onClose={() => setVoorkeuren(false)} /> : null}
     </div>
   )
 }
