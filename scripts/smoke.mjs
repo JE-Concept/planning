@@ -246,12 +246,14 @@ await test('de klantfiche toont de historiek en wat er nog te factureren valt', 
   await page.waitForTimeout(900)
   const paneel = await page.getByRole('dialog').innerText()
 
-  zouden(bevat(paneel, 'Historiek (3 events)'), `de historiek klopt niet: ${paneel.slice(0, 200)}`)
-  for (const dossier of ['20-jarig bestaan', 'kerstborrel 2025', 'teambuilding productie']) {
+  zouden(bevat(paneel, 'Historiek (4 events)'), `de historiek klopt niet: ${paneel.slice(0, 200)}`)
+  for (const dossier of ['20-jarig bestaan', 'kerstborrel 2025', 'teambuilding productie', 'kick-off 2025']) {
     zouden(bevat(paneel, dossier), `"${dossier}" ontbreekt in de historiek`)
   }
-  // 24.800 + 6.800 + 4.150, en de subtaken tellen niet mee.
-  zouden(bevat(paneel, '35.750'), `het totaal ontbreekt: ${paneel.slice(0, 300)}`)
+  // 24.800 + 6.800 + 4.150 + 8.600. De subtaken tellen niet mee, en een
+  // gearchiveerd event telt wél: de historiek van een klant gaat over wat er
+  // geweest is, niet over wat er nog op het bord staat.
+  zouden(bevat(paneel, '44.350'), `het totaal ontbreekt: ${paneel.slice(0, 300)}`)
   zouden(bevat(paneel, 'Nog te factureren (1)'), 'wat er te factureren valt staat er niet apart')
   zouden(bevat(paneel, '4.150'), 'het openstaande bedrag ontbreekt')
   // Het factuuradres van Blum wijkt af van het bezoekadres.
