@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@lib/cn'
 import { byPosition } from '@lib/position'
 import { Button } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 import TaskCard from './TaskCard'
 
 /**
@@ -24,6 +25,7 @@ export default function KanbanBoard({
   onAdd,
   emptyHint,
 }) {
+  const { t } = useTaal()
   const [dragId, setDragId] = useState(null)
   const [target, setTarget] = useState(null)
   const dragged = useRef(null)
@@ -124,7 +126,7 @@ export default function KanbanBoard({
                   variant="ghost"
                   size="sm"
                   className="ml-auto h-6 w-6 p-0"
-                  aria-label={`Taak toevoegen in ${column.label}`}
+                  aria-label={t('bord.taak_toevoegen_in', { kolom: column.label })}
                   onClick={() => onAdd(column)}
                 >
                   +
@@ -155,7 +157,7 @@ export default function KanbanBoard({
 
               {tasks.length === 0 && !isTarget ? (
                 <p className="px-2 py-4 text-center text-xs text-ink-400">
-                  {emptyHint ?? 'Sleep hier een taak naartoe'}
+                  {emptyHint ?? t('bord.sleep_hier')}
                 </p>
               ) : null}
             </div>

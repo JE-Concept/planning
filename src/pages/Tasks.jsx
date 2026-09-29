@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { daysUntil, isToday, startOfMonth } from '@lib/dates'
 import { isTeLaat } from '@lib/laat'
 import { formatDuration, priorityOf } from '@lib/format'
-import { filter as filterTaken, groepeer, perDag } from '@lib/task-view'
+import { filter as filterTaken, groepeer, perDag, prioSleutel } from '@lib/task-view'
 import { Badge, Button, EmptyState, Spinner } from '@components/ds'
 import MonthCalendar from '@components/common/MonthCalendar'
 import KanbanBoard from '@components/board/KanbanBoard'
@@ -13,6 +13,7 @@ import TaskDrawer from '@components/board/TaskDrawer'
 import PageHeader from '@components/layout/PageHeader'
 import DisplayOptions from '@components/tasks/DisplayOptions'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { isDone } from '@data/events'
@@ -73,6 +74,7 @@ const IN_ADRES = ['weergave', 'lijst', 'groep', 'wie']
 export default function Tasks() {
   const { uid, isAdmin } = useAuth()
   const { profiles, listById, lists, tags, statusesOf } = useWorkspace()
+  const { t } = useTaal()
   const toast = useToast()
   const [zoekArgs, setZoekArgs] = useSearchParams()
   const [opties, setOpties] = useState(lees)
@@ -156,8 +158,8 @@ export default function Tasks() {
   )
 
   const groepen = useMemo(
-    () => groepeer(zichtbaar, { groep: opties.groep, sortering: opties.sortering, profileById, listById }),
-    [zichtbaar, opties.groep, opties.sortering, profileById, listById]
+    () => groepeer(zichtbaar, { groep: opties.groep, sortering: opties.sortering, profileById, listById, t }),
+    [zichtbaar, opties.groep, opties.sortering, profileById, listById, t]
   )
 
   const dagen = useMemo(() => perDag(zichtbaar), [zichtbaar])
@@ -197,11 +199,11 @@ export default function Tasks() {
     // Taken met een status die niet meer bestaat horen zichtbaar te blijven;
     // stil weglaten is hoe werk verdwijnt.
     if (wezen.length) {
-      cols.unshift({ key: '', label: 'Zonder status', color: '#8593a9' })
+      cols.unshift({ key: '', label: t('tasks.zonder_status'), color: '#8593a9' })
       buckets[''] = wezen
     }
     return { kolommen: cols, takenPerKolom: buckets }
-  }, [statuses, bordTaken])
+  }, [statuses, bordTaken, t])
 
   const subtaakAantallen = useMemo(() => {
     const aantal = {}
@@ -248,11 +250,11 @@ export default function Tasks() {
             <>
               {isAdmin ? (
                 <Button variant="secondary" size="sm" onClick={() => setKolommenOpen(true)}>
-                  Kolommen
+                  {t('bord.kolommen')}
                 </Button>
               ) : null}
               <Button size="sm" iconLeft="plus" onClick={() => setNieuweTaak({ status: statuses[0] })}>
-                Nieuwe taak
+                {t('bord.nieuwe_taak')}
               </Button>
             </>
           ) : null
@@ -275,12 +277,12 @@ export default function Tasks() {
       ) : leeg ? (
         <div style={{ padding: 'var(--space-7)' }}>
           <EmptyState
-            title="Niets te doen"
-            description={
+            title={t('tasks.leeg.titel')}
+            description={t(
               opties.zoek || opties.lijstId || opties.label || opties.prioriteit
-                ? 'Geen taak past bij wat je gefilterd hebt.'
-                : 'Er staat hier niets open.'
-            }
+                ? 'tasks.leeg.gefilterd'
+                : 'tasks.leeg.niets_open'
+            )}
           />
         </div>
       ) : bordModus ? (
@@ -293,7 +295,6 @@ export default function Tasks() {
           onOpen={openTaak}
           onDrop={verplaats}
           onAdd={(kolom) => setNieuweTaak({ status: statuses.find((s) => s.id === kolom.key) ?? null })}
-          emptyHint="Sleep hier een taak naartoe."
         />
       ) : opties.weergave === 'kalender' ? (
         <Kalender
@@ -338,27 +339,28 @@ export default function Tasks() {
 }
 
 /** De vervaldag in woorden, met de kleur die erbij hoort. */
-function vervalTekst(task) {
-  if (isDone(task)) return { tekst: 'Afgerond', kleur: 'var(--text-3)' }
+function vervalTekst(t, task) {
+  if (isDone(task)) return { tekst: t('tasks.verval.afgerond'), kleur: 'var(--text-3)' }
   if (!task.dueDate) return { tekst: '—', kleur: 'var(--text-3)' }
   const d = daysUntil(task.dueDate)
-  if (d < 0 && isTeLaat(task)) return { tekst: d === -1 ? '1 dag te laat' : `${-d} dagen te laat`, kleur: 'var(--danger)' }
-  if (d < 0) return { tekst: 'geweest', kleur: 'var(--text-3)' }
-  if (d === 0) return { tekst: 'Vandaag', kleur: 'var(--text-accent)' }
-  if (d === 1) return { tekst: 'Morgen', kleur: 'var(--text-2)' }
-  return { tekst: `over ${d} dagen`, kleur: 'var(--text-2)' }
+  if (d < 0 && isTeLaat(task)) return { tekst: t('tasks.verval.telaat', { aantal: -d }), kleur: 'var(--danger)' }
+  if (d < 0) return { tekst: t('tasks.verval.geweest'), kleur: 'var(--text-3)' }
+  if (d === 0) return { tekst: t('alg.vandaag'), kleur: 'var(--text-accent)' }
+  if (d === 1) return { tekst: t('alg.morgen'), kleur: 'var(--text-2)' }
+  return { tekst: t('tasks.verval.over', { aantal: d }), kleur: 'var(--text-2)' }
 }
 
 function Regel({ task, onOpen, listById, tagsByName }) {
+  const { t } = useTaal()
   const prio = priorityOf(task.priority)
-  const verval = vervalTekst(task)
+  const verval = vervalTekst(t, task)
 
   return (
     <li>
       <button type="button" onClick={() => onOpen(task.id)} className="je-plainbtn je-taskline">
         <span
           className="je-taskline__prio"
-          title={prio?.label ?? 'Geen prioriteit'}
+          title={t(prio ? prioSleutel(prio.value) : 'tasks.prio.geen')}
           style={{ background: prio?.color ?? 'transparent' }}
         />
         <span className="je-taskline__title">{task.title}</span>
@@ -378,7 +380,7 @@ function Regel({ task, onOpen, listById, tagsByName }) {
               borderColor: 'transparent',
             }}
           >
-            niemand
+            {t('tasks.niemand')}
           </Badge>
         ) : null}
         {(task.tags ?? []).map((naam) => (
@@ -401,7 +403,8 @@ function Regel({ task, onOpen, listById, tagsByName }) {
 }
 
 function Lijst({ groepen, onOpen, listById, tags }) {
-  const tagsByName = useMemo(() => Object.fromEntries(tags.map((t) => [t.name, t])), [tags])
+  const { t } = useTaal()
+  const tagsByName = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.name, tag])), [tags])
 
   return (
     <div className="je-pagebody">
@@ -423,9 +426,7 @@ function Lijst({ groepen, onOpen, listById, tags }) {
                 >
                   {groep.label}
                 </span>
-                <span className="je-panel__right">
-                  {groep.tasks.length} {groep.tasks.length === 1 ? 'taak' : 'taken'}
-                </span>
+                <span className="je-panel__right">{t('alg.taak', { aantal: groep.tasks.length })}</span>
               </div>
             ) : null}
             <ul className="je-tasklist">
@@ -449,17 +450,19 @@ function Lijst({ groepen, onOpen, listById, tags }) {
  * ze waren, en daar is slepen wél wat het betekent.
  */
 function Bord({ groepen, onOpen, profileById, listById }) {
+  const { t } = useTaal()
+
   return (
     <div className="je-boardscroll">
       {groepen.map((groep) => (
         <section key={groep.key} className="je-boardcol">
           <header className="je-boardcol__head">
-            <span className="je-eyebrow">{groep.label || 'Alles'}</span>
+            <span className="je-eyebrow">{groep.label || t('alg.alles')}</span>
             <span className="je-muted-caption">{groep.tasks.length}</span>
           </header>
           <div className="je-boardcol__body">
             {groep.tasks.map((task) => {
-              const verval = vervalTekst(task)
+              const verval = vervalTekst(t, task)
               return (
                 <button
                   key={task.id}
@@ -499,6 +502,8 @@ function Bord({ groepen, onOpen, profileById, listById }) {
  * waar taken in verdwijnen. Ze staan nu onder het raster.
  */
 function Kalender({ maand, onMaand, dagen, zonderDatum, onOpen }) {
+  const { t } = useTaal()
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <MonthCalendar
@@ -507,7 +512,10 @@ function Kalender({ maand, onMaand, dagen, zonderDatum, onOpen }) {
         itemsByDay={dagen}
         legenda={
           <span className="je-muted-caption">
-            {Object.values(dagen).flat().length} met datum · {zonderDatum.length} zonder
+            {t('tasks.kalender.telling', {
+              metdatum: Object.values(dagen).flat().length,
+              zonder: zonderDatum.length,
+            })}
           </span>
         }
         renderItem={(task) => {
@@ -532,10 +540,8 @@ function Kalender({ maand, onMaand, dagen, zonderDatum, onOpen }) {
       {zonderDatum.length ? (
         <section className="je-panel" style={{ margin: 'var(--space-5)' }}>
           <div className="je-panel__head" style={{ padding: 'var(--space-4) var(--space-5)' }}>
-            <span className="je-eyebrow">Zonder deadline</span>
-            <span className="je-panel__right">
-              {zonderDatum.length} {zonderDatum.length === 1 ? 'taak' : 'taken'}
-            </span>
+            <span className="je-eyebrow">{t('tasks.deadline.zonder')}</span>
+            <span className="je-panel__right">{t('alg.taak', { aantal: zonderDatum.length })}</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', padding: 'var(--space-5)' }}>
             {zonderDatum.map((task) => (

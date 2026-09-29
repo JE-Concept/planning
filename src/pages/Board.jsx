@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { PRIORITIES, formatDuration, priorityOf } from '@lib/format'
-import { relativeDay } from '@lib/dates'
+import { prioSleutel, vervaldag } from '@lib/task-view'
 import { isTeLaat } from '@lib/laat'
 import {
   AvatarStack,
@@ -21,13 +21,14 @@ import NewTaskDialog from '@components/board/NewTaskDialog'
 import ColumnEditor from '@components/board/ColumnEditor'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { moveTaskTo, useTasks } from '@data/tasks'
 
 const GROUPINGS = [
-  { key: 'status', label: 'Status' },
-  { key: 'assignee', label: 'Persoon' },
-  { key: 'priority', label: 'Prioriteit' },
+  { key: 'status', sleutel: 'tasks.groep.status' },
+  { key: 'assignee', sleutel: 'tasks.groep.persoon' },
+  { key: 'priority', sleutel: 'tasks.groep.prioriteit' },
 ]
 
 const NOBODY = '—unassigned—'
@@ -36,6 +37,7 @@ export default function Board() {
   const { listId } = useParams()
   const { listById, spaceById, statusesOf, profiles, profileById, tags, eventsList } = useWorkspace()
   const { uid } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
 
   const list = listById[listId]
@@ -53,7 +55,7 @@ export default function Board() {
   // opnieuw getekend worden.
   const openTask = useCallback((task) => setOpenTaskId(task.id), [])
 
-  const tagsByName = useMemo(() => Object.fromEntries(tags.map((t) => [t.name, t])), [tags])
+  const tagsByName = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.name, tag])), [tags])
 
   /**
    * Hoeveel taken er in elke kolom staan — subtaken meegeteld.
@@ -95,7 +97,7 @@ export default function Board() {
   const { columns, tasksByColumn } = useMemo(() => {
     if (groupBy === 'assignee') {
       const cols = [
-        { key: NOBODY, label: 'Niet toegewezen', color: '#8593a9' },
+        { key: NOBODY, label: t('bord.niet_toegewezen'), color: '#8593a9' },
         ...profiles
           .filter((p) => p.active !== false)
           .map((p) => ({ key: p.id, label: p.fullName || p.email, color: '#3377ff' })),
@@ -110,8 +112,8 @@ export default function Board() {
 
     if (groupBy === 'priority') {
       const cols = [
-        ...PRIORITIES.map((p) => ({ key: String(p.value), label: p.label, color: p.color })),
-        { key: '', label: 'Geen prioriteit', color: '#8593a9' },
+        ...PRIORITIES.map((p) => ({ key: String(p.value), label: t(prioSleutel(p.value)), color: p.color })),
+        { key: '', label: t('tasks.prio.geen'), color: '#8593a9' },
       ]
       const buckets = Object.fromEntries(cols.map((c) => [c.key, []]))
       for (const task of visible) buckets[String(task.priority ?? '')]?.push(task)
@@ -126,11 +128,11 @@ export default function Board() {
       else orphans.push(task)
     }
     if (orphans.length > 0) {
-      cols.unshift({ key: '', label: 'Zonder status', color: '#8593a9' })
+      cols.unshift({ key: '', label: t('tasks.zonder_status'), color: '#8593a9' })
       buckets[''] = orphans
     }
     return { columns: cols, tasksByColumn: buckets }
-  }, [groupBy, visible, statuses, profiles])
+  }, [groupBy, visible, statuses, profiles, t])
 
   const handleDrop = async ({ task, columnKey, index }) => {
     try {
@@ -162,10 +164,7 @@ export default function Board() {
   if (!list) {
     return (
       <div className="p-8">
-        <EmptyState
-          title="Bord niet gevonden"
-          description="Dit bord bestaat niet meer, of je hebt er geen toegang toe."
-        />
+        <EmptyState title={t('bord.niet_gevonden')} description={t('bord.niet_gevonden_tekst')} />
       </div>
     )
   }
@@ -197,20 +196,20 @@ export default function Board() {
         actions={
           <>
             <Button variant="secondary" onClick={() => setEditingColumns(true)}>
-              Kolommen
+              {t('bord.kolommen')}
             </Button>
             <Button variant="primary" onClick={() => setNewTask({ status: statuses[0] })}>
-              + Nieuwe taak
+              + {t('bord.nieuwe_taak')}
             </Button>
           </>
         }
         tabs={
           <>
             <Tab active={view === 'board'} onClick={() => setView('board')}>
-              Bord
+              {t('tasks.weergave.bord')}
             </Tab>
             <Tab active={view === 'list'} onClick={() => setView('list')}>
-              Lijst
+              {t('tasks.weergave.lijst')}
             </Tab>
           </>
         }
@@ -220,18 +219,18 @@ export default function Board() {
         <Input
           value={filters.q}
           onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-          placeholder="Zoeken in taken…"
+          placeholder={t('bord.zoeken_in_taken')}
           className="h-8 w-44 text-xs"
-          aria-label="Zoeken"
+          aria-label={t('alg.zoeken')}
         />
         <Select
           value={filters.assignee}
           onChange={(e) => setFilters((f) => ({ ...f, assignee: e.target.value }))}
           className="h-8 w-auto text-xs"
-          aria-label="Filter op persoon"
+          aria-label={t('bord.filter_persoon')}
         >
-          <option value="">Iedereen</option>
-          <option value={NOBODY}>Niet toegewezen</option>
+          <option value="">{t('bord.iedereen')}</option>
+          <option value={NOBODY}>{t('bord.niet_toegewezen')}</option>
           {profiles.filter((p) => p.active !== false).map((p) => (
             <option key={p.id} value={p.id}>
               {p.fullName || p.email}
@@ -242,12 +241,12 @@ export default function Board() {
           value={filters.priority}
           onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
           className="h-8 w-auto text-xs"
-          aria-label="Filter op prioriteit"
+          aria-label={t('bord.filter_prioriteit')}
         >
-          <option value="">Elke prioriteit</option>
+          <option value="">{t('bord.elke_prioriteit')}</option>
           {PRIORITIES.map((p) => (
             <option key={p.value} value={p.value}>
-              {p.label}
+              {t(prioSleutel(p.value))}
             </option>
           ))}
         </Select>
@@ -255,12 +254,12 @@ export default function Board() {
           value={filters.tag}
           onChange={(e) => setFilters((f) => ({ ...f, tag: e.target.value }))}
           className="h-8 w-auto text-xs"
-          aria-label="Filter op label"
+          aria-label={t('bord.filter_label')}
         >
-          <option value="">Elk label</option>
-          {tags.map((t) => (
-            <option key={t.id} value={t.name}>
-              {t.name}
+          <option value="">{t('bord.elk_label')}</option>
+          {tags.map((tag) => (
+            <option key={tag.id} value={tag.name}>
+              {tag.name}
             </option>
           ))}
         </Select>
@@ -271,7 +270,7 @@ export default function Board() {
             onChange={(e) => setFilters((f) => ({ ...f, openOnly: e.target.checked }))}
             className="h-3.5 w-3.5 rounded border-ink-300 text-accent-600"
           />
-          Enkel open
+          {t('bord.enkel_open')}
         </label>
 
         {activeFilters > 0 ? (
@@ -280,21 +279,21 @@ export default function Board() {
             size="sm"
             onClick={() => setFilters({ q: '', assignee: '', priority: '', tag: '', openOnly: false })}
           >
-            Filters wissen ({activeFilters})
+            {t('bord.filters_wissen', { aantal: activeFilters })}
           </Button>
         ) : null}
 
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-xs text-ink-500">Groeperen</span>
+          <span className="text-xs text-ink-500">{t('bord.groeperen')}</span>
           <Select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
             className="h-8 w-auto text-xs"
-            aria-label="Groeperen op"
+            aria-label={t('tasks.groeperen_op')}
           >
             {GROUPINGS.map((g) => (
               <option key={g.key} value={g.key}>
-                {g.label}
+                {t(g.sleutel)}
               </option>
             ))}
           </Select>
@@ -369,6 +368,8 @@ export default function Board() {
 // ─── List view ──────────────────────────────────────────────────────────────
 
 function ListView({ columns, tasksByColumn, profileById, tagsByName, onOpen }) {
+  const { t } = useTaal()
+
   return (
     <div className="space-y-5 px-4 pb-8 sm:px-6">
       {columns.map((column) => {
@@ -401,7 +402,7 @@ function ListView({ columns, tasksByColumn, profileById, tagsByName, onOpen }) {
                         <td className="w-1 py-2 pl-3">
                           {priority ? (
                             <span
-                              title={priority.label}
+                              title={t(prioSleutel(priority.value))}
                               className="block h-2 w-2 rounded-full"
                               style={{ backgroundColor: priority.color }}
                             />
@@ -429,7 +430,7 @@ function ListView({ columns, tasksByColumn, profileById, tagsByName, onOpen }) {
                               : 'text-ink-500'
                           }`}
                         >
-                          {relativeDay(task.dueDate)}
+                          {vervaldag(t, task.dueDate)}
                         </td>
                         <td className="w-24 py-2 pr-3">
                           <AvatarStack

@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react'
 import { Badge, Button, Input, Modal, Select, Spinner } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { saveStatuses } from '@data/workspace'
 
+// `kind` staat in de database; de naam ervan hoort bij de taal.
 const KINDS = [
-  { key: 'open', label: 'Nieuw' },
-  { key: 'active', label: 'Bezig' },
-  { key: 'done', label: 'Afgerond' },
-  { key: 'closed', label: 'Gesloten' },
+  { key: 'open', sleutel: 'bord.soort.open' },
+  { key: 'active', sleutel: 'bord.soort.active' },
+  { key: 'done', sleutel: 'bord.soort.done' },
+  { key: 'closed', sleutel: 'bord.soort.closed' },
 ]
 
 const PALETTE = ['#8593a9', '#3377ff', '#7c3aed', '#b660e0', '#1090e0', '#f59e0b', '#3db88b', '#008844', '#dc2626']
@@ -26,6 +28,7 @@ const PALETTE = ['#8593a9', '#3377ff', '#7c3aed', '#b660e0', '#1090e0', '#f59e0b
  */
 export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
   const toast = useToast()
+  const { t } = useTaal()
   const [rows, setRows] = useState(statuses.map((s) => ({ ...s })))
   const [verhuizingen, setVerhuizingen] = useState({})
   const [saving, setSaving] = useState(false)
@@ -62,11 +65,11 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
   const save = async () => {
     const named = rows.filter((r) => r.name.trim())
     if (named.length === 0) {
-      toast.error('Een bord heeft minstens één kolom nodig.')
+      toast.error(t('bord.kolom_nodig'))
       return
     }
     if (onbestemd.length > 0) {
-      toast.error('Kies eerst waar de taken van de verwijderde kolommen heen gaan.')
+      toast.error(t('bord.kies_bestemming'))
       return
     }
 
@@ -79,7 +82,9 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
       )
       const verhuisd = weg.reduce((n, s) => n + (verhuizingen[s.id] ? s.aantal : 0), 0)
       toast.success(
-        verhuisd ? `Kolommen bijgewerkt, ${verhuisd} taken verhuisd.` : 'Kolommen bijgewerkt.'
+        verhuisd
+          ? t('bord.kolommen_bijgewerkt_verhuisd', { aantal: verhuisd })
+          : t('bord.kolommen_bijgewerkt')
       )
       onClose()
     } catch (err) {
@@ -93,14 +98,14 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
       open
       onClose={onClose}
       width="max-w-2xl"
-      title={`Kolommen van ${list.name}`}
+      title={t('bord.kolommen_van', { lijst: list.name })}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button variant="primary" onClick={save} disabled={saving || onbestemd.length > 0}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} Opslaan
+            {saving ? <Spinner className="h-3 w-3" /> : null} {t('bord.opslaan')}
           </Button>
         </>
       }
@@ -113,7 +118,7 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
                 type="button"
                 onClick={() => move(index, -1)}
                 disabled={index === 0}
-                aria-label="Omhoog"
+                aria-label={t('bord.omhoog')}
                 className="px-1 text-xs text-ink-400 hover:text-ink-700 disabled:opacity-30"
               >
                 ▲
@@ -122,7 +127,7 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
                 type="button"
                 onClick={() => move(index, 1)}
                 disabled={index === rows.length - 1}
-                aria-label="Omlaag"
+                aria-label={t('bord.omlaag')}
                 className="px-1 text-xs text-ink-400 hover:text-ink-700 disabled:opacity-30"
               >
                 ▼
@@ -133,30 +138,30 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
               type="color"
               value={row.color}
               onChange={(e) => update(row.id, { color: e.target.value })}
-              aria-label={`Kleur van ${row.name || 'kolom'}`}
+              aria-label={t('bord.kleur_van', { kolom: row.name || t('bord.kolom') })}
               className="h-8 w-8 cursor-pointer rounded border border-ink-200 bg-white p-0.5"
             />
 
             <Input
               value={row.name}
               onChange={(e) => update(row.id, { name: e.target.value })}
-              placeholder="Kolomnaam"
-              aria-label="Kolomnaam"
+              placeholder={t('bord.kolomnaam')}
+              aria-label={t('bord.kolomnaam')}
             />
 
             <span className="w-16 shrink-0 text-right text-xs tabular-nums text-ink-400">
-              {counts[row.id] ? `${counts[row.id]} taken` : ''}
+              {counts[row.id] ? t('alg.taak', { aantal: counts[row.id] }) : ''}
             </span>
 
             <Select
               value={row.kind}
               onChange={(e) => update(row.id, { kind: e.target.value })}
               className="w-32"
-              aria-label="Soort"
+              aria-label={t('bord.soort')}
             >
               {KINDS.map((k) => (
                 <option key={k.key} value={k.key}>
-                  {k.label}
+                  {t(k.sleutel)}
                 </option>
               ))}
             </Select>
@@ -166,7 +171,7 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
               size="sm"
               className="text-ink-400"
               onClick={() => setRows((all) => all.filter((r) => r.id !== row.id))}
-              aria-label={`Kolom ${row.name || ''} verwijderen`}
+              aria-label={t('bord.kolom_verwijderen', { kolom: row.name || '' })}
             >
               ✕
             </Button>
@@ -175,13 +180,13 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
       </ul>
 
       <Button variant="secondary" size="sm" className="mt-3" onClick={add}>
-        + Kolom toevoegen
+        {t('bord.kolom_toevoegen')}
       </Button>
 
       {weg.length > 0 ? (
         <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-            Kolommen die verdwijnen
+            {t('bord.kolommen_verdwijnen')}
           </h3>
           <ul className="mt-2 space-y-2">
             {weg.map((status) => (
@@ -191,18 +196,16 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
                 </Badge>
                 {status.aantal > 0 ? (
                   <>
-                    <span className="text-ink-700">
-                      {status.aantal} {status.aantal === 1 ? 'taak' : 'taken'} naar
-                    </span>
+                    <span className="text-ink-700">{t('bord.taken_naar', { aantal: status.aantal })}</span>
                     <Select
                       value={verhuizingen[status.id] ?? ''}
                       onChange={(e) =>
                         setVerhuizingen((v) => ({ ...v, [status.id]: e.target.value }))
                       }
                       className="h-8 max-w-[14rem] text-sm"
-                      aria-label={`Taken van ${status.name} verplaatsen naar`}
+                      aria-label={t('bord.taken_verplaatsen_naar', { kolom: status.name })}
                     >
-                      <option value="">Kies een kolom…</option>
+                      <option value="">{t('bord.kies_kolom')}</option>
                       {rows
                         .filter((r) => r.name.trim())
                         .map((r) => (
@@ -213,7 +216,7 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
                     </Select>
                   </>
                 ) : (
-                  <span className="text-ink-500">leeg — verdwijnt zonder gevolgen</span>
+                  <span className="text-ink-500">{t('bord.kolom_leeg')}</span>
                 )}
                 <Button
                   variant="ghost"
@@ -224,7 +227,7 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
                     setVerhuizingen(({ [status.id]: _, ...rest }) => rest)
                   }}
                 >
-                  Toch houden
+                  {t('bord.toch_houden')}
                 </Button>
               </li>
             ))}
@@ -232,9 +235,13 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
         </div>
       ) : null}
 
+      {/* De namen van de twee soorten staan in de zin zelf: ze komen uit dezelfde
+          lijst als de keuzelijst erboven, en wie ze daar verandert, verandert ze hier mee. */}
       <p className="mt-4 text-xs text-ink-500">
-        <strong>Afgerond</strong> en <strong>Gesloten</strong> tellen als klaar: taken in zo’n
-        kolom krijgen een afwerkdatum, vallen weg uit “enkel open” en tellen mee voor goals.
+        {t('bord.klaar_uitleg', {
+          afgerond: t('bord.soort.done'),
+          gesloten: t('bord.soort.closed'),
+        })}
       </p>
     </Modal>
   )

@@ -1,6 +1,7 @@
 import { PRIORITIES } from '@lib/format'
-import { GROEPEN, SORTERINGEN, WEERGAVEN } from '@lib/task-view'
+import { GROEPEN, SORTERINGEN, WEERGAVEN, prioSleutel } from '@lib/task-view'
 import { Button, Icon, Input, Select } from '@components/ds'
+import { useTaal } from '@context/TaalProvider'
 
 /**
  * De balk waarmee je bepaalt wat je ziet, en hoe.
@@ -14,6 +15,8 @@ import { Button, Icon, Input, Select } from '@components/ds'
  * leeg vakje laat je twijfelen of er iets weggefilterd wordt.
  */
 export default function DisplayOptions({ opties, zet, profiles, lijsten, labels, aantal }) {
+  const { t } = useTaal()
+
   return (
     <div className="je-displaybar">
       <div className="je-tabs" style={{ border: 0 }} role="tablist">
@@ -26,7 +29,7 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
             className={`je-tab${opties.weergave === w.key ? ' je-tab--active' : ''}`}
             onClick={() => zet({ weergave: w.key })}
           >
-            {w.label}
+            {t(w.sleutel)}
           </button>
         ))}
       </div>
@@ -35,11 +38,11 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
         <Select
           value={opties.wie}
           onChange={(e) => zet({ wie: e.target.value })}
-          aria-label="Van wie"
+          aria-label={t('tasks.wie')}
           className="je-compact"
         >
-          <option value="ik">Mijn taken</option>
-          <option value="iedereen">Van iedereen</option>
+          <option value="ik">{t('tasks.wie.ik')}</option>
+          <option value="iedereen">{t('tasks.wie.iedereen')}</option>
           {profiles.map((p) => (
             <option key={p.id} value={p.id}>
               {p.fullName || p.email}
@@ -50,12 +53,12 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
         <Select
           value={opties.groep}
           onChange={(e) => zet({ groep: e.target.value })}
-          aria-label="Groeperen op"
+          aria-label={t('tasks.groeperen_op')}
           className="je-compact"
         >
           {GROEPEN.map((g) => (
             <option key={g.key} value={g.key}>
-              Groep: {g.label}
+              {t('tasks.groep_optie', { naam: t(g.sleutel) })}
             </option>
           ))}
         </Select>
@@ -63,12 +66,12 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
         <Select
           value={opties.sortering}
           onChange={(e) => zet({ sortering: e.target.value })}
-          aria-label="Sorteren op"
+          aria-label={t('tasks.sorteren_op')}
           className="je-compact"
         >
           {SORTERINGEN.map((s) => (
             <option key={s.key} value={s.key}>
-              Sorteer: {s.label}
+              {t('tasks.sortering_optie', { naam: t(s.sleutel) })}
             </option>
           ))}
         </Select>
@@ -76,10 +79,10 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
         <Select
           value={opties.lijstId}
           onChange={(e) => zet({ lijstId: e.target.value })}
-          aria-label="Lijst"
+          aria-label={t('tasks.filter.lijst')}
           className="je-compact"
         >
-          <option value="">Alle lijsten</option>
+          <option value="">{t('tasks.filter.alle_lijsten')}</option>
           {lijsten.map((l) => (
             <option key={l.id} value={l.id}>
               {l.name}
@@ -87,11 +90,11 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
           ))}
         </Select>
 
-        <Select value={opties.label} onChange={(e) => zet({ label: e.target.value })} aria-label="Label" className="je-compact">
-          <option value="">Alle labels</option>
-          {labels.map((t) => (
-            <option key={t.name} value={t.name}>
-              {t.name}
+        <Select value={opties.label} onChange={(e) => zet({ label: e.target.value })} aria-label={t('tasks.filter.label')} className="je-compact">
+          <option value="">{t('tasks.filter.alle_labels')}</option>
+          {labels.map((label) => (
+            <option key={label.name} value={label.name}>
+              {label.name}
             </option>
           ))}
         </Select>
@@ -99,13 +102,13 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
         <Select
           value={opties.prioriteit}
           onChange={(e) => zet({ prioriteit: e.target.value })}
-          aria-label="Prioriteit"
+          aria-label={t('tasks.filter.prioriteit')}
           className="je-compact"
         >
-          <option value="">Alle prioriteiten</option>
+          <option value="">{t('tasks.filter.alle_prioriteiten')}</option>
           {PRIORITIES.map((p) => (
             <option key={p.value} value={p.value}>
-              {p.label}
+              {t(prioSleutel(p.value))}
             </option>
           ))}
         </Select>
@@ -114,9 +117,9 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
           variant={opties.open ? 'secondary' : 'primary'}
           size="sm"
           onClick={() => zet({ open: !opties.open })}
-          title={opties.open ? 'Afgeronde taken staan er niet bij' : 'Afgeronde taken staan er wel bij'}
+          title={t(opties.open ? 'tasks.alleen_open_hint' : 'tasks.ook_afgerond_hint')}
         >
-          {opties.open ? 'Alleen open' : 'Ook afgerond'}
+          {t(opties.open ? 'tasks.alleen_open' : 'tasks.ook_afgerond')}
         </Button>
 
         <label className="je-displaybar__zoek">
@@ -124,14 +127,14 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
           <Input
             value={opties.zoek}
             onChange={(e) => zet({ zoek: e.target.value })}
-            placeholder="Zoek in taken"
-            aria-label="Zoek in taken"
+            placeholder={t('tasks.zoek')}
+            aria-label={t('tasks.zoek')}
             className="je-compact"
           />
         </label>
 
         <span className="je-muted-caption" style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-          {aantal} {aantal === 1 ? 'taak' : 'taken'}
+          {t('alg.taak', { aantal })}
         </span>
       </div>
     </div>

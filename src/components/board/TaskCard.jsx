@@ -1,15 +1,17 @@
 import { memo } from 'react'
 import { cn } from '@lib/cn'
 import { formatDuration, priorityOf } from '@lib/format'
-import { relativeDay } from '@lib/dates'
+import { prioSleutel, vervaldag } from '@lib/task-view'
 import { isTeLaat } from '@lib/laat'
 import { AvatarStack, Badge } from '@ui/index'
+import { useTaal } from '@context/TaalProvider'
 
 /**
  * One card on the board. Everything it shows is already on the task document —
  * no card triggers a read of its own.
  */
 function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, onDragStart, onDragEnd }) {
+  const { t } = useTaal()
   const priority = priorityOf(task.priority)
   const assignees = (task.assignees ?? [])
     .map((uid) => profiles[uid])
@@ -39,8 +41,8 @@ function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, on
       <div className="flex items-start gap-2">
         {priority ? (
           <span
-            title={priority.label}
-            aria-label={`Prioriteit ${priority.label}`}
+            title={t(prioSleutel(priority.value))}
+            aria-label={t('bord.prioriteit_van', { naam: t(prioSleutel(priority.value)) })}
             className="mt-1 h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: priority.color }}
           />
@@ -62,7 +64,7 @@ function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, on
         {task.dueDate ? (
           <span className={cn('inline-flex items-center gap-1', overdue && 'font-medium text-red-600')}>
             <span aria-hidden="true">◷</span>
-            {relativeDay(task.dueDate)}
+            {vervaldag(t, task.dueDate)}
           </span>
         ) : null}
 

@@ -19,6 +19,7 @@ import {
 } from '@ui/index'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
@@ -36,20 +37,30 @@ import {
   useKeyResultHistory,
 } from '@data/goals'
 
-const STATUS_LABELS = {
-  draft: 'Concept',
-  active: 'Lopend',
-  achieved: 'Behaald',
-  missed: 'Niet gehaald',
-  archived: 'Gearchiveerd',
+// De stand van een goal staat als woord in de database; de naam hoort bij de taal.
+const STATUS_SLEUTELS = {
+  draft: 'goals.status.draft',
+  active: 'goals.status.active',
+  achieved: 'goals.status.achieved',
+  missed: 'goals.status.missed',
+  archived: 'goals.status.archived',
+}
+
+// Hetzelfde voor het soort resultaat; de sleutels ervan staan in `@data/goals`.
+const SOORT_SLEUTELS = {
+  number: 'goals.soort.number',
+  currency: 'goals.soort.currency',
+  percent: 'goals.soort.percent',
+  boolean: 'goals.soort.boolean',
+  tasks: 'goals.soort.tasks',
 }
 
 /** Formats a key result value the way its own kind should read. */
-function valueLabel(kr, value) {
+function valueLabel(t, kr, value) {
   const n = Number(value ?? 0)
   if (kr.kind === 'currency') return formatCurrency(n)
   if (kr.kind === 'percent') return `${formatNumber(n)}%`
-  if (kr.kind === 'boolean') return n >= 1 ? 'Ja' : 'Nee'
+  if (kr.kind === 'boolean') return t(n >= 1 ? 'goals.ja' : 'goals.nee')
   return `${formatNumber(n)}${kr.unit ? ` ${kr.unit}` : ''}`
 }
 
@@ -57,6 +68,7 @@ export default function Goals() {
   const { goals, loading } = useGoals()
   const { profileById, profiles } = useWorkspace()
   const { uid } = useAuth()
+  const { t } = useTaal()
   const toast = useToast()
 
   const [creating, setCreating] = useState(false)
@@ -80,17 +92,22 @@ export default function Goals() {
     <div className="flex h-full flex-col">
       <PageHeader
         title="Goals"
-        subtitle={`${goals.filter((g) => g.status === 'active').length} lopende doelen`}
+        subtitle={t('goals.lopend', { aantal: goals.filter((g) => g.status === 'active').length })}
         actions={
           <>
-            <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto" aria-label="Filter">
-              <option value="active">Lopend</option>
-              <option value="achieved">Behaald</option>
-              <option value="draft">Concept</option>
-              <option value="all">Alles</option>
+            <Select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="w-auto"
+              aria-label={t('goals.filter')}
+            >
+              <option value="active">{t('goals.status.active')}</option>
+              <option value="achieved">{t('goals.status.achieved')}</option>
+              <option value="draft">{t('goals.status.draft')}</option>
+              <option value="all">{t('alg.alles')}</option>
             </Select>
             <Button variant="primary" onClick={() => setCreating(true)}>
-              + Goal
+              {t('goals.nieuw')}
             </Button>
           </>
         }
@@ -103,11 +120,11 @@ export default function Goals() {
           </div>
         ) : shown.length === 0 ? (
           <EmptyState
-            title="Nog geen doelen"
-            description="Een goal bundelt meetbare resultaten: omzet, aantal events, posts per maand."
+            title={t('goals.leeg.titel')}
+            description={t('goals.leeg.tekst')}
             action={
               <Button variant="primary" onClick={() => setCreating(true)}>
-                Eerste goal maken
+                {t('goals.leeg.knop')}
               </Button>
             }
           />
@@ -154,6 +171,7 @@ export default function Goals() {
 // ─── Card ───────────────────────────────────────────────────────────────────
 
 function GoalCard({ goal, owner, onEdit, onCheckIn, profileById }) {
+  const { t } = useTaal()
   const progress = goalProgress(goal)
   const left = daysUntil(goal.dueDate)
   const late = left < 0 && goal.status === 'active'
@@ -164,7 +182,7 @@ function GoalCard({ goal, owner, onEdit, onCheckIn, profileById }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge color={goal.status === 'achieved' ? '#008844' : '#8593a9'} subtle>
-              {STATUS_LABELS[goal.status]}
+              {t(STATUS_SLEUTELS[goal.status])}
             </Badge>
           </div>
           <h2 className="mt-1.5 text-sm font-semibold text-ink-900">{goal.name}</h2>
@@ -189,7 +207,7 @@ function GoalCard({ goal, owner, onEdit, onCheckIn, profileById }) {
             {Math.round(progress * 100)}%
           </span>
           <span className={cn('text-ink-500', late && 'font-medium text-red-600')}>
-            {late ? `${Math.abs(left)} dagen over tijd` : `nog ${left} dagen`} ·{' '}
+            {t(late ? 'goals.over_tijd' : 'goals.nog_dagen', { aantal: late ? Math.abs(left) : left })} ·{' '}
             {formatDate(goal.dueDate)}
           </span>
         </div>
@@ -201,13 +219,13 @@ function GoalCard({ goal, owner, onEdit, onCheckIn, profileById }) {
           <KeyResultRow key={kr.id} kr={kr} onCheckIn={onCheckIn} />
         ))}
         {(goal.keyResults ?? []).length === 0 ? (
-          <li className="text-xs text-ink-400">Nog geen resultaten toegevoegd.</li>
+          <li className="text-xs text-ink-400">{t('goals.geen_resultaten')}</li>
         ) : null}
       </ul>
 
       <div className="mt-auto flex gap-2 pt-1">
         <Button variant="secondary" size="sm" onClick={onEdit}>
-          Bewerken
+          {t('goals.bewerken')}
         </Button>
       </div>
     </article>
@@ -215,6 +233,7 @@ function GoalCard({ goal, owner, onEdit, onCheckIn, profileById }) {
 }
 
 function KeyResultRow({ kr, onCheckIn }) {
+  const { t } = useTaal()
   const [open, setOpen] = useState(false)
   const [historie, setHistorie] = useState(false)
   const [value, setValue] = useState(kr.currentValue ?? 0)
@@ -225,15 +244,15 @@ function KeyResultRow({ kr, onCheckIn }) {
   return (
     <li className="rounded-md bg-ink-50 px-2.5 py-2">
       <div className="flex items-baseline justify-between gap-2 text-xs">
-        <span className="min-w-0 truncate text-ink-700">{kr.name || 'Naamloos resultaat'}</span>
+        <span className="min-w-0 truncate text-ink-700">{kr.name || t('goals.naamloos')}</span>
         <span className="shrink-0 tabular-nums text-ink-900">
-          {valueLabel(kr, kr.currentValue)} / {valueLabel(kr, kr.targetValue)}
+          {valueLabel(t, kr, kr.currentValue)} / {valueLabel(t, kr, kr.targetValue)}
         </span>
       </div>
       <ProgressBar value={progress} className="mt-1 h-1.5" />
 
       {derived ? (
-        <p className="mt-1 text-[11px] text-ink-400">Telt automatisch de afgewerkte taken.</p>
+        <p className="mt-1 text-[11px] text-ink-400">{t('goals.telt_automatisch')}</p>
       ) : open ? (
         <form
           onSubmit={(e) => {
@@ -250,17 +269,17 @@ function KeyResultRow({ kr, onCheckIn }) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             className="h-8 w-24 text-xs"
-            aria-label="Nieuwe waarde"
+            aria-label={t('goals.nieuwe_waarde')}
           />
           <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Notitie"
+            placeholder={t('goals.notitie')}
             className="h-8 flex-1 text-xs"
-            aria-label="Notitie"
+            aria-label={t('goals.notitie')}
           />
           <Button type="submit" variant="primary" size="sm">
-            Opslaan
+            {t('bord.opslaan')}
           </Button>
         </form>
       ) : (
@@ -270,14 +289,14 @@ function KeyResultRow({ kr, onCheckIn }) {
             onClick={() => setOpen(true)}
             className="text-[11px] font-medium text-accent-700 hover:underline"
           >
-            Bijwerken
+            {t('goals.bijwerken')}
           </button>
           <button
             type="button"
             onClick={() => setHistorie((h) => !h)}
             className="text-[11px] font-medium text-ink-500 hover:underline"
           >
-            {historie ? 'Verberg verloop' : 'Verloop'}
+            {t(historie ? 'goals.verloop_verbergen' : 'goals.verloop')}
           </button>
         </div>
       )}
@@ -296,18 +315,19 @@ function KeyResultRow({ kr, onCheckIn }) {
  * resultaat een abonnement mee voor een lijstje dat niemand openslaat.
  */
 function Verloop({ kr }) {
+  const { t } = useTaal()
   const { profileById } = useWorkspace()
   const updates = useKeyResultHistory(kr.id)
 
   if (updates.length === 0) {
-    return <p className="mt-2 text-[11px] text-ink-400">Nog geen bijwerkingen.</p>
+    return <p className="mt-2 text-[11px] text-ink-400">{t('goals.geen_bijwerkingen')}</p>
   }
 
   return (
     <ol className="mt-2 space-y-1 border-l border-ink-200 pl-2.5">
       {updates.slice(0, 6).map((u) => (
         <li key={u.id} className="text-[11px] text-ink-500">
-          <span className="font-semibold tabular-nums text-ink-800">{valueLabel(kr, u.value)}</span>
+          <span className="font-semibold tabular-nums text-ink-800">{valueLabel(t, kr, u.value)}</span>
           {' · '}
           {formatDate(u.createdAt)}
           {u.profileId && profileById[u.profileId]
@@ -323,6 +343,7 @@ function Verloop({ kr }) {
 // ─── Create / edit ──────────────────────────────────────────────────────────
 
 function GoalModal({ goal, profiles, uid, onClose }) {
+  const { t } = useTaal()
   const toast = useToast()
   const { boards } = useWorkspace()
   const [name, setName] = useState(goal?.name ?? '')
@@ -375,7 +396,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
         })
         await setKeyResults(id, cleaned)
       }
-      toast.success('Goal opgeslagen.')
+      toast.success(t('goals.opgeslagen'))
       onClose()
     } catch (err) {
       toast.error(err.message)
@@ -388,7 +409,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
       open
       onClose={onClose}
       width="max-w-2xl"
-      title={goal ? 'Goal bewerken' : 'Nieuwe goal'}
+      title={t(goal ? 'goals.bewerk_titel' : 'goals.nieuw_titel')}
       footer={
         <>
           {goal ? (
@@ -396,31 +417,31 @@ function GoalModal({ goal, profiles, uid, onClose }) {
               variant="danger"
               size="sm"
               className="mr-auto"
-              question="Deze goal verwijderen?"
+              question={t('goals.verwijder_vraag')}
               onConfirm={() => deleteGoal(goal.id).then(onClose)}
             >
-              Verwijderen
+              {t('alg.verwijderen')}
             </ConfirmButton>
           ) : null}
           <Button variant="ghost" onClick={onClose}>
-            Annuleren
+            {t('alg.annuleren')}
           </Button>
           <Button variant="primary" onClick={submit} disabled={!name.trim() || saving}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} Opslaan
+            {saving ? <Spinner className="h-3 w-3" /> : null} {t('bord.opslaan')}
           </Button>
         </>
       }
     >
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Naam">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Omzet Q4 verdubbelen" />
+        <Field label={t('goals.veld.naam')}>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('goals.veld.naam_hint')} />
         </Field>
 
-        <Field label="Toelichting">
+        <Field label={t('goals.veld.toelichting')}>
           <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
 
-        <Field label="Uitvoerders" hint="Wie er aan trekt. De eigenaar is wie erover rapporteert.">
+        <Field label={t('goals.veld.uitvoerders')} hint={t('goals.veld.uitvoerders_hint')}>
           <div className="flex flex-wrap gap-1.5">
             {profiles
               .filter((p) => p.active !== false && p.role !== 'staff')
@@ -447,9 +468,9 @@ function GoalModal({ goal, profiles, uid, onClose }) {
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Eigenaar">
+          <Field label={t('goals.veld.eigenaar')}>
             <Select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
-              <option value="">Niemand</option>
+              <option value="">{t('alg.niemand')}</option>
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.fullName || p.email}
@@ -457,14 +478,14 @@ function GoalModal({ goal, profiles, uid, onClose }) {
               ))}
             </Select>
           </Field>
-          <Field label="Deadline">
+          <Field label={t('goals.veld.deadline')}>
             <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </Field>
-          <Field label="Status">
+          <Field label={t('goals.veld.status')}>
             <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-              {Object.entries(STATUS_LABELS).map(([key, label]) => (
+              {Object.entries(STATUS_SLEUTELS).map(([key, sleutel]) => (
                 <option key={key} value={key}>
-                  {label}
+                  {t(sleutel)}
                 </option>
               ))}
             </Select>
@@ -472,7 +493,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
         </div>
 
         <section>
-          <h3 className="label">Resultaten</h3>
+          <h3 className="label">{t('goals.resultaten')}</h3>
           <ul className="space-y-2">
             {keyResults.map((kr) => (
               <li key={kr.id} className="grid gap-2 rounded-md bg-ink-50 p-2 sm:grid-cols-12">
@@ -480,18 +501,18 @@ function GoalModal({ goal, profiles, uid, onClose }) {
                   className="sm:col-span-5"
                   value={kr.name}
                   onChange={(e) => patch(kr.id, { name: e.target.value })}
-                  placeholder="Wat meten we?"
-                  aria-label="Naam van het resultaat"
+                  placeholder={t('goals.wat_meten')}
+                  aria-label={t('goals.resultaat_naam')}
                 />
                 <Select
                   className="sm:col-span-3"
                   value={kr.kind}
                   onChange={(e) => patch(kr.id, { kind: e.target.value })}
-                  aria-label="Soort"
+                  aria-label={t('goals.soort_label')}
                 >
                   {KEY_RESULT_KINDS.map((k) => (
                     <option key={k.key} value={k.key}>
-                      {k.label}
+                      {t(SOORT_SLEUTELS[k.key])}
                     </option>
                   ))}
                 </Select>
@@ -501,9 +522,9 @@ function GoalModal({ goal, profiles, uid, onClose }) {
                     className="sm:col-span-3"
                     value={kr.listId ?? ''}
                     onChange={(e) => patch(kr.id, { listId: e.target.value })}
-                    aria-label="Lijst"
+                    aria-label={t('goals.lijst')}
                   >
-                    <option value="">Kies een lijst…</option>
+                    <option value="">{t('goals.kies_lijst')}</option>
                     {boards.map((l) => (
                       <option key={l.id} value={l.id}>
                         {l.name}
@@ -517,8 +538,8 @@ function GoalModal({ goal, profiles, uid, onClose }) {
                     step="any"
                     value={kr.startValue}
                     onChange={(e) => patch(kr.id, { startValue: e.target.value })}
-                    placeholder="Start"
-                    aria-label="Startwaarde"
+                    placeholder={t('goals.start')}
+                    aria-label={t('goals.startwaarde')}
                   />
                 )}
 
@@ -528,8 +549,8 @@ function GoalModal({ goal, profiles, uid, onClose }) {
                   step="any"
                   value={kr.targetValue}
                   onChange={(e) => patch(kr.id, { targetValue: e.target.value })}
-                  placeholder="Doel"
-                  aria-label="Doelwaarde"
+                  placeholder={t('goals.doel')}
+                  aria-label={t('goals.doelwaarde')}
                 />
 
                 <div className="sm:col-span-12 sm:text-right">
@@ -539,7 +560,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
                     className="text-ink-400"
                     onClick={() => setLocalKeyResults((all) => all.filter((k) => k.id !== kr.id))}
                   >
-                    Verwijderen
+                    {t('alg.verwijderen')}
                   </Button>
                 </div>
               </li>
@@ -552,7 +573,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
             className="mt-2"
             onClick={() => setLocalKeyResults((all) => [...all, newKeyResult()])}
           >
-            + Resultaat
+            {t('goals.resultaat_toevoegen')}
           </Button>
         </section>
       </form>
