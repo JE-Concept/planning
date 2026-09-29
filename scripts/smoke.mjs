@@ -218,6 +218,36 @@ await test('het verloop van een doel is uit te klappen', async () => {
   await page.close()
 })
 
+await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('button', { name: 'Dagelijkse lijsten' }).click()
+  await page.waitForTimeout(800)
+  // De titels staan in invoervelden, dus niet in de tekst van de pagina.
+  const groepen = await page
+    .locator('input[aria-label="Naam van de groep"]')
+    .evaluateAll((els) => els.map((e) => e.value))
+  zouden(groepen.some((g) => g.includes('Aankomst')), `groepen: ${groepen.join(', ')}`)
+
+  await page.getByRole('button', { name: '+ Punt' }).first().click()
+  await page.waitForTimeout(500)
+  const veld = page.getByPlaceholder('Wat moet er gebeuren?').first()
+  await veld.fill('Terrasverwarmer nakijken')
+  await veld.blur()
+  await page.waitForTimeout(400)
+  await page.getByLabel('Wie ziet dit punt').first().selectOption('zaal')
+  await page.waitForTimeout(600)
+
+  // En het komt ook echt op de lijst van vandaag terecht.
+  await page.getByRole('link', { name: 'Openen & sluiten' }).first().click()
+  await page.waitForTimeout(1000)
+  zouden(
+    (await inhoud(page)).includes('Terrasverwarmer nakijken'),
+    'het nieuwe punt staat niet op de dagelijkse lijst'
+  )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de business rules staan in de instellingen', async () => {
   const page = await tabblad('/instellingen')
   await page.getByRole('button', { name: 'Business rules' }).click()

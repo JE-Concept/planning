@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   arrayUnion,
+  deleteDoc,
   onSnapshot,
   orderBy,
   query,
@@ -8,7 +9,7 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore'
-import { COL, col, fromQuery, ref } from '@lib/collections'
+import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 import { isWeekend, runId } from '@lib/checklist-templates'
 
 export { isWeekend, runId }
@@ -23,8 +24,14 @@ export { isWeekend, runId }
  * overschrijven elkaar dus niet.
  */
 
-/** De lijsten zelf: openen, sluiten, en wat het team er later bij maakt. */
-export function useChecklists() {
+/**
+ * De lijsten zelf: openen, sluiten, en wat het team er later bij maakt.
+ *
+ * Gearchiveerde lijsten blijven weg op de werkvloer — daar wil niemand een
+ * lijst zien die niet meer geldt — maar in Instellingen horen ze erbij, anders
+ * kun je ze niet terughalen.
+ */
+export function useChecklists({ includeArchived = false } = {}) {
   const [checklists, setChecklists] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -33,7 +40,7 @@ export function useChecklists() {
       onSnapshot(
         query(col(COL.checklists), orderBy('position')),
         (snap) => {
-          setChecklists(fromQuery(snap).filter((c) => !c.archived))
+          setChecklists(fromQuery(snap))
           setLoading(false)
         },
         () => setLoading(false)
@@ -41,7 +48,12 @@ export function useChecklists() {
     []
   )
 
-  return { checklists, loading }
+  const zichtbaar = useMemo(
+    () => (includeArchived ? checklists : checklists.filter((c) => !c.archived)),
+    [checklists, includeArchived]
+  )
+
+  return { checklists: zichtbaar, loading }
 }
 
 /** De runs van één dag, live — je ziet de vinkjes van je collega binnenkomen. */
@@ -138,4 +150,53 @@ export function closeRun({ checklist, day, profile }) {
     },
     { merge: true }
   )
+}
+
+// ─── Beheer ─────────────────────────────────────────────────────────────────
+
+/**
+ * Een lijst aanpassen.
+ *
+ * De secties gaan als geheel mee. Dat is grof maar eerlijk: het gaat om een
+ * handvol beheerders die af en toe een punt toevoegen, niet om een scherm waar
+ * twee mensen tegelijk in zitten. De ids van de punten blijven daarbij staan —
+ * daar hangen de afvinkingen van vandaag aan.
+ */
+export function updateChecklist(id, patch) {
+  return setDoc(ref(COL.checklists, id), { ...patch, updatedAt: serverTimestamp() }, { merge: true })
+}
+
+export function createChecklist({ name, kind = 'other' }) {
+  const checklistRef = newRef(COL.checklists)
+  return setDoc(checklistRef, {
+    key: checklistRef.id,
+    name: name.trim(),
+    kind,
+    brandId: null,
+    sections: [{ id: 'algemeen', title: 'Algemeen', items: [] }],
+    position: Date.now(),
+    archived: false,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }).then(() => checklistRef.id)
+}
+
+/**
+ * Archiveren, niet wissen.
+ *
+ * De afgevinkte dagen blijven bestaan en verwijzen naar deze lijst; verdwijnt
+ * ze, dan is niet meer na te gaan wat er toen precies afgevinkt werd. Dat is
+ * bij een FAVV-lijst geen detail.
+ */
+export function archiveChecklist(id) {
+  return updateChecklist(id, { archived: true })
+}
+
+export function restoreChecklist(id) {
+  return updateChecklist(id, { archived: false })
+}
+
+/** Alleen voor een lijst die nog nooit gebruikt is; anders archiveren. */
+export function deleteChecklist(id) {
+  return deleteDoc(ref(COL.checklists, id))
 }

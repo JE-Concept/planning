@@ -14,6 +14,7 @@ import {
 } from '@ui/index'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import BusinessRules from '@components/settings/BusinessRules'
+import ChecklistEditor from '@components/settings/ChecklistEditor'
 import { AFDELINGEN } from '@lib/checklist-templates'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
@@ -39,6 +40,7 @@ const TABS = [
   { key: 'team', label: 'Team' },
   { key: 'structure', label: 'Ruimtes & lijsten' },
   { key: 'brands', label: 'Merken & labels' },
+  { key: 'checklists', label: 'Dagelijkse lijsten' },
   { key: 'rules', label: 'Business rules' },
 ]
 
@@ -62,6 +64,7 @@ export default function Settings() {
         {tab === 'team' ? <TeamSettings isAdmin={isAdmin} /> : null}
         {tab === 'structure' ? <StructureSettings /> : null}
         {tab === 'brands' ? <BrandSettings /> : null}
+        {tab === 'checklists' ? <ChecklistEditor isAdmin={isAdmin} /> : null}
         {tab === 'rules' ? <BusinessRules isAdmin={isAdmin} /> : null}
       </div>
     </div>

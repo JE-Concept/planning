@@ -332,6 +332,48 @@ export function visibleTo(item, person) {
 
 // ─── Wanneer het moet ───────────────────────────────────────────────────────
 
+export const HERHALINGEN = [
+  { kind: 'dagelijks', label: 'Elke dag' },
+  { kind: 'weekdag', label: 'Op bepaalde dagen' },
+  { kind: 'wekelijks', label: 'Eén keer per week' },
+  { kind: 'maandelijks', label: 'Eén keer per maand' },
+  { kind: 'kwartaal', label: 'Elk kwartaal' },
+  { kind: 'jaarlijks', label: 'Eén keer per jaar' },
+]
+
+export const WEEKDAGEN = [
+  { dag: 1, label: 'ma' },
+  { dag: 2, label: 'di' },
+  { dag: 3, label: 'wo' },
+  { dag: 4, label: 'do' },
+  { dag: 5, label: 'vr' },
+  { dag: 6, label: 'za' },
+  { dag: 0, label: 'zo' },
+]
+
+/**
+ * Een id voor een nieuw punt, afgeleid van wat erin staat.
+ *
+ * Leesbaar in de database, en vooral: vast. De afvinkingen van vandaag hangen
+ * aan deze id, dus hij mag nooit meer veranderen wanneer iemand later de tekst
+ * bijschaaft. Bestaat hij al, dan komt er een nummer achter.
+ */
+export function nieuwPuntId(label, bestaande = []) {
+  const basis =
+    (label ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'punt'
+
+  if (!bestaande.includes(basis)) return basis
+  let n = 2
+  while (bestaande.includes(`${basis}-${n}`)) n += 1
+  return `${basis}-${n}`
+}
+
 const dagenInMaand = (jaar, maand) => new Date(jaar, maand + 1, 0).getDate()
 
 /**
