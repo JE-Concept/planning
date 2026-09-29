@@ -21,17 +21,37 @@ const tt = (title, whoName, offset, prio = '', subs = [], repeat = '') => ({
 })
 
 /**
- * De vier templates uit het design. Ze gelden zolang er nog geen eigen
+ * De templates uit het design. Ze gelden zolang er nog geen eigen
  * templates bewaard zijn; de eerste aanpassing in Instellingen schrijft ze weg.
  * De standaardpersoon staat als voornaam en wordt bij gebruik aan het
  * profiel met die voornaam gekoppeld.
  */
 export const DEFAULT_TEMPLATES = [
   {
+    // Wat er bij élk event moet gebeuren, van offerte tot factuur. Dat stond er
+    // niet: wie geen bijzonder template koos begon met een leeg takenblad, en
+    // dus werden personeel, materiaal, social en facturatie elke keer opnieuw
+    // met de hand ingetikt. Facturatie krijgt een negatief aantal dagen — dat
+    // werk komt ná het event, niet ervoor.
+    id: 'nieuw-event',
+    icon: 'calendar-days',
+    name: 'Nieuw event',
+    position: 0,
+    tasks: [
+      tt('Offerte opmaken en versturen', 'Jasper', 45, 'Hoog', ['Aantallen bevestigen', 'Formule en meerprijzen', 'Voorwaarden en voorschot']),
+      tt('Voorschot 40% ontvangen', 'Elke', 30, 'Urgent'),
+      tt('Personeel inplannen', 'Anneleen', 21, '', ['Bediening', 'Keuken', 'Op- en afbouw']),
+      tt('Materiaal en verhuur vastleggen', 'Elke', 14, '', ['Tent en meubilair', 'Servies en linnen', 'Transport']),
+      tt('Social content inplannen', 'Charish', 10, '', ['Sfeerbeelden aanvragen', 'Post inplannen']),
+      tt('Draaiboek naar klant sturen', 'Jasper', 7),
+      tt('Factureren en opvolgen', 'Elke', -3, 'Hoog'),
+    ],
+  },
+  {
     id: 'huwelijk',
     icon: 'sparkles',
     name: 'Huwelijk',
-    position: 0,
+    position: 1,
     tasks: [
       tt('Voorschot 40% ontvangen', 'Elke', 45, 'Urgent'),
       tt('Plaatsbezoek', 'Anneleen', 60, '', ['Stroom en water nagaan', 'Foto’s van de opstelling']),
@@ -47,7 +67,7 @@ export const DEFAULT_TEMPLATES = [
     id: 'bedrijfsevent',
     icon: 'users',
     name: 'Bedrijfsevent',
-    position: 1,
+    position: 2,
     tasks: [
       tt('Briefing opvragen', 'Jasper', 60),
       tt('Offertes leveranciers opvragen', 'Elke', 45, '', ['Verhuur', 'Catering', 'Sanitair', 'Drank']),
@@ -61,7 +81,7 @@ export const DEFAULT_TEMPLATES = [
     id: 'walking-dinner',
     icon: 'utensils',
     name: 'Walking dinner',
-    position: 2,
+    position: 3,
     tasks: [
       tt('Menu vastleggen', 'Anneleen', 21),
       tt('Voorschot 40% ontvangen', 'Elke', 21, 'Urgent'),
@@ -69,7 +89,7 @@ export const DEFAULT_TEMPLATES = [
       tt('Materiaallijst', 'Elke', 7, '', ['Statafels', 'Servies', 'Linnen']),
     ],
   },
-  { id: 'leeg', icon: 'file-text', name: 'Leeg event', position: 3, tasks: [] },
+  { id: 'leeg', icon: 'file-text', name: 'Leeg event', position: 4, tasks: [] },
 ]
 
 export const TEMPLATE_ICONS = [

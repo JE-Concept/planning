@@ -129,6 +129,7 @@ const PAGINAS = [
   ['Uren', '/uren', 'Uren'],
   ['Goals', '/goals', 'Goals'],
   ['Instellingen', '/instellingen', 'Instellingen'],
+  ['Instellingen — formules', '/instellingen?tab=formules', 'Winter BBQ'],
   ['Onbekend pad', '/bestaat-niet', 'niet'],
   ['Bord dat niet bestaat', '/bord/bestaat-niet', 'niet gevonden'],
 ]
@@ -557,6 +558,39 @@ await test('een nieuw event uit een template krijgt zijn taken met deadlines', a
   zouden(tekst.includes('Trouw Tom en Sara'), 'het event opende niet')
   zouden(tekst.includes('Voorschot 40% ontvangen'), 'de taken uit het template staan er niet')
   zouden(bevat(tekst, 'Taken · 8'), `niet alle acht taken: ${tekst.match(/Taken · \d+/i)?.[0]}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een event uit een formule krijgt prijs, taken en een berekende bestellijst', async () => {
+  const page = await tabblad('/')
+  await page.getByRole('button', { name: 'Nieuw event' }).click()
+  await page.getByPlaceholder('bv. Trouw Tom en Sara').fill('Winterfeest Blum')
+  await page.getByRole('tab', { name: 'Bestaande formule' }).click()
+  await page.getByRole('button', { name: /Winter BBQ/ }).click()
+  await page.getByLabel('Aantal personen').fill('37')
+  await page.getByLabel('Drankenformule').selectOption('dranken-avond')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Event aanmaken' }).click()
+  await page.waitForTimeout(1400)
+
+  const fiche = await inhoud(page)
+  zouden(fiche.includes('Winterfeest Blum'), 'het event opende niet')
+  zouden(fiche.includes('37 pax'), `het aantal personen staat niet op de fiche: ${fiche.slice(0, 120)}`)
+  zouden(bevat(fiche, 'Winter BBQ'), 'de formule staat niet op de fiche')
+  // 29,90 + 19,00 drank = 48,90 per persoon × 37 = 1.809,30 excl. btw.
+  zouden(fiche.includes('1.809,3'), `het offertebedrag klopt niet: ${fiche.match(/€ [\d.,]+/g)?.join(' ')}`)
+  zouden(bevat(fiche, 'Offerte opmaken en versturen'), 'de standaardtaken van het template staan er niet')
+
+  await page.getByRole('tab', { name: /Bestellijst/ }).click()
+  await page.waitForTimeout(700)
+  const lijst = await inhoud(page)
+  // 180 g × 37 = 6.660 g, dus zeven kilo. 2 broodjes × 37 = 74 stuks.
+  zouden(lijst.includes('7 × kg van 1.000 g'), `het vlees is niet per kilo afgerond: ${lijst.slice(0, 200)}`)
+  zouden(lijst.includes('74 stuks'), 'de broodjes staan er niet')
+  // 2,5 flesjes × 37 = 92,5 → vier bakken van 24; enkel omdat de drankenformule gekozen is.
+  zouden(lijst.includes('4 × bak van 24 flesjes'), 'de pils van de drankenformule ontbreekt of is fout afgerond')
+  zouden(lijst.includes('92,5 flesjes nodig'), 'er staat niet bij hoeveel er echt nodig was')
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })

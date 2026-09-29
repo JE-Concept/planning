@@ -20,6 +20,7 @@ import { readFileSync } from 'node:fs'
 import { applicationDefault, cert, initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { CHECKLIST_TEMPLATES } from '../src/lib/checklist-templates.js'
+import { DEFAULT_FORMULES } from '../src/lib/formule-templates.js'
 
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
 initializeApp(
@@ -197,6 +198,14 @@ async function main() {
       },
       `lijst ${template.name}`
     )
+  }
+
+  // De voorbeeldformules. Ook hier geldt: bestaat ze al, dan is ze van de app.
+  // Een prijs die het team aanpaste mag geen uitrol overleven — dat zou een
+  // verkochte formule stilletjes terugzetten naar wat er in de repo staat.
+  for (const [position, formule] of DEFAULT_FORMULES.entries()) {
+    const { id: formuleId, ...rest } = formule
+    await zetAlsNieuw(db.collection('formules').doc(formuleId), { ...rest, position }, `formule ${formule.name}`)
   }
 
   await vulMeetveldenAan()

@@ -23,6 +23,7 @@ import {
 import PageHeader from '@components/layout/PageHeader'
 import BusinessRules from '@components/settings/BusinessRules'
 import ChecklistEditor from '@components/settings/ChecklistEditor'
+import FormuleSettings from '@components/settings/FormuleSettings'
 import { BrandSettings, StructureSettings } from '@components/settings/LegacySettings'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
@@ -55,6 +56,7 @@ const TABS = [
   { value: 'team', label: 'Team & toegang' },
   { value: 'pijplijn', label: 'Pijplijn' },
   { value: 'templates', label: 'Templates' },
+  { value: 'formules', label: 'Formules' },
   { value: 'lijsten', label: 'Concepten & kostenplaatsen' },
   { value: 'structuur', label: 'Ruimtes & lijsten' },
   { value: 'merken', label: 'Merken & labels' },
@@ -94,6 +96,7 @@ export default function Settings() {
             {tab === 'team' ? <TeamTab /> : null}
             {tab === 'pijplijn' ? <PipelineTab /> : null}
             {tab === 'templates' ? <TemplatesTab initial={params.get('template')} /> : null}
+            {tab === 'formules' ? <FormuleSettings /> : null}
             {tab === 'lijsten' ? <ConceptsTab /> : null}
             {tab === 'structuur' ? <StructureSettings /> : null}
             {tab === 'merken' ? <BrandSettings /> : null}
@@ -571,7 +574,9 @@ function TemplatesTab({ initial }) {
 
         <div className="je-panel__head">
           <span className="je-eyebrow">Taken</span>
-          <span className="je-panel__sub">Deadlines tellen terug vanaf de eventdatum.</span>
+          <span className="je-panel__sub">
+            Deadlines tellen terug vanaf de eventdatum; een negatief aantal valt erná.
+          </span>
         </div>
 
         {draft.tasks.map((t, i) => (
@@ -597,9 +602,8 @@ function TemplatesTab({ initial }) {
                 <Field label="Dagen vooraf">
                   <Input
                     type="number"
-                    min="0"
                     value={String(t.offset ?? 0)}
-                    onChange={(e) => updTask(t.id, { offset: Math.max(0, parseInt(e.target.value || '0', 10)) })}
+                    onChange={(e) => updTask(t.id, { offset: parseInt(e.target.value || '0', 10) || 0 })}
                   />
                 </Field>
               </div>

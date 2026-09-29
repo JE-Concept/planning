@@ -36,6 +36,7 @@ export const COL = {
   automations: 'automations',
   activity: 'activity',
   templates: 'templates',
+  formules: 'formules',
 }
 
 export const col = (name) => collection(db, name)
