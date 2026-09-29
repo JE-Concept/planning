@@ -112,6 +112,23 @@ export async function saveStatuses(listId, statuses, { moves = {} } = {}) {
   }
 }
 
+/**
+ * Hoeveel taken er in elke kolom van een lijst staan.
+ *
+ * Eén keer ophalen op het moment dat de kolommen geopend worden, in plaats van
+ * het hele bord te abonneren: de kolomeditor heeft die aantallen alleen nodig
+ * om te kunnen zeggen wat er gebeurt als een kolom verdwijnt.
+ */
+export async function countTasksPerStatus(listId) {
+  const snap = await getDocs(query(col(COL.tasks), where('listId', '==', listId)))
+  const counts = {}
+  snap.forEach((doc) => {
+    const statusId = doc.data().statusId
+    if (statusId) counts[statusId] = (counts[statusId] ?? 0) + 1
+  })
+  return counts
+}
+
 export function archiveList(id) {
   return updateList(id, { archived: true })
 }

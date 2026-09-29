@@ -39,7 +39,7 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | Collectie | Opmerking |
 |---|---|
 | `profiles/{uid}` | Bestaat pas na goedkeuring. **Een profiel hebben = lid zijn**; de rules kijken naar niets anders. |
-| `lists/{id}` | De bordkolommen (`statuses`) zitten **in** het lijstdocument: één read per bord in plaats van één per kolom. |
+| `lists/{id}` | De bordkolommen (`statuses`) zitten **in** het lijstdocument: één read per bord in plaats van één per kolom. Te wijzigen op het bord zelf én in Instellingen → Ruimtes & lijsten. Verdwijnt er een kolom, dan vraagt de editor eerst waar de taken erin heen moeten en verhuist ze mee — anders wijzen ze naar een status die niet meer bestaat en staan ze in geen enkele kolom. |
 | `customers/{id}` | Bedrijfsgegevens, adres en contactpersonen. Events verwijzen ernaar met `customerId` en dragen `customerName` mee; die kopie wordt server-side bijgewerkt als de klant hernoemd wordt. |
 | `attachments/{id}` | Documenten: aan een klant (`customerId`) óf aan een event (`taskId`). Het bestand staat in Storage; deze rij houdt naam, type, grootte en de link bij. |
 | `tasks/{id}` | Draagt een kopie van `statusName/statusColor/statusKind`, `listName` en `customerName`, plus `open` (niet afgerond) en de socialstand (`socialStage`, `socialWanted`). Daardoor hoeft geen enkele kaart een extra read te doen. Wordt bijgehouden door `src/data/tasks.js`; nergens anders met de hand zetten. |

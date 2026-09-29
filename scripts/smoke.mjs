@@ -322,6 +322,32 @@ await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   await page.close()
 })
 
+await test('de kolommen van een bord zijn aanpasbaar via instellingen', async () => {
+  // Het tabblad staat in het adres, dus rechtstreeks ernaartoe.
+  const page = await tabblad('/instellingen?tab=structuur')
+  await page.getByRole('button', { name: 'Kolommen' }).first().click()
+  await page.waitForTimeout(900)
+
+  const dialoog = page.getByRole('dialog')
+  const tekst = await dialoog.innerText()
+  zouden(bevat(tekst, 'Kolommen van'), `de kolomeditor opende niet: ${tekst.slice(0, 80)}`)
+  zouden(bevat(tekst, 'taken'), 'de aantallen per kolom ontbreken')
+
+  // Een kolom weghalen vraagt eerst waar de taken heen moeten.
+  const rijen = dialoog.locator('ul > li')
+  await rijen.first().getByRole('button', { name: /verwijderen/i }).click()
+  await page.waitForTimeout(500)
+  const na = await dialoog.innerText()
+  zouden(bevat(na, 'Kolommen die verdwijnen'), 'er wordt niet gevraagd waar de taken heen gaan')
+  zouden(await dialoog.getByRole('button', { name: 'Opslaan' }).isDisabled(), 'opslaan kan zonder bestemming')
+
+  await dialoog.getByRole('button', { name: 'Toch houden' }).click()
+  await page.waitForTimeout(400)
+  zouden(!(await dialoog.getByRole('button', { name: 'Opslaan' }).isDisabled()), 'opslaan blijft geblokkeerd')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de business rules staan in de instellingen', async () => {
   const page = await tabblad('/instellingen')
   await page.getByRole('tab', { name: 'Business rules' }).click()

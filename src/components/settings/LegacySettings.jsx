@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { Badge, Button, ConfirmButton, Field, Input, Select } from '@ui/index'
+import { useEffect, useState } from 'react'
+import { Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
+import ColumnEditor from '@components/board/ColumnEditor'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
   archiveList,
+  countTasksPerStatus,
   createBrand,
   createList,
   createSpace,
@@ -14,6 +16,38 @@ import {
 } from '@data/workspace'
 
 /**
+ * De kolommen van één lijst, geopend vanuit de instellingen.
+ *
+ * De aantallen per kolom worden hier één keer opgehaald: de editor gebruikt ze
+ * om te vragen waar de taken heen moeten als je een kolom weghaalt, en zonder
+ * die vraag verdwijnen ze uit beeld.
+ */
+function Kolommen({ list, onClose }) {
+  const { statusesOf } = useWorkspace()
+  const [counts, setCounts] = useState(null)
+
+  useEffect(() => {
+    let levend = true
+    countTasksPerStatus(list.id)
+      .then((c) => levend && setCounts(c))
+      .catch(() => levend && setCounts({}))
+    return () => {
+      levend = false
+    }
+  }, [list.id])
+
+  if (!counts) {
+    return (
+      <div className="flex justify-center py-6">
+        <Spinner />
+      </div>
+    )
+  }
+
+  return <ColumnEditor list={list} statuses={statusesOf(list.id)} counts={counts} onClose={onClose} />
+}
+
+/**
  * De instellingen van voor het design: ruimtes, lijsten, merken en labels.
  * Ze staan niet in het design, maar de andere borden (Socials, Requirements,
  * Teamoverleg…) hangen ervan af, dus ze blijven beschikbaar als extra tabblad.
@@ -21,6 +55,7 @@ import {
 export function StructureSettings() {
   const { spaces, lists } = useWorkspace()
   const toast = useToast()
+  const [kolommenVan, setKolommenVan] = useState(null)
   const [spaceName, setSpaceName] = useState('')
   const [listDraft, setListDraft] = useState({ spaceId: '', name: '', kind: 'tasks' })
 
@@ -48,6 +83,10 @@ export function StructureSettings() {
 
   return (
     <div className="space-y-6">
+      {kolommenVan ? (
+        <Kolommen list={kolommenVan} onClose={() => setKolommenVan(null)} />
+      ) : null}
+
       {spaces.map((space) => (
         <section key={space.id} className="card overflow-hidden">
           <h2 className="flex items-center gap-2 border-b border-ink-100 px-4 py-2.5">
@@ -75,6 +114,14 @@ export function StructureSettings() {
                   <Badge color={list.kind === 'social' ? '#d62976' : '#3377ff'} subtle>
                     {list.kind === 'social' ? 'social' : 'taken'}
                   </Badge>
+                  {/* De kolommen van een bord horen bij de inrichting van de
+                      ruimte, niet alleen bij het bord zelf: wie hier lijsten
+                      aanmaakt, zet er meteen de juiste stappen op. */}
+                  {list.kind === 'social' ? null : (
+                    <Button variant="ghost" size="sm" onClick={() => setKolommenVan(list)}>
+                      Kolommen
+                    </Button>
+                  )}
                   {list.archived ? (
                     <Button variant="ghost" size="sm" onClick={() => updateList(list.id, { archived: false })}>
                       Terughalen
