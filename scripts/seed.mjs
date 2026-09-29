@@ -21,6 +21,7 @@ import { applicationDefault, cert, initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { CHECKLIST_TEMPLATES } from '../src/lib/checklist-templates.js'
 import { DEFAULT_FORMULES } from '../src/lib/formule-templates.js'
+import { TASKS_KOLOMMEN, TASKS_LIJST_ID, planHernoeming, taakVelden } from '../src/lib/tasks-kolommen.js'
 
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
 initializeApp(
@@ -165,7 +166,7 @@ async function main() {
 
   // Het bord waarop de overlegverslagen en hun actiepunten landen.
   await zetAlsNieuw(
-    db.collection('lists').doc('overleg'),
+    db.collection('lists').doc(TASKS_LIJST_ID),
     {
       spaceId: 'je-concept',
       folderId: null,
@@ -175,11 +176,7 @@ async function main() {
       kind: 'tasks',
       position: 3,
       archived: false,
-      statuses: columns([
-        ['open', '#8593a9', 'open'],
-        ['on going', '#3377ff', 'active'],
-        ['closed', '#008844', 'closed'],
-      ]),
+      statuses: columns(TASKS_KOLOMMEN.map((k) => [k.name, k.color, k.kind])),
     },
     'bord Tasks'
   )
@@ -209,6 +206,8 @@ async function main() {
   }
 
   await vulMeetveldenAan()
+
+  await hernoemTasksKolommen()
 
   await vulKlantveldenAan()
 
@@ -276,6 +275,76 @@ async function vulMeetveldenAan() {
     await ref.set({ sections: nieuw, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
     aangevuld.push(`${template.name}: ${bijgewerkt.join(', ')}`)
   }
+}
+
+/**
+ * Geeft het Tasks-bord de kolomnamen van het werk dat erop staat.
+ *
+ * Het bord kwam mee uit ClickUp met "Opgenomen / Samengevat / Nagelezen" —
+ * stappen van een verslag dat uitgetypt wordt. Wat er in de praktijk op staat
+ * zijn losse taken, en die zijn open, bezig of klaar. Hierboven maakt de seed
+ * een vers bord al met die namen aan, maar ze maakt niets aan wat al bestaat;
+ * voor het bord dat live draait is dat te weinig.
+ *
+ * Dit is dus geen seed maar een verhuizing, in de geest van `vulMeetveldenAan`:
+ * aanvullend, herhaalbaar, en er verdwijnt niets. Een kolom die het plan niet
+ * kent blijft staan zoals ze is, met haar taken erin. Verandert de id van een
+ * kolom, dan gaan de taken mee — een taak draagt naam, kleur en soort van haar
+ * kolom als kopie bij zich, en zonder die kopie bij te werken staat ze straks
+ * onder een kolom die niet meer bestaat. Wat er per kolom gebeurde staat in het
+ * logboek van de uitrol, inclusief hoeveel taken er verhuisden.
+ */
+async function hernoemTasksKolommen() {
+  const lijstRef = db.collection('lists').doc(TASKS_LIJST_ID)
+  const snap = await lijstRef.get()
+  if (!snap.exists) return
+
+  const { statuses, regels, gewijzigd } = planHernoeming(snap.data().statuses ?? [])
+
+  for (const regel of regels) {
+    if (regel.actie === 'ongemoeid') {
+      console.log(`Tasks-bord · "${regel.vanNaam}" niet herkend, ongemoeid gelaten.`)
+    } else if (regel.actie === 'dubbel') {
+      console.log(
+        `Tasks-bord · "${regel.vanNaam}" komt op "${regel.doel}" uit, maar die kolom bestaat al. ` +
+          'Ongemoeid gelaten — samenvoegen is een beslissing van het team.'
+      )
+    } else if (regel.actie === 'al goed') {
+      console.log(`Tasks-bord · "${regel.vanNaam}" stond al goed.`)
+    }
+  }
+
+  if (!gewijzigd) return
+
+  // Eerst de taken, dan het bord. Faalt er iets halverwege, dan wijzen de taken
+  // nog naar een kolom die bestaat; andersom zouden ze nergens meer staan.
+  for (const regel of regels.filter((r) => r.verplaatsing)) {
+    const taken = await db
+      .collection('tasks')
+      .where('listId', '==', TASKS_LIJST_ID)
+      .where('statusId', '==', regel.verplaatsing.van)
+      .get()
+
+    const velden = taakVelden(regel.naarNaam)
+    for (const stuk of stukjes(taken.docs, 400)) {
+      const batch = db.batch()
+      for (const taak of stuk) batch.update(taak.ref, { ...velden, updatedAt: FieldValue.serverTimestamp() })
+      await batch.commit()
+    }
+
+    console.log(
+      `Tasks-bord · "${regel.vanNaam}" → "${regel.naarNaam}" (${regel.verplaatsing.van} → ${regel.verplaatsing.naar}), ` +
+        `${taken.size} ${taken.size === 1 ? 'taak' : 'taken'} mee verhuisd.`
+    )
+    aangevuld.push(`Tasks-kolom ${regel.vanNaam} → ${regel.naarNaam}: ${taken.size} taken`)
+  }
+
+  await lijstRef.set({ statuses, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+}
+
+/** Firestore neemt hoogstens 500 schrijfbewerkingen per batch. */
+function* stukjes(rij, maat) {
+  for (let i = 0; i < rij.length; i += maat) yield rij.slice(i, i + maat)
 }
 
 /**

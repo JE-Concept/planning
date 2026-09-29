@@ -17,7 +17,11 @@ import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import Documents from '@components/common/Documents'
+import { useDocuments } from '@data/documents'
+import { herkomstVanTaak } from '@lib/taak-herkomst'
+import { verwijderVraag } from '@lib/verwijdervraag'
 import { useCustomers } from '@data/customers'
+import { upsertTag } from '@data/workspace'
 import { SOCIAL_STAGES, heeftSocial, isSocialEligible, stageOf } from '@lib/social-stage'
 import {
   archiveTask,
@@ -69,30 +73,60 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 
   const list = task ? listById[task.listId] : null
   const statuses = useMemo(() => (task ? statusesOf(task.listId) : []), [task, statusesOf])
+  // De bijlagen staan verderop in het paneel, maar het aantal hoort ook in de
+  // vraag onder "Verwijderen": ze gaan mee.
+  const { documents } = useDocuments({ taskId })
 
   if (!task) return null
 
   const tagsByName = Object.fromEntries(tags.map((t) => [t.name, t]))
+  const herkomst = herkomstVanTaak(task)
 
   return (
     <Drawer
       open
       onClose={onClose}
-      title={task.title}
-      subtitle={list ? `${list.name}${task.statusName ? ` · ${task.statusName}` : ''}` : undefined}
+      /*
+        De kop draagt de plaats, niet de titel.
+
+        De titel stond er twee keer: boven in de kop én in het invoerveld
+        eronder, en alleen dat tweede was te wijzigen. Eén ervan moest weg, en
+        dan liever de kopie die je niet kon aanraken. Wat de kop nu geeft is wat
+        het veld niet geeft: op welk bord en in welke kolom dit staat.
+      */
+      title={list?.name ?? 'Taak'}
+      subtitle={task.statusName || undefined}
       footer={
         <>
-          <span className="text-xs text-ink-400">
-            Aangemaakt {formatDate(task.createdAt?.toDate?.() ?? task.createdAt)}
+          {/* Niet elke datum betekent iets; wat er staat, zegt erbij wat het is. */}
+          <span className="text-xs text-ink-400" title={herkomst?.uitleg ?? undefined}>
+            {herkomst?.tekst ?? ''}
           </span>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => archiveTask(task.id).then(onClose)}>
+          <div className="flex items-center gap-2">
+            {/*
+              Archiveren is de rustige keuze en staat er dus als de gewone knop;
+              verwijderen is de uitzondering en draagt geen rood meer, alleen de
+              vraag die zegt wat je weggooit.
+            */}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                archiveTask(task.id)
+                  .then(() => {
+                    toast.success('Naar het archief. Alles blijft bewaard.')
+                    onClose()
+                  })
+                  .catch((err) => toast.error(err.message))
+              }
+            >
               Archiveren
             </Button>
             <ConfirmButton
-              variant="danger"
+              variant="ghost"
               size="sm"
-              question="Deze taak en alle subtaken definitief verwijderen?"
+              className="je-taak-weg"
+              question={verwijderVraag({ task, subtaken: subtasks.length, bijlagen: documents.length })}
               onConfirm={() =>
                 deleteTask(task.id)
                   .then(onClose)
@@ -229,26 +263,7 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
           </div>
         </section>
 
-        <section>
-          <h3 className="label">Labels</h3>
-          <div className="flex flex-wrap gap-1.5">
-            {tags.map((t) => {
-              const on = task.tags?.includes(t.name)
-              return (
-                <button key={t.id} type="button" onClick={() => toggleTag(task, t.name)} aria-pressed={on}>
-                  <Badge color={t.color} subtle={!on}>
-                    {t.name}
-                  </Badge>
-                </button>
-              )
-            })}
-            {tags.length === 0 ? (
-              <p className="text-xs text-ink-400">
-                Nog geen labels — maak ze aan bij Instellingen.
-              </p>
-            ) : null}
-          </div>
-        </section>
+        <Labels task={task} tags={tags} toast={toast} />
 
         <Field label="Omschrijving">
           <Textarea rows={5} placeholder="Wat moet er precies gebeuren?" {...description} />
@@ -258,13 +273,92 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
 
         <TimeSection task={task} list={list} uid={uid} toast={toast} profileById={profileById} />
 
-        <Documents taskId={task.id} titel="Documenten bij dit event" />
+        {/* Bijlagen horen bij de taak waarover ze gaan: een grondplan bij dat
+            ene event, niet in een map die je elders moet gaan zoeken. Dezelfde
+            component als bij een klant, want het is hetzelfde lijstje. */}
+        <Documents taskId={task.id} titel={task.parentId ? 'Bijlagen' : 'Bijlagen bij dit event'} />
 
         <SocialSection taskId={task.id} />
 
         <VerloopSection taskId={task.id} listId={task.listId} profile={profile} />
       </div>
     </Drawer>
+  )
+}
+
+// ─── Labels ─────────────────────────────────────────────────────────────────
+
+/**
+ * De labels van deze taak, en een nieuw label als het er nog niet is.
+ *
+ * Aan- en uitzetten kon al; een label dat nog niet bestond niet. Dan stond er
+ * "maak ze aan bij Instellingen" en moest je het paneel verlaten, twee schermen
+ * verder iets typen en terugkomen — precies op het moment dat je aan het werk
+ * bent. Wie een label bedenkt, bedenkt het hier.
+ *
+ * Het label komt meteen in de werkruimte terecht en niet alleen op deze taak:
+ * labels zijn van iedereen, en een naam die maar op één taak bestaat is geen
+ * label maar een typfout. `upsertTag` sleutelt op de naam, dus twee mensen die
+ * tegelijk "winterbar" bedenken krijgen hetzelfde label.
+ */
+function Labels({ task, tags, toast }) {
+  const [nieuw, setNieuw] = useState('')
+
+  const voegToe = async (e) => {
+    e.preventDefault()
+    const naam = nieuw.trim()
+    if (!naam) return
+
+    try {
+      const bestaand = tags.find((t) => t.name.toLowerCase() === naam.toLowerCase())
+      if (!bestaand) await upsertTag({ name: naam, color: '#8593a9' })
+      const opTaak = bestaand?.name ?? naam
+      if (!task.tags?.includes(opTaak)) await toggleTag(task, opTaak)
+      setNieuw('')
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="label">Labels</h3>
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((t) => {
+          const on = task.tags?.includes(t.name)
+          return (
+            <button key={t.id} type="button" onClick={() => toggleTag(task, t.name)} aria-pressed={on}>
+              <Badge color={t.color} subtle={!on}>
+                {t.name}
+              </Badge>
+            </button>
+          )
+        })}
+        {/* Een label dat iemand weghaalde bij Instellingen staat hier nog op de
+            taak. Het blijft zichtbaar en afzetbaar; stil verdwijnen zou het
+            onvindbaar maken zonder dat het weg is. */}
+        {(task.tags ?? [])
+          .filter((naam) => !tags.some((t) => t.name === naam))
+          .map((naam) => (
+            <button key={naam} type="button" onClick={() => toggleTag(task, naam)} aria-pressed>
+              <Badge color="#8593a9">{naam}</Badge>
+            </button>
+          ))}
+      </div>
+
+      <form onSubmit={voegToe} className="mt-2 flex gap-2">
+        <Input
+          value={nieuw}
+          onChange={(e) => setNieuw(e.target.value)}
+          placeholder="Nieuw label…"
+          aria-label="Nieuw label"
+          className="max-w-[14rem]"
+        />
+        <Button type="submit" variant="secondary" size="sm" disabled={!nieuw.trim()}>
+          Toevoegen
+        </Button>
+      </form>
+    </section>
   )
 }
 

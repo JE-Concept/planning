@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { herhalingProbleem, herhalingUitleg, herhalingVan, herhalingVoor } from '@lib/checklist-herhaling'
 import {
   AFDELINGEN,
   HERHALINGEN,
@@ -259,9 +260,21 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
 
 function Punt({ punt, onWijzig, onWeg, isAdmin }) {
   const [open, setOpen] = useState(!punt.label)
-  const repeat = punt.repeat ?? { kind: punt.weekendOnly ? 'weekdag' : 'dagelijks', days: [0, 6] }
+  const repeat = herhalingVan(punt)
 
-  const zetHerhaling = (patch) => onWijzig({ repeat: { ...repeat, ...patch }, weekendOnly: false })
+  // `weekendOnly` is de oude vorm van dit veld. Alleen wissen bij een punt dat
+  // het nog draagt; op de rest zou het een sleutel zijn die nergens over gaat.
+  const bewaarHerhaling = (volgende) =>
+    onWijzig(punt.weekendOnly ? { repeat: volgende, weekendOnly: false } : { repeat: volgende })
+
+  const zetHerhaling = (patch) => bewaarHerhaling({ ...repeat, ...patch })
+
+  // Van soort wisselen bouwt de herhaling opnieuw op in plaats van het nieuwe
+  // soort op de oude velden te plakken: alleen wat dit soort gebruikt, met de
+  // waarden die je al koos waar ze hetzelfde betekenen.
+  const zetSoort = (kind) => bewaarHerhaling(herhalingVoor(kind, repeat))
+
+  const probleem = herhalingProbleem(repeat)
 
   return (
     <div className="space-y-2">
@@ -310,10 +323,14 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
             </Select>
           </Field>
 
-          <Field label="Hoe vaak">
+          {/* De eerstvolgende keer staat eronder. "Elk kwartaal, de 1e" zegt pas
+              iets als je erbij ziet dat dat 1 oktober is — en het is meteen de
+              enige manier om te merken dat een keuze nergens op uitkomt. */}
+          <Field label="Hoe vaak" hint={probleem ? undefined : herhalingUitleg(repeat)}>
             <Select
               value={repeat.kind}
-              onChange={(e) => zetHerhaling({ kind: e.target.value })}
+              onChange={(e) => zetSoort(e.target.value)}
+              aria-label="Hoe vaak dit punt terugkomt"
               disabled={!isAdmin}
             >
               {HERHALINGEN.map((h) => (
@@ -322,6 +339,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
                 </option>
               ))}
             </Select>
+            {probleem ? <span className="je-herhaling-fout">{probleem}</span> : null}
           </Field>
 
           {repeat.kind === 'weekdag' ? (

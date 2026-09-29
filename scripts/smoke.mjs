@@ -373,7 +373,7 @@ await test('een event toont zijn klant en zijn social-schakelaar', async () => {
   const paneel = page.getByRole('dialog')
   const tekst = await paneel.innerText()
   zouden(bevat(tekst, 'Social content'), 'de social-sectie ontbreekt')
-  zouden(bevat(tekst, 'Documenten bij dit event'), 'de documenten ontbreken')
+  zouden(bevat(tekst, 'Bijlagen bij dit event'), 'de bijlagen ontbreken')
 
   const klant = await paneel.getByLabel('Klant van dit event').inputValue()
   zouden(klant === 'k-blum', `de klant staat niet gekozen: ${klant}`)
@@ -801,6 +801,186 @@ await test('een subtaak opent zijn eigen fiche', async () => {
   const laatste = await page.getByRole('dialog').last().innerText()
   zouden(bevat(laatste, 'Deadline'), 'de subtaak heeft geen eigen deadline-veld')
   zouden(bevat(laatste, 'Toegewezen aan'), 'de subtaak heeft geen eigen toewijzing')
+  await page.close()
+})
+
+// ─── Het takenpaneel, de lijsteditor en de zoekbalk ─────────────────────────
+
+/** Opent het zijpaneel van een event op het bord. */
+async function opentTaak(page, titel) {
+  await page.locator('main').getByText(titel).first().click()
+  await page.waitForTimeout(900)
+  return page.getByRole('dialog').last()
+}
+
+await test('de titel van een taak staat maar één keer in het paneel', async () => {
+  const page = await tabblad('/bord/l-overview')
+  const titel = 'Trouw Niels en Inez'
+  const paneel = await opentTaak(page, titel)
+
+  // De kop toonde dezelfde titel als het invoerveld eronder, en alleen dat
+  // veld was te wijzigen. Tel zowel de tekst als de invoervelden.
+  const keer = await paneel.evaluate(
+    (el, gezocht) =>
+      [...el.querySelectorAll('input')].filter((i) => i.value === gezocht).length +
+      el.innerText.split('\n').filter((r) => r.trim() === gezocht).length,
+    titel
+  )
+  zouden(keer === 1, `de titel staat ${keer} keer in het paneel`)
+
+  // En de kop zegt nu wat het veld niet zegt: waar dit staat.
+  const kop = await paneel.locator('.je-drawer__head').innerText()
+  zouden(bevat(kop, 'Events'), `de kop noemt het bord niet: ${kop.replace(/\n/g, ' ')}`)
+  zouden(bevat(kop, 'create offer'), `de kop noemt de kolom niet: ${kop.replace(/\n/g, ' ')}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een overgenomen taak zegt dat haar datum van de verhuizing komt', async () => {
+  const page = await tabblad('/bord/l-overview')
+
+  const uitClickup = await opentTaak(page, 'Blum België — 20-jarig bestaan')
+  const voet = await uitClickup.locator('.je-drawer__foot').innerText()
+  zouden(bevat(voet, 'Overgenomen uit ClickUp'), `de voet zegt niets over de herkomst: ${voet}`)
+  zouden(!bevat(voet, 'Aangemaakt'), `"aangemaakt" staat er nog: ${voet}`)
+
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(400)
+
+  const eigen = await opentTaak(page, 'Trouw Niels en Inez')
+  const eigenVoet = await eigen.locator('.je-drawer__foot').innerText()
+  zouden(bevat(eigenVoet, 'Aangemaakt'), `een eigen taak mist haar datum: ${eigenVoet}`)
+  await page.close()
+})
+
+await test('verwijderen zegt wat er verdwijnt, archiveren is de gewone knop', async () => {
+  const page = await tabblad('/bord/l-overview')
+  const paneel = await opentTaak(page, 'Trouw Niels en Inez')
+
+  let vraag = ''
+  page.on('dialog', async (d) => {
+    vraag = d.message()
+    await d.dismiss()
+  })
+
+  // In de voet, want verderop in het paneel staat bij elke subtaak, elk
+  // tijdstip en elke reactie ook een kruisje dat "verwijderen" heet.
+  const voet = paneel.locator('.je-drawer__foot')
+  await voet.getByRole('button', { name: 'Verwijderen' }).click()
+  await page.waitForTimeout(600)
+
+  zouden(vraag.includes('Trouw Niels en Inez'), `de vraag noemt de taak niet: ${vraag}`)
+  zouden(/Weg zijn dan ook: \d+ subtaken/.test(vraag), `de subtaken staan er niet in: ${vraag}`)
+  zouden(vraag.includes('1 bijlage'), `de bijlage staat er niet in: ${vraag}`)
+  zouden(vraag.includes('geboekte tijd blijft bestaan'), `wat blijft staan wordt niet gezegd: ${vraag}`)
+  zouden(vraag.includes('Archiveren bewaart alles'), `het alternatief ontbreekt: ${vraag}`)
+
+  // Wegklikken laat de taak staan: de bevestiging is echt.
+  zouden(bevat(await inhoud(page), 'Trouw Niels en Inez'), 'de taak verdween ondanks het annuleren')
+
+  // En de rode knop is geen rode knop meer; archiveren staat er als de gewone.
+  const weg = await voet.getByRole('button', { name: 'Verwijderen' }).getAttribute('class')
+  zouden(!weg.includes('je-btn--danger'), `verwijderen draagt nog het rood: ${weg}`)
+  const bewaar = await voet.getByRole('button', { name: 'Archiveren' }).getAttribute('class')
+  zouden(bewaar.includes('je-btn--secondary'), `archiveren staat er niet als gewone knop: ${bewaar}`)
+  await page.close()
+})
+
+await test('een label maak je vanuit de taak, en het geldt voor de hele werkruimte', async () => {
+  const page = await tabblad('/bord/l-overview')
+  const paneel = await opentTaak(page, 'Trouw Niels en Inez')
+
+  await paneel.getByLabel('Nieuw label').fill('winterbar')
+  await paneel.getByLabel('Nieuw label').press('Enter')
+  await page.waitForTimeout(800)
+  zouden(bevat(await paneel.innerText(), 'winterbar'), 'het nieuwe label staat niet op de taak')
+
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(400)
+  const ander = await opentTaak(page, 'Blum België — 20-jarig bestaan')
+  zouden(
+    bevat(await ander.innerText(), 'winterbar'),
+    'het label bestaat alleen op die ene taak in plaats van in de werkruimte'
+  )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de bijlagen van een event staan in het paneel', async () => {
+  const page = await tabblad('/bord/l-overview')
+  const paneel = await opentTaak(page, 'Trouw Niels en Inez')
+  const tekst = await paneel.innerText()
+  zouden(bevat(tekst, 'Bijlagen bij dit event (1)'), `geen bijlagenblok: ${tekst.slice(0, 200)}`)
+  zouden(bevat(tekst, 'grondplan-hoeve-vanhove.pdf'), 'de bijlage zelf staat er niet')
+  zouden(bevat(tekst, '+ Bestand'), 'er is geen manier om er een bij te zetten')
+  await page.close()
+})
+
+await test('alle frequenties van het poetsplan zijn te kiezen en komen door', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Dagelijkse lijsten' }).click()
+  await page.waitForTimeout(800)
+  await page.getByRole('button', { name: /^Poetsplan$/ }).click()
+  await page.waitForTimeout(600)
+
+  const rij = page
+    .locator('div.space-y-2')
+    .filter({ has: page.locator('input[value*="Werkoppervlakken"]') })
+    .first()
+  await rij.getByRole('button', { name: 'Wijzigen' }).click()
+  await page.waitForTimeout(400)
+
+  const soort = rij.getByLabel('Hoe vaak dit punt terugkomt')
+  const opties = await soort.locator('option').allTextContents()
+  zouden(opties.length === 6, `niet alle frequenties staan er: ${opties.join(', ')}`)
+
+  // Dit was de fout: "één keer per week" viel terug op het weekend en maakte er
+  // stilletjes zondag van.
+  await soort.selectOption('wekelijks')
+  await page.waitForTimeout(600)
+  let tekst = await rij.innerText()
+  zouden(bevat(tekst, 'elke maandag'), `de wekelijkse beurt staat verkeerd: ${tekst.split('\n')[1]}`)
+  zouden(bevat(tekst, 'eerstvolgend'), 'er staat niet bij wanneer het de eerste keer valt')
+
+  await soort.selectOption('kwartaal')
+  await page.waitForTimeout(600)
+  tekst = await rij.innerText()
+  zouden(bevat(tekst, 'elk kwartaal'), `de kwartaalkeuze komt niet door: ${tekst.split('\n')[1]}`)
+
+  // Geen dag aangevinkt is geen stille fout meer.
+  await soort.selectOption('weekdag')
+  await page.waitForTimeout(600)
+  for (const dag of ['ma', 'di', 'wo', 'do', 'vr']) {
+    await rij.getByRole('button', { name: dag, exact: true }).click()
+    await page.waitForTimeout(250)
+  }
+  zouden(bevat(await rij.innerText(), 'nooit meer op de lijst'), 'een punt zonder dag geeft geen waarschuwing')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('het poetsplan laat zien wat er buiten vandaag nog aankomt', async () => {
+  const page = await tabblad('/openen-sluiten')
+  await page.getByRole('tab', { name: /Poetsplan/ }).click()
+  await page.waitForTimeout(700)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Komt er nog aan'), 'het poetsplan toont alleen nog de dagelijkse punten')
+  zouden(bevat(tekst, 'Friteuse volledig gereinigd'), 'de wekelijkse beurt staat er niet bij')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de zoekbalk bij Klanten past in zijn veld', async () => {
+  const page = await tabblad('/klanten')
+  const veld = page.getByLabel(/^Zoeken op naam/)
+  const past = await veld.evaluate((el) => {
+    const bewaard = el.value
+    el.value = el.placeholder
+    const past = el.scrollWidth <= el.clientWidth
+    el.value = bewaard
+    return past
+  })
+  zouden(past, 'de tekst in de zoekbalk is breder dan de zoekbalk')
   await page.close()
 })
 

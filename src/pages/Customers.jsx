@@ -76,12 +76,14 @@ export default function Customers() {
         subtitle={`${customers.filter((c) => !c.archived).length} actief`}
         actions={
           <>
+            {/* De tekst in het veld paste niet in het veld: hij liep dood op
+                "contactperso…". Korter erin, volledig in het label. */}
             <Input
               value={zoek}
               onChange={(e) => setZoek(e.target.value)}
-              placeholder="Zoek op naam, btw, stad of contactpersoon"
-              className="h-8 w-64 text-sm"
-              aria-label="Zoeken"
+              placeholder="Zoek op naam, btw of stad"
+              className="je-zoekveld h-8 text-sm"
+              aria-label="Zoeken op naam, btw-nummer, stad of contactpersoon"
             />
             <Button variant="primary" size="sm" onClick={maak} disabled={nieuw}>
               + Klant

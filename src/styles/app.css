@@ -1745,3 +1745,34 @@ select.je-compact { padding-right: 24px; }
   min-width: 34px;
   text-align: center;
 }
+
+/* ── Verbeteringen ── */
+
+/* De zoekbalk bij Klanten stond op een vaste 16rem terwijl de tekst erin
+   langer was: je las "Zoek op naam, btw, stad of contactperso…". Het veld
+   groeit nu mee met de kop en krimpt op een telefoon, en de tekst erin is
+   ingekort tot wat er past — de volledige uitleg staat in het label, voor wie
+   het laat voorlezen. */
+.je-zoekveld {
+  width: min(22rem, 100%);
+  min-width: 9rem;
+}
+
+/* Een herhaling die nergens op uitkomt — een punt zonder aangevinkte dag —
+   verdwijnt voorgoed uit de dagelijkse lijst zonder dat iemand het merkt. Bij
+   een lijst die moet bewijzen dat er gepoetst is, mag dat geen stille fout
+   blijven. */
+.je-herhaling-fout {
+  display: block;
+  margin-top: var(--space-2);
+  font: var(--type-caption);
+  color: var(--danger);
+}
+
+/* Verwijderen naast archiveren. De rode knop trok evenveel aandacht als de
+   veilige keuze ernaast; nu is het een gewone, stille knop die pas rood wordt
+   als je hem echt aanwijst. De waarschuwing zit in de vraag, niet in de kleur. */
+.je-taak-weg:hover,
+.je-taak-weg:focus-visible {
+  color: var(--danger);
+}
