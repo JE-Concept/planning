@@ -954,3 +954,12 @@ select.je-compact { padding-right: 24px; }
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.je-archieflink {
+  font: var(--type-caption);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: var(--space-3);
+}
+.je-archieflink:hover { color: var(--text-1); }

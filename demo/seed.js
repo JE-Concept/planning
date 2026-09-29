@@ -250,6 +250,35 @@ taak('t-menukaart', 'l-overview', OVERVIEW, 'request', { eventType: 'Intern',
   title: 'Menukaart drukken + prijzen ingeven', assignees: ['u-elke'], brandId: 'meer',
 })
 
+// ─── Afgesloten events uit vorige jaren ─────────────────────────────────────
+//
+// Die van vorig jaar en het jaar daarvoor: afgerond of allang gefactureerd, en
+// dus weg van het bord maar terug te vinden in het archief, per jaar. Ze staan
+// hier omdat het archief anders leeg is in de demo — en een filter op jaar dat
+// je niet kunt uitproberen, is geen filter.
+//
+// De social-schakelaar staat uit: de content van vorig jaar staat allang
+// online, en het socialbord gaat over wat er nog moet gebeuren.
+taak('t-kerstmarkt-2025', 'l-overview', OVERVIEW, 'complete', { pax: 1800, formule: 'Drie chalets + glühweinbar', eventType: 'Stadsevent',
+  title: 'Kerstmarkt Borgloon 2025', assignees: ['u-jasper', 'u-anneleen'], customerId: 'k-borgloon',
+  eventDate: D('2025-12-13T12:00:00'), dueDate: D('2025-12-13T12:00:00'), budget: 27400,
+  location: 'Grote Markt, Borgloon', tracked: 104400, socialWanted: false,
+  description: 'Drie chalets aan de kerk, glühweinbar centraal. Eindafrekening in januari afgesloten.',
+})
+taak('t-oldskool-2024', 'l-overview', OVERVIEW, 'complete', { pax: 900, formule: 'Twee bars + backstage', eventType: 'Festival',
+  title: 'Oldskool Festival 2024', assignees: ['u-jasper'], tags: ['oldskool'],
+  eventDate: D('2024-09-21T12:00:00'), dueDate: D('2024-09-21T12:00:00'), budget: 19200,
+  location: 'Sportterrein, Wellen', tracked: 79200, socialWanted: false,
+})
+// Gefactureerd, nooit op "Afgerond" gezet — precies het geval waarvoor de
+// tweede archiefregel bestaat: na twee maanden is dat geen planningswerk meer.
+taak('t-blum-kick-2025', 'l-overview', OVERVIEW, 'invoiced', { pax: 120, formule: 'Ontbijtbuffet', eventType: 'Bedrijfsevent',
+  title: 'Blum België — kick-off 2025', assignees: ['u-elke'], customerId: 'k-blum',
+  eventDate: D('2025-02-06T12:00:00'), dueDate: D('2025-02-06T12:00:00'), budget: 8600,
+  location: 'Industrieweg 12, Sint-Truiden', tracked: 21600, socialWanted: false,
+})
+
+
 // Taken met een deadline in de komende dagen: Mijn taken en de werklast.
 taak('t-trouw-4', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Tent en vloer bevestigen bij verhuur', assignees: ['u-elke'], dueDate: dag(2), priority: 2, estimate: 90, comments: 1,
   checklist: [{ text: 'Offerte tent 12×24 m', done: true }, { text: 'Vloer + verlichting', done: false }, { text: 'Levering daags voordien', done: false }] })
