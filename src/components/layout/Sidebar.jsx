@@ -9,8 +9,9 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useEvents, useWeekEntries } from '@data/events'
 import { stopTimer, useRunningTimer } from '@data/time'
-import { InstallMenuItem, MeldingsVoorkeurenMenuItem, PushMenuItem, TaalMenuItem } from './AppMenuItems'
+import { AgendaMenuItem, InstallMenuItem, MeldingsVoorkeurenMenuItem, PushMenuItem, TaalMenuItem } from './AppMenuItems'
 import MeldingsVoorkeuren from '@components/notifications/MeldingsVoorkeuren'
+import AgendaAbonnement from '@components/kalenderfeed/AgendaAbonnement'
 
 /**
  * De navigatie in twee niveaus.
@@ -289,6 +290,7 @@ function Me() {
   const [menu, setMenu] = useState(false)
   // Buiten het menu, want het menu klapt dicht bij de klik erop.
   const [voorkeuren, setVoorkeuren] = useState(false)
+  const [agenda, setAgenda] = useState(false)
 
   return (
     <div className="je-side__me">
@@ -317,12 +319,14 @@ function Me() {
           <InstallMenuItem />
           <PushMenuItem />
           <MeldingsVoorkeurenMenuItem onOpen={() => setVoorkeuren(true)} />
+          <AgendaMenuItem onOpen={() => setAgenda(true)} />
           <button type="button" role="menuitem" onClick={logOut}>
             {t('schil.afmelden')}
           </button>
         </div>
       ) : null}
       {voorkeuren ? <MeldingsVoorkeuren open onClose={() => setVoorkeuren(false)} /> : null}
+      {agenda ? <AgendaAbonnement open onClose={() => setAgenda(false)} /> : null}
     </div>
   )
 }

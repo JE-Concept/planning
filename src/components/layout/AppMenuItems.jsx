@@ -155,6 +155,24 @@ export function PushMenuItem() {
 }
 
 /**
+ * De eventdatums in je eigen agenda.
+ *
+ * Staat naast de meldingen en niet in Instellingen: het is een adres dat van
+ * jou alleen is, en Instellingen is van de beheerders. Zelfde reden dat hier
+ * alleen de knop staat — het venster hangt buiten dit menu, want het menu klapt
+ * dicht zodra je erop klikt.
+ */
+export function AgendaMenuItem({ onOpen }) {
+  const { t } = useTaal()
+
+  return (
+    <button type="button" role="menuitem" className={item} onClick={onOpen}>
+      {t('kalender.menu')}
+    </button>
+  )
+}
+
+/**
  * Welke berichten je wil ontvangen.
  *
  * Staat hier en niet in Instellingen, om dezelfde reden als de knop erboven:

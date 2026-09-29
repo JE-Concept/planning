@@ -246,6 +246,21 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
+    /*
+      De sleutel van je agenda-abonnement.
+
+      Eén document per persoon, met het id van het profiel als naam, zodat er
+      per persoon maar één sleutel kan bestaan — en een nieuwe sleutel de oude
+      dus onmiddellijk ongeldig maakt.
+
+      Lezen mag alleen jijzelf: wie de sleutel van iemand anders kan lezen, kan
+      diens agenda lezen. De functie die de feed uitserveert leest met
+      beheerdersrechten en gaat hier niet langs.
+    */
+    match /agendaSleutels/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
     // Anything not named above stays closed.
     match /{document=**} {
       allow read, write: if false;

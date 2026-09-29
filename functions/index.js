@@ -23,6 +23,7 @@ import {
   mailVoorToewijzing,
 } from './mail.js'
 import { taalVan, zeg } from './teksten.js'
+import { maakAgendaFeed } from './agenda.js'
 
 initializeApp()
 const db = getFirestore()
@@ -642,3 +643,10 @@ export const notifyOverdueDigest = onSchedule(
     logger.info('Te-laat-lijst verstuurd', { taken: laat.length, mensen })
   }
 )
+
+/**
+ * De eventdatums als agenda-abonnement, op één adres met een sleutel erin.
+ *
+ * De uitleg over hoe dat afgeschermd is, staat in `agenda.js`.
+ */
+export const agenda = maakAgendaFeed({ db, region: REGION })

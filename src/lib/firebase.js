@@ -24,6 +24,9 @@ const config = {
 
 export const isConfigured = Boolean(config.apiKey && config.projectId)
 
+/** Het project waar deze build bij hoort — nodig om een functie-adres te bouwen. */
+export const projectId = config.projectId ?? null
+
 if (!isConfigured) {
   // A missing key is a deploy mistake, not a state to design around — the login
   // screen says so plainly instead of leaving somebody on a blank page.
