@@ -199,6 +199,13 @@ export function meetpunten(verslag) {
  * Eén regel per punt per dag, met puntkomma's: Excel in het Nederlands leest een
  * komma als decimaalteken, dus een komma als scheiding levert een bestand op dat
  * in één kolom belandt.
+ *
+ * De kolomkoppen en de ja/nee staan hier in vaste Nederlandse tekst en volgen
+ * met opzet niet de taal van wie het bestand maakt. Dit is een uitvoer voor de
+ * FAVV-controle en voor de boekhouding, en twee exports van dezelfde maand
+ * horen hetzelfde bestand te zijn — anders kloppen de kolommen niet meer met
+ * wat er eerder bewaard is, en leest de controleur een kop die hij niet kent.
+ * Hetzelfde geldt voor het verslag op het scherm; zie `pages/ChecklistReport`.
  */
 export function naarCsv(verslag) {
   const regels = [

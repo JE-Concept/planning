@@ -4,6 +4,7 @@ import { maandVerslag, meetpunten, naarCsv, reeksVoorPunt } from '@lib/checklist
 import { Button, EmptyState, Icon, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
+import { useTaal } from '@context/TaalProvider'
 import { useChecklists, useRunsInRange } from '@data/checklists'
 
 /**
@@ -20,9 +21,24 @@ import { useChecklists, useRunsInRange } from '@data/checklists'
  * open bleven, en de gemeten temperaturen met hun grens. De overschrijdingen
  * staan bovenaan apart, want dat is waar een controleur naar zoekt en niet iets
  * wat je hem in dertig dagtabellen laat opzoeken.
+ *
+ * Dit verslag blijft Nederlands, ook wanneer de tool op Engels staat.
+ *
+ * Het is geen scherm maar een document: het gaat naar de printer en ligt bij een
+ * FAVV-controle op tafel. Een controleur leest Nederlands, en een bewijsstuk dat
+ * per gebruiker van taal verandert is geen bewijsstuk — dan kan twee keer
+ * dezelfde maand twee verschillende papieren opleveren. Alles binnen `je-report`
+ * staat daarom met vaste tekst in de code: de kop, de cijfers, de kolommen, de
+ * voetnoot. Hetzelfde geldt voor de CSV-export; zie `naarCsv` in
+ * `@lib/checklist-report`.
+ *
+ * Vertaald wordt enkel wat bedienen is: bladeren, exporteren, afdrukken, en de
+ * lege staat. Die knoppen staan niet op papier — de afdrukstijl haalt ze weg —
+ * dus ze mogen de taal van wie kijkt volgen.
  */
 export default function ChecklistReport() {
   const { isAdmin } = useAuth()
+  const { t } = useTaal()
   const [maand, setMaand] = useState(() => startOfMonth())
 
   const sleutel = `${maand.getFullYear()}-${String(maand.getMonth() + 1).padStart(2, '0')}`
@@ -53,23 +69,30 @@ export default function ChecklistReport() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }} className="je-report">
       <PageHeader
+        // Kop en ondertitel horen bij het document: de afdrukstijl laat ze staan
+        // en verbergt alleen de knoppen ernaast. Dus Nederlands, in beide talen.
         eyebrow="Registraties"
         title={formatMonth(maand)}
         subtitle="Wat er afgevinkt is, door wie, en wat er gemeten werd."
         actions={
           <>
-            <Button variant="secondary" size="sm" onClick={() => setMaand(addMonths(maand, -1))} aria-label="Vorige maand">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setMaand(addMonths(maand, -1))}
+              aria-label={t('rapport.vorige_maand')}
+            >
               ‹
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setMaand(startOfMonth())}>
-              Deze maand
+              {t('rapport.deze_maand')}
             </Button>
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setMaand(addMonths(maand, 1))}
               disabled={addMonths(maand, 1) > new Date()}
-              aria-label="Volgende maand"
+              aria-label={t('rapport.volgende_maand')}
             >
               ›
             </Button>
@@ -77,7 +100,7 @@ export default function ChecklistReport() {
               CSV
             </Button>
             <Button size="sm" iconLeft="file-text" onClick={() => window.print()}>
-              Afdrukken of PDF
+              {t('rapport.afdrukken')}
             </Button>
           </>
         }
@@ -95,9 +118,11 @@ export default function ChecklistReport() {
             <Spinner />
           </div>
         ) : verslag.dagen.length === 0 ? (
-          <EmptyState title="Nog niets te tonen" description="Deze maand is nog niet begonnen." />
+          <EmptyState title={t('rapport.leeg_titel')} description={t('rapport.leeg_tekst')} />
         ) : (
           <>
+            {/* Vanaf hier is alles document en niets scherm: vaste Nederlandse
+                tekst, zodat dezelfde maand altijd hetzelfde blad oplevert. */}
             <div className="je-dash__cijfers">
               <Vak label="Afgevinkt" waarde={`${Math.round(verslag.ratio * 100)}%`} onder={`${verslag.gedaan} van ${verslag.verplicht} punten`} />
               <Vak label="Volledige dagen" waarde={`${verslag.volledigeDagen}/${verslag.dagenMetWerk}`} onder="alles afgevinkt" />
