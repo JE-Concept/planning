@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useSearchParams } from 'react-router-dom'
 import { cn } from '@lib/cn'
 import { formatDuration } from '@lib/format'
 import { periodKeys } from '@lib/time-math'
 import { Button, Hex, Icon, IconButton, Logotype, initialsOf } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
-import { useWorkspace } from '@context/WorkspaceProvider'
 import { useEvents, useWeekEntries } from '@data/events'
 import { stopTimer, useRunningTimer } from '@data/time'
 import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
@@ -26,14 +25,20 @@ import { InstallMenuItem, PushMenuItem } from './AppMenuItems'
  * `match` bestaat omdat het pad niet altijd het menu-item is: /events/<id> hoort
  * bij Events, en /bord/<id> bij het bord waar je op klikte.
  */
-export function navSecties({ isAdmin, isStaff, boards = [], eventsListId = null }) {
+export function navSecties({ isAdmin, isStaff }) {
   if (isStaff) {
     return [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten', kinderen: [] }]
   }
 
-  const andereBorden = boards
-    .filter((l) => l.id !== eventsListId)
-    .map((l) => ({ to: `/bord/${l.id}`, icon: 'kanban', label: l.name }))
+  /*
+    De borden staan hier niet meer als eigen ingang.
+
+    Ze stonden naast "Alle taken", met dezelfde taken erin — twee wegen naar
+    hetzelfde werk, en een menu dat "Tasks" onder "Tasks" toont. Het bord is nu
+    een weergave van de Tasks-pagina: kies daar een lijst en de bordweergave, en
+    je krijgt de kolommen van die lijst met slepen en al. Die keuze wordt
+    onthouden, dus wie er dagelijks werkt komt er meteen weer op uit.
+  */
 
   return [
     { to: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard', kinderen: [] },
@@ -56,10 +61,8 @@ export function navSecties({ isAdmin, isStaff, boards = [], eventsListId = null 
       label: 'Tasks',
       match: (p) => p === '/tasks' || p === '/werklast' || p === '/goals' || p.startsWith('/bord'),
       kinderen: [
-        { to: '/tasks', icon: 'list-checks', label: 'Alle taken' },
         { to: '/werklast', icon: 'users', label: 'Werklast' },
         { to: '/goals', icon: 'target', label: 'Goals' },
-        ...andereBorden,
       ],
     },
     {
@@ -121,15 +124,16 @@ export const ROLE_LABEL = {
 
 export default function Sidebar({ counts = {} }) {
   const { isAdmin, isStaff } = useAuth()
-  const { boards, eventsList } = useWorkspace()
   const location = useLocation()
+  const [zoekArgs] = useSearchParams()
 
-  const secties = useMemo(
-    () => navSecties({ isAdmin, isStaff, boards, eventsListId: eventsList?.id ?? null }),
-    [isAdmin, isStaff, boards, eventsList?.id]
-  )
+  const secties = useMemo(() => navSecties({ isAdmin, isStaff }), [isAdmin, isStaff])
 
-  const actief = (item, pad) => (item.match ? item.match(pad) : item.end ? pad === item.to : pad.startsWith(item.to))
+  // De borden van Tasks staan op hetzelfde pad en verschillen alleen in de lijst
+  // die erbij hoort; daarom kijkt `match` ook naar wat er achter het vraagteken
+  // staat.
+  const actief = (item, pad) =>
+    item.match ? item.match(pad, zoekArgs) : item.end ? pad === item.to : pad.startsWith(item.to)
 
   /*
     Het tweede niveau staat er voor de sectie waar je in zit — niet voor alle

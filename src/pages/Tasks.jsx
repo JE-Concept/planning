@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { daysUntil, isToday, startOfMonth } from '@lib/dates'
 import { formatDuration, priorityOf } from '@lib/format'
 import { filter as filterTaken, groepeer, perDag } from '@lib/task-view'
 import { Badge, Button, EmptyState, Spinner } from '@components/ds'
 import MonthCalendar from '@components/common/MonthCalendar'
+import KanbanBoard from '@components/board/KanbanBoard'
+import ColumnEditor from '@components/board/ColumnEditor'
+import NewTaskDialog from '@components/board/NewTaskDialog'
 import TaskDrawer from '@components/board/TaskDrawer'
 import PageHeader from '@components/layout/PageHeader'
 import DisplayOptions from '@components/tasks/DisplayOptions'
 import { useAuth } from '@context/AuthProvider'
+import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { isDone } from '@data/events'
-import { useTaskBoard } from '@data/tasks'
+import { moveTaskTo, useTaskBoard, useTasks } from '@data/tasks'
 
 /**
  * Tasks: alles wat er te doen is, in de vorm die je op dat moment nodig hebt.
@@ -25,6 +30,15 @@ import { useTaskBoard } from '@data/tasks'
  * hoe gegroepeerd, hoe gesorteerd, in welke vorm. Die keuzes worden onthouden,
  * want iemand die altijd op status groepeert wil dat niet elke ochtend opnieuw
  * instellen.
+ *
+ * Het bord van een lijst hoort daar ook bij. Dat stond apart, met dezelfde taken
+ * erin — kies je één lijst en groepeer je op status, dan is dit dat bord: met de
+ * kolommen van die lijst, met slepen, met een nieuwe taak en met de kolomeditor.
+ * Buiten die keuze blijven de kolommen een manier van kijken en wordt er niet
+ * gesleept: een kaart van "vandaag" naar "later" trekken zou een deadline
+ * verzetten zonder dat je daarom vraagt.
+ *
+ * De keuzes staan ook in het adres, zodat een bord te delen en te bewaren is.
  */
 
 const BEWAARD = 'je-plan:tasks-weergave'
@@ -52,14 +66,51 @@ function lees() {
   }
 }
 
+/** Welke keuzes in het adres mogen staan — genoeg om een bord te delen. */
+const IN_ADRES = ['weergave', 'lijst', 'groep', 'wie']
+
 export default function Tasks() {
-  const { uid } = useAuth()
-  const { profiles, listById, lists, tags } = useWorkspace()
+  const { uid, isAdmin } = useAuth()
+  const { profiles, listById, lists, tags, statusesOf } = useWorkspace()
+  const toast = useToast()
+  const [zoekArgs, setZoekArgs] = useSearchParams()
   const [opties, setOpties] = useState(lees)
   const [openTaskId, setOpenTaskId] = useState(null)
+  const [nieuweTaak, setNieuweTaak] = useState(null)
+  const [kolommenOpen, setKolommenOpen] = useState(false)
   const [maand, setMaand] = useState(() => startOfMonth())
 
+  /*
+    Het adres wint van wat er onthouden is.
+
+    Krijg je een link naar het Tasks-bord van een lijst, dan hoor je dat bord te
+    zien — niet de weergave die jij gisteren instelde. Dit draait één keer bij het
+    openen; daarna sturen de keuzes het adres, en niet andersom.
+  */
+  useEffect(() => {
+    const uitAdres = {}
+    if (IN_ADRES.every((sleutel) => !zoekArgs.get(sleutel))) return
+    if (zoekArgs.get('weergave')) uitAdres.weergave = zoekArgs.get('weergave')
+    if (zoekArgs.get('groep')) uitAdres.groep = zoekArgs.get('groep')
+    if (zoekArgs.get('lijst')) uitAdres.lijstId = zoekArgs.get('lijst')
+    if (zoekArgs.get('wie')) uitAdres.wie = zoekArgs.get('wie')
+    setOpties((huidig) => ({ ...huidig, ...uitAdres }))
+    // Alleen bij het openen: daarna is het scherm de baas over het adres.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const zet = useCallback((patch) => setOpties((huidig) => ({ ...huidig, ...patch })), [])
+
+  useEffect(() => {
+    const volgende = new URLSearchParams(zoekArgs)
+    volgende.set('weergave', opties.weergave)
+    volgende.set('groep', opties.groep)
+    volgende.set('wie', opties.wie)
+    if (opties.lijstId) volgende.set('lijst', opties.lijstId)
+    else volgende.delete('lijst')
+    if (volgende.toString() !== zoekArgs.toString()) setZoekArgs(volgende, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opties.weergave, opties.groep, opties.lijstId, opties.wie])
 
   useEffect(() => {
     try {
@@ -73,7 +124,21 @@ export default function Tasks() {
   }, [opties])
 
   const wie = opties.wie === 'ik' ? uid : opties.wie
-  const { tasks, loading } = useTaskBoard({ who: wie, open: opties.open })
+
+  /*
+    Wanneer dit scherm het bord van één lijst is.
+
+    Dan komt er iets anders bij kijken: de kolommen zijn die van de lijst, ook de
+    lege, en slepen betekent iets. Daarbuiten zijn de kolommen een manier van
+    kijken en zou slepen een deadline of een naam wijzigen zonder dat je daarom
+    vraagt.
+  */
+  const lijst = listById[opties.lijstId] ?? null
+  const bordModus = opties.weergave === 'bord' && opties.groep === 'status' && Boolean(lijst)
+
+  // In bordmodus komen de taken uit de lijst zelf; het abonnement op "wat er op
+  // jouw naam staat" zou daar hetzelfde werk twee keer ophalen.
+  const { tasks, loading } = useTaskBoard({ who: bordModus ? null : wie, open: opties.open })
 
   const profileById = useMemo(() => Object.fromEntries(profiles.map((p) => [p.id, p])), [profiles])
   const actieven = useMemo(() => profiles.filter((p) => p.active !== false && p.id !== uid), [profiles, uid])
@@ -97,9 +162,101 @@ export default function Tasks() {
   const dagen = useMemo(() => perDag(zichtbaar), [zichtbaar])
   const zonderDatum = useMemo(() => zichtbaar.filter((t) => !t.dueDate), [zichtbaar])
 
+  const statuses = useMemo(
+    () => (bordModus ? statusesOf(opties.lijstId) : []),
+    [bordModus, opties.lijstId, statusesOf]
+  )
+
+  // Het bord toont de lijst zelf, met posities en subtaken — dat is iets anders
+  // dan "wat er op jouw naam staat", en het abonnement is dus ook een ander.
+  const { top: lijstTop, subtasks: lijstSub, loading: lijstLaadt } = useTasks(
+    bordModus ? opties.lijstId : null
+  )
+
+  const bordTaken = useMemo(
+    () =>
+      filterTaken(lijstTop, {
+        zoek: opties.zoek,
+        label: opties.label,
+        prioriteit: opties.prioriteit,
+        // "Van wie" blijft doen wat het zegt, ook hier.
+        persoon: opties.wie === 'iedereen' ? '' : opties.wie === 'ik' ? uid : opties.wie,
+      }).filter((t) => (opties.open ? t.open !== false : true)),
+    [lijstTop, opties.zoek, opties.label, opties.prioriteit, opties.wie, opties.open, uid]
+  )
+
+  const { kolommen, takenPerKolom } = useMemo(() => {
+    const cols = statuses.map((s) => ({ key: s.id, label: s.name, color: s.color }))
+    const buckets = Object.fromEntries(cols.map((c) => [c.key, []]))
+    const wezen = []
+    for (const taak of bordTaken) {
+      if (buckets[taak.statusId]) buckets[taak.statusId].push(taak)
+      else wezen.push(taak)
+    }
+    // Taken met een status die niet meer bestaat horen zichtbaar te blijven;
+    // stil weglaten is hoe werk verdwijnt.
+    if (wezen.length) {
+      cols.unshift({ key: '', label: 'Zonder status', color: '#8593a9' })
+      buckets[''] = wezen
+    }
+    return { kolommen: cols, takenPerKolom: buckets }
+  }, [statuses, bordTaken])
+
+  const subtaakAantallen = useMemo(() => {
+    const aantal = {}
+    for (const sub of lijstSub) aantal[sub.parentId] = (aantal[sub.parentId] ?? 0) + 1
+    return aantal
+  }, [lijstSub])
+
+  const statusAantallen = useMemo(() => {
+    const aantal = {}
+    for (const taak of [...lijstTop, ...lijstSub]) {
+      if (taak.statusId) aantal[taak.statusId] = (aantal[taak.statusId] ?? 0) + 1
+    }
+    return aantal
+  }, [lijstTop, lijstSub])
+
+  const openTaak = useCallback((taak) => setOpenTaskId(taak.id), [])
+
+  const verplaats = useCallback(
+    async ({ task, columnKey, index }) => {
+      try {
+        await moveTaskTo({
+          taskId: task.id,
+          status: statuses.find((s) => s.id === columnKey) ?? null,
+          columnTasks: (takenPerKolom[columnKey] ?? []).filter((t) => t.id !== task.id),
+          index,
+        })
+      } catch (err) {
+        toast.error(err.message)
+      }
+    },
+    [statuses, takenPerKolom, toast]
+  )
+
+  const bezig = bordModus ? lijstLaadt : loading
+  const leeg = bordModus ? bordTaken.length === 0 && kolommen.length === 0 : zichtbaar.length === 0
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-      <PageHeader title="Tasks" />
+      <PageHeader
+        title="Tasks"
+        subtitle={bordModus ? lijst.name : undefined}
+        actions={
+          bordModus ? (
+            <>
+              {isAdmin ? (
+                <Button variant="secondary" size="sm" onClick={() => setKolommenOpen(true)}>
+                  Kolommen
+                </Button>
+              ) : null}
+              <Button size="sm" iconLeft="plus" onClick={() => setNieuweTaak({ status: statuses[0] })}>
+                Nieuwe taak
+              </Button>
+            </>
+          ) : null
+        }
+      />
 
       <DisplayOptions
         opties={opties}
@@ -107,14 +264,14 @@ export default function Tasks() {
         profiles={actieven}
         lijsten={lists}
         labels={tags}
-        aantal={zichtbaar.length}
+        aantal={bordModus ? bordTaken.length : zichtbaar.length}
       />
 
-      {loading ? (
+      {bezig ? (
         <div style={{ display: 'flex', flex: 1, justifyContent: 'center', padding: 'var(--space-8)' }}>
           <Spinner />
         </div>
-      ) : zichtbaar.length === 0 ? (
+      ) : leeg ? (
         <div style={{ padding: 'var(--space-7)' }}>
           <EmptyState
             title="Niets te doen"
@@ -125,6 +282,18 @@ export default function Tasks() {
             }
           />
         </div>
+      ) : bordModus ? (
+        <KanbanBoard
+          columns={kolommen}
+          tasksByColumn={takenPerKolom}
+          profiles={profiles}
+          tags={tags}
+          subtaskCounts={subtaakAantallen}
+          onOpen={openTaak}
+          onDrop={verplaats}
+          onAdd={(kolom) => setNieuweTaak({ status: statuses.find((s) => s.id === kolom.key) ?? null })}
+          emptyHint="Sleep hier een taak naartoe."
+        />
       ) : opties.weergave === 'kalender' ? (
         <Kalender
           maand={maand}
@@ -138,6 +307,29 @@ export default function Tasks() {
       ) : (
         <Lijst groepen={groepen} onOpen={setOpenTaskId} profileById={profileById} listById={listById} tags={tags} />
       )}
+
+      {nieuweTaak && lijst ? (
+        <NewTaskDialog
+          list={lijst}
+          statuses={statuses}
+          initialStatus={nieuweTaak.status}
+          uid={uid}
+          onClose={() => setNieuweTaak(null)}
+          onCreated={(id) => {
+            setNieuweTaak(null)
+            setOpenTaskId(id)
+          }}
+        />
+      ) : null}
+
+      {kolommenOpen && lijst ? (
+        <ColumnEditor
+          list={lijst}
+          statuses={statuses}
+          counts={statusAantallen}
+          onClose={() => setKolommenOpen(false)}
+        />
+      ) : null}
 
       {openTaskId ? <TaskDrawer taskId={openTaskId} onClose={() => setOpenTaskId(null)} /> : null}
     </div>

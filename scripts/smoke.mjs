@@ -358,6 +358,26 @@ await test('het dashboard geeft een overzicht over de hele applicatie', async ()
   await page.close()
 })
 
+await test('het bord van een lijst zit in de Tasks-pagina', async () => {
+  // Het oude adres blijft werken en brengt je naar de plek waar dat bord woont.
+  const page = await tabblad('/bord/l-overleg')
+  await page.waitForTimeout(1200)
+  zouden(page.url().includes('/tasks'), `bleef op ${page.url()}`)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Tasks'), 'de Tasks-pagina opende niet')
+  for (const kolom of ['open', 'on going', 'closed']) {
+    zouden(bevat(tekst, kolom), `de kolom "${kolom}" van de lijst staat er niet`)
+  }
+  zouden(bevat(tekst, 'Nieuwe taak'), 'je kunt geen taak toevoegen op het bord')
+
+  // En er is maar één ingang naar hetzelfde werk: geen "Alle taken" ernaast.
+  const zijbalk = await page.getByLabel('Hoofdnavigatie').innerText()
+  zouden(!bevat(zijbalk, 'Alle taken'), `de zijbalk heeft nog twee ingangen: ${zijbalk}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de kolommen van een bord zijn aanpasbaar via instellingen', async () => {
   // Het tabblad staat in het adres, dus rechtstreeks ernaartoe.
   const page = await tabblad('/instellingen?tab=structuur')

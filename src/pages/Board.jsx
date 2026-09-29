@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 import { PRIORITIES, formatDuration, priorityOf } from '@lib/format'
 import { isOverdue, relativeDay } from '@lib/dates'
 import {
@@ -16,11 +16,12 @@ import {
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import KanbanBoard from '@components/board/KanbanBoard'
 import TaskDrawer from '@components/board/TaskDrawer'
+import NewTaskDialog from '@components/board/NewTaskDialog'
 import ColumnEditor from '@components/board/ColumnEditor'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
-import { createTask, moveTaskTo, useTasks } from '@data/tasks'
+import { moveTaskTo, useTasks } from '@data/tasks'
 
 const GROUPINGS = [
   { key: 'status', label: 'Status' },
@@ -32,7 +33,7 @@ const NOBODY = '—unassigned—'
 
 export default function Board() {
   const { listId } = useParams()
-  const { listById, spaceById, statusesOf, profiles, profileById, tags } = useWorkspace()
+  const { listById, spaceById, statusesOf, profiles, profileById, tags, eventsList } = useWorkspace()
   const { uid } = useAuth()
   const toast = useToast()
 
@@ -165,6 +166,22 @@ export default function Board() {
           description="Dit bord bestaat niet meer, of je hebt er geen toegang toe."
         />
       </div>
+    )
+  }
+
+  /*
+    Een bord dat geen eventbord is, is nu een weergave van Tasks.
+
+    Dat scheelt een tweede scherm met dezelfde taken erin. Het adres blijft
+    werken — het staat in bladwijzers en in oude links — maar het brengt je naar
+    de plek waar dat bord voortaan woont.
+  */
+  if (eventsList && list.id !== eventsList.id && list.kind !== 'social') {
+    return (
+      <Navigate
+        to={`/tasks?weergave=bord&groep=status&wie=iedereen&lijst=${list.id}`}
+        replace
+      />
     )
   }
 
@@ -323,7 +340,7 @@ export default function Board() {
       ) : null}
 
       {newTask ? (
-        <NewTaskModal
+        <NewTaskDialog
           list={list}
           statuses={statuses}
           initialStatus={newTask.status}
@@ -432,91 +449,3 @@ function ListView({ columns, tasksByColumn, profileById, tagsByName, onOpen }) {
 }
 
 // ─── New task ───────────────────────────────────────────────────────────────
-
-function NewTaskModal({ list, statuses, initialStatus, uid, onClose, onCreated }) {
-  const toast = useToast()
-  const { profiles } = useWorkspace()
-  const [title, setTitle] = useState('')
-  const [statusId, setStatusId] = useState(initialStatus?.id ?? statuses[0]?.id ?? '')
-  const [assignee, setAssignee] = useState(uid ?? '')
-  const [dueDate, setDueDate] = useState('')
-  const [priority, setPriority] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  const submit = async (e) => {
-    e.preventDefault()
-    if (!title.trim()) return
-    setSaving(true)
-    try {
-      const id = await createTask({
-        list,
-        status: statuses.find((s) => s.id === statusId) ?? null,
-        title,
-        assignees: assignee ? [assignee] : [],
-        dueDate: dueDate ? new Date(dueDate) : null,
-        priority: priority ? Number(priority) : null,
-        createdBy: uid,
-      })
-      onCreated(id)
-    } catch (err) {
-      toast.error(err.message)
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={`Nieuwe taak in ${list.name}`}
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Annuleren
-          </Button>
-          <Button variant="primary" onClick={submit} disabled={!title.trim() || saving}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} Aanmaken
-          </Button>
-        </>
-      }
-    >
-      <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Titel" className="sm:col-span-2">
-          <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Wat moet er gebeuren?" />
-        </Field>
-        <Field label="Status">
-          <Select value={statusId} onChange={(e) => setStatusId(e.target.value)}>
-            {statuses.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Toewijzen aan">
-          <Select value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">Niemand</option>
-            {profiles.filter((p) => p.active !== false).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.fullName || p.email}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Deadline">
-          <Input type="datetime-local" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        </Field>
-        <Field label="Prioriteit">
-          <Select value={priority} onChange={(e) => setPriority(e.target.value)}>
-            <option value="">Geen</option>
-            {PRIORITIES.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </form>
-    </Modal>
-  )
-}
