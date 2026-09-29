@@ -1000,6 +1000,44 @@ select.je-compact { padding-right: 24px; }
   text-align: left;
   cursor: pointer;
   font: var(--type-body-sm);
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-klant-rij__naam:hover {
+  text-decoration: underline;
+}
+.je-klant-rij__bedrag {
+  font: var(--type-body-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.je-klant-totaal {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-hairline);
+  font: var(--type-body-sm);
+}
+.je-klant-totaal strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Wat er nog te factureren valt, staat apart en met een rand eromheen: het is
+   het enige op deze fiche waar iemand vandaag nog iets mee moet doen. */
+.je-klant-factureren {
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--warning);
+  padding: var(--space-4) var(--space-5);
+}
+.je-klant-factureren .je-klant-rij {
+  padding: var(--space-2) 0;
+}
 
 /* ── Socials ──────────────────────────────────────────────────────────────
    De contentkalender: de kanaalmerkjes op een postkaart, het weekrooster met
