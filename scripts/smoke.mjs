@@ -969,7 +969,74 @@ await test('het manifest en de iconen staan er', async () => {
   await page.close()
 })
 
-// ─── 6. Snelheid, als vangrail ──────────────────────────────────────────────
+// ─── 6. Zonder verbinding ───────────────────────────────────────────────────
+
+await test('de schil van deze build staat compleet in version.json', async () => {
+  // De service worker staat als los bestand in public/ en kent de gehashte
+  // bestandsnamen niet; hij leest ze hier. Ontbreekt deze lijst, dan opent de
+  // app in de koelcel niet en merkt niemand dat tot het misgaat.
+  const page = await tabblad('/')
+  const versie = await page.evaluate(async () => (await fetch('/version.json', { cache: 'no-store' })).json())
+
+  zouden(versie.build, 'het buildnummer ontbreekt')
+  zouden(Array.isArray(versie.schil) && versie.schil.length >= 4, `de schil ontbreekt: ${JSON.stringify(versie)}`)
+  zouden(versie.schil.includes('index.html'), 'de pagina zelf staat niet in de schil')
+  zouden(versie.schil.some((n) => n.endsWith('.css')), 'de stijlen staan niet in de schil')
+  zouden(
+    versie.schil.some((n) => /assets\/Checklists-.*\.js$/.test(n)),
+    `de dagelijkse lijsten staan niet in de schil: ${versie.schil.join(', ')}`
+  )
+
+  // En elk van die namen bestaat ook echt. De testserver valt voor onbekende
+  // paden terug op index.html, dus een naam die nergens op slaat zou anders
+  // stilletjes "goed" lijken.
+  for (const naam of versie.schil.filter((n) => n !== 'index.html')) {
+    const echt = await page.evaluate(async (n) => {
+      const res = await fetch(`/${n}`)
+      return res.ok && !(await res.text()).includes('<div id="root">')
+    }, naam)
+    zouden(echt, `"${naam}" staat in de schil maar bestaat niet`)
+  }
+  await page.close()
+})
+
+await test('zonder verbinding kun je verder afvinken en zie je dat het nog niet weg is', async () => {
+  // Waar de hele oefening om draait. De keuken en de koelcel hebben één
+  // streepje bereik; wie daar afvinkt moet dat kunnen, en moet zien dat het
+  // nog niet doorgestuurd is. Zwijgen is hier het ergste: dan sluit iemand de
+  // app en staat er de volgende ochtend een halve lijst.
+  const page = await tabblad('/openen-sluiten')
+  await page.context().setOffline(true)
+  await page.waitForTimeout(700)
+
+  zouden(bevat(await inhoud(page), 'Geen verbinding'), 'de app zegt niet dat er geen verbinding is')
+
+  const vakjes = page.locator('input[type=checkbox]')
+  const voor = await vakjes.evaluateAll((els) => els.filter((e) => e.checked).length)
+  await vakjes.nth(await vakjes.evaluateAll((els) => els.findIndex((e) => !e.checked))).check()
+  await page.waitForTimeout(800)
+
+  const na = await vakjes.evaluateAll((els) => els.filter((e) => e.checked).length)
+  zouden(na === voor + 1, `offline afvinken lukte niet: ${voor} → ${na}`)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Nog op dit toestel'), 'er staat niet dat het vinkje nog op dit toestel staat')
+  zouden(bevat(tekst, 'wijziging'), `de balk noemt niet wat er openstaat: ${tekst.slice(0, 300)}`)
+
+  // En zodra er weer bereik is, gaat het mee en houdt de app erover op.
+  await page.context().setOffline(false)
+  await page.waitForTimeout(1200)
+  const daarna = await inhoud(page)
+  zouden(!bevat(daarna, 'Geen verbinding'), 'de melding bleef staan na het terugkeren')
+  zouden(!bevat(daarna, 'Nog op dit toestel'), 'het merkje bleef staan na het terugkeren')
+  zouden(
+    (await vakjes.evaluateAll((els) => els.filter((e) => e.checked).length)) === voor + 1,
+    'het vinkje van tijdens de onderbreking is verdwenen'
+  )
+  await page.close()
+})
+
+// ─── 7. Snelheid, als vangrail ──────────────────────────────────────────────
 
 await test('het eerste scherm staat er snel', async () => {
   const page = await tabblad('/')

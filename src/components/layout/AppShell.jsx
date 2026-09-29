@@ -10,6 +10,7 @@ import { Button, Icon, IconButton, Logotype } from '@components/ds'
 import { Spinner } from '@ui/index'
 import { AssistantProvider, useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
+import { OfflineProvider } from '@context/OfflineProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { EventsProvider, useEvents } from '@data/events'
@@ -18,6 +19,7 @@ import { stopTimer, useRunningTimer } from '@data/time'
 import { luisterNaarMeldingen } from '@lib/push'
 import AssistantPanel from './AssistantPanel'
 import GlobalSearch from './GlobalSearch'
+import OfflineBar from './OfflineBar'
 import Sidebar, { mainNav } from './Sidebar'
 import Sneltoetsen from './Sneltoetsen'
 
@@ -29,11 +31,13 @@ import Sneltoetsen from './Sneltoetsen'
  */
 export default function AppShell({ children }) {
   return (
-    <EventsProvider>
-      <AssistantProvider>
-        <Shell>{children}</Shell>
-      </AssistantProvider>
-    </EventsProvider>
+    <OfflineProvider>
+      <EventsProvider>
+        <AssistantProvider>
+          <Shell>{children}</Shell>
+        </AssistantProvider>
+      </EventsProvider>
+    </OfflineProvider>
   )
 }
 
@@ -102,6 +106,13 @@ function Shell({ children }) {
             </Button>
           </div>
         ) : null}
+
+        {/*
+          En dezelfde plek voor de andere mededeling die je moet weten voor je
+          de app wegklikt: dat er geen verbinding is, of dat er nog vinkjes op
+          dit toestel staan. Zie @lib/offline.
+        */}
+        <OfflineBar />
 
         {narrow ? <MobileBar uid={uid} isStaff={isStaff} /> : null}
 

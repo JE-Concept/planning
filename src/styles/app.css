@@ -1469,6 +1469,64 @@ select.je-compact { padding-right: 24px; }
 
 /* ── Offline en zoeken ── */
 
+/* De mededeling bovenaan, op dezelfde plek als die over een nieuwe versie: het
+   is dezelfde soort boodschap. Amber en niet rood — er is niets kapot en er
+   gaat niets verloren; het is iets wat je moet weten voor je de app wegklikt.
+   Geen kruisje: wegklikken zou precies het misverstand maken dat dit hoort te
+   voorkomen. */
+.je-offlinebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-hairline);
+  font: var(--type-body-sm);
+  color: var(--text-1);
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface-1));
+}
+.je-offlinebar--wachtend {
+  background: var(--accent-quiet);
+}
+.je-offlinebar__tekst {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.je-offlinebar__detail {
+  color: var(--text-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Op een telefoon past de uitleg er niet naast; onder elkaar en allebei
+   leesbaar is beter dan één zin die halverwege afgekapt wordt — dit is het
+   toestel waar het bericht juist toe doet. */
+@media (max-width: 640px) {
+  .je-offlinebar {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .je-offlinebar__detail {
+    white-space: normal;
+    flex-basis: 100%;
+  }
+}
+
+/* Het merkje naast de voortgang van een dagelijkse lijst: dit blad staat nog
+   op deze tablet. */
+.je-nogopdittoestel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: var(--warning);
+  font: var(--type-caption);
+  font-weight: 600;
+}
+
 /* Het lijstje met sneltoetsen. Eén kolom voor de toets, één voor wat ze doet,
    zodat de toetsen onder elkaar uitlijnen en het te scannen valt. */
 .je-sneltoetsen {

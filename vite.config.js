@@ -5,23 +5,62 @@ import { fileURLToPath, URL } from 'node:url'
 const resolve = (p) => fileURLToPath(new URL(p, import.meta.url))
 
 /**
- * Eén bestandje met het nummer van deze build ernaast.
+ * Wat er altijd mee moet naar de cache van de service worker.
+ *
+ * Niet álles: elke pagina is een eigen bestand, en bij elke uitrol de hele
+ * applicatie opnieuw laten binnenhalen kost iedereen data voor schermen die ze
+ * die dag misschien niet openen. Wat hier staat is de schil — de pagina, de
+ * stijlen, de bibliotheken — plus het ene scherm dat zonder verbinding móét
+ * openen: de dagelijkse lijsten, die in de keuken en de koelcel afgevinkt
+ * worden. De rest komt vanzelf in de cache zodra iemand er één keer geweest is.
+ */
+const ALTIJD_MEE = ['vendor', 'firebase', 'Checklists']
+
+/**
+ * Eén bestandje met het nummer van deze build ernaast, en wat erbij hoort.
  *
  * Een tabblad dat dagen openstaat vraagt na een uitrol bestanden op die niet
  * meer bestaan, en dat gaf een wit scherm. De app kan dat nu vóór zijn: ze
  * kijkt af en toe of dit bestand nog hetzelfde nummer heeft en zegt het als er
  * een nieuwe versie klaarstaat. Statisch bestand, geen index nodig.
+ *
+ * Sinds de service worker de app ook zonder verbinding moet kunnen openen,
+ * staan de bestandsnamen van de schil er ook in. Die dragen een hash en
+ * veranderen dus bij elke uitrol; de worker kan ze niet raden, want hij staat
+ * als los bestand in `public/` en gaat ongewijzigd door de build. Hij leest ze
+ * hier. Bewust hetzelfde bestand als waar de versiemelding al naar kijkt: twee
+ * bestanden die allebei moeten weten welke build er draait, lopen uit elkaar.
  */
 function versiebestand(demo) {
   return {
     name: 'je-plan-versie',
-    generateBundle() {
+    generateBundle(_opties, bundel) {
+      const bestanden = Object.values(bundel)
+
+      const schil = [
+        'index.html',
+        'manifest.webmanifest',
+        'favicon.svg',
+        'icons/icon-192.png',
+        ...bestanden
+          .filter(
+            (b) =>
+              (b.type === 'asset' && b.fileName.endsWith('.css')) ||
+              (b.type === 'chunk' && (b.isEntry || ALTIJD_MEE.includes(b.name)))
+          )
+          .map((b) => b.fileName),
+      ]
+
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
         source: JSON.stringify({
           build: process.env.BUILD_ID ?? String(Date.now()),
           demo: Boolean(demo),
+          // Paden zonder schuine streep ervoor: de worker plakt ze aan zijn
+          // eigen scope, zodat het ook klopt als de app ooit onder een submap
+          // staat.
+          schil,
         }),
       })
     },
