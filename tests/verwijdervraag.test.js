@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { zetHuidigeTaal } from '../src/lib/i18n'
 import { verwijderVraag } from '../src/lib/verwijdervraag'
 
 describe('verwijderVraag', () => {
+  afterEach(() => zetHuidigeTaal('nl'))
+
   it('noemt de taak bij naam', () => {
     const vraag = verwijderVraag({ task: { title: 'Trouw Niels en Inez' } })
     expect(vraag).toContain('“Trouw Niels en Inez” definitief verwijderen?')
@@ -34,5 +37,19 @@ describe('verwijderVraag', () => {
 
   it('valt terug op een naam als de titel leeg is', () => {
     expect(verwijderVraag({ task: { title: '   ' } })).toContain('“Deze taak”')
+  })
+
+  // De titel komt uit de database en blijft staan; het enkelvoud en meervoud
+  // eromheen volgt de taal.
+  it('stelt dezelfde vraag in het Engels', () => {
+    zetHuidigeTaal('en')
+    const vraag = verwijderVraag({
+      task: { title: 'Blum België', commentCount: 1 },
+      subtaken: 3,
+      bijlagen: 2,
+    })
+    expect(vraag).toContain('Permanently delete “Blum België”?')
+    expect(vraag).toContain('Also gone: 3 subtasks, 2 attachments and 1 comment.')
+    expect(vraag).toContain('This cannot be undone. Archiving keeps everything.')
   })
 })

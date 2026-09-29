@@ -1,4 +1,5 @@
 import { formatDuration } from './format'
+import { tekst } from './i18n'
 
 /**
  * De vraag die boven een verwijdering hangt.
@@ -15,31 +16,34 @@ import { formatDuration } from './format'
  *
  * Dit staat los van het scherm zodat de zin te lezen en te testen is zonder een
  * browser, en zodat er maar één versie van bestaat.
+ *
+ * De titel komt uit de database en blijft staan zoals hij daar staat; alleen de
+ * zin eromheen volgt de taal waarin iemand werkt.
  */
 export function verwijderVraag({ task, subtaken = 0, bijlagen = 0 }) {
-  const titel = (task?.title ?? '').trim() || 'Deze taak'
+  const titel = (task?.title ?? '').trim() || tekst('taaklib.verwijder.deze_taak')
   const weg = []
 
-  if (subtaken > 0) weg.push(`${subtaken} ${subtaken === 1 ? 'subtaak' : 'subtaken'}`)
-  if (bijlagen > 0) weg.push(`${bijlagen} ${bijlagen === 1 ? 'bijlage' : 'bijlagen'}`)
+  if (subtaken > 0) weg.push(tekst('taaklib.verwijder.subtaak', { aantal: subtaken }))
+  if (bijlagen > 0) weg.push(tekst('taaklib.verwijder.bijlage', { aantal: bijlagen }))
 
   const reacties = Number(task?.commentCount ?? 0)
-  if (reacties > 0) weg.push(`${reacties} ${reacties === 1 ? 'reactie' : 'reacties'}`)
+  if (reacties > 0) weg.push(tekst('taaklib.verwijder.reactie', { aantal: reacties }))
 
-  const regels = [`“${titel}” definitief verwijderen?`]
-  if (weg.length) regels.push(`Weg zijn dan ook: ${opsomming(weg)}.`)
+  const regels = [tekst('taaklib.verwijder.vraag', { titel })]
+  if (weg.length) regels.push(tekst('taaklib.verwijder.weg_ook', { lijst: opsomming(weg) }))
 
   const geboekt = Number(task?.trackedSeconds ?? 0)
   if (geboekt > 0) {
-    regels.push(`De ${formatDuration(geboekt)} geboekte tijd blijft bestaan, maar verliest haar taak.`)
+    regels.push(tekst('taaklib.verwijder.tijd_blijft', { tijd: formatDuration(geboekt) }))
   }
 
-  regels.push('Dit kan niet ongedaan gemaakt worden. Archiveren bewaart alles.')
+  regels.push(tekst('taaklib.verwijder.onomkeerbaar'))
   return regels.join('\n\n')
 }
 
 /** "drie subtaken, twee bijlagen en een reactie" — met "en" voor het laatste. */
 function opsomming(delen) {
   if (delen.length === 1) return delen[0]
-  return `${delen.slice(0, -1).join(', ')} en ${delen[delen.length - 1]}`
+  return `${delen.slice(0, -1).join(', ')} ${tekst('taaklib.en')} ${delen[delen.length - 1]}`
 }
