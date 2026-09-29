@@ -115,7 +115,8 @@ const PAGINAS = [
   ['Event', '/events/t-trouw', 'Trouw Niels en Inez'],
   ['Tasks', '/tasks', 'Tasks'],
   ['Werklast', '/werklast', 'Werklast'],
-  ['Vandaag', '/vandaag', 'Dag Jasper'],
+  ['Dashboard', '/dashboard', 'Dashboard'],
+  ['Het oude adres van Vandaag', '/vandaag', 'Dashboard'],
   ['Bord Events', '/bord/l-overview', 'Events'],
   ['Bord Socials', '/bord/l-socials', 'Socials'],
   ['Socials', '/social', 'Socials'],
@@ -330,6 +331,28 @@ await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
     (await inhoud(page)).includes('Terrasverwarmer nakijken'),
     'het nieuwe punt staat niet op de dagelijkse lijst'
   )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('het dashboard geeft een overzicht over de hele applicatie', async () => {
+  const page = await tabblad('/dashboard')
+  const tekst = await inhoud(page)
+  for (const naald of [
+    'Te laat',
+    'Te factureren',
+    'Events deze maand',
+    'Wat er aankomt',
+    'Wat bij jou ligt',
+    'Bistro vandaag',
+    'Socials deze week',
+  ]) {
+    zouden(bevat(tekst, naald), `"${naald}" staat niet op het dashboard`)
+  }
+  // Elk cijfer is een link naar de plek waar je het oplost.
+  await page.getByRole('link', { name: /Te factureren/ }).first().click()
+  await page.waitForTimeout(800)
+  zouden(bevat(await inhoud(page), 'Events'), 'het cijfer bracht je nergens')
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })

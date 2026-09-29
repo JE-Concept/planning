@@ -93,7 +93,9 @@ function Authenticated() {
             <Route path="/mijn-taken" element={<Navigate to="/tasks" replace />} />
             <Route path="/mijn-werk" element={<Navigate to="/tasks" replace />} />
             <Route path="/werklast" element={<Workload />} />
-            <Route path="/vandaag" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            {/* "Vandaag" heette het eerder; dat adres blijft werken. */}
+            <Route path="/vandaag" element={<Navigate to="/dashboard" replace />} />
             <Route path="/meer" element={<More />} />
             <Route path="/bord/:listId" element={<Board />} />
             <Route path="/social" element={<SocialCalendar />} />

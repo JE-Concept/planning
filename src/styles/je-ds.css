@@ -260,7 +260,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .je-btn--ghost:active{transform:translateY(1px)}
 .je-btn--danger{background:transparent;color:var(--danger);border-color:currentColor}
 .je-btn--danger:hover{background:rgba(179,53,47,.08)}
-.je-btn[disabled],.je-btn[aria-disabled="true"]{opacity:.4;pointer-events:none}
+/* Een uitgeschakelde knop moet er uitgeschakeld uitzien.
+
+   Alleen doorzichtig maken was niet genoeg: de ›-knop naast een datum stond uit
+   maar zag er hetzelfde uit, dus je bleef erop klikken. Nu verdwijnt ook de
+   vulling en de rand, en de cursor zegt het meteen. `pointer-events` blijft er
+   niet af: zonder aanwijzer krijg je geen cursor te zien en ook geen tooltip die
+   uitlegt waarom hij uitstaat. */
+.je-btn[disabled],.je-btn[aria-disabled="true"]{
+  opacity:.55;
+  cursor:not-allowed;
+  background:var(--surface-2);
+  border-color:var(--border-hairline);
+  color:var(--text-3);
+  box-shadow:none;
+}
+.je-btn[disabled]:hover,.je-btn[aria-disabled="true"]:hover{
+  background:var(--surface-2);
+  border-color:var(--border-hairline);
+  color:var(--text-3);
+}
 .je-btn__spinner{width:12px;height:12px;border:1.5px solid currentColor;border-top-color:transparent;border-radius:var(--radius-pill);animation:je-spin 700ms linear infinite}
 @keyframes je-spin{to{transform:rotate(360deg)}}
 

@@ -510,12 +510,28 @@
 .je-displaybar__zoek .je-input {
   width: 180px;
 }
-/* Compacte vorm van een veld in een werkbalk, naast knoppen van dezelfde hoogte. */
+/* Compacte vorm van een veld in een werkbalk, naast knoppen van dezelfde hoogte.
+
+   De velden van het systeem zijn standaard zo breed als hun vak, want ze staan
+   normaal onder elkaar in een formulier. In een werkbalk moeten ze naast elkaar
+   en niet breder dan hun inhoud — anders krijg je zeven regels onder elkaar waar
+   één balk hoort te staan. */
 .je-compact {
+  width: auto;
+  max-width: 100%;
   height: 32px;
   padding-top: 0;
   padding-bottom: 0;
   font: var(--type-body-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding-inline: 9px;
+  background-color: var(--surface-1);
+}
+select.je-compact { padding-right: 24px; }
+.je-displaybar .je-tabs {
+  gap: var(--space-5);
+  padding-bottom: 2px;
 }
 
 .je-tasklist {
@@ -647,4 +663,168 @@
 }
 .je-calitem:hover {
   background: var(--surface-2);
+}
+
+/* ── Dashboard ─────────────────────────────────────────────────────────── */
+
+/* De bovenste rij: vijf getallen die samen zeggen hoe het ervoor staat.
+   auto-fit zodat het van vijf naar twee naar één zakt zonder mediaquery's. */
+.je-dash__cijfers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: var(--space-4);
+}
+.je-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-top: 2px solid var(--border-subtle);
+  border-radius: 4px;
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 160ms var(--ease-brand), box-shadow 160ms var(--ease-brand);
+}
+.je-kpi:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-1);
+}
+/* De kleur zit in de bovenrand en niet in het getal: een rood cijfer naast een
+   zwart cijfer leest als twee soorten gegevens in plaats van als een waarschuwing. */
+.je-kpi--slecht { border-top-color: var(--danger); }
+.je-kpi--letop { border-top-color: var(--warning, #d98324); }
+.je-kpi--goed { border-top-color: var(--success, #3db88b); }
+.je-kpi__waarde {
+  font: var(--fw-medium) 32px/1.05 var(--font-display);
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* Twee kolommen op een breed scherm, één op een smal. De linkerkolom is breder:
+   daar staat wat je leest, rechts wat je controleert. */
+.je-dash__kolommen {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .je-dash__kolommen { grid-template-columns: minmax(0, 1fr); }
+}
+.je-dash__kolom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/* De dag van een event, als blokje links in de rij. */
+.je-dash__dag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  flex: 0 0 34px;
+}
+.je-dash__dag > b {
+  font: var(--fw-medium) 19px/1 var(--font-display);
+  color: var(--text-1);
+}
+.je-dash__dag > span {
+  font: var(--type-eyebrow);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.je-dash__sub {
+  display: block;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-dash__wanneer {
+  flex: 0 0 46px;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+}
+.je-dash__groep {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: var(--space-4) var(--space-5) 2px;
+  font: var(--type-eyebrow);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.je-dash__groep > span {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+/* Een lijst met een balkje per regel: de dagelijkse lijsten en de goals. */
+.je-dash__lijsten {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.je-dash__lijstkop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font: var(--type-body-sm);
+  color: var(--text-1);
+  margin-bottom: 5px;
+}
+.je-dash__lijstkop > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-dash__getal {
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+/* Een leeg vlak dat zegt dat er niets is, en niet gewoon leeg blijft. */
+.je-dash__leeg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-5);
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+.je-dash__leeg > svg { color: var(--success, #3db88b); flex: 0 0 auto; }
+
+/* De kop van een paneel: titel links, knop rechts, elk op één regel. Zonder dit
+   brak "Wacht op een beoordeling" over drie regels omdat de knop ernaast stond. */
+.je-panel__head > .je-eyebrow {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.je-panel__head > .je-panel__right { flex: 0 0 auto; }
+
+/* Op een telefoon is de naam van het event belangrijker dan het aantal open
+   taken erachter; anders blijft er van "Vrijwilligersfeest — 140 krukken" niet
+   veel over. */
+@media (max-width: 560px) {
+  .je-dash__kolom .je-taskline__due { display: none; }
 }

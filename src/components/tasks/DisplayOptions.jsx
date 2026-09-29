@@ -16,7 +16,7 @@ import { Button, Icon, Input, Select } from '@components/ds'
 export default function DisplayOptions({ opties, zet, profiles, lijsten, labels, aantal }) {
   return (
     <div className="je-displaybar">
-      <div className="je-tabs" style={{ border: 0, gap: 2 }}>
+      <div className="je-tabs" style={{ border: 0 }} role="tablist">
         {WEERGAVEN.map((w) => (
           <button
             key={w.key}

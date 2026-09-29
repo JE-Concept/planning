@@ -93,9 +93,19 @@ export function Icon({ name, size = 20, strokeWidth = 1.5, className, style, ...
   )
 }
 
+/**
+ * `as` maakt hiervan een link met het uiterlijk van een knop.
+ *
+ * Dat is geen kosmetiek: "Naar het bord" hoort een echte link te zijn, zodat je
+ * hem in een nieuw tabblad kunt openen en een voorleesprogramma hem als link
+ * aankondigt. Een `<button>` met een `onClick` die navigeert kan dat allebei
+ * niet. `type` en `disabled` horen alleen bij een echte knop en gaan daarom niet
+ * mee naar een ander element.
+ */
 export const Button = forwardRef(function Button(
   {
     children,
+    as: Element = 'button',
     variant = 'primary',
     size = 'md',
     iconLeft,
@@ -110,12 +120,13 @@ export const Button = forwardRef(function Button(
   ref
 ) {
   const gs = size === 'lg' ? 16 : size === 'sm' ? 13 : 14
+  const knop = Element === 'button'
+
   return (
-    <button
+    <Element
       ref={ref}
-      type={type}
+      {...(knop ? { type, disabled: disabled || loading } : {})}
       className={cn('je-btn', `je-btn--${variant}`, `je-btn--${size}`, block && 'je-btn--block', className)}
-      disabled={disabled || loading}
       aria-disabled={disabled || loading ? 'true' : undefined}
       {...rest}
     >
@@ -123,7 +134,7 @@ export const Button = forwardRef(function Button(
       {!loading && iconLeft ? <Icon name={iconLeft} size={gs} /> : null}
       {children}
       {iconRight ? <Icon name={iconRight} size={gs} /> : null}
-    </button>
+    </Element>
   )
 })
 

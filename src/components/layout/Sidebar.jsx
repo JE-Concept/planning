@@ -36,10 +36,10 @@ export function navSecties({ isAdmin, isStaff, boards = [], eventsListId = null 
     .map((l) => ({ to: `/bord/${l.id}`, icon: 'kanban', label: l.name }))
 
   return [
-    { to: '/vandaag', icon: 'sun', label: 'Vandaag', kinderen: [] },
+    { to: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard', kinderen: [] },
     {
       to: '/',
-      icon: 'layout-dashboard',
+      icon: 'kanban',
       label: 'Events',
       end: true,
       match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten' || p === '/social',
@@ -87,7 +87,8 @@ export function navSecties({ isAdmin, isStaff, boards = [], eventsListId = null 
 export function mainNav({ isAdmin, isStaff }) {
   if (isStaff) return [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' }]
   return [
-    { to: '/', icon: 'layout-dashboard', label: 'Events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
+    { to: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard' },
+    { to: '/', icon: 'kanban', label: 'Events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
     { to: '/tasks', icon: 'check-circle', label: 'Tasks' },
     { to: '/kalender', icon: 'calendar-days', label: 'Kalender' },
     { to: '/werklast', icon: 'users', label: 'Werklast' },
@@ -97,7 +98,7 @@ export function mainNav({ isAdmin, isStaff }) {
 
 /** Alles wat niet in de onderbalk past, voor het scherm "Meer" op een telefoon. */
 export const MORE = [
-  { to: '/vandaag', icon: 'sun', label: 'Vandaag' },
+  { to: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard' },
   { to: '/klanten', icon: 'building', label: 'Klanten' },
   { to: '/social', icon: 'share-2', label: 'Socials' },
   { to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' },
