@@ -4,11 +4,40 @@ import { fileURLToPath, URL } from 'node:url'
 
 const resolve = (p) => fileURLToPath(new URL(p, import.meta.url))
 
+/**
+ * Eén bestandje met het nummer van deze build ernaast.
+ *
+ * Een tabblad dat dagen openstaat vraagt na een uitrol bestanden op die niet
+ * meer bestaan, en dat gaf een wit scherm. De app kan dat nu vóór zijn: ze
+ * kijkt af en toe of dit bestand nog hetzelfde nummer heeft en zegt het als er
+ * een nieuwe versie klaarstaat. Statisch bestand, geen index nodig.
+ */
+function versiebestand(demo) {
+  return {
+    name: 'je-plan-versie',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({
+          build: process.env.BUILD_ID ?? String(Date.now()),
+          demo: Boolean(demo),
+        }),
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const demo = mode === 'demo'
 
   return {
-  plugins: [react()],
+  plugins: [react(), versiebestand(demo)],
+  define: {
+    // Welke build dit is. De app vergelijkt dit met wat er op de server staat en
+    // kan zo zeggen dat er een nieuwe versie klaarstaat.
+    __BUILD_ID__: JSON.stringify(process.env.BUILD_ID ?? String(Date.now())),
+  },
   // Relatieve paden, zodat de demobuild ook onder een submap gepubliceerd kan worden.
   base: demo ? './' : '/',
   resolve: {

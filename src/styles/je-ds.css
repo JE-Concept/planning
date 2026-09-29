@@ -455,3 +455,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---------- Stip ---------- */
 .je-dot{display:inline-block;width:8px;height:8px;border-radius:var(--radius-pill);background:var(--text-3);flex:0 0 auto}
+
+/* ─── Nieuwe versie klaar ─────────────────────────────────────────────────── */
+/* Eén regel bovenaan in plaats van een wit scherm na een uitrol. */
+.je-updatebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--accent-quiet);
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-1);
+  font: var(--type-body-sm);
+}
+.je-updatebar > span { flex: 1; min-width: 0; }

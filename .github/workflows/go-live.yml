@@ -160,6 +160,8 @@ jobs:
           VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
+          # Waaraan een openstaand tabblad ziet dat er iets nieuws uitgerold is.
+          BUILD_ID: ${{ github.sha }}
         run: npm run build
 
       - name: Publiceren
