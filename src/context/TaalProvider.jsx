@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { STANDAARDTAAL, geldigeTaal, localeVan, vertaal } from '@lib/i18n'
+import { STANDAARDTAAL, geldigeTaal, localeVan, vertaal, zetHuidigeTaal } from '@lib/i18n'
 import { zetLocale } from '@lib/dates'
 import { useAuth } from '@context/AuthProvider'
 import { zetTaal as bewaarTaal } from '@data/taal'
@@ -47,6 +47,9 @@ export function TaalProvider({ children }) {
     // De datums, getallen en bedragen moeten meegaan; anders leest een Engelse
     // pagina "1 oktober" en dat is geen halve vertaling maar een fout.
     zetLocale(localeVan(taal))
+    // En dezelfde afspraak voor de gewone functies die geen hook kunnen
+    // gebruiken — zie `zetHuidigeTaal` in `@lib/i18n`.
+    zetHuidigeTaal(taal)
     if (typeof document !== 'undefined') document.documentElement.lang = taal
   }, [taal])
 

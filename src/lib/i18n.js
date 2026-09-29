@@ -101,6 +101,29 @@ export function vertaal(taal, sleutel, waarden = null) {
   )
 }
 
+/*
+  De taal waar de app nu in staat, voor code die geen hook kan gebruiken.
+
+  `formatDuration`, `relativeDay` en de prioriteitsnamen zijn gewone functies
+  die overal aangeroepen worden, ook buiten een component. Ze een `t` laten
+  meekrijgen zou betekenen dat elke aanroeper op tien schermen aangepast wordt
+  om één woord te vertalen.
+
+  Dit is dezelfde afspraak als `zetLocale` in `dates.js`, en ze werkt om
+  dezelfde reden: de provider zet de taal, en het wisselen van taal laat React
+  alles opnieuw tekenen — dus wordt er ook opnieuw opgezocht.
+*/
+let huidigeTaal = STANDAARDTAAL
+
+export function zetHuidigeTaal(taal) {
+  huidigeTaal = geldigeTaal(taal)
+}
+
+export const huidigeTaalVan = () => huidigeTaal
+
+/** `vertaal` in de taal waar de app nu in staat. */
+export const tekst = (sleutel, waarden = null) => vertaal(huidigeTaal, sleutel, waarden)
+
 /** Welke sleutels in deze taal nog ontbreken — voor de test die daarop let. */
 export function ontbrekendeVertalingen(taal = 'en') {
   return Object.keys(TEKSTEN).filter((sleutel) => !TEKSTEN[sleutel][taal])

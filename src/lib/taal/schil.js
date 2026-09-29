@@ -170,4 +170,53 @@ export default {
   'rol.member': { nl: 'Lid', en: 'Member' },
   'rol.staff': { nl: 'Personeel', en: 'Staff' },
   'rol.guest': { nl: 'Gast', en: 'Guest' },
+
+  // ── Tijd en prioriteit ─────────────────────────────────────────────────
+  // De letter achter een uur. Nederlands schrijft 8u30, Engels 8h30 — en "u"
+  // betekent in het Engels niets.
+  'alg.uur_kort': { nl: 'u', en: 'h' },
+  'alg.minuut_kort': { nl: 'm', en: 'm' },
+  'alg.nul_minuten': { nl: '0m', en: '0m' },
+  'alg.over_dagen': { nl: 'over {aantal} dagen', en: 'in {aantal} days' },
+  'alg.dagen_te_laat_een': { nl: '1 dag te laat', en: '1 day overdue' },
+  'alg.dagen_te_laat_meer': { nl: '{aantal} dagen te laat', en: '{aantal} days overdue' },
+  'prio.1': { nl: 'Urgent', en: 'Urgent' },
+  'prio.2': { nl: 'Hoog', en: 'High' },
+  'prio.3': { nl: 'Normaal', en: 'Normal' },
+  'prio.4': { nl: 'Laag', en: 'Low' },
+
+  // ── De assistent ───────────────────────────────────────────────────────
+  'assistent.groet': {
+    nl: 'Dag {naam}. Vraag me iets over de planning, of laat me iets doen: een taak aanmaken, een status verzetten of een timer starten.',
+    en: 'Hello {naam}. Ask me anything about the planning, or have me do something: create a task, move a status or start a timer.',
+  },
+  'assistent.tip1': { nl: 'Wat moet ik vandaag doen?', en: 'What should I do today?' },
+  'assistent.tip2': {
+    nl: 'Welke events moeten nog gefactureerd worden?',
+    en: 'Which events still have to be invoiced?',
+  },
+  'assistent.tip3': {
+    nl: 'Maak voor Elke een taak "Tafellinnen bestellen" bij het eerstvolgende huwelijk',
+    en: 'Create a task "Order table linen" for Elke on the next wedding',
+  },
+  'assistent.tip4': { nl: 'Hoeveel gasten verwachten we deze maand?', en: 'How many guests do we expect this month?' },
+  'assistent.gedaan': { nl: 'Gedaan.', en: 'Done.' },
+
+  // ── Wanneer een functie niet antwoordt ─────────────────────────────────
+  'fout.niet_uitgerold': {
+    nl: '{wat} is nog niet uitgerold. Het wacht op de Claude-sleutel: een beheerder zet ANTHROPIC_API_KEY bij het Firebase-project en rolt opnieuw uit — zie docs/assistent-aanzetten.md.',
+    en: '{wat} has not been deployed yet. It is waiting for the Claude key: an administrator sets ANTHROPIC_API_KEY on the Firebase project and deploys again — see docs/assistent-aanzetten.md.',
+  },
+  'fout.afgemeld': { nl: 'Je bent afgemeld. Herlaad de pagina.', en: 'You have been signed out. Reload the page.' },
+  'fout.geen_toegang': { nl: 'Je hebt hier geen toegang toe.', en: 'You do not have access to this.' },
+  'fout.te_lang': {
+    nl: 'Het duurde te lang. Probeer het met een korter transcript, of probeer het zo opnieuw.',
+    en: 'That took too long. Try a shorter transcript, or try again in a moment.',
+  },
+  'fout.niet_bereikbaar': {
+    nl: 'De dienst is even niet bereikbaar. Probeer het zo opnieuw.',
+    en: 'The service is briefly unreachable. Try again in a moment.',
+  },
+  'fout.iets_mis': { nl: 'Er ging iets mis.', en: 'Something went wrong.' },
+  'fout.dit_onderdeel': { nl: 'Dit onderdeel', en: 'This part' },
 }

@@ -1,3 +1,5 @@
+import { tekst } from './i18n'
+
 import { addDays, dayKey, formatWeekday, startOfWeek } from './dates'
 
 /**
@@ -162,11 +164,17 @@ export function geplandTegenoverGeboekt({ rooster, entries }) {
   })
 }
 
-/** "8u30" — hetzelfde formaat als de urenregistratie gebruikt. */
+/**
+ * "8u30" — hetzelfde formaat als de urenregistratie gebruikt, en in het Engels
+ * "8h30": de letter achter het uur volgt de taal, want "u" zegt een Engelse
+ * lezer niets. Het formaat zelf blijft hetzelfde, zodat een rooster en een
+ * urenlijst naast elkaar nog altijd dezelfde vorm hebben.
+ */
 export function urenTekst(minuten) {
   const heel = Math.max(0, Math.round(minuten))
   const u = Math.floor(heel / 60)
   const m = heel % 60
-  if (!u) return `${m}m`
-  return m ? `${u}u${String(m).padStart(2, '0')}` : `${u}u`
+  const uur = tekst('alg.uur_kort')
+  if (!u) return `${m}${tekst('alg.minuut_kort')}`
+  return m ? `${u}${uur}${String(m).padStart(2, '0')}` : `${u}${uur}`
 }

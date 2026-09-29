@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Hex, Icon, IconButton, Tag } from '@components/ds'
-import { SUGGESTIONS, useAssistant } from '@context/AssistantProvider'
+import { suggesties, useAssistant } from '@context/AssistantProvider'
 import { useTaal } from '@context/TaalProvider'
 
 /** Het paneel rechts (schermvullend op een telefoon) met het gesprek. */
@@ -123,7 +123,7 @@ export default function AssistantPanel() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
             <span className="je-caps">{t('dashboard.assistent_probeer')}</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-              {SUGGESTIONS.map((s) => (
+              {suggesties().map((s) => (
                 <Tag key={s} selectable onClick={() => ask(s)}>
                   {s}
                 </Tag>

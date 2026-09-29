@@ -1,3 +1,5 @@
+import { tekst } from './i18n'
+
 const euro = new Intl.NumberFormat('nl-BE', {
   style: 'currency',
   currency: 'EUR',
@@ -26,8 +28,12 @@ export function formatDuration(seconds, { withSeconds = false } = {}) {
   if (withSeconds) {
     return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':')
   }
-  if (h === 0 && m === 0) return '0m'
-  return [h > 0 ? `${h}u` : null, m > 0 ? `${m}m` : null].filter(Boolean).join(' ')
+  // De letter achter het uur volgt de taal: "5u 45m" leest in het Engels als
+  // niets, en dit staat op elk scherm waar tijd geboekt wordt.
+  const uur = tekst('alg.uur_kort')
+  const min = tekst('alg.minuut_kort')
+  if (h === 0 && m === 0) return `0${min}`
+  return [h > 0 ? `${h}${uur}` : null, m > 0 ? `${m}${min}` : null].filter(Boolean).join(' ')
 }
 
 /** Decimal hours for invoicing: 9045 → 2.51 */
@@ -43,12 +49,20 @@ export function initials(name, email) {
   return (parts[0][0] + parts[1][0]).toUpperCase()
 }
 
-export const PRIORITIES = [
-  { value: 1, label: 'Urgent', color: '#dc2626' },
-  { value: 2, label: 'Hoog', color: '#f59e0b' },
-  { value: 3, label: 'Normaal', color: '#3377ff' },
-  { value: 4, label: 'Laag', color: '#8593a9' },
-]
+/*
+  De kleur ligt vast, de naam hangt aan de taal.
+
+  Daarom is `label` een getter en geen waarde: de lijst wordt één keer gemaakt
+  en op tien plekken uitgelezen, en een vaste tekst zou na een taalwissel de
+  oude blijven tonen tot de pagina herladen wordt.
+*/
+export const PRIORITIES = [1, 2, 3, 4].map((value) => ({
+  value,
+  color: { 1: '#dc2626', 2: '#f59e0b', 3: '#3377ff', 4: '#8593a9' }[value],
+  get label() {
+    return tekst(`prio.${value}`)
+  },
+}))
 
 export function priorityOf(value) {
   return PRIORITIES.find((p) => p.value === value) ?? null

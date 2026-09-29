@@ -2,9 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useNavigate } from 'react-router-dom'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { app } from '@lib/firebase'
-import { addDays, dayKey, startOfDay } from '@lib/dates'
+import { addDays, dayKey, huidigeLocaleVan, startOfDay } from '@lib/dates'
 import { PIPELINE, blockedTransition, labelOf } from '@lib/pipeline'
 import { leesFunctieFout } from '@lib/functie-fout'
+import { huidigeTaalVan, tekst } from '@lib/i18n'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { addEventTask, eventDateOf, isDone, moveEvent, toggleTaskDone, useEvents } from '@data/events'
@@ -23,17 +24,21 @@ const AssistantContext = createContext(null)
 const functions = getFunctions(app, 'europe-west1')
 const callAssistant = httpsCallable(functions, 'assistant', { timeout: 120_000 })
 
-const GREETING = (name) =>
-  `Dag ${name}. Vraag me iets over de planning, of laat me iets doen: een taak aanmaken, een status verzetten of een timer starten.`
+const GREETING = (name) => tekst('assistent.groet', { naam: name })
 
-export const SUGGESTIONS = [
-  'Wat moet ik vandaag doen?',
-  'Welke events moeten nog gefactureerd worden?',
-  'Maak voor Elke een taak "Tafellinnen bestellen" bij het eerstvolgende huwelijk',
-  'Hoeveel gasten verwachten we deze maand?',
-]
+/*
+  De voorbeeldvragen staan er niet om leuk te staan: ze laten zien wat de
+  assistent kan. Daarom gaan ze mee met de taal — een Engelse gebruiker die op
+  een Nederlandse zin klikt, stuurt een vraag die hij zelf niet geschreven zou
+  hebben.
 
-const FMT = new Intl.DateTimeFormat('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  Een functie en geen vaste lijst: zo wordt de tekst opgezocht op het moment van
+  tekenen, en neemt een taalwissel ze mee.
+*/
+export const suggesties = () => [1, 2, 3, 4].map((n) => tekst(`assistent.tip${n}`))
+
+const datumTekst = (nu) =>
+  new Intl.DateTimeFormat(huidigeLocaleVan(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(nu)
 
 export function AssistantProvider({ children }) {
   const { profile, uid } = useAuth()
@@ -260,11 +265,15 @@ export function AssistantProvider({ children }) {
 
       const system = [
         'Je bent de assistent in JE Plan, de interne planningstool van JE Concept (events en horeca, Tongeren–Borgloon).',
-        `Vandaag is het ${FMT.format(new Date())}. Je praat met ${profile?.fullName ?? 'een teamlid'} (profiel-id ${uid}).`,
+        `Vandaag is het ${datumTekst(new Date())}. Je praat met ${profile?.fullName ?? 'een teamlid'} (profiel-id ${uid}).`,
         `Team: ${team.map((p) => `${p.id}=${p.fullName ?? p.email}`).join(', ')}.`,
         `Statuspijplijn in volgorde: ${PIPELINE.map((p) => `${p.key} (${labelOf(p.key, L().eventStatuses)})`).join(', ')}.`,
         `Events: ${JSON.stringify(L().events.filter((e) => e.statusName !== 'complete').map(evLine))}`,
-        'Regels: antwoord in Belgisch Nederlands, jij-vorm, kort (hoogstens 5 regels). Geen markdown, geen emoji, geen uitroeptekens. Lijstjes met een streepje mogen. Bedragen als € 1.234, data als 12 oktober.',
+        // De assistent antwoordt in de taal waarin je de tool gezet hebt. Een
+        // Nederlands antwoord op een Engelse vraag is geen Engelse tool.
+        huidigeTaalVan() === 'en'
+          ? 'Rules: answer in British English, informally, short (5 lines at most). No markdown, no emoji, no exclamation marks. Lists with a dash are fine. Amounts as € 1,234, dates as 12 October.'
+          : 'Regels: antwoord in Belgisch Nederlands, jij-vorm, kort (hoogstens 5 regels). Geen markdown, geen emoji, geen uitroeptekens. Lijstjes met een streepje mogen. Bedragen als € 1.234, data als 12 oktober.',
         'Gebruik de tools om taken op te vragen of acties uit te voeren; verzin nooit gegevens. Bevestig een uitgevoerde actie in één zin. Vraag om verduidelijking als een event of persoon onduidelijk is.',
       ].join('\n')
 
@@ -310,7 +319,7 @@ export function AssistantProvider({ children }) {
                 leesFunctieFout(err, 'De assistent')
       }
 
-      setMessages((m) => [...m, { role: 'assistant', text: reply || 'Gedaan.', actions }])
+      setMessages((m) => [...m, { role: 'assistant', text: reply || tekst('assistent.gedaan'), actions }])
       setBusy(false)
     },
     [busy, team, profile, uid, navigate]

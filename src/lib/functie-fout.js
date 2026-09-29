@@ -13,26 +13,22 @@
  * zoeken naar een probleem dat er niet is. Deze vertaling zegt wat er aan de hand
  * is en wie het kan oplossen.
  */
-const ONTBREEKT =
-  'Dit onderdeel is nog niet uitgerold. Het wacht op de Claude-sleutel: een beheerder zet ' +
-  'ANTHROPIC_API_KEY bij het Firebase-project en rolt opnieuw uit — zie docs/assistent-aanzetten.md.'
+import { tekst } from './i18n'
 
-export function leesFunctieFout(err, wat = 'Dit onderdeel') {
+export function leesFunctieFout(err, wat = null) {
   const code = err?.code ?? ''
 
   // "not-found" is de functie die er niet is; "internal" krijgen we wanneer de
   // aanroep wel ergens landt maar er niets achter zit.
   if (code === 'functions/not-found' || code === 'functions/internal') {
-    return `${wat} is nog niet uitgerold. ${ONTBREEKT.slice(ONTBREEKT.indexOf('Het wacht'))}`
+    return tekst('fout.niet_uitgerold', { wat: wat ?? tekst('fout.dit_onderdeel') })
   }
-  if (code === 'functions/unauthenticated') return 'Je bent afgemeld. Herlaad de pagina.'
-  if (code === 'functions/permission-denied') return err?.message || 'Je hebt hier geen toegang toe.'
-  if (code === 'functions/deadline-exceeded') {
-    return 'Het duurde te lang. Probeer het met een korter transcript, of probeer het zo opnieuw.'
-  }
+  if (code === 'functions/unauthenticated') return tekst('fout.afgemeld')
+  if (code === 'functions/permission-denied') return err?.message || tekst('fout.geen_toegang')
+  if (code === 'functions/deadline-exceeded') return tekst('fout.te_lang')
   if (code === 'functions/unavailable' || code === 'functions/resource-exhausted') {
-    return 'De dienst is even niet bereikbaar. Probeer het zo opnieuw.'
+    return tekst('fout.niet_bereikbaar')
   }
 
-  return err?.message || 'Er ging iets mis.'
+  return err?.message || tekst('fout.iets_mis')
 }

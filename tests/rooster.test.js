@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { zetHuidigeTaal } from '../src/lib/i18n'
 import { zetLocale } from '../src/lib/dates'
 import {
   botsingen,
@@ -172,10 +173,21 @@ describe('geplandTegenoverGeboekt', () => {
 })
 
 describe('urenTekst', () => {
+  afterEach(() => zetHuidigeTaal('nl'))
+
   it('schrijft uren zoals de urenregistratie dat doet', () => {
+    zetHuidigeTaal('nl')
     expect(urenTekst(510)).toBe('8u30')
     expect(urenTekst(480)).toBe('8u')
     expect(urenTekst(45)).toBe('45m')
     expect(urenTekst(0)).toBe('0m')
+  })
+
+  // Het formaat blijft hetzelfde, alleen de letter achter het uur verandert:
+  // "u" zegt een Engelse lezer niets.
+  it('schrijft dezelfde vorm met een h in het Engels', () => {
+    zetHuidigeTaal('en')
+    expect(urenTekst(510)).toBe('8h30')
+    expect(urenTekst(45)).toBe('45m')
   })
 })

@@ -1,3 +1,5 @@
+import { tekst } from './i18n'
+
 const TZ = 'Europe/Brussels'
 
 /**
@@ -94,11 +96,11 @@ export const formatWeekday = formatteer('dagnaam')
 export function relativeDay(value) {
   if (!asDate(value)) return ''
   const days = daysUntil(value)
-  if (days === 0) return 'vandaag'
-  if (days === 1) return 'morgen'
-  if (days === -1) return 'gisteren'
-  if (days > 0) return days < 7 ? `over ${days} dagen` : formatDate(value)
-  return `${Math.abs(days)} dagen te laat`
+  if (days === 0) return tekst('alg.vandaag').toLowerCase()
+  if (days === 1) return tekst('alg.morgen').toLowerCase()
+  if (days === -1) return tekst('alg.gisteren').toLowerCase()
+  if (days > 0) return days < 7 ? tekst('alg.over_dagen', { aantal: days }) : formatDate(value)
+  return tekst('alg.dagen_te_laat', { aantal: Math.abs(days) })
 }
 
 export function daysUntil(value) {
