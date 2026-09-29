@@ -1,8 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { STANDAARDTAAL, TALEN, geldigeTaal, localeVan, ontbrekendeVertalingen, vertaal } from '../src/lib/i18n'
-import { nl } from '../src/lib/taal/nl'
-import { en } from '../src/lib/taal/en'
+import {
+  STANDAARDTAAL,
+  TALEN,
+  alleTeksten,
+  dubbeleSleutels,
+  geldigeTaal,
+  localeVan,
+  ontbrekendeVertalingen,
+  vertaal,
+} from '../src/lib/i18n'
 import { formatDay, formatMonth, zetLocale } from '../src/lib/dates'
+
+const teksten = alleTeksten()
 
 describe('de catalogi', () => {
   // Deze test is de reden dat de Engelse versie niet stilletjes half af kan
@@ -12,21 +21,25 @@ describe('de catalogi', () => {
     expect(ontbrekendeVertalingen('en')).toEqual([])
   })
 
-  it('heeft geen Engelse sleutels die nergens vandaan komen', () => {
-    expect(Object.keys(en).filter((sleutel) => !(sleutel in nl))).toEqual([])
+  // Twee bestanden met dezelfde sleutel: één wint, en dan verandert er een
+  // tekst op een scherm waar niemand aan gewerkt heeft.
+  it('claimt geen sleutel twee keer', () => {
+    expect(dubbeleSleutels()).toEqual([])
   })
 
   // Een tekst die een plek openlaat die in de andere taal niet bestaat, zet
   // straks `{tijd}` op het scherm.
   it('gebruikt in beide talen dezelfde invulplekken', () => {
     const plekken = (tekst) => [...String(tekst).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()
-    for (const sleutel of Object.keys(nl)) {
-      expect({ sleutel, plekken: plekken(en[sleutel]) }).toEqual({ sleutel, plekken: plekken(nl[sleutel]) })
+    for (const [sleutel, talen] of Object.entries(teksten)) {
+      expect({ sleutel, plekken: plekken(talen.en) }).toEqual({ sleutel, plekken: plekken(talen.nl) })
     }
   })
 
   it('laat geen lege tekst staan', () => {
-    for (const [sleutel, tekst] of Object.entries(en)) expect(`${sleutel}: ${tekst}`).not.toMatch(/: *$/)
+    for (const [sleutel, talen] of Object.entries(teksten)) {
+      for (const [taal, tekst] of Object.entries(talen)) expect(`${sleutel}.${taal}: ${tekst}`).not.toMatch(/: *$/)
+    }
   })
 })
 

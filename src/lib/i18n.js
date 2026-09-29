@@ -14,10 +14,33 @@
  * Nederlands is de bron. Ontbreekt een Engelse tekst, dan verschijnt de
  * Nederlandse — niet de sleutel. Een half vertaald scherm met hier en daar een
  * Nederlands woord is bruikbaar; een scherm vol `tasks.leeg.titel` is dat niet.
+ *
+ * De teksten staan per stuk van de app in `taal/`, en elk bestand wordt hier
+ * vanzelf opgepikt. Dat is niet uit netheid: zonder die opsplitsing schrijven
+ * twee mensen die tegelijk aan twee schermen werken in hetzelfde bestand, en
+ * dan is het samenvoegen het werk.
  */
 
-import { nl } from './taal/nl'
-import { en } from './taal/en'
+const BESTANDEN = import.meta.glob('./taal/*.js', { eager: true })
+
+/**
+ * Alles bij elkaar, met een waarschuwing wanneer twee bestanden dezelfde sleutel
+ * claimen. Zonder die controle wint stilletjes wie alfabetisch later staat, en
+ * dan verandert een tekst op een scherm waar je niet aan gewerkt hebt.
+ */
+function bouwTeksten() {
+  const alles = {}
+  const dubbel = []
+  for (const [pad, module] of Object.entries(BESTANDEN).sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [sleutel, teksten] of Object.entries(module.default ?? {})) {
+      if (sleutel in alles) dubbel.push(`${sleutel} (${alles[sleutel].__bestand} en ${pad})`)
+      alles[sleutel] = { ...teksten, __bestand: pad }
+    }
+  }
+  return { alles, dubbel }
+}
+
+const { alles: TEKSTEN, dubbel: DUBBELE } = bouwTeksten()
 
 export const TALEN = [
   { code: 'nl', label: 'Nederlands', locale: 'nl-BE' },
@@ -26,11 +49,8 @@ export const TALEN = [
 
 export const STANDAARDTAAL = 'nl'
 
-const CATALOGI = { nl, en }
-
 /** De opmaaktaal die bij een taal hoort. */
-export const localeVan = (taal) =>
-  TALEN.find((t) => t.code === taal)?.locale ?? TALEN[0].locale
+export const localeVan = (taal) => TALEN.find((t) => t.code === taal)?.locale ?? TALEN[0].locale
 
 /*
   Wat hier met opzet niet staat: de taal van de browser overnemen.
@@ -50,7 +70,7 @@ export const localeVan = (taal) =>
 */
 
 /** Bestaat deze taal? Anders de standaard, zodat een oude voorkeur nooit blokkeert. */
-export const geldigeTaal = (taal) => (CATALOGI[taal] ? taal : STANDAARDTAAL)
+export const geldigeTaal = (taal) => (TALEN.some((t) => t.code === taal) ? taal : STANDAARDTAAL)
 
 /**
  * Een tekst opzoeken.
@@ -64,16 +84,16 @@ export const geldigeTaal = (taal) => (CATALOGI[taal] ? taal : STANDAARDTAAL)
  * is, in plaats van dat er stilletjes niets staat.
  */
 export function vertaal(taal, sleutel, waarden = null) {
-  const nu = CATALOGI[geldigeTaal(taal)]
-  const bron = CATALOGI[STANDAARDTAAL]
+  const code = geldigeTaal(taal)
 
   let echteSleutel = sleutel
   if (waarden && typeof waarden.aantal === 'number') {
     const vorm = `${sleutel}${waarden.aantal === 1 ? '_een' : '_meer'}`
-    if (nu[vorm] ?? bron[vorm]) echteSleutel = vorm
+    if (TEKSTEN[vorm]) echteSleutel = vorm
   }
 
-  const tekst = nu[echteSleutel] ?? bron[echteSleutel] ?? echteSleutel
+  const regel = TEKSTEN[echteSleutel]
+  const tekst = regel?.[code] ?? regel?.[STANDAARDTAAL] ?? echteSleutel
   if (!waarden) return tekst
 
   return tekst.replace(/\{(\w+)\}/g, (heel, naam) =>
@@ -81,8 +101,14 @@ export function vertaal(taal, sleutel, waarden = null) {
   )
 }
 
-/** Welke sleutels in het Engels nog ontbreken — voor de test die daarop let. */
+/** Welke sleutels in deze taal nog ontbreken — voor de test die daarop let. */
 export function ontbrekendeVertalingen(taal = 'en') {
-  const nu = CATALOGI[geldigeTaal(taal)]
-  return Object.keys(CATALOGI[STANDAARDTAAL]).filter((sleutel) => !nu[sleutel])
+  return Object.keys(TEKSTEN).filter((sleutel) => !TEKSTEN[sleutel][taal])
 }
+
+/** Sleutels die in twee bestanden staan; één van de twee wint en dat wil je weten. */
+export const dubbeleSleutels = () => DUBBELE
+
+/** Alle sleutels met hun teksten — voor de tests en voor niets anders. */
+export const alleTeksten = () =>
+  Object.fromEntries(Object.entries(TEKSTEN).map(([sleutel, { __bestand, ...talen }]) => [sleutel, talen]))
