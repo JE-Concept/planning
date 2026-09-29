@@ -828,3 +828,104 @@ select.je-compact { padding-right: 24px; }
 @media (max-width: 560px) {
   .je-dash__kolom .je-taskline__due { display: none; }
 }
+
+/* ── Registratieverslag ────────────────────────────────────────────────── */
+
+.je-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--type-body-sm);
+}
+.je-table th {
+  text-align: left;
+  font: var(--type-eyebrow);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-hairline);
+  white-space: nowrap;
+}
+.je-table td {
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-hairline);
+  vertical-align: top;
+  color: var(--text-1);
+}
+.je-table tr:last-child td { border-bottom: 0; }
+.je-report__open td { background: color-mix(in srgb, var(--danger) 5%, transparent); }
+.je-report__ontbreekt {
+  color: var(--text-2);
+  max-width: 340px;
+}
+/* Op het scherm drie regels, op papier alles: daar is het het bewijsstuk. */
+.je-report__kort {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.je-report__blok { margin-top: var(--space-5); }
+.je-report__grafiek { padding: var(--space-5); }
+.je-report__grafiek svg { width: 100%; height: 150px; display: block; }
+.je-report__asx {
+  display: flex;
+  justify-content: space-between;
+  font: var(--type-caption);
+  color: var(--text-3);
+  padding: 0 12px 0 40px;
+}
+.je-report__gat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0 var(--space-5) var(--space-5);
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+}
+.je-report__voet {
+  margin-top: var(--space-5);
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+  max-width: 68ch;
+}
+/* De kop hoort alleen op papier: op het scherm staat hij al in de paginakop. */
+.je-report__kop { display: none; }
+
+/* Afdrukken.
+
+   Een verslag dat op tafel moet kunnen liggen. Alles wat bedienen is — de
+   zijbalk, de knoppen, de assistent — hoort daar niet op, en een tabel mag niet
+   middenin een rij over twee bladen breken. */
+@media print {
+  .je-side,
+  .je-topbar,
+  .je-bottomnav,
+  .je-chat,
+  .je-updatebar,
+  .je-pagehead > div:last-child,
+  .je-mobilebar { display: none !important; }
+
+  .je-shell, .je-main, .je-pagebody { display: block; overflow: visible; height: auto; }
+  body { background: #fff; }
+
+  .je-report__kop {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+    font-size: 11pt;
+  }
+  .je-report .je-panel { break-inside: auto; border-color: #999; box-shadow: none; }
+  .je-report tr { break-inside: avoid; }
+  .je-report thead { display: table-header-group; }
+  .je-report__ontbreekt { max-width: none; }
+  .je-report__kort { display: inline; overflow: visible; }
+  .je-kpi { border-color: #999; }
+  @page { margin: 14mm; }
+}

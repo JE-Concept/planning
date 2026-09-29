@@ -122,6 +122,7 @@ const PAGINAS = [
   ['Socials', '/social', 'Socials'],
   ['Klanten', '/klanten', 'Klanten'],
   ['Openen & sluiten', '/openen-sluiten', 'Openen'],
+  ['Registraties', '/registraties', 'Registraties'],
   ['Teamoverleg', '/overleg', 'Teamoverleg'],
   ['Uren', '/uren', 'Uren'],
   ['Goals', '/goals', 'Goals'],
@@ -409,6 +410,20 @@ await test('Tasks en Uren hebben een kalender', async () => {
   zouden(bevat(await inhoud(uren), 'deze maand'), 'geen maandtotaal op de urenkalender')
   zouden(uren.fouten.length === 0, `fouten: ${uren.fouten[0]}`)
   await uren.close()
+})
+
+await test('het registratieverslag toont de maand met zijn metingen', async () => {
+  const page = await tabblad('/registraties')
+  await page.waitForTimeout(900)
+  const tekst = await inhoud(page)
+  for (const naald of ['Afgevinkt', 'Volledige dagen', 'Overschrijdingen', 'Dag per dag']) {
+    zouden(bevat(tekst, naald), `"${naald}" staat niet in het verslag`)
+  }
+  // Een maand die nog loopt hoort niet vooruit te kijken.
+  const volgende = page.getByRole('button', { name: 'Volgende maand' })
+  zouden(await volgende.isDisabled(), 'je kunt naar een maand in de toekomst bladeren')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
 })
 
 await test('een te warme koelkast wordt meteen aangegeven', async () => {

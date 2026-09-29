@@ -66,8 +66,11 @@ export function navSecties({ isAdmin, isStaff, boards = [], eventsListId = null 
       to: '/openen-sluiten',
       icon: 'clipboard-check',
       label: 'Bistro',
-      match: (p) => p.startsWith('/openen-sluiten'),
-      kinderen: [{ to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' }],
+      match: (p) => p.startsWith('/openen-sluiten') || p.startsWith('/registraties'),
+      kinderen: [
+        { to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' },
+        { to: '/registraties', icon: 'file-text', label: 'Registraties' },
+      ],
     },
     {
       to: '/overleg',
@@ -102,6 +105,7 @@ export const MORE = [
   { to: '/klanten', icon: 'building', label: 'Klanten' },
   { to: '/social', icon: 'share-2', label: 'Socials' },
   { to: '/openen-sluiten', icon: 'clipboard-check', label: 'Openen & sluiten' },
+  { to: '/registraties', icon: 'file-text', label: 'Registraties' },
   { to: '/overleg', icon: 'messages-square', label: 'Teamoverleg' },
   { to: '/uren', icon: 'timer', label: 'Uren' },
   { to: '/goals', icon: 'target', label: 'Goals' },

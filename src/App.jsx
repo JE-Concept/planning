@@ -23,6 +23,7 @@ const More           = lazy(() => import('@pages/More'))
 const Board          = lazy(() => import('@pages/Board'))
 const SocialCalendar = lazy(() => import('@pages/SocialCalendar'))
 const Checklists     = lazy(() => import('@pages/Checklists'))
+const ChecklistReport = lazy(() => import('@pages/ChecklistReport'))
 const Meetings       = lazy(() => import('@pages/Meetings'))
 const TimeTracking   = lazy(() => import('@pages/TimeTracking'))
 const Goals          = lazy(() => import('@pages/Goals'))
@@ -101,6 +102,7 @@ function Authenticated() {
             <Route path="/social" element={<SocialCalendar />} />
             <Route path="/klanten" element={<Customers />} />
             <Route path="/openen-sluiten" element={<Checklists />} />
+            <Route path="/registraties" element={<ChecklistReport />} />
             <Route path="/overleg" element={<Meetings />} />
             <Route path="/uren" element={<TimeTracking />} />
             <Route path="/goals" element={<Goals />} />
