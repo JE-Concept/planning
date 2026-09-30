@@ -1413,6 +1413,107 @@ await test('de socialrol komt op de socials en ziet geen bedragen', async () => 
   await page.close()
 })
 
+/*
+  ── Geen enkele rol vraagt meer dan ze mag ────────────────────────────────
+
+  De terugkerende fout in dit project: de client vraagt iets op wat
+  `firestore.rules` weigert. Dat komt niet terug als een leeg antwoord maar als
+  een fout, en die strandt een heel scherm — of, erger, ze wordt opgevangen en
+  je houdt een teller over die altijd nul zegt.
+
+  De demo weigerde vroeger niets, dus kon deze test hier niet staan. Sinds
+  `demo/regels.js` doet ze dat wel, en houdt ze bij wat er geweigerd werd. Deze
+  test loopt elke rol langs elke route en eist dat die lijst leeg blijft. Wat
+  een rol mag, staat in `firestore.rules`; dat de demo hetzelfde zegt, bewaakt
+  `tests/rollen.test.js`.
+*/
+
+const ROLROUTES = [
+  '/', '/kalender', '/tasks', '/werklast', '/dashboard', '/meer', '/social',
+  '/klanten', '/openen-sluiten', '/registraties', '/overleg', '/uren',
+  '/rooster', '/logboek', '/goals', '/instellingen',
+]
+
+/** Wat de demo weigerde sinds de vorige keer vragen, en de lijst leegmaken. */
+const geweigerd = (page) =>
+  page.evaluate(() => {
+    const lijst = window.__jeGeweigerd ?? []
+    window.__jeGeweigerd = []
+    return lijst.map((g) => `${g.soort} ${g.collectie}`)
+  })
+
+for (const rol of ['owner', 'admin', 'member', 'guest', 'personeel', 'social']) {
+  await test(`de rol ${rol} vraagt op geen enkel scherm iets op wat de regels weigeren`, async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+    await page.goto(`${adres}/?rol=${rol}#/`, { waitUntil: 'networkidle' })
+    await page.waitForTimeout(1000)
+
+    const gevonden = new Set(await geweigerd(page))
+    for (const route of ROLROUTES) {
+      // Binnen dezelfde pagina navigeren: de gegevens blijven staan, en de
+      // rolwissel uit boot.js hoeft niet per scherm opnieuw.
+      await page.evaluate((r) => { window.location.hash = r }, route)
+      await page.waitForTimeout(450)
+      for (const g of await geweigerd(page)) gevonden.add(`${route}: ${g}`)
+    }
+
+    await page.close()
+    zouden(gevonden.size === 0, `geweigerd: ${[...gevonden].join(' · ')}`)
+  })
+}
+
+await test('de socialrol kan een post openen, koppelen en haar tijd boeken', async () => {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  const fouten = []
+  page.on('pageerror', (e) => fouten.push(String(e).split('\n')[0]))
+  await page.goto(`${adres}/?rol=social#/social`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(1200)
+
+  // De timer in de zijbalk loopt op een event. Stoppen schreef vroeger óók op
+  // de taak, in dezelfde batch — en dat mag ze niet, dus ging haar uur verloren.
+  await page.getByRole('button', { name: /stop en boek/i }).first().click()
+  await page.waitForTimeout(800)
+  const naStop = (await page.locator('body').innerText()).trim()
+  zouden(!/insufficient permissions/i.test(naStop), `de timer stopt niet: ${naStop.slice(0, 200)}`)
+  zouden(
+    (await page.getByRole('button', { name: /stop en boek/i }).count()) === 0,
+    'de timer loopt nog na het stoppen'
+  )
+
+  // Een post openen: geen reactiedraad (die leest ze niet), wel een kiezer die
+  // iets teruggeeft — uit de kale kopie, want de taken zelf mag ze niet lezen.
+  await page.getByText('Posts', { exact: true }).first().click()
+  await page.waitForTimeout(700)
+  await page.locator('[class*=je-post], article').first().click()
+  await page.waitForTimeout(800)
+
+  const lade = (await page.locator('body').innerText()).trim()
+  zouden(!bevat(lade, 'Feedback ('), 'de socialrol krijgt een reactiedraad die ze niet kan lezen')
+
+  await page.getByRole('button', { name: /aan een project hangen|wijzigen/i }).first().click()
+  await page.waitForTimeout(700)
+  const kiezer = (await page.locator('body').innerText()).trim()
+  zouden(bevat(kiezer, 'Blum'), `de projectkiezer blijft leeg: ${kiezer.slice(-300)}`)
+
+  /*
+    Eén weigering hoort erbij, en maar één.
+
+    Het stoppen van de timer werkt de teller `trackedSeconds` op de taak bij, en
+    dat mag de socialrol niet. Die schrijfbeurt staat sinds vandaag los van het
+    boeken zelf en wordt opgevangen (zie `stopTimer`): haar uren komen erdoor,
+    alleen de optelsom op de eventfiche loopt achter. Dat is de minst erge van de
+    twee fouten, maar het blijft een vraag die de regels weigeren — het echte
+    antwoord is die teller door een trigger laten bijhouden in plaats van door de
+    browser. Zolang dat niet zo is, staat ze hier met naam genoemd, zodat elke
+    andere weigering nog altijd omvalt.
+  */
+  const afgewezen = await geweigerd(page)
+  const onverwacht = afgewezen.filter((g) => g !== 'schrijven tasks')
+  zouden(onverwacht.length === 0, `geweigerd: ${onverwacht.join(', ')}`)
+  zouden(fouten.length === 0, `fouten: ${fouten[0]}`)
+  await page.close()
+})
+
 await test('het logboek toont wie wat veranderde, en filtert', async () => {
   const page = await tabblad('/logboek')
   const alles = await inhoud(page)

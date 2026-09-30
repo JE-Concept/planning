@@ -142,7 +142,7 @@ function Shell({ children }) {
         */}
         <OfflineBar />
 
-        {narrow ? <MobileBar uid={uid} isStaff={isStaff} /> : null}
+        {narrow ? <MobileBar uid={uid} isStaff={isStaff} isSocial={isSocial} /> : null}
 
         {isStaff || isSocial ? null : (
           <div className="je-topbar">
@@ -223,7 +223,7 @@ function Shell({ children }) {
   )
 }
 
-function MobileBar({ uid, isStaff }) {
+function MobileBar({ uid, isStaff, isSocial }) {
   const { timer, elapsed } = useRunningTimer(isStaff ? null : uid)
   const toast = useToast()
   const { logOut } = useAuth()
@@ -248,9 +248,11 @@ function MobileBar({ uid, isStaff }) {
           {formatDuration(elapsed, { withSeconds: true })}
         </button>
       ) : null}
-      {/* Afmelden en de extra schermen: op een telefoon via Meer. */}
+      {/* Afmelden en de extra schermen: op een telefoon via Meer. Personeel en
+          de socialrol hebben één scherm, dus voor hen is Meer een knop die je
+          terugzet waar je al stond. */}
       <span style={{ marginLeft: timer ? 0 : 'auto', color: 'var(--navy-300)', display: 'flex', gap: 4 }}>
-        {isStaff ? null : (
+        {isStaff || isSocial ? null : (
           <NavLink to="/meer" aria-label={t('menu.meer')} className="je-iconbtn je-iconbtn--sm" style={{ color: 'inherit', border: 0 }}>
             <Icon name="menu" size={16} />
           </NavLink>

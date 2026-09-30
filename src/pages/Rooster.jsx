@@ -26,7 +26,7 @@ import { useTimeEntries } from '@data/time'
  * zichzelf. Zie `src/data/aapi.js`.
  */
 export default function Rooster() {
-  const { isAdmin, uid } = useAuth()
+  const { isAdmin } = useAuth()
   const { profiles, brands, brandById } = useWorkspace()
   const { t } = useTaal()
   const toast = useToast()
@@ -173,7 +173,19 @@ export default function Rooster() {
                                   : undefined
                               }
                               onClick={() => setBewerk(s)}
-                              disabled={!isAdmin && s.profileId !== uid}
+                              /*
+                                Het rooster zet een beheerder — zo staat het in
+                                `firestore.rules`, waar `shifts` alleen voor hen
+                                beschrijfbaar is. Hier stond dat je je eigen
+                                dienst wél mocht openen, en dan kreeg je een
+                                venster met een bewaarknop die het niet kon: de
+                                regels weigeren de schrijfbeurt en je houdt een
+                                foutmelding over waar je niets aan kunt doen. Een
+                                knop die niets kan doen, hoort niet in te drukken
+                                te zijn. Je eigen diensten lezen kan nog altijd —
+                                ze staan in de cel.
+                              */
+                              disabled={!isAdmin}
                             >
                               <span>
                                 {s.start}–{s.end}

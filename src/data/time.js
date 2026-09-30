@@ -86,11 +86,32 @@ export async function stopTimer(uid) {
     createdAt: serverTimestamp(),
   })
   batch.delete(timerRef)
-  if (timer.taskId) {
-    batch.update(ref(COL.tasks, timer.taskId), { trackedSeconds: increment(durationSeconds) })
-  }
 
   await batch.commit()
+
+  /*
+    De teller op de taak staat bewust buiten die batch.
+
+    Hij zat erin, en dat leek net: de urenregel en het totaal op de taak horen
+    bij elkaar. Maar een batch is alles of niets, en de socialrol mag `tasks`
+    niet bijwerken — terwijl ze haar tijd juist op een event boekt, en een event
+    ís een taak. Het gevolg was dat haar timer helemaal niet te stoppen was: de
+    schrijfbeurt werd in zijn geheel geweigerd, de klok liep door, en het uur
+    was weg.
+
+    Van de twee mogelijke fouten is deze de minst erge. Lukt de teller niet, dan
+    klopt een optelsom op de taakfiche niet; lukt de urenregel niet, dan is
+    iemands werk verdwenen. De urenregel gaat dus eerst en apart, en de teller
+    mag mislukken.
+  */
+  if (timer.taskId) {
+    await updateDoc(ref(COL.tasks, timer.taskId), {
+      trackedSeconds: increment(durationSeconds),
+    }).catch((err) => {
+      console.warn('JE Plan: de tijd is geboekt, het totaal op de taak niet bijgewerkt', err)
+    })
+  }
+
   return entryRef.id
 }
 

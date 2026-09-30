@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { onSnapshot, query, where } from 'firebase/firestore'
 import { COL, col, fromQuery, ref } from '@lib/collections'
 
@@ -37,6 +37,30 @@ export function useSocialEventKaarten({ aan = true } = {}) {
   }, [aan])
 
   return { events: kaarten, loading }
+}
+
+/**
+ * Zoeken in de kale kopieën, voor de projectkiezer van de socialrol.
+ *
+ * Het team zoekt in `tasks`; die collectie mag zij niet lezen, dus zocht ze in
+ * een lijst die altijd leeg bleef — met een rechtenfout erachter. Hier komt ze
+ * wel ergens: een post aan een event hangen lukt, alleen uit een kortere lijst.
+ * Dat is geen beperking maar de waarheid — in deze kopie staan precies de events
+ * die content moeten opleveren, en aan de andere heeft ze niets te hangen.
+ */
+export function useSocialEventZoeker(term, { max = 25, enabled = true } = {}) {
+  const { events, loading } = useSocialEventKaarten({ aan: enabled })
+
+  const results = useMemo(() => {
+    const naald = term.trim().toLowerCase()
+    const hoofd = events.filter((e) => !e.parentId)
+    if (!naald) return hoofd.slice(0, max)
+    return hoofd
+      .filter((e) => `${e.title ?? ''} ${e.listName ?? ''}`.toLowerCase().includes(naald))
+      .slice(0, max)
+  }, [events, term, max])
+
+  return { results, loading }
 }
 
 /** Eén kale kopie, live — voor het paneel dat erbij hoort. */

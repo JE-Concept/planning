@@ -238,12 +238,15 @@ function SideTimer() {
   const { timer, elapsed } = useRunningTimer(uid)
   const { tasks, eventById } = useEvents()
   const week = periodKeys(new Date()).week
-  const entries = useWeekEntries(week)
+  // Alleen de eigen uren opvragen. Er stond hier al een filter op `profileId`,
+  // maar pas ná het ophalen — en de socialrol mag de rijen van de ploeg niet
+  // lezen, dus faalde de vraag in zijn geheel. Zie `useWeekEntries`.
+  const entries = useWeekEntries(week, { profileId: uid })
   const [busy, setBusy] = useState(false)
 
   const booked = useMemo(
-    () => entries.filter((e) => e.profileId === uid).reduce((a, e) => a + (e.durationSeconds ?? 0), 0),
-    [entries, uid]
+    () => entries.reduce((a, e) => a + (e.durationSeconds ?? 0), 0),
+    [entries]
   )
 
   const task = timer?.taskId ? tasks.find((t) => t.id === timer.taskId) : null

@@ -153,6 +153,10 @@ Een post kan aan een taak hangen. Dat is wat de vraag *"wat gaat er buiten voor 
 | `owner` / `admin` | alles, plus het beheer van mensen en lijsten |
 | `member` | de volledige planning |
 | `staff` | **alleen** openen & sluiten |
+| `social` | **alleen** de socials, en geen enkel bedrag |
+| `guest` | vandaag: hetzelfde als `member` — zie hieronder |
+
+**`guest` betekent nog niets.** De rol staat in de keuzelijst bij *Instellingen → Team*, maar in `firestore.rules` komt het woord niet voor: `isTeam()` sluit alleen `staff` en `social` uit, dus een gast is een volwaardig teamlid met een ander etiket — inclusief de offertes, de klantgegevens en het logboek. De interface zegt iets anders: in de kiezers voor uitvoerders en in de werklast wordt een gast juist weggelaten, alsof het een buitenstaander is. Dat verschil is de valkuil: wie iemand op *Gast* zet, denkt te beperken en doet dat niet. Uitnodigen gebeurt altijd als `member`, dus een gast ontstaat alleen door die keuzelijst. Wat de rol wél zou moeten mogen, is een beslissing die nog genomen moet worden; `tests/rollen.test.js` legt de huidige stand vast zodat het niet ongemerkt blijft staan of ongemerkt verschuift.
 
 Personeel is geen verborgen menu-item maar een eigen rol in de beveiligingsregels: `isTeam()` sluit `staff` uit, en elke planningscollectie hangt daaraan. De interface laat de rest weg omdat de database ze toch weigert — een verborgen knop is geen beveiliging. De app vraagt voor personeel ook geen borden, merken of timers meer op, anders vult hun scherm zich met rechtenfouten in plaats van met een lijst.
 
@@ -347,6 +351,8 @@ Twee lagen, met een duidelijke taakverdeling.
 **`npm run smoke`** doet wat geen unittest kan: elke pagina echt openen in Chromium, op de demobuild. Geen wit scherm, niets in de console, en op elk scherm één handeling die er hoort te werken — een taak openen, een punt afvinken, een agendapunt toevoegen, het verloop van een doel uitklappen. Plus de twee dingen die de tool onbruikbaar maken zonder dat er iets "stuk" is: personeel dat meer ziet dan zijn eigen lijst, en een pagina die na een uitrol niet meer laadt.
 
 Dat laatste staat er omdat het gebeurd is. Wie een tabblad open had staan terwijl er uitgerold werd, kreeg bij de volgende klik een **wit scherm**: de pagina vroeg een bestandsnaam op die na de uitrol niet meer bestond, React haalde de hele boom weg en er bleef niets over. Nu vangt een foutgrens dat op, ruimt de cache op en herlaadt één keer; lukt dat niet, dan staat er een uitleg met een knop in plaats van niets. De test speelt precies dat na door een bestand te laten verdwijnen.
+
+**De regels draaien mee in de demo.** De fout die in dit project bleef terugkomen is dat de client iets opvraagt wat `firestore.rules` weigert: dat komt niet terug als een leeg antwoord maar als een fout, en die strandt een heel scherm — of ze wordt opgevangen en je houdt een teller over die altijd nul zegt. De demo had geen regels, dus de browsertest zei groen over schermen die live half stukliepen. Sinds `demo/regels.js` weigert de demo wat de regels weigeren en houdt ze bij wát er geweigerd werd; `scripts/smoke.mjs` loopt elke rol (`?rol=owner|admin|member|guest|personeel|social`) langs elk scherm en eist dat die lijst leeg blijft. Dat de tabel in de demo hetzelfde zegt als `firestore.rules`, bewaakt `tests/rollen.test.js` — die leest het regelbestand en vergelijkt het regel voor regel.
 
 ### Deploy
 

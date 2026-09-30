@@ -7,8 +7,45 @@
  * inclusief live abonnementen, zodat slepen op het bord en de timer echt werken.
  */
 
+import { toets } from './regels.js'
+
 const store = new Map()          // "collectie/id" -> data
 const listeners = new Set()      // () => void, één per actief abonnement
+
+// ─── De beveiligingsregels, ook hier ────────────────────────────────────────
+
+/**
+ * De demo weigert wat `firestore.rules` weigert.
+ *
+ * Zonder dit test de browsertest iets anders dan wat er live draait: elk scherm
+ * opent, ook als de echte database de helft van de vragen zou afwijzen. Dat is
+ * precies de fout die in dit project blijft terugkomen, dus moet de demo hem
+ * kunnen tonen.
+ *
+ * Elke weigering komt ook in een lijst op `window`. Een geweigerde vraag valt
+ * namelijk niet altijd op — de meeste abonnementen vangen hun fout op en tonen
+ * een lege lijst — en dan is er niets te zien behalve een verkeerd getal. De
+ * lijst maakt het hard: `scripts/smoke.mjs` loopt de schermen van elke rol af
+ * en eist dat ze leeg blijft.
+ */
+const DEMO_UID = 'u-jasper'
+
+const huidigeRol = () => store.get(`profiles/${DEMO_UID}`)?.role ?? 'member'
+
+function noteer(soort, collectie, reden) {
+  if (typeof window === 'undefined') return
+  ;(window.__jeGeweigerd ??= []).push({ soort, collectie, reden })
+}
+
+/** Geeft een fout terug als het niet mag, en `null` als het wel mag. */
+function bewaak(soort, collectie, extra = {}) {
+  const reden = toets(soort, { rol: huidigeRol(), uid: DEMO_UID, collectie, ...extra })
+  if (!reden) return null
+  noteer(soort, collectie, reden)
+  const err = new Error(`Missing or insufficient permissions: ${reden}`)
+  err.code = 'permission-denied'
+  return err
+}
 
 /**
  * Doen alsof er geen bereik is.
@@ -191,11 +228,40 @@ const querySnap = (rows, col) => ({
 
 // ─── Lezen ──────────────────────────────────────────────────────────────────
 
-export const getDoc = async (ref) => docSnap(ref.__col, ref.id)
-export const getDocs = async (q) => querySnap(run(q), q.__col)
-export const getCountFromServer = async (q) => ({ data: () => ({ count: run(q).length }) })
+/** Wat de regels van deze vraag moeten weten: één document, of welke filters. */
+const leesContext = (target) =>
+  target.__doc
+    ? { id: target.id }
+    : { filters: (target.parts ?? []).filter((p) => p.kind === 'where') }
+
+export const getDoc = async (ref) => {
+  const fout = bewaak('lezen', ref.__col, { id: ref.id })
+  if (fout) throw fout
+  return docSnap(ref.__col, ref.id)
+}
+
+export const getDocs = async (q) => {
+  const fout = bewaak('lezen', q.__col, leesContext(q))
+  if (fout) throw fout
+  return querySnap(run(q), q.__col)
+}
+
+export const getCountFromServer = async (q) => {
+  const fout = bewaak('lezen', q.__col, leesContext(q))
+  if (fout) throw fout
+  return { data: () => ({ count: run(q).length }) }
+}
 
 export function onSnapshot(target, onNext, onError) {
+  // Firestore weigert een abonnement meteen en blijft daarna stil; er komt geen
+  // eerste antwoord meer. Dat is precies wat een scherm laat hangen, dus doet
+  // de demo het net zo.
+  const geweigerd = bewaak('lezen', target.__col, leesContext(target))
+  if (geweigerd) {
+    queueMicrotask(() => onError?.(geweigerd))
+    return () => {}
+  }
+
   const emit = () => {
     try {
       onNext(target.__doc ? docSnap(target.__col, target.id) : querySnap(run(target), target.__col))
@@ -216,7 +282,26 @@ function geschreven(path) {
   notify()
 }
 
+/**
+ * Of deze rol dit document zo mag schrijven.
+ *
+ * De velden gaan mee, want bij de socialrol hangt het antwoord daarvan af: de
+ * stand van de content verzetten mag, het offertebedrag aanpassen niet. En of
+ * de taak op een sociallijst staat, want dan mag ze er alles op.
+ */
+function bewaakSchrijven(ref, patch = {}) {
+  const bestaand = store.get(pathOf(ref)) ?? {}
+  const listId = patch.listId ?? bestaand.listId ?? null
+  return bewaak('schrijven', ref.__col, {
+    id: ref.id,
+    velden: Object.keys(patch),
+    lijstIsSocial: Boolean(listId) && store.get(`lists/${listId}`)?.kind === 'social',
+  })
+}
+
 export async function setDoc(ref, data, options) {
+  const fout = bewaakSchrijven(ref, data)
+  if (fout) throw fout
   const path = pathOf(ref)
   if (!options?.merge) {
     store.set(path, resolveSentinels(data))
@@ -229,6 +314,8 @@ export async function setDoc(ref, data, options) {
 }
 
 export async function updateDoc(ref, patch) {
+  const fout = bewaakSchrijven(ref, patch)
+  if (fout) throw fout
   const path = pathOf(ref)
   const existing = store.get(path)
   if (!existing) throw new Error(`Bestaat niet: ${path}`)
@@ -237,19 +324,36 @@ export async function updateDoc(ref, patch) {
 }
 
 export async function deleteDoc(ref) {
+  const fout = bewaakSchrijven(ref)
+  if (fout) throw fout
   const path = pathOf(ref)
   store.delete(path)
   wachtend.delete(path)
   notify()
 }
 
+/**
+ * Een batch is alles of niets — ook bij de regels.
+ *
+ * Firestore keurt eerst de hele batch en schrijft dan pas. Dat is geen detail:
+ * een timer stoppen schrijft de urenregel én werkt de taak bij, en mag de rol
+ * dat tweede niet, dan gaat ook het eerste niet door. Zou de demo de regels per
+ * schrijfbeurt nakijken, dan bleef de urenregel staan en zag je het verschil
+ * niet — terwijl live je uren wegvallen.
+ */
 export function writeBatch() {
   const ops = []
   return {
-    set: (ref, data, options) => ops.push(() => setDoc(ref, data, options)),
-    update: (ref, patch) => ops.push(() => updateDoc(ref, patch)),
-    delete: (ref) => ops.push(() => deleteDoc(ref)),
-    commit: async () => { for (const op of ops) await op() },
+    set: (ref, data, options) => ops.push({ ref, data, options, doe: () => setDoc(ref, data, options) }),
+    update: (ref, patch) => ops.push({ ref, data: patch, doe: () => updateDoc(ref, patch) }),
+    delete: (ref) => ops.push({ ref, data: {}, doe: () => deleteDoc(ref) }),
+    commit: async () => {
+      for (const op of ops) {
+        const fout = bewaakSchrijven(op.ref, op.data)
+        if (fout) throw fout
+      }
+      for (const op of ops) await op.doe()
+    },
   }
 }
 
