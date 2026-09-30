@@ -5,30 +5,33 @@ import './seed.js'
 import { doc, updateDoc } from './firestore.js'
 
 /**
- * `?rol=personeel` laat de demo zien wat zaalpersoneel te zien krijgt: één
- * scherm, geen borden, geen instellingen. In de echte tool komt die rol uit
- * het profiel; hier is het een schakelaar, zodat beide kanten te bekijken zijn
- * zonder twee accounts.
+ * `?rol=…` zet de demo op een andere rol.
+ *
+ * In de echte tool komt de rol uit het profiel; hier is het een schakelaar,
+ * zodat elke kant te bekijken is zonder even zoveel accounts. Elke rol uit
+ * `firestore.rules` staat erin, ook `guest` — juist die, want een rol die
+ * niemand ooit bekeken heeft is een rol waarvan niemand weet wat ze doet.
+ *
+ * Sinds `demo/regels.js` weigert de demo ook wat de regels weigeren, dus deze
+ * schakelaar doet niet langer alleen alsof: hij laat zien wat een rol werkelijk
+ * te zien krijgt, en waar het scherm meer vraagt dan ze mag.
  */
-const rol = new URLSearchParams(location.search).get('rol')
-if (rol === 'personeel' || rol === 'staff') {
-  // Geen await: de in-memory schrijver heeft geen asynchrone body, dus dit is
-  // rond voor main.jsx verder gaat — en top-level await mag hier niet.
-  updateDoc(doc(null, 'profiles', 'u-jasper'), { role: 'staff', fullName: 'Lotte Vrijsen' })
+const ROLLEN = {
+  personeel: { role: 'staff', fullName: 'Lotte Vrijsen' },
+  staff: { role: 'staff', fullName: 'Lotte Vrijsen' },
+  social: { role: 'social', fullName: 'Charish Nolmans' },
+  member: { role: 'member', fullName: 'Sam Beckers' },
+  team: { role: 'member', fullName: 'Sam Beckers' },
+  admin: { role: 'admin', fullName: 'Elke Motmans' },
+  guest: { role: 'guest', fullName: 'Gast Gebruiker' },
+  gast: { role: 'guest', fullName: 'Gast Gebruiker' },
 }
 
-/**
- * `?rol=social` toont wat een socialmedewerker ziet: de socials, en verder
- * niets — geen bedragen, geen offertes, geen klantenfiches.
- *
- * In de echte tool komt dat verschil uit de beveiligingsregels: haar rol mag de
- * events niet lezen en werkt met een kale kopie zonder bedragen. Deze demo
- * heeft geen regels, dus hier doet de schakelaar alsof. Wat de browsertest
- * hiermee nakijkt is dus of het scherm klopt; dat de gegevens echt afgeschermd
- * zijn, staat in `firestore.rules` en in de trigger die de kopie bijhoudt.
- */
-if (rol === 'social') {
-  updateDoc(doc(null, 'profiles', 'u-jasper'), { role: 'social', fullName: 'Charish Nolmans' })
+const rol = new URLSearchParams(location.search).get('rol')
+if (rol && ROLLEN[rol]) {
+  // Geen await: de in-memory schrijver heeft geen asynchrone body, dus dit is
+  // rond voor main.jsx verder gaat — en top-level await mag hier niet.
+  updateDoc(doc(null, 'profiles', 'u-jasper'), ROLLEN[rol])
 }
 
 console.info('JE Plan — demomodus: gegevens staan in het geheugen, niets wordt bewaard.')

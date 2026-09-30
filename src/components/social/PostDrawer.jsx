@@ -33,7 +33,7 @@ import ReviewPanel from './ReviewPanel'
 export default function PostDrawer({ postId, onClose }) {
   const post = usePost(postId)
   const { brands, profiles, brandById } = useWorkspace()
-  const { profile } = useAuth()
+  const { profile, isSocial } = useAuth()
   const { t } = useTaal()
 
   if (!post) return null
@@ -229,7 +229,21 @@ export default function PostDrawer({ postId, onClose }) {
           />
         </Field>
 
-        <PostComments postId={post.id} profile={profile} />
+        {/*
+          De reactiedraad staat er niet voor de socialrol.
+
+          `comments` is één collectie voor de reacties op posts én die op taken,
+          en op taken staat waar het over gaat: bedragen, klanten, marges. De
+          regels laten haar die collectie daarom niet lezen, en dus kreeg ze hier
+          een draad die niets toonde en een knop die haar tekst opslokte zonder
+          iets te zeggen. Wat ze wél heeft is het reviewpaneel hierboven: dat is
+          de weg waarlangs de terugkoppeling op een post loopt.
+
+          Dit weghalen is dus geen verlies — het was er al niet. Wil je haar toch
+          in de draad, dan is dat een beveiligingsbeslissing: de reacties op posts
+          moeten dan eerst uit dezelfde collectie als die op taken.
+        */}
+        {isSocial ? null : <PostComments postId={post.id} profile={profile} />}
       </div>
     </Drawer>
   )

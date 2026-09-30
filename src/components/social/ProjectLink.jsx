@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Badge, Button, Input } from '@ui/index'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
+import { useAuth } from '@context/AuthProvider'
 import { linkPostToTask } from '@data/social'
+import { useSocialEventZoeker } from '@data/social-events'
 import { useTaskSearch } from '@data/tasks'
 
 /**
@@ -15,7 +17,19 @@ import { useTaskSearch } from '@data/tasks'
 export default function ProjectLink({ post }) {
   const [term, setTerm] = useState('')
   const [picking, setPicking] = useState(false)
-  const { results } = useTaskSearch(term, { enabled: picking })
+  const { isSocial } = useAuth()
+
+  /*
+    Twee bronnen voor dezelfde kiezer, en met opzet maar één tegelijk open.
+
+    Het team zoekt in de taken zelf. De socialrol mag die niet lezen — daar staan
+    de bedragen op — en zoekt in de kale kopie. Zonder dit onderscheid vroeg haar
+    kiezer tweehonderdvijftig taken op, kreeg een rechtenfout terug, en bleef de
+    lijst leeg: koppelen was voor haar dus simpelweg stuk.
+  */
+  const team = useTaskSearch(term, { enabled: picking && !isSocial })
+  const kopie = useSocialEventZoeker(term, { enabled: picking && isSocial })
+  const { results } = isSocial ? kopie : team
   const { t } = useTaal()
   const toast = useToast()
 

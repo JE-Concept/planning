@@ -5,6 +5,7 @@ import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
 import { bestellijstVoorEvent, prijsVan } from '@lib/formules'
 import { blockedTransition } from '@lib/pipeline'
+import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask, setTaskStatus, statusFields, updateTask, useTasks } from './tasks'
 
@@ -63,7 +64,21 @@ const EventsContext = createContext(null)
 
 export function EventsProvider({ children }) {
   const { eventsList, brandById } = useWorkspace()
-  const { top, subtasks, loading, error } = useTasks(eventsList?.id)
+  /*
+    Personeel en de socialrol lezen `tasks` niet — daar staan de bedragen op.
+
+    Deze provider staat rond de hele schil en draaide dus ook voor hen. Bij
+    personeel liep dat per ongeluk goed af: zij lezen de lijsten niet, dus was er
+    geen eventlijst om taken van op te vragen. De socialrol leest de lijsten wél,
+    want haar bord heeft ze nodig — en dus vond ze de eventlijst en vroeg de taken
+    erbij op. Op elk scherm, elke keer. Dat komt niet terug als een lege lijst maar
+    als een rechtenfout.
+
+    Vandaar dat de rol hier beslist en niet het toeval. `useEvents()` geeft deze
+    twee rollen dan niets, en dat klopt: voor hen bestaan de events niet.
+  */
+  const { isStaff, isSocial } = useAuth()
+  const { top, subtasks, loading, error } = useTasks(isStaff || isSocial ? null : eventsList?.id)
 
   const value = useMemo(() => {
     const events = top.map((t) => toEvent(t, { brandById }))
@@ -305,18 +320,30 @@ export function useEventTime(taskIds) {
   return entries
 }
 
-/** Uren van één ISO-week, voor de werklast. */
-export function useWeekEntries(week) {
+/**
+ * Uren van één ISO-week, voor de werklast.
+ *
+ * `profileId` beperkt de vraag tot één persoon, en dat is meer dan zuinigheid:
+ * de socialrol mag alleen haar eigen urenregels lezen. Een vraag zonder dat
+ * filter zou over andermans rijen lopen, en Firestore weigert zo'n vraag in zijn
+ * geheel — niet per rij. De zijbalk vroeg de hele week van de hele ploeg op en
+ * filterde daarna op zichzelf; live gaf dat een rechtenfout en een teller die
+ * altijd op nul stond, precies bij de rol die haar uren op haar posts boekt.
+ */
+export function useWeekEntries(week, { profileId = null } = {}) {
   const [entries, setEntries] = useState([])
 
   useEffect(() => {
     if (!week) return undefined
+    const clauses = [where('week', '==', week)]
+    if (profileId) clauses.push(where('profileId', '==', profileId))
+
     return onSnapshot(
-      query(col(COL.timeEntries), where('week', '==', week)),
+      query(col(COL.timeEntries), ...clauses),
       (snap) => setEntries(fromQuery(snap)),
       () => setEntries([])
     )
-  }, [week])
+  }, [week, profileId])
 
   return entries
 }
