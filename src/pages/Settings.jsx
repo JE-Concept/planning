@@ -21,6 +21,9 @@ import {
   initialsOf,
 } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
+// De teksten van dit scherm komen met dit scherm mee en niet met de app;
+// zie `@lib/instellingen-teksten`.
+import '@lib/instellingen-teksten'
 import BusinessRules from '@components/settings/BusinessRules'
 import SysteemPaneel from '@components/settings/SysteemPaneel'
 import ChecklistEditor from '@components/settings/ChecklistEditor'

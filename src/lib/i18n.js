@@ -30,7 +30,21 @@
 */
 let BESTANDEN = {}
 try {
-  BESTANDEN = import.meta.glob('./taal/*.js', { eager: true })
+  /*
+    `instellingen.js` doet niet mee.
+
+    Het is een kwart van de hele catalogus — vijfhonderd sleutels over
+    pijplijnen, templates, formules en business rules — en het is alleen nodig
+    op één scherm, dat toch al apart binnenkomt. Meeleveren betekende dat
+    iedereen die de tool opent, en elke klant die een offertelink aanklikt,
+    twaalf kilobyte aan instellingenteksten ophaalde die hij nooit te zien
+    krijgt.
+
+    Het scherm laadt ze zelf; zie `instellingen-teksten.js`. De zoekbalk en
+    de sneltoetsen stonden daar ook in en zijn naar `schil.js` verhuisd — die
+    staan op élk scherm.
+  */
+  BESTANDEN = import.meta.glob(['./taal/*.js', '!./taal/instellingen.js'], { eager: true })
 } catch {
   BESTANDEN = {}
   // In een browser hoort dit niet te kunnen — daar staat de lijst al in de
@@ -146,6 +160,29 @@ export function ontbrekendeVertalingen(taal = 'en') {
 }
 
 /** Sleutels die in twee bestanden staan; één van de twee wint en dat wil je weten. */
+/**
+ * Een woordenboek dat pas bij zijn eigen scherm binnenkomt.
+ *
+ * Wordt aangeroepen door `instellingen-teksten.js`, dat in dezelfde brok
+ * zit als het instellingenscherm. Dat gebeurt synchroon bij het inladen van
+ * die brok — dus vóór het scherm tekent — en daarom hoeft er niets opnieuw
+ * getekend te worden.
+ *
+ * Dubbel toevoegen doet niets: de sleutels zijn dezelfde en de waarden ook.
+ */
+export function voegCatalogusToe(naam, teksten) {
+  for (const [sleutel, waarde] of Object.entries(teksten ?? {})) {
+    if (sleutel in TEKSTEN) {
+      // Dezelfde sleutel twee keer is hetzelfde probleem als tussen twee
+      // bestanden: stilletjes wint er een, en dan verandert een tekst op een
+      // scherm waar niemand aan gewerkt heeft.
+      DUBBELE.push(`${sleutel} (${TEKSTEN[sleutel].__bestand} en ${naam})`)
+      continue
+    }
+    TEKSTEN[sleutel] = { ...waarde, __bestand: naam }
+  }
+}
+
 export const dubbeleSleutels = () => DUBBELE
 
 /** Alle sleutels met hun teksten — voor de tests en voor niets anders. */

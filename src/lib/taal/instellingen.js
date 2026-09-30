@@ -18,47 +18,8 @@
 export default {
 
   // ── Het zoeken ─────────────────────────────────────────────────────────
-  'inst.zoek.plaatshouder': {
-    nl: 'Zoek events, taken, klanten, verslagen',
-    en: 'Search events, tasks, customers, minutes',
-  },
-  'inst.zoek.soort.events': { nl: 'Events', en: 'Events' },
-  'inst.zoek.soort.taken': { nl: 'Taken', en: 'Tasks' },
-  'inst.zoek.soort.klanten': { nl: 'Klanten', en: 'Customers' },
-  'inst.zoek.soort.verslagen': { nl: 'Verslagen', en: 'Minutes' },
-  'inst.zoek.soort.mensen': { nl: 'Mensen', en: 'People' },
-  'inst.zoek.soort.templates': { nl: 'Templates', en: 'Templates' },
-  'inst.zoek.klantfiche': { nl: 'klantfiche openen', en: 'open the customer' },
-  'inst.zoek.teamoverleg': { nl: 'teamoverleg', en: 'team meeting' },
-  'inst.zoek.overleg_van': { nl: 'Teamoverleg van {datum}', en: 'Team meeting of {datum}' },
-  'inst.zoek.punt_een': { nl: '{aantal} punt', en: '{aantal} item' },
-  'inst.zoek.punt_meer': { nl: '{aantal} punten', en: '{aantal} items' },
-  'inst.zoek.mens_sub': {
-    nl: '{aantal} open taken · werklast bekijken',
-    en: '{aantal} open tasks · see the workload',
-  },
-  'inst.zoek.template_sub': { nl: 'Template · {uitleg}', en: 'Template · {uitleg}' },
-  'inst.zoek.resultaat_een': { nl: '{aantal} resultaat', en: '{aantal} result' },
-  'inst.zoek.resultaat_meer': { nl: '{aantal} resultaten', en: '{aantal} results' },
-  'inst.zoek.niets': { nl: 'Niets gevonden voor “{vraag}”.', en: 'Nothing found for “{vraag}”.' },
-  'inst.zoek.assistent': { nl: 'Vraag het de assistent', en: 'Ask the assistant' },
 
   // ── De sneltoetsen ─────────────────────────────────────────────────────
-  'inst.sneltoets.zoeken': {
-    nl: 'Zoeken in taken, events, klanten en verslagen',
-    en: 'Search tasks, events, customers and minutes',
-  },
-  'inst.sneltoets.schuin': { nl: 'Hetzelfde, met één toets', en: 'The same, with one key' },
-  'inst.sneltoets.hulp': { nl: 'Dit lijstje', en: 'This list' },
-  'inst.sneltoets.eventbord': { nl: 'Naar het eventbord', en: 'To the event board' },
-  'inst.sneltoets.tasks': { nl: 'Naar Tasks', en: 'To Tasks' },
-  'inst.sneltoets.dashboard': { nl: 'Naar het dashboard', en: 'To the dashboard' },
-  'inst.sneltoets.openensluiten': { nl: 'Naar Openen & sluiten', en: 'To Opening & closing' },
-  'inst.sneltoets.assistent': { nl: 'Assistent open of dicht', en: 'Assistant open or shut' },
-  'inst.sneltoets.uitleg': {
-    nl: 'De losse letters werken alleen als je niet in een veld staat.',
-    en: 'The single letters only work when your cursor is not in a field.',
-  },
 
   // ── De instellingenpagina ──────────────────────────────────────────────
   'inst.tab.team': { nl: 'Team & toegang', en: 'Team & access' },

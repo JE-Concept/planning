@@ -1,3 +1,7 @@
+// Ook de teksten van het instellingenscherm, die pas met dat scherm mee
+// komen: zonder deze regel zou deze test er vijfhonderd minder nakijken
+// en dat stilletjes goedkeuren.
+import '../src/lib/instellingen-teksten'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   STANDAARDTAAL,

@@ -1,3 +1,6 @@
+// De teksten van de business rules horen bij het instellingenscherm en komen
+// pas met dat scherm mee; zie `src/lib/instellingen-teksten.js`.
+import '../src/lib/instellingen-teksten'
 import { describe, expect, it } from 'vitest'
 import {
   ENTITIES,

@@ -452,7 +452,9 @@ Wie de tool opent, haalt de schil op plus de pagina waar hij op staat: samen ong
 
 **De klantenpagina's zijn een andere applicatie.** `/offerte/<sleutel>` en `/klant/<sleutel>` laden geen aanmelding, geen werkruimte en **geen Firebase**: ze praten met één functie en verder met niets. Dat scheelt ruim een halve megabyte op een pagina die één voorstel moet tonen, en het maakt ze bestand tegen een link die rondgaat — er is geen database-abonnement dat openblijft, alleen een HTTP-verzoek dat de CDN een minuut vasthoudt. De functie zelf staat op tachtig gelijktijdige verzoeken per instantie met een plafond van twintig: niet omdat we dat verwachten, maar omdat een publiek adres zonder plafond een factuur is die iemand anders kan bepalen.
 
-Wat er nog ligt: de vertalingen zitten volledig in de hoofdbundel (**43 kB gecomprimeerd**, alle achttien bestanden, beide talen). Alleen `instellingen.js` is daar al een kwart van, terwijl het enkel op het instellingenscherm nodig is. Dat opsplitsen is de volgende winst.
+De vertalingen zaten volledig in de hoofdbundel — achttien bestanden, beide talen, 43 kB gecomprimeerd. `instellingen.js` was daar een kwart van (vijfhonderd sleutels over pijplijnen, templates, formules en business rules) terwijl het alleen op het instellingenscherm nodig is; dat komt nu met dát scherm mee. De hoofdbundel draagt er nog 33 kB van, en dat zijn teksten die overal gebruikt worden.
+
+Wat daarbij opviel: de zoekbalk en de sneltoetsen hadden hun teksten óók in `instellingen.js` staan, terwijl ze op elk scherm staan. Die zijn naar `schil.js` verhuisd — anders had de zoekbalk zijn eigen labels gemist tot je een keer bij Instellingen was geweest.
 
 ---
 

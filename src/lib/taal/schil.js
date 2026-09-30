@@ -248,4 +248,57 @@ export default {
     nl: 'Nog niet verstuurd — dit gaat mee zodra er weer verbinding is.',
     en: 'Not sent yet — this will go through once there is a connection again.',
   },
+
+  /*
+    De zoekbalk en de sneltoetsen.
+
+    Ze stonden bij de instellingen omdat het schermpje met de sneltoetsen daar
+    ooit begon, maar ze horen bij de schil: de zoekbalk staat op elk scherm en
+    de sneltoetsen werken overal. Sinds het instellingenwoordenboek pas
+    ingeladen wordt wanneer je Instellingen opent, maakt dat verschil uit —
+    anders zou de zoekbalk zijn eigen teksten missen tot je er geweest bent.
+
+    De sleutels heten nog `inst.*`: ze staan in mails, in tests en in
+    schermcode, en hernoemen zou dat allemaal raken zonder dat er iets beter
+    van wordt.
+  */
+  'inst.zoek.plaatshouder': {
+    nl: 'Zoek events, taken, klanten, verslagen',
+    en: 'Search events, tasks, customers, minutes',
+  },
+  'inst.zoek.soort.events': { nl: 'Events', en: 'Events' },
+  'inst.zoek.soort.taken': { nl: 'Taken', en: 'Tasks' },
+  'inst.zoek.soort.klanten': { nl: 'Klanten', en: 'Customers' },
+  'inst.zoek.soort.verslagen': { nl: 'Verslagen', en: 'Minutes' },
+  'inst.zoek.soort.mensen': { nl: 'Mensen', en: 'People' },
+  'inst.zoek.soort.templates': { nl: 'Templates', en: 'Templates' },
+  'inst.zoek.klantfiche': { nl: 'klantfiche openen', en: 'open the customer' },
+  'inst.zoek.teamoverleg': { nl: 'teamoverleg', en: 'team meeting' },
+  'inst.zoek.overleg_van': { nl: 'Teamoverleg van {datum}', en: 'Team meeting of {datum}' },
+  'inst.zoek.punt_een': { nl: '{aantal} punt', en: '{aantal} item' },
+  'inst.zoek.punt_meer': { nl: '{aantal} punten', en: '{aantal} items' },
+  'inst.zoek.mens_sub': {
+    nl: '{aantal} open taken · werklast bekijken',
+    en: '{aantal} open tasks · see the workload',
+  },
+  'inst.zoek.template_sub': { nl: 'Template · {uitleg}', en: 'Template · {uitleg}' },
+  'inst.zoek.resultaat_een': { nl: '{aantal} resultaat', en: '{aantal} result' },
+  'inst.zoek.resultaat_meer': { nl: '{aantal} resultaten', en: '{aantal} results' },
+  'inst.zoek.niets': { nl: 'Niets gevonden voor “{vraag}”.', en: 'Nothing found for “{vraag}”.' },
+  'inst.zoek.assistent': { nl: 'Vraag het de assistent', en: 'Ask the assistant' },
+  'inst.sneltoets.zoeken': {
+    nl: 'Zoeken in taken, events, klanten en verslagen',
+    en: 'Search tasks, events, customers and minutes',
+  },
+  'inst.sneltoets.schuin': { nl: 'Hetzelfde, met één toets', en: 'The same, with one key' },
+  'inst.sneltoets.hulp': { nl: 'Dit lijstje', en: 'This list' },
+  'inst.sneltoets.eventbord': { nl: 'Naar het eventbord', en: 'To the event board' },
+  'inst.sneltoets.tasks': { nl: 'Naar Tasks', en: 'To Tasks' },
+  'inst.sneltoets.dashboard': { nl: 'Naar het dashboard', en: 'To the dashboard' },
+  'inst.sneltoets.openensluiten': { nl: 'Naar Openen & sluiten', en: 'To Opening & closing' },
+  'inst.sneltoets.assistent': { nl: 'Assistent open of dicht', en: 'Assistant open or shut' },
+  'inst.sneltoets.uitleg': {
+    nl: 'De losse letters werken alleen als je niet in een veld staat.',
+    en: 'The single letters only work when your cursor is not in a field.',
+  },
 }
