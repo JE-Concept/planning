@@ -23,7 +23,6 @@ import {
   mailVoorToewijzing,
 } from './mail.js'
 import { taalVan, zeg } from './teksten.js'
-import { maakAgendaFeed } from './agenda.js'
 import { heeftSocial, kopieVan, moetBijwerken } from './social-projectie.js'
 import { AUDIT, regelVan, teOud } from './audit.js'
 
@@ -646,12 +645,33 @@ export const notifyOverdueDigest = onSchedule(
   }
 )
 
-/**
- * De eventdatums als agenda-abonnement, op één adres met een sleutel erin.
- *
- * De uitleg over hoe dat afgeschermd is, staat in `agenda.js`.
- */
+/*
+  De eventdatums als agenda-abonnement, op één adres met een sleutel erin.
+  De uitleg over hoe dat afgeschermd is, staat in `agenda.js`.
+
+  ── Waarom deze regel uitstaat ────────────────────────────────────────────
+  Dit is de enige HTTPS-functie in het project, en een nieuwe HTTPS-functie moet
+  bij het uitrollen publiek bereikbaar gezet worden. Daarvoor heeft het
+  serviceaccount van de uitrol het recht `cloudfunctions.functions.setIamPolicy`
+  nodig, en dat heeft het niet. De uitrol faalde daarop — en omdat functions in
+  hun geheel uitrollen, sleepte die ene functie álle andere mee: de meldingen,
+  de regelengine, het logboek en de kopie voor de socialrol stonden daardoor
+  stil terwijl er niets mis mee was.
+
+  Zo aanzetten, in deze volgorde:
+
+  1. Google Cloud console → IAM → het serviceaccount van de uitrol de rol
+     "Cloud Functions Admin" geven (console.cloud.google.com/iam-admin/iam).
+  2. De regel hieronder terugzetten door het commentaar weg te halen.
+  3. De import bovenaan terugzetten:
+     import { maakAgendaFeed } from './agenda.js'
+  4. Pushen; de uitrol maakt de functie dan aan en zet ze publiek.
+
+  De knop "Events in mijn agenda" in het accountmenu maakt tot dan wel een
+  adres aan, maar op dat adres staat nog niets.
+
 export const agenda = maakAgendaFeed({ db, region: REGION })
+*/
 
 /**
  * De kale kopie van een event voor de socialrol, bijgehouden.
