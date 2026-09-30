@@ -6,6 +6,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { getMessaging } from 'firebase-admin/messaging'
 import { logger } from 'firebase-functions'
 import { ENTITIES, RULE_STAMP, changedFields, isRuleEcho, planFor } from './automations.js'
+import { adressenVan, draadVan, eventUitAdres, kiesEvent, klantVanAdres } from './mail-koppeling.js'
 import {
   bepaalOntvangers,
   isTeLaat,
@@ -658,6 +659,75 @@ export const notifyOverdueDigest = onSchedule(
  * ze met `invoker: 'private'` uitrolt en pas daarna publiek gezet wordt.
  */
 export const agenda = maakAgendaFeed({ db, region: REGION })
+
+/**
+ * Een binnengekomen mail aan het juiste event hangen.
+ *
+ * Het rekenwerk staat in `mail-koppeling.js`, met tests erop; hier staat alleen
+ * wat er uit de database bij moet. Dat is met opzet: een mail bij het verkeerde
+ * event zetten is erger dan hem nergens zetten, en een regel die je kan
+ * nalezen is een regel die je kan vertrouwen.
+ *
+ * De trigger draait op het aanmaken én op het bijwerken zonder koppeling, maar
+ * doet niets zodra er al een event aan hangt: wie met de hand koppelt, wordt
+ * niet overruled door een server die het beter denkt te weten.
+ *
+ * Wat nergens bij hoort, blijft staan met `eventId: null`. Dat is geen fout
+ * maar het postvak Aanvragen: een nieuwe klant die schrijft, heeft nog geen
+ * event, en iemand moet er sowieso naar kijken.
+ */
+export const koppelMail = onDocumentCreated(
+  { region: REGION, document: 'mails/{id}' },
+  async (event) => {
+    const bericht = event.data?.data()
+    if (!bericht || bericht.eventId) return
+
+    /*
+      Waarom niet alle events en klanten ophalen: dat zijn er honderden en het
+      gebeurt bij elke mail. De draad zoeken we op de Message-ID's waar dit
+      bericht zelf naar wijst, en de klant op het adres van de afzender. Alleen
+      wanneer er een klant gevonden is, halen we diens events op.
+    */
+    const naar = draadVan(bericht)
+    const bekend = []
+    for (const id of naar.slice(0, 10)) {
+      const snap = await db.collection('mails').where('messageId', '==', id).limit(1).get()
+      if (!snap.empty) bekend.push({ id: snap.docs[0].id, ...snap.docs[0].data() })
+    }
+
+    const klantenSnap = await db.collection('customers').get()
+    const klanten = klantenSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    const klant = klantVanAdres(bericht.van, klanten)
+
+    // De events die ertoe kunnen doen: die van deze klant, plus het event uit
+    // het antwoordadres als dat er staat.
+    const events = []
+    if (klant) {
+      const snap = await db
+        .collection('tasks')
+        .where('customerId', '==', klant.id)
+        .where('archived', '==', false)
+        .get()
+      events.push(...snap.docs.filter((d) => !d.data().parentId).map((d) => ({ id: d.id, ...d.data() })))
+    }
+    for (const adres of [...adressenVan(bericht.aan), ...adressenVan(bericht.cc)]) {
+      const id = eventUitAdres(adres)
+      if (!id || events.some((e) => e.id === id)) continue
+      const snap = await db.collection('tasks').doc(id).get()
+      if (snap.exists) events.push({ id: snap.id, ...snap.data() })
+    }
+
+    const uit = kiesEvent({ bericht, bekend, events, klanten: klant ? [klant] : [] })
+    if (!uit.eventId && !uit.customerId) return
+
+    await event.data.ref.update({
+      eventId: uit.eventId,
+      customerId: uit.customerId,
+      koppeling: uit.reden,
+    })
+    logger.info('Mail gekoppeld', { id: event.params.id, eventId: uit.eventId, reden: uit.reden })
+  }
+)
 
 /**
  * De kale kopie van een event voor de socialrol, bijgehouden.

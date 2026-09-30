@@ -128,6 +128,7 @@ const PAGINAS = [
   ['Bord Socials', '/bord/l-socials', 'Socials'],
   ['Socials', '/social', 'Socials'],
   ['Klanten', '/klanten', 'Klanten'],
+  ['Aanvragen', '/aanvragen', 'Aanvragen'],
   ['Openen & sluiten', '/openen-sluiten', 'Openen'],
   ['Registraties', '/registraties', 'Registraties'],
   ['Teamoverleg', '/overleg', 'Teamoverleg'],
@@ -1595,6 +1596,48 @@ await test('de offerte staat er vanzelf en is regel voor regel aan te passen', a
     bevat(await blad.innerText(), 'Winterbarbecue, all-in'),
     'de aangepaste regel staat niet op het blad'
   )
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de mailwisseling staat op het event', async () => {
+  const page = await tabblad('/events/t-trouw?tab=mail')
+  await page.waitForTimeout(900)
+
+  const draad = await page.locator('.je-maildraad').innerText()
+  zouden(bevat(draad, 'bredere dansvloer'), `de vraag van de klant staat er niet: ${draad.slice(0, 200)}`)
+  // In én uit, op volgorde: wat wij antwoordden hoort er ook bij te staan.
+  zouden(bevat(draad, '6 op 6 meter'), 'het antwoord van het team staat er niet')
+  zouden(page.locator('.je-mail[data-uit]').first() !== null, 'uitgaande post is niet als zodanig te zien')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('post die nergens bij hoort wordt een event in één klik', async () => {
+  const page = await tabblad('/aanvragen')
+  await page.waitForTimeout(900)
+
+  const postvak = await inhoud(page)
+  zouden(bevat(postvak, 'Kristien Maris'), `de aanvraag staat niet in het postvak: ${postvak.slice(0, 300)}`)
+  // Wat er uit de mail te lezen valt, staat er meteen bij — anders moet je de
+  // hele tekst nog eens doorlezen voor je iets kan aanmaken.
+  zouden(bevat(postvak, '40 pax'), 'het aantal gasten werd niet gelezen')
+  zouden(bevat(postvak, 'Winter BBQ'), 'de formule werd niet herkend')
+  zouden(bevat(postvak, 'Richtprijzen'), 'de vraag om prijzen staat er niet bij')
+
+  await page.getByRole('button', { name: 'Event aanmaken' }).first().click()
+  await page.waitForTimeout(1600)
+
+  const fiche = await inhoud(page)
+  zouden(bevat(fiche, 'Kristien Maris'), `het event opende niet: ${fiche.slice(0, 200)}`)
+  zouden((await veldwaarde(page, 'Gasten')) === '40', 'het aantal gasten staat niet op de fiche')
+
+  // En de mail hangt nu aan dat event in plaats van in het postvak.
+  await page.getByRole('tab', { name: 'Mail' }).click()
+  await page.waitForTimeout(800)
+  zouden(bevat(await inhoud(page), 'winterbarbecue'), 'de aanvraag hangt niet aan het nieuwe event')
 
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()

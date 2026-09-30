@@ -37,11 +37,36 @@ import nodemailer from 'nodemailer'
 // Nodig voor `event.data.ref`: die verwijzing hangt aan de beheerders-app.
 initializeApp()
 
+// De ophaler van de post staat in een eigen bestand maar in dezelfde codebase:
+// hij hangt aan hetzelfde soort geheim en hoort bij dezelfde uitrol.
+export { haalPostOp } from './postvak.js'
+
 const REGION = 'europe-west1'
 const SMTP_URL = defineSecret('SMTP_URL')
 
 /** Van wie de post komt. Overschrijfbaar, want het adres is niet van de code. */
 const AFZENDER = process.env.MAIL_FROM ?? 'JE Plan <plan@jeconcept.be>'
+
+/** De postbus die de ophaler leest; daar horen de antwoorden terecht te komen. */
+const POSTBUS = process.env.MAIL_INBOX ?? 'info@jeconcept.be'
+
+/**
+ * Het antwoordadres voor een event.
+ *
+ * Plusadressering: alles achter de `+` negeert de mailserver bij het bezorgen,
+ * dus `info+e<id>@jeconcept.be` komt gewoon in `info@` terecht. Antwoordt de
+ * klant, dan staat het event letterlijk in het adres en hoeft er niets geraden
+ * te worden.
+ *
+ * Dezelfde regel als in `functions/mail-koppeling.js`, en bewust een tweede
+ * keer opgeschreven: deze codebase wordt apart verpakt en kan daar niets uit
+ * importeren. Verandert de regel, dan moet het op beide plaatsen.
+ */
+function antwoordAdres(eventId) {
+  if (!eventId) return null
+  const [lokaal, domein] = POSTBUS.split('@')
+  return domein ? `${lokaal}+e${eventId}@${domein}` : null
+}
 
 /**
  * Eén rij uit de wachtrij versturen.
@@ -72,11 +97,13 @@ export const sendQueuedMail = onDocumentCreated(
 
     try {
       const post = nodemailer.createTransport(url)
+      const replyTo = antwoordAdres(rij.eventId)
       const antwoord = await post.sendMail({
         from: AFZENDER,
         to: rij.aan,
         subject: rij.onderwerp,
         text: rij.tekst,
+        ...(replyTo ? { replyTo } : {}),
       })
 
       await event.data.ref.update({
@@ -84,6 +111,17 @@ export const sendQueuedMail = onDocumentCreated(
         messageId: antwoord.messageId ?? null,
         verstuurdOp: FieldValue.serverTimestamp(),
       })
+
+      /*
+        Post aan een klant hoort in de draad van het event te staan, naast wat
+        er binnenkwam. Interne meldingen niet: "er is op je taak gereageerd"
+        is geen mailwisseling met de klant, en een draad die daarmee volloopt,
+        leest niemand meer. Daarom alleen wanneer de rij het zelf zegt.
+      */
+      if (rij.eventId && rij.klantMail) {
+        await bewaarUitgaand(event.data.ref.firestore, rij, antwoord.messageId)
+      }
+
       logger.info('Mail verstuurd', { id: event.params.id, soort: rij.soort ?? null })
     } catch (err) {
       await event.data.ref.update({
@@ -95,3 +133,40 @@ export const sendQueuedMail = onDocumentCreated(
     }
   }
 )
+
+/**
+ * Een verstuurde mail in de draad van het event zetten.
+ *
+ * De Message-ID is de sleutel, net als bij binnenkomende post: antwoordt de
+ * klant hierop, dan wijst zijn `In-Reply-To` naar dit bericht en weet de
+ * koppeling meteen bij welk event het hoort.
+ */
+async function bewaarUitgaand(db, rij, messageId) {
+  const schoon = String(messageId ?? '').replace(/^<|>$/g, '')
+  const naam = (schoon || `uit-${Date.now()}`).replace(/[^A-Za-z0-9._@-]/g, '_').slice(0, 180)
+
+  await db
+    .collection('mails')
+    .doc(naam)
+    .set(
+      {
+        richting: 'uit',
+        messageId: schoon || null,
+        inReplyTo: null,
+        references: null,
+        van: AFZENDER,
+        aan: rij.aan,
+        cc: '',
+        onderwerp: rij.onderwerp ?? '',
+        tekst: String(rij.tekst ?? '').slice(0, 20000),
+        bijlagen: [],
+        datum: new Date(),
+        eventId: rij.eventId,
+        customerId: rij.customerId ?? null,
+        // Geen gok: wij hebben hem zelf verstuurd vanaf dit event.
+        koppeling: 'adres',
+        opgehaaldOp: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    )
+}

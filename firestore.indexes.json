@@ -565,6 +565,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "mails",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "eventId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "datum",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

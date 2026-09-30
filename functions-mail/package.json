@@ -2,11 +2,15 @@
   "name": "je-planning-mail",
   "type": "module",
   "private": true,
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "main": "index.js",
   "dependencies": {
     "firebase-admin": "^13.0.1",
     "firebase-functions": "^6.1.1",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "imapflow": "^1.0.171",
+    "mailparser": "^3.7.1"
   }
 }

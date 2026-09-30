@@ -56,11 +56,15 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       icon: 'kanban',
       sleutel: 'nav.events',
       end: true,
-      match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten',
+      match: (p) =>
+        p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten' || p === '/aanvragen',
       kinderen: [
         { to: '/', icon: 'kanban', sleutel: 'nav.bord', end: true, match: (p) => p === '/' || p.startsWith('/events') },
         { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
         { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
+        // Het postvak hangt onder Events en niet apart: wat erin staat wordt
+        // een event, of het hoort bij een event dat er al is.
+        { to: '/aanvragen', icon: 'mail', sleutel: 'nav.aanvragen' },
       ],
     },
     /*

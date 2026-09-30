@@ -190,6 +190,26 @@ Een klant wordt **uit gebruik genomen**, niet gewist, zolang er events aan hange
 
 ---
 
+## De post van info@jeconcept.be
+
+Een aanvraag komt binnen in een mailbox, en daar blijft ze — samen met de prijsvraag erna, het "kan het ook een week later" en de bevestiging. Wie het dossier overneemt, weet dan niet wat er afgesproken is. Daarom haalt JE Plan die post op en hangt ze aan het juiste event.
+
+**Ophalen** doet `functions-mail/postvak.js`, elke vijf minuten over IMAP, met een app-wachtwoord van de eigen Google Workspace. Dezelfde afweging als bij het versturen: geen nieuwe leverancier, geen tweede account, geen koppeling die stil kan verlopen. De Gmail-API met push is sneller maar vraagt een OAuth-client, een Pub/Sub-topic en een `watch` die elke week vernieuwd moet worden — drie dingen die stil kunnen stoppen, voor een paar minuten winst.
+
+De functie **raakt de mailbox niet aan**. Geen berichten als gelezen markeren, niets verplaatsen: het is een gedeelde postbus waar mensen in werken, en de eerste keer dat hun postvak overhoop ligt, is het vertrouwen weg. Ze onthoudt zelf waar ze gebleven was — het hoogste UID dat ze gezien heeft, in `instellingen/postvak`. Bij de allereerste keer gaat ze veertien dagen terug en niet verder: een postbus die jaren meegaat, bevat duizenden berichten die met geen enkel event te maken hebben.
+
+**Koppelen** gebeurt in `functions/mail-koppeling.js`, en dat staat apart en getest omdat een mail bij het verkeerde event zetten erger is dan hem nergens zetten. De volgorde loopt van zeker naar waarschijnlijk:
+
+1. **Het antwoordadres.** Post die JE Plan over een event stuurt, draagt `Reply-To: info+e<eventId>@jeconcept.be`. Alles achter de `+` negeert de mailserver bij het bezorgen, dus het antwoord komt gewoon in `info@` terecht — met het event erin. Dat is geen gok.
+2. **De draad.** `In-Reply-To` en `References` wijzen naar berichten die we al kennen. Ook exact: die koppen komen van het mailprogramma.
+3. **De afzender.** Het adres hoort bij een klant (op de fiche of bij een contactpersoon) die precies één lopend dossier heeft. Heeft hij er meer, dan koppelen we niet — kiezen tussen twee dossiers van dezelfde klant is precies waar het misgaat.
+
+Wat overblijft staat in **Aanvragen**, onder Events. Meestal is dat een nieuwe klant die schrijft: er is nog geen event om het aan te hangen. Wat er uit de mail te lezen valt staat er al bij (zie hieronder), en met één knop wordt het een event met de mail erbij.
+
+Op het event staat de hele draad onder het tabblad **Mail**: wat binnenkwam en wat JE Plan zelf naar de klant stuurde. De tekst wordt getoond zoals ze aankwam, zonder opmaak — HTML van een willekeurige afzender in je eigen scherm laden is precies hoe een mail meer doet dan tonen wat erin staat. Bijlagen worden genoemd maar niet gekopieerd; die blijven in de mailbox.
+
+---
+
 ## De offerte
 
 Een aanvraag komt binnen als proza — "mijn mama wordt op zaterdag 28 november 65 jaar, we denken aan een 40-tal personen, een gezellige winterbarbecue" — en daar zit alles in wat een dossier nodig heeft. **Nieuw event → Uit een mail** leest die tekst: datum, aantal, soort feest, de formule uit jullie eigen lijst, de eigen zaal als de klant er een noemt, de afzender, en de vragen die erin staan.

@@ -384,6 +384,28 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    /*
+      De post van info@jeconcept.be.
+
+      Lezen doet het planningsteam: er staan klantgegevens, prijsafspraken en
+      soms hele onderhandelingen in. Personeel en de socialrol niet — die
+      hebben met de klant geen mailverkeer.
+
+      Schrijven kan alleen de koppeling, en alleen door iemand van het team: de
+      ophaler zet de berichten neer met beheerdersrechten en gaat hier niet
+      langs, maar een mail met de hand aan het juiste event hangen moet wél
+      vanuit het scherm kunnen. Daarom staat er hier een update op die drie
+      velden en niets anders: de inhoud van een bericht hoort onaanraakbaar te
+      zijn, anders is de draad geen bewijs meer van wat er gezegd is.
+    */
+    match /mails/{id} {
+      allow read:   if isTeam();
+      allow create: if false;
+      allow delete: if false;
+      allow update: if isTeam()
+        && changedKeys().hasOnly(['eventId', 'customerId', 'koppeling', 'gelezen']);
+    }
+
     // Anything not named above stays closed.
     match /{document=**} {
       allow read, write: if false;

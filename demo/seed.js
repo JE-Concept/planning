@@ -150,6 +150,33 @@ const LOGO =
     contentType, size, url, uploadedBy: 'u-jasper', createdAt: dag(-30 + i),
   }))
 
+// ─── De post ────────────────────────────────────────────────────────────────
+
+/*
+  Wat er op info@jeconcept.be binnenkomt. Eén draad die aan een event hangt en
+  één aanvraag die nergens bij hoort — dat zijn de twee gevallen die het scherm
+  moet aankunnen.
+*/
+function mail(id, o) {
+  seedDoc('mails', id, {
+    richting: o.richting ?? 'in',
+    messageId: o.messageId ?? `${id}@mail.example`,
+    inReplyTo: o.inReplyTo ?? null,
+    references: o.references ?? null,
+    van: o.van ?? '',
+    aan: o.aan ?? 'info@jeconcept.be',
+    cc: '',
+    onderwerp: o.onderwerp ?? '',
+    tekst: o.tekst ?? '',
+    bijlagen: o.bijlagen ?? [],
+    datum: o.datum,
+    eventId: o.eventId ?? null,
+    customerId: o.customerId ?? null,
+    koppeling: o.koppeling ?? null,
+    opgehaaldOp: o.datum,
+  })
+}
+
 // ─── Taken ──────────────────────────────────────────────────────────────────
 let pos = 0
 function taak(id, listId, statuses, statusName, o = {}) {
@@ -910,3 +937,53 @@ seedDoc('config', 'access', {
     soort, documentId, naam, actie, wijzigingen, actorId, actorNaam,
     actorZeker: actie !== 'verwijderd',
   }))
+
+/*
+  De post. Een draad die aan een event hangt en een aanvraag die nergens bij
+  hoort: precies de twee gevallen die de schermen moeten aankunnen.
+*/
+mail('m-trouw-1', {
+  van: 'Inez Vanhees <inez@example.be>',
+  aan: 'info@jeconcept.be',
+  onderwerp: 'Trouw 10 oktober — bredere dansvloer?',
+  tekst:
+    'Dag,\n\nWe hebben de foto’s van de opstelling doorgestuurd. Eén vraag nog: kan de dansvloer een stuk breder dan bij de Odeurs-trouw? We verwachten dat er veel gedanst wordt.\n\nGroeten,\nInez',
+  datum: dag(-11),
+  eventId: 't-trouw',
+  customerId: 'k-niels-inez',
+  koppeling: 'klant',
+})
+mail('m-trouw-2', {
+  richting: 'uit',
+  van: 'JE Plan <plan@jeconcept.be>',
+  aan: 'inez@example.be',
+  onderwerp: 'Re: Trouw 10 oktober — bredere dansvloer?',
+  inReplyTo: 'm-trouw-1@mail.example',
+  tekst:
+    'Dag Inez,\n\nDat kan. We rekenen met 6 op 6 meter in plaats van 5 op 5; dat past onder de tent zonder dat de bar moet schuiven. Het verschil zetten we op de offerte.\n\nGroeten,\nJasper',
+  datum: dag(-10),
+  eventId: 't-trouw',
+  customerId: 'k-niels-inez',
+  koppeling: 'adres',
+})
+mail('m-aanvraag-kristien', {
+  van: 'Kristien Maris <k.maris@example.be>',
+  aan: 'info@jeconcept.be',
+  onderwerp: 'Verjaardagsfeest 28 november',
+  tekst: [
+    'Beste,',
+    '',
+    'Mijn mama wordt op zaterdag 28 november 65 jaar en we zouden dit graag samen met familie en vrienden vieren.',
+    '',
+    'We denken aan een 40-tal personen en hadden het idee om er een gezellige winterbarbecue van te maken. Omdat jullie ook Het Vinne uitbaten, vroeg ik me af of het mogelijk is om dit feest in het zaaltje van Het Vinne te organiseren.',
+    '',
+    'Werken jullie voor dergelijke feesten met vaste formules of arrangementen? We ontvangen graag wat meer informatie over de mogelijkheden en richtprijzen.',
+    '',
+    'Alvast bedankt!',
+    '',
+    'met vriendelijke groet,',
+    '',
+    'Kristien Maris',
+  ].join('\n'),
+  datum: dag(-1),
+})

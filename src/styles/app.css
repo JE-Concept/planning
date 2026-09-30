@@ -549,6 +549,124 @@
   resize: vertical;
 }
 
+/* ── De post rond een event ────────────────────────────────────────────── */
+
+.je-maildraad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+/* Inkomend links, uitgaand met een eigen rand rechts: in één blik zie je wie
+   er aan het woord was. */
+.je-mail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-left: 2px solid var(--border-subtle);
+  border-radius: 4px;
+}
+.je-mail[data-uit] {
+  border-left-color: var(--accent);
+  background: var(--accent-quiet);
+}
+.je-mail__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  color: var(--text-2);
+}
+.je-mail__wie {
+  font: var(--type-body-sm);
+  font-weight: 600;
+  color: var(--text-1);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.je-mail__onderwerp {
+  font: var(--type-body-sm);
+  font-weight: 600;
+}
+.je-mail__tekst {
+  font: var(--type-body-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.je-mail__bijlagen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-hairline);
+}
+.je-mail__voet {
+  display: flex;
+  gap: var(--space-3);
+}
+.je-mail__voet:empty {
+  display: none;
+}
+
+/* Het postvak: een werklijst, geen gesprek. */
+.je-aanvraag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+}
+.je-aanvraag__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  color: var(--text-2);
+}
+.je-aanvraag__van {
+  font: var(--type-body-sm);
+  font-weight: 600;
+  color: var(--text-1);
+}
+.je-aanvraag__onderwerp {
+  font: var(--type-h3);
+}
+.je-aanvraag__tekst {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 9em;
+  overflow: hidden;
+}
+.je-aanvraag__gelezen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-quiet);
+  border-radius: 4px;
+}
+.je-aanvraag__veld {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font: var(--type-body-sm);
+}
+.je-aanvraag__acties {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.je-aanvraag__acties .je-select {
+  max-width: 280px;
+}
+
 /* ── De offerte, in de tool ────────────────────────────────────────────── */
 
 /* Het werkblad: de lijnen die je aanpast. Het blad dat de klant krijgt staat

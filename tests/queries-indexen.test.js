@@ -247,6 +247,16 @@ const VRAGEN = [
     eq: [['documentId', EQ]],
     sorteer: [['at', DESC]],
   },
+
+  // ── mails ───────────────────────────────────────────────────────────────
+  // De draad van een event en het postvak Aanvragen stellen dezelfde vraag met
+  // een andere waarde (een event-id, of null), dus één index bedient ze allebei.
+  {
+    naam: 'useEventMails / useLosseMails — de draad en het postvak (src/data/mails.js)',
+    col: 'mails',
+    eq: [['eventId', EQ]],
+    sorteer: [['datum', ASC]],
+  },
 ]
 
 /**
@@ -307,10 +317,10 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  // 60 sinds `deleteEvent` de offerte van een event opzoekt om ze mee weg te
-  // gooien. Eén gelijkheid zonder `orderBy`: Firestore bedient dat uit zijn
-  // eigen veldindexen, dus er hoort geen regel bij in de tabel hierboven.
-  const QUERIES_IN_DE_APP = 60
+  // 62 sinds de post erbij kwam: de draad van een event en het postvak
+  // Aanvragen. Ze stellen dezelfde vraag met een andere waarde en delen dus
+  // één index — die staat hierboven in de tabel.
+  const QUERIES_IN_DE_APP = 62
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

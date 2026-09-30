@@ -26,6 +26,7 @@ const SocialCalendar = lazy(() => import('@pages/SocialCalendar'))
 const Checklists     = lazy(() => import('@pages/Checklists'))
 const ChecklistReport = lazy(() => import('@pages/ChecklistReport'))
 const Meetings       = lazy(() => import('@pages/Meetings'))
+const Aanvragen      = lazy(() => import('@pages/Aanvragen'))
 const TimeTracking   = lazy(() => import('@pages/TimeTracking'))
 const Rooster        = lazy(() => import('@pages/Rooster'))
 const Logboek        = lazy(() => import('@pages/Logboek'))
@@ -126,6 +127,7 @@ function Authenticated() {
             <Route path="/bord/:listId" element={<Board />} />
             <Route path="/social" element={<SocialCalendar />} />
             <Route path="/klanten" element={<Customers />} />
+            <Route path="/aanvragen" element={<Aanvragen />} />
             <Route path="/openen-sluiten" element={<Checklists />} />
             <Route path="/registraties" element={<ChecklistReport />} />
             <Route path="/overleg" element={<Meetings />} />

@@ -107,6 +107,10 @@ export const REGELS = {
 
   offertes:       { lezen: isTeam, schrijven: isTeam },
   auditLog:       { lezen: isTeam, schrijven: () => false },
+  // De post: lezen mag het team, schrijven doet alleen de ophaler (met
+  // beheerdersrechten, dus die gaat hier niet langs). Wat een browser mag, is
+  // een mail aan een event hangen — dat is een update op drie velden.
+  mails:          { lezen: isTeam, schrijven: isTeam },
 }
 
 /**
