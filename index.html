@@ -17,15 +17,65 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="JE Plan" />
 
+    <!-- Los van het stijlbestand, want dat komt óók pas over de lijn. -->
+    <style>
+      /* Dezelfde kleuren als het molentje van de app zelf (--paper, --accent,
+         --border-subtle in src/styles/je-ds.css), zodat er niets verspringt
+         zodra de echte stijlen er zijn. */
+      html, body { margin: 0; background: #F8F9FB; }
+      .je-start { display: flex; height: 100vh; align-items: center; justify-content: center; }
+      .je-start i {
+        width: 24px; height: 24px; border-radius: 999px;
+        border: 3px solid rgba(0, 48, 96, 0.22); border-top-color: #1B3A6B;
+        animation: je-start-draai 0.7s linear infinite;
+      }
+      @keyframes je-start-draai { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .je-start i { animation-duration: 2s; } }
+    </style>
+
+    <!--
+      De huisletters, maar niet ten koste van het eerste scherm.
+
+      Een gewone stylesheet-link houdt het tekenen tegen tot hij binnen is — ook
+      als hij van een andere server komt. Met één streepje bereik betekent dat:
+      geen enkele pixel tot Google antwoordt, en op een festivalterrein is dat
+      de seconden waarin iemand denkt dat de tool stuk is. Met `media="print"`
+      telt hij niet mee voor het tekenen; zodra hij er is, zet `onload` hem
+      alsnog aan. De letters komen dan een tel later — dat deed `display=swap`
+      toch al — maar de app staat er meteen.
+    -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Oswald:wght@300..700&family=Source+Sans+3:wght@300..700&family=Parisienne&family=Prata&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Oswald:wght@300..700&family=Source+Sans+3:wght@300..700&family=Parisienne&family=Prata&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      Wat er staat zolang de app nog binnenkomt.
+
+      Er wordt niets getekend tot alle code er is: op traag 4G duurde het bijna
+      drie seconden voor er íets op het scherm stond, en dat was drie seconden
+      wit. Wit leest als "stuk" — mensen tikken opnieuw, of leggen de tablet
+      weg. Dit staat er meteen, in dezelfde kleur als de app zelf, zodat de
+      wachttijd eruitziet als laden en niet als kapot.
+
+      Het staat binnen #root en verdwijnt dus vanzelf: `createRoot(...).render()`
+      vervangt de inhoud van dat element. Geen code die het moet opruimen, dus
+      ook geen code die dat kan vergeten.
+    -->
+    <div id="root">
+      <div class="je-start" role="status" aria-label="JE Plan wordt geladen"><i></i></div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

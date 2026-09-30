@@ -21,7 +21,7 @@
  */
 
 import { createServer } from 'node:http'
-import { createReadStream, existsSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
@@ -1488,6 +1488,33 @@ await test('de schil van deze build staat compleet in version.json', async () =>
   await page.close()
 })
 
+await test('de schil sleept mee wat hij zelf nog nodig heeft', async () => {
+  /*
+    Een bestandsnaam in de schil zetten is niet genoeg: het bestand van een
+    scherm haalt zelf nog bestanden op. `Checklists` stond erin, maar de twee
+    stukken die het scherm statisch binnenhaalt — de herhaalregels en de
+    paginakop — niet. Wie de app installeerde en daarna de koelcel in liep
+    zonder dat scherm ooit geopend te hebben, kreeg het dus niet open: precies
+    het ene scherm dat het zonder verbinding móét doen.
+
+    Dit rekent na dat de lijst dichtloopt: alles wat een bestand uit de schil
+    statisch nodig heeft, staat er ook in.
+  */
+  const { schil } = JSON.parse(readFileSync(join(root, 'version.json'), 'utf8'))
+  const inSchil = new Set(schil)
+
+  for (const naam of schil.filter((n) => n.endsWith('.js'))) {
+    const code = readFileSync(join(root, naam), 'utf8')
+    // Rollup schrijft statische imports als `from"./x.js"` of `import"./x.js"`;
+    // een dynamische heeft een haakje en valt hier dus buiten — terecht, die
+    // wordt pas opgehaald als iemand iets doet.
+    for (const [, pad] of code.matchAll(/(?:from|import)\s*"(\.\/[^"]+\.js)"/g)) {
+      const erbij = `assets/${pad.replace('./', '')}`
+      zouden(inSchil.has(erbij), `${naam} heeft ${erbij} nodig, maar dat staat niet in de schil`)
+    }
+  }
+})
+
 await test('zonder verbinding kun je verder afvinken en zie je dat het nog niet weg is', async () => {
   // Waar de hele oefening om draait. De keuken en de koelcel hebben één
   // streepje bereik; wie daar afvinkt moet dat kunnen, en moet zien dat het
@@ -1542,6 +1569,64 @@ await test('het eerste scherm staat er snel', async () => {
   // Geen benchmark maar een vangrail: dit is een lege testserver op dezelfde
   // machine. Loopt dit over de seconde, dan is er iets grondig misgegaan.
   zouden(meting.geladen < 3000, `het duurde ${meting.geladen} ms voor de pagina begon`)
+  await page.close()
+})
+
+// ─── 8. De melding "er staat een nieuwe versie klaar" ───────────────────────
+
+/*
+  Deze keten is één keer helemaal stukgegaan zonder dat iemand het merkte.
+
+  De app vergelijkt `__BUILD_ID__` uit de bundel met `build` uit version.json.
+  Die twee werden allebei apart in vite.config.js berekend met `Date.now()` —
+  dus bij elke build die zonder BUILD_ID in de omgeving draait (en dat doet
+  `npm run deploy`) scheelden ze de bouwtijd, een seconde of acht. Gevolg: de
+  balk stond bij iedereen, altijd, en herladen hielp niet. Een melding die
+  altijd staat, is geen melding meer.
+
+  Daarom hier twee kanten op getest: hij blijft weg als er niets is, en hij komt
+  als er wél iets is.
+*/
+
+/** Eén ronde van de versiecontrole afdwingen, zonder een kwartier te wachten. */
+const kijkNaarVersie = async (page) => {
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  await page.waitForTimeout(700)
+}
+
+await test('de versiemelding blijft weg zolang er niets nieuws uitgerold is', async () => {
+  const page = await tabblad('/')
+  await kijkNaarVersie(page)
+  const tekst = await inhoud(page)
+  zouden(
+    !bevat(tekst, 'nieuwe versie'),
+    'de app meldt een nieuwe versie terwijl er dezelfde build draait — vergelijk __BUILD_ID__ met version.json'
+  )
+  await page.close()
+})
+
+await test('en komt er wél zodra er een andere build op de server staat', async () => {
+  const page = await tabblad('/')
+  await page.route('**/version.json', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ build: 'een-latere-build', demo: true, schil: [] }),
+    })
+  )
+  await kijkNaarVersie(page)
+  zouden(
+    bevat(await inhoud(page), 'nieuwe versie'),
+    'er staat een andere build op de server en de app zegt er niets over'
+  )
+  await page.close()
+})
+
+await test('het wachtscherm uit index.html wordt door de app vervangen', async () => {
+  // Het staat binnen #root en hoort dus weg te zijn zodra React getekend heeft.
+  // Blijft het staan, dan kijkt iedereen naar een molentje dat nooit stopt.
+  const page = await tabblad('/')
+  zouden((await page.locator('.je-start').count()) === 0, 'het wachtscherm van index.html bleef staan')
   await page.close()
 })
 

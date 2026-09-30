@@ -244,6 +244,10 @@ De tool is een app op je beginscherm, geen snelkoppeling: eigen icoon, eigen ven
 
 **Offline.** De service worker (`public/sw.js`) bewaart de schil en haalt hem uit de cache wanneer het netwerk wegvalt — een leeg scherm op een festivalterrein is erger dan een oud scherm. De gegevens zelf komen altijd van Firestore; die worden nooit gecachet, want een planning die stilstaat zonder dat iemand het ziet, is gevaarlijker dan een foutmelding.
 
+De schil is alles wat het beginscherm nodig heeft plus het scherm *Openen & sluiten*, en die lijst wordt bij het bouwen dichtgerekend: wat een bestand uit de schil zelf nog binnenhaalt, gaat mee. `version.json` draagt die lijst én het buildnummer, en beide komen uit dezelfde build — anders meldt de app bij iedereen dat er een nieuwe versie klaarstaat terwijl er niets veranderd is. De browsertest controleert allebei.
+
+**Caching.** De gehashte bestanden in `/assets/` staan een jaar vast en de rest op `no-store`. In `firebase.json` staat de algemene regel daarom vóór `/assets/**`: Hosting past álle regels toe die op een pad passen, in volgorde, dus wint bij dezelfde koptekst de laatste. Andersom overschrijft `no-store` het jaar en haalt elk toestel de hele app bij elk bezoek opnieuw op.
+
 > Let op bij het aanpassen van de service worker: een kapotte versie blijft op het toestel van iedereen staan, ook na een goede deploy. De uitweg is `public/sw.js` vervangen door alleen `self.registration.unregister()` en dat uitrollen; elk toestel ruimt zichzelf dan op bij het volgende bezoek.
 
 **Meldingen.** Twee dingen sturen er een: je krijgt een taak toegewezen, en er wordt jou een review van een social post gevraagd. Nooit van je eigen klik — daarvoor schrijft de app `updatedBy` mee op elke taakwijziging.
