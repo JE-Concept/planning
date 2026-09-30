@@ -43,6 +43,8 @@ export const COL = {
   socialEvents: 'socialEvents',
   auditLog: 'auditLog',
   mails: 'mails',
+  mailQueue: 'mailQueue',
+  instellingen: 'instellingen',
 }
 
 export const col = (name) => collection(db, name)

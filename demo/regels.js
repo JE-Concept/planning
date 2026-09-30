@@ -42,7 +42,8 @@ export const REGELS = {
   invites:        { lezen: isAdmin, schrijven: isAdmin },
   pushTokens:     { lezen: isMember, schrijven: isMember },
   config:         { lezen: isMember, schrijven: isAdmin },
-  mailQueue:      { lezen: () => false, schrijven: () => false },
+  mailQueue:      { lezen: isTeam, schrijven: () => false },
+  instellingen:   { lezen: isTeam, schrijven: () => false },
 
   brands:         { lezen: (rol) => isTeam(rol) || isSocial(rol), schrijven: isTeam },
   spaces:         { lezen: isTeam, schrijven: isTeam },

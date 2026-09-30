@@ -45,14 +45,14 @@ export function kort(tekst, max = 80) {
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 /**
- * De vier soorten berichten die JE Plan stuurt.
+ * De soorten berichten die JE Plan stuurt.
  *
  * Ze staan hier als sleutel en niet als vrije tekst, want ze komen op drie
  * plaatsen terug: in de voorkeuren van een profiel, in de triggers hieronder,
  * en in het schermpje waar je ze aan- en uitzet. Een tikfout in één daarvan
  * zou stil betekenen "dit bericht wil niemand".
  */
-export const SOORTEN = ['toewijzing', 'reactie', 'deadline', 'telaat']
+export const SOORTEN = ['toewijzing', 'reactie', 'deadline', 'telaat', 'systeem']
 
 /**
  * Wat je krijgt zolang je niets instelt.
@@ -72,6 +72,14 @@ export const STANDAARD = {
   reactie: { push: true, email: true },
   deadline: { push: true, email: true },
   telaat: { push: false, email: false },
+  /*
+    De tool die over zichzelf meldt. Staat aan, en gaat alleen naar
+    beheerders — zie `controleerSysteem`. Uitzetten kan, maar wie hem uitzet,
+    zet de enige manier uit waarop hij hoort dat de post stilviel; daarom is
+    dit het enige soort dat standaard op allebei de kanalen staat zonder dat
+    er iets tegenover staat.
+  */
+  systeem: { push: true, email: true },
 }
 
 /**

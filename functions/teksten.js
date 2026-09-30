@@ -22,6 +22,26 @@ const TEKSTEN = {
   'push.review': { nl: 'Een post wacht op jouw review', en: 'A post is waiting for your review' },
   'push.reactie': { nl: '{wie} reageerde', en: '{wie} commented' },
   'push.iemand': { nl: 'Iemand', en: 'Someone' },
+
+  // ── De tool die over zichzelf meldt ────────────────────────────────────
+  // Alleen wanneer er iets aan de hand is. Een dagelijks "alles in orde"
+  // wordt na een week weggeklikt zonder lezen, en dan gaat het bericht dat
+  // er wél toe doet mee.
+  'push.systeem': { nl: 'JE Plan heeft je even nodig', en: 'JE Plan needs a look' },
+  'push.systeem_post': {
+    nl: 'Al {uren} uur geen post opgehaald.',
+    en: 'No mail fetched for {uren} hours.',
+  },
+  'push.systeem_mail_een': { nl: '{aantal} mail is niet vertrokken.', en: '{aantal} message did not go out.' },
+  'push.systeem_mail_meer': { nl: '{aantal} mails zijn niet vertrokken.', en: '{aantal} messages did not go out.' },
+  'mail.systeem.onderwerp': {
+    nl: 'JE Plan: er is iets blijven hangen',
+    en: 'JE Plan: something is stuck',
+  },
+  'mail.systeem.kop': {
+    nl: 'Deze ochtend zag JE Plan het volgende bij zichzelf:',
+    en: 'This morning JE Plan noticed the following about itself:',
+  },
   'push.deadline_een': { nl: 'Morgen te doen', en: 'Due tomorrow' },
   'push.deadline_meer': { nl: 'Morgen vervallen {aantal} taken', en: '{aantal} tasks are due tomorrow' },
   'push.telaat_een': { nl: '1 taak staat te laat', en: '1 task is overdue' },

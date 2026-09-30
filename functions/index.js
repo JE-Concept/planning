@@ -539,6 +539,87 @@ export const notifyComment = onDocumentCreated(
 )
 
 /**
+ * Elke ochtend nakijken of de tool zelf nog draait.
+ *
+ * ── Waarom dit nodig is ───────────────────────────────────────────────────
+ * De ophaler van de post schrijft bij waar ze gebleven was, en dat staat sinds
+ * kort ook op een scherm. Maar een scherm werkt alleen als iemand kijkt, en
+ * niemand opent Instellingen om te controleren of alles nog draait. Loopt een
+ * app-wachtwoord af, dan stopt de post in stilte, en het eerste signaal is een
+ * klant die vraagt waarom niemand antwoordt.
+ *
+ * Dus kijkt de tool zelf, één keer per dag, en zegt het tegen de beheerders
+ * als er iets aan de hand is. Alleen dan: een dagelijks bericht dat "alles is
+ * in orde" zegt, wordt na een week weggeklikt zonder lezen, en dan wordt het
+ * bericht dat er wél toe doet ook weggeklikt.
+ *
+ * ── Waarom acht uur en niet zes ───────────────────────────────────────────
+ * De drempel op het scherm ligt op zes uur; hier op acht. Wie 's ochtends
+ * kijkt, ziet een storing van vannacht al staan; een melding hoort pas te
+ * komen wanneer het echt niet meer vanzelf goedkomt. Een uitrol of een
+ * herstart van een paar uur is dat niet.
+ */
+export const controleerSysteem = onSchedule(
+  { region: REGION, schedule: '30 8 * * *', timeZone: 'Europe/Brussels' },
+  async () => {
+    const klachten = []
+
+    const postvak = (await db.doc('instellingen/postvak').get()).data()
+    const laatste = postvak?.laatsteKeer?.toDate?.() ?? null
+    const uren = laatste ? Math.floor((Date.now() - laatste.getTime()) / 3600000) : null
+
+    // Nog nooit gedraaid is een taak en geen storing: dan staat de sleutel er
+    // gewoon nog niet. Daar is een melding elke ochtend geen dienst voor.
+    if (laatste && uren >= 8) klachten.push({ wat: 'post', uren })
+
+    const mislukt = await db.collection('mailQueue').where('status', '==', 'mislukt').limit(25).get()
+    if (!mislukt.empty) klachten.push({ wat: 'mail', aantal: mislukt.size })
+
+    if (klachten.length === 0) return
+
+    const profielen = await alleProfielen()
+    const beheerders = profielen
+      .filter((p) => p.active !== false && (p.role === 'owner' || p.role === 'admin'))
+      .map((p) => p.id)
+    if (beheerders.length === 0) return
+
+    const uitkomst = await verstuur({
+      soort: 'systeem',
+      kandidaten: beheerders,
+      profielen,
+      push: (taal) => ({
+        title: zeg(taal, 'push.systeem'),
+        body: klachten
+          .map((k) =>
+            k.wat === 'post'
+              ? zeg(taal, 'push.systeem_post', { uren: k.uren })
+              : zeg(taal, 'push.systeem_mail', { aantal: k.aantal })
+          )
+          .join(' '),
+        url: '/instellingen?tab=systeem',
+        tag: 'systeem',
+      }),
+      mail: (taal) => ({
+        onderwerp: zeg(taal, 'mail.systeem.onderwerp'),
+        tekst: [
+          zeg(taal, 'mail.systeem.kop'),
+          '',
+          ...klachten.map((k) =>
+            k.wat === 'post'
+              ? zeg(taal, 'push.systeem_post', { uren: k.uren })
+              : zeg(taal, 'push.systeem_mail', { aantal: k.aantal })
+          ),
+          '',
+          `${APP}/#/instellingen?tab=systeem`,
+        ].join('\n'),
+      }),
+    })
+
+    logger.warn('Systeemcontrole sloeg alarm', { klachten, ...uitkomst })
+  }
+)
+
+/**
  * De taken van morgen, elke ochtend om zeven uur.
  *
  * 's Ochtends en niet 's avonds: een deadline die je om acht uur 's avonds te

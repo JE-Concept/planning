@@ -257,6 +257,16 @@ const VRAGEN = [
     eq: [['eventId', EQ]],
     sorteer: [['datum', ASC]],
   },
+
+  // ── mailQueue ───────────────────────────────────────────────────────────
+  // Het systeemscherm haalt de post op die niet vertrok. Nieuwste eerst, want
+  // dit is een werklijst: wat vanochtend misging, doet er het meest toe.
+  {
+    naam: 'useSysteem — de mails die niet vertrokken (src/data/systeem.js)',
+    col: 'mailQueue',
+    eq: [['status', EQ]],
+    sorteer: [['createdAt', DESC]],
+  },
 ]
 
 /**
@@ -317,10 +327,9 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  // 62 sinds de post erbij kwam: de draad van een event en het postvak
-  // Aanvragen. Ze stellen dezelfde vraag met een andere waarde en delen dus
-  // één index — die staat hierboven in de tabel.
-  const QUERIES_IN_DE_APP = 62
+  // 63 sinds het systeemscherm de mails opvraagt die niet vertrokken. De
+  // stand van de ophaler telt niet mee: dat is één document en geen query.
+  const QUERIES_IN_DE_APP = 63
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

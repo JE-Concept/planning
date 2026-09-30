@@ -22,6 +22,7 @@ import {
 } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import BusinessRules from '@components/settings/BusinessRules'
+import SysteemPaneel from '@components/settings/SysteemPaneel'
 import ChecklistEditor from '@components/settings/ChecklistEditor'
 import FormuleSettings from '@components/settings/FormuleSettings'
 import { BrandSettings, StructureSettings } from '@components/settings/LegacySettings'
@@ -63,6 +64,7 @@ const TABS = [
   { value: 'merken', sleutel: 'inst.tab.merken' },
   { value: 'dagelijks', sleutel: 'inst.tab.dagelijks' },
   { value: 'regels', sleutel: 'inst.tab.regels' },
+  { value: 'systeem', sleutel: 'inst.tab.systeem' },
 ]
 
 /** De afdeling zoals ze op het scherm staat; de sleutel van @lib/checklist-templates blijft. */
@@ -138,6 +140,7 @@ export default function Settings() {
             {tab === 'merken' ? <BrandSettings /> : null}
             {tab === 'dagelijks' ? <ChecklistEditor isAdmin /> : null}
             {tab === 'regels' ? <BusinessRules isAdmin /> : null}
+            {tab === 'systeem' ? <SysteemPaneel /> : null}
           </div>
         )}
       </div>

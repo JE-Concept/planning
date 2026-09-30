@@ -1016,3 +1016,23 @@ seedDoc('offertes', 'off-trouw', {
   ],
   createdAt: dag(-9),
 })
+
+/*
+  Wat de tool over zichzelf bijhoudt. In de demo staat de ophaler op "net nog
+  gedraaid", zodat het systeemscherm er groen bij staat — en één mail die niet
+  vertrok, zodat ook de andere kant te zien is.
+*/
+seedDoc('instellingen', 'postvak', {
+  laatsteUid: 4711,
+  laatsteKeer: new Date(ECHTE_DAG.getTime() - 4 * 60000),
+  laatsteAantal: 2,
+})
+seedDoc('mailQueue', 'mq-1', {
+  aan: 'anneleen@kenjeklanten.be',
+  soort: 'deadline',
+  onderwerp: 'Morgen: Parkeerplan doorgeven aan de gemeente',
+  status: 'mislukt',
+  reden: 'Invalid login: 535-5.7.8 Username and Password not accepted.',
+  pogingen: 1,
+  createdAt: new Date(ECHTE_DAG.getTime() - 3600000),
+})

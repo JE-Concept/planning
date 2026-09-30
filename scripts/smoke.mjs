@@ -1628,6 +1628,25 @@ await test('een bord met weinig kolommen vult de rij en schuift niet', async () 
   await page.close()
 })
 
+await test('het systeemscherm zegt of de tool zelf nog draait', async () => {
+  const page = await tabblad('/instellingen?tab=systeem')
+  await page.waitForTimeout(400)
+  await page.getByRole('tab', { name: 'Systeem' }).click()
+  await page.waitForTimeout(900)
+
+  const tekst = await inhoud(page)
+  // De ophaler draaide net: dat hoort er als tijdstip te staan en niet als
+  // "STATUS: OK".
+  zouden(bevat(tekst, 'Laatst binnengehaald'), `de stand van de ophaler staat er niet: ${tekst.slice(-400)}`)
+  // En de mail die niet vertrok, met de reden erbij — die stond tot nu
+  // nergens op een scherm.
+  zouden(bevat(tekst, 'niet vertrokken'), 'de mislukte mail wordt niet gemeld')
+  zouden(bevat(tekst, 'Username and Password not accepted'), 'de reden staat er niet bij')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de klant opent zijn offerte zonder account en kan ze goedkeuren', async () => {
   const page = await tabblad('/offerte/demo-offerte-token-niels')
   await page.waitForTimeout(1200)

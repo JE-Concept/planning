@@ -569,6 +569,30 @@ service cloud.firestore {
         && changedKeys().hasOnly(['eventId', 'customerId', 'koppeling', 'gelezen']);
     }
 
+    /*
+      Wat de tool over zichzelf bijhoudt: waar de ophaler gebleven was, en
+      wanneer ze voor het laatst draaide. Het team leest het — dat is precies
+      het punt, want tot nu las niemand het en viel de post in stilte stil.
+      Schrijven doet alleen de ophaler, met beheerdersrechten.
+    */
+    match /instellingen/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
+    /*
+      De wachtrij van de uitgaande post.
+
+      Lezen mag het team: een mail die niet vertrok, hoort zichtbaar te zijn en
+      niet alleen in een logbestand te staan. Schrijven doet de verzender, met
+      beheerdersrechten; een browser die hier een rij kan bijzetten, kan post
+      versturen uit naam van de zaak.
+    */
+    match /mailQueue/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
     // Anything not named above stays closed.
     match /{document=**} {
       allow read, write: if false;

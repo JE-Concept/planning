@@ -69,6 +69,7 @@ export default {
   'inst.tab.structuur': { nl: 'Ruimtes & lijsten', en: 'Spaces & lists' },
   'inst.tab.merken': { nl: 'Merken & labels', en: 'Brands & labels' },
   'inst.tab.dagelijks': { nl: 'Dagelijkse lijsten', en: 'Daily lists' },
+  'inst.tab.systeem': { nl: 'Systeem', en: 'System' },
   'inst.tab.regels': { nl: 'Business rules', en: 'Business rules' },
 
   'inst.kop.beheer': {
