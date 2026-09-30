@@ -18,14 +18,22 @@ import { useMyTasks } from '@data/tasks'
  * hem te negeren.
  */
 export function useNavCounts() {
-  const { uid, isStaff, profile } = useAuth()
+  const { uid, isStaff, isSocial, profile } = useAuth()
 
-  const { tasks } = useMyTasks(isStaff ? null : uid)
+  /*
+    Elke teller vraagt alleen wat deze rol mag lezen.
+
+    Dat is geen zuinigheid maar noodzaak: een vraag die de regels weigeren komt
+    terug als een fout, niet als een leeg antwoord — en die fout staat dan in de
+    console van iemand die niets verkeerd deed. De socialrol mag de taken en de
+    afvinklijsten niet lezen; personeel de taken niet.
+  */
+  const { tasks } = useMyTasks(isStaff || isSocial ? null : uid)
   const review = useReviewQueue(undefined, { enabled: !isStaff })
 
   const today = dayKey()
-  const { checklists } = useChecklists()
-  const { byChecklist } = useRunsForDay(today)
+  const { checklists } = useChecklists({ aan: !isSocial })
+  const { byChecklist } = useRunsForDay(today, { aan: !isSocial })
 
   /*
     Met dezelfde ogen tellen als de pagina zelf.

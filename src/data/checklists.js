@@ -33,22 +33,26 @@ export { isWeekend, runId }
  * lijst zien die niet meer geldt — maar in Instellingen horen ze erbij, anders
  * kun je ze niet terughalen.
  */
-export function useChecklists({ includeArchived = false } = {}) {
+export function useChecklists({ includeArchived = false, aan = true } = {}) {
   const [checklists, setChecklists] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(aan)
 
-  useEffect(
-    () =>
-      onSnapshot(
-        query(col(COL.checklists), orderBy('position')),
-        (snap) => {
-          setChecklists(fromQuery(snap))
-          setLoading(false)
-        },
-        () => setLoading(false)
-      ),
-    []
-  )
+  // `aan` staat erbij voor de socialrol: zij mag de afvinklijsten niet lezen,
+  // en een geweigerde vraag is geen lege lijst maar een fout in de console.
+  useEffect(() => {
+    if (!aan) {
+      setLoading(false)
+      return undefined
+    }
+    return onSnapshot(
+      query(col(COL.checklists), orderBy('position')),
+      (snap) => {
+        setChecklists(fromQuery(snap))
+        setLoading(false)
+      },
+      () => setLoading(false)
+    )
+  }, [aan])
 
   const zichtbaar = useMemo(
     () => (includeArchived ? checklists : checklists.filter((c) => !c.archived)),
@@ -67,13 +71,16 @@ export function useChecklists({ includeArchived = false } = {}) {
  * vinkje al weg?". Zonder dat sluit iemand de app in de veronderstelling dat
  * het rond is.
  */
-export function useRunsForDay(day) {
+export function useRunsForDay(day, { aan = true } = {}) {
   const [runs, setRuns] = useState([])
   const [wachtendeRuns, setWachtendeRuns] = useState(() => new Set())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!day) return undefined
+    if (!day || !aan) {
+      setLoading(false)
+      return undefined
+    }
     setLoading(true)
     const bron = `checklistRuns:${day}`
 
@@ -94,7 +101,7 @@ export function useRunsForDay(day) {
       stop()
       vergeetBron(bron)
     }
-  }, [day])
+  }, [day, aan])
 
   return useMemo(
     () => ({

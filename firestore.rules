@@ -60,6 +60,21 @@ service cloud.firestore {
       return isMember() && role() == 'social';
     }
 
+    /*
+      Wie in de bistro werkt: het team en het zaalpersoneel, en dus niet de
+      socialrol.
+
+      `isMember()` is iedereen met een profiel, en dat was voor de dagelijkse
+      lijsten en het rooster precies goed zolang de rollen team en personeel
+      waren: die twee werken allebei in de zaak. Met de socialrol erbij klopt
+      het niet meer — zij kon de afvinklijsten lezen en zelfs afvinken, terwijl
+      ze daar niets te zoeken heeft. Geen bedragen, dus geen lek, maar wel een
+      deur die openstond zonder reden.
+    */
+    function isBistro() {
+      return isMember() && role() != 'social';
+    }
+
     function isAdmin() {
       return isMember() && role() in ['owner', 'admin'];
     }
@@ -252,13 +267,13 @@ service cloud.firestore {
     }
 
     match /checklists/{id} {
-      allow read:  if isMember();
+      allow read:  if isBistro();
       allow write: if isAdmin();
     }
 
     match /checklistRuns/{id} {
-      allow read:   if isMember();
-      allow create, update: if isMember();
+      allow read:   if isBistro();
+      allow create, update: if isBistro();
       allow delete: if isAdmin();
     }
 
@@ -293,7 +308,7 @@ service cloud.firestore {
     // wanneer hij werkt, moet het kunnen openen. Schrijven doet een beheerder —
     // een rooster waar ieder zijn eigen diensten in verzet, is geen rooster meer.
     match /shifts/{id} {
-      allow read: if isMember();
+      allow read: if isBistro();
       allow write: if isAdmin();
     }
 
