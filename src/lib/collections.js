@@ -39,6 +39,7 @@ export const COL = {
   templates: 'templates',
   shifts: 'shifts',
   formules: 'formules',
+  offertes: 'offertes',
 }
 
 export const col = (name) => collection(db, name)
