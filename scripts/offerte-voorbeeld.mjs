@@ -65,38 +65,51 @@ await browser.close()
 server.close()
 
 const stijl = readFileSync(join(wortel, 'src/styles/offerte.css'), 'utf8')
-const html = `<!doctype html>
-<html lang="nl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Offerte — JE Concept</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Oswald:wght@300..700&family=Source+Sans+3:wght@300..700&family=Parisienne&family=Prata&display=swap"
-    />
-    <style>
-      /* Letterlijk src/styles/offerte.css — niet met de hand bijgewerkt. */
-${stijl.replace(/^/gm, '      ')}
-      body {
-        margin: 0;
-        padding: 24px 0;
-        background: #eef1f5;
-        font-family: "Source Sans 3", Helvetica, sans-serif;
-      }
-      .je-offerteblad {
-        box-shadow: 0 2px 24px rgb(0 34 70 / 12%);
-      }
-    </style>
-  </head>
-  <body>
-    <div class="je-offerteblad-schaal je-print-hier">
-${blad.replace(/^/gm, '      ')}
-    </div>
-  </body>
-</html>
+
+/*
+  Geen <html>, <head> of <body>: dit bestand wordt ook als artifact
+  gepubliceerd, en dat wikkelt er zelf een skelet omheen. Een browser die het
+  rechtstreeks opent, tekent het net zo goed — een fragment met een <title> en
+  een <style> is geldig genoeg.
+*/
+const html = `<title>JE Concept Offerte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Oswald:wght@300..700&family=Source+Sans+3:wght@300..700&family=Parisienne&family=Prata&display=swap"
+/>
+<style>
+  /*
+    Een offerte is papier. Ze staat er in één wereld — wit blad, navy inkt —
+    en volgt met opzet niet het thema van wie ze bekijkt: de klant krijgt ze
+    afgedrukt of als PDF, en dan is er geen donkere modus. Daarom staan alle
+    kleuren hier vast en expliciet.
+  */
+  :root {
+    color-scheme: light;
+    --ondergrond: #eef1f5;
+    --ondergrond-tekst: #33475e;
+  }
+  body {
+    margin: 0;
+    padding-block: 24px;
+    padding-inline: 16px;
+    background: var(--ondergrond);
+    color: var(--ondergrond-tekst);
+    font-family: "Source Sans 3", Helvetica, Arial, sans-serif;
+  }
+  .je-offerteblad {
+    box-shadow: 0 2px 24px rgb(0 34 70 / 12%);
+    max-width: 100%;
+  }
+
+  /* Letterlijk src/styles/offerte.css — niet met de hand bijgewerkt. */
+${stijl.replace(/^/gm, '  ')}
+</style>
+<div class="je-offerteblad-schaal je-print-hier">
+${blad.replace(/^/gm, '  ')}
+</div>
 `
 
 const uit = join(wortel, 'dist-offerte')

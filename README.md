@@ -190,6 +190,22 @@ Een klant wordt **uit gebruik genomen**, niet gewist, zolang er events aan hange
 
 ---
 
+## De offerte
+
+Een aanvraag komt binnen als proza — "mijn mama wordt op zaterdag 28 november 65 jaar, we denken aan een 40-tal personen, een gezellige winterbarbecue" — en daar zit alles in wat een dossier nodig heeft. **Nieuw event → Uit een mail** leest die tekst: datum, aantal, soort feest, de formule uit jullie eigen lijst, de eigen zaal als de klant er een noemt, de afzender, en de vragen die erin staan.
+
+Dat lezen gebeurt in `src/lib/aanvraag.js`, zonder model en zonder sleutel, en dus te testen: dezelfde mail geeft altijd hetzelfde antwoord. De regels die ertoe doen staan daar met hun waarom — het aantal moet bij "personen" of "gasten" horen (anders wordt "65 jaar" vijfenzestig gasten), bij een vork nemen we het laagste, een vage tijdsaanduiding is geen datum, en alleen de eigen zalen tellen als locatie. Het scherm toont geen ingevuld formulier dat doet alsof het klopt, maar wát het gelezen heeft, met erbij wat het gókte. Een taalmodel mag daar later bovenop komen voor de nuance die een regel nooit vangt; de tool moet blijven draaien op een dag dat een API eruit ligt.
+
+**De offerte zelf staat op het tabblad Offerte van een event, en ze staat er vanzelf.** Een offerte die je eerst moet aanmaken, wordt een offerte die je vergeet. Ze wordt uitgerekend uit de formule (die levert posten met hun eigen tarief: eten 12%, drank 21%) of, als er alleen een offertebedrag is, uit die ene prijs die dan gesplitst wordt — 70% spijzen, 30% dranken. Precies de regel waar het in de oude Canva-offertes misliep: één tarief op alles.
+
+Het blijft een draft: elke lijn is aan te passen — omschrijving, rubriek, aantal, prijs, tarief — en het blad dat de klant krijgt staat er meteen onder, zodat je ziet wat een wijziging met het document doet.
+
+**Eén layout, geen tweede waarheid.** `src/styles/offerte.css` is het blad: de app rendert het, de afdruk gebruikt het, en straks doet de publieke goedkeuringspagina dat ook. Het hangt met opzet niet aan de tokens van de rest van de app maar draagt zijn eigen, zodat het ook buiten de app klopt. `npm run offerte:voorbeeld` tekent niets zelf: het opent de app, laat haar een offerte renderen en knipt het blad eruit zoals het daar staat. Verandert het blad, dan verandert het voorbeeld mee — of het klopt niet meer en dat merk je meteen.
+
+> Let op bij het rekenwerk: `centen()` uit `formules.js` geeft **euro's** terug, afgerond op de cent — geen centen. De naam is verraderlijk. Wie daar nog eens door honderd deelt, zet €163,99 waar €16.399 hoort te staan.
+
+---
+
 ## De planning van een event
 
 Naast de pijplijn staat een eigen veld: **Planning** — *nog te plannen · bezig · rond · niet nodig*. Het stond eerder als subtaak ("Personeelsplanning") in de templates, en dat werkte niet. Een taak is af of niet af, terwijl planning een toestand is die weken duurt; en een taak zie je alleen als je het event opent — precies niet waar je hem nodig hebt.
