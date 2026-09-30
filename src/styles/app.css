@@ -577,6 +577,26 @@
   min-width: 0;
 }
 
+/* De link naar het klantenportaal op de klantfiche. */
+.je-klantlink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-quiet);
+  border-radius: 4px;
+  font: var(--type-body-sm);
+}
+.je-klantlink a,
+.je-klantlink .je-muted-caption {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── De post rond een event ────────────────────────────────────────────── */
 
 .je-maildraad {
@@ -719,6 +739,44 @@
   font: var(--type-caption);
   color: var(--warning);
 }
+/* De klantenpagina: het adres dat de klant krijgt, om te openen of te kopiëren. */
+.je-offertewerk__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-quiet);
+  border-radius: 4px;
+  font: var(--type-body-sm);
+}
+.je-offertewerk__link a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.je-offertewerk__stand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+.je-offertewerk__stand[data-stand='goedgekeurd'] {
+  color: var(--success);
+}
+.je-offertewerk__stand[data-stand='feedback'] {
+  color: var(--warning);
+}
+.je-offertewerk__feedback {
+  flex-basis: 100%;
+  color: var(--text-1);
+  white-space: pre-wrap;
+}
+
 .je-offertewerk__tabel {
   width: 100%;
   border-collapse: collapse;

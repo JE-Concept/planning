@@ -27,6 +27,10 @@ const Checklists     = lazy(() => import('@pages/Checklists'))
 const ChecklistReport = lazy(() => import('@pages/ChecklistReport'))
 const Meetings       = lazy(() => import('@pages/Meetings'))
 const Aanvragen      = lazy(() => import('@pages/Aanvragen'))
+// De twee schermen voor de klant. Ze staan buiten het aanmelden en laden
+// apart: wie hier komt, komt één keer en heeft de rest van de tool niet nodig.
+const OffertePubliek = lazy(() => import('@pages/OffertePubliek'))
+const KlantPortaal   = lazy(() => import('@pages/KlantPortaal'))
 const TimeTracking   = lazy(() => import('@pages/TimeTracking'))
 const Rooster        = lazy(() => import('@pages/Rooster'))
 const Logboek        = lazy(() => import('@pages/Logboek'))
@@ -157,7 +161,31 @@ export default function App() {
               buiten de schil, zodat ook het aanmeldscherm en de foutmeldingen
               eromheen in de gekozen taal staan. */}
           <TaalProvider>
-            <Authenticated />
+            {/*
+              De klantenpagina's gaan vóór het aanmelden. Een offerte
+              goedkeuren mag geen account kosten, en wie deze link opent hoort
+              geen inlogscherm te zien — dat is de snelste manier om iemand
+              kwijt te spelen op het moment dat hij ja wilde zeggen.
+            */}
+            <Routes>
+              <Route
+                path="/offerte/:token"
+                element={
+                  <Pages>
+                    <OffertePubliek />
+                  </Pages>
+                }
+              />
+              <Route
+                path="/klant/:token"
+                element={
+                  <Pages>
+                    <KlantPortaal />
+                  </Pages>
+                }
+              />
+              <Route path="*" element={<Authenticated />} />
+            </Routes>
           </TaalProvider>
         </AuthProvider>
       </ToastProvider>

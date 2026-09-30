@@ -106,6 +106,18 @@ jobs:
             --member allUsers --role roles/run.invoker --quiet \
             || echo "::warning::Kon allUsers/run.invoker niet zetten op ensureprofile."
 
+          # De twee adressen die zonder login te openen horen te zijn: een
+          # agenda-abonnement kan geen aanmeldscherm tonen, en een klant die
+          # zijn offerte opent hoort er geen account voor nodig te hebben. De
+          # sleutel in het adres is wat ze afschermt; welke velden er naar
+          # buiten gaan beslist de functie zelf.
+          for dienst in agenda portaal; do
+            gcloud run services add-iam-policy-binding "$dienst" \
+              --region europe-west1 --project "$PROJECT" \
+              --member allUsers --role roles/run.invoker --quiet \
+              || echo "::warning::Kon allUsers/run.invoker niet zetten op $dienst."
+          done
+
           # De functie draait onder haar eigen runtime-service-account. Op een
           # vers project krijgt die niet meer automatisch Editor, en zonder
           # Firestore-recht crasht ensureProfile bij de eerste lees — wat bij de

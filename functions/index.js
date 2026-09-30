@@ -28,6 +28,7 @@ import { taalVan, zeg } from './teksten.js'
 import { heeftSocial, kopieVan, moetBijwerken } from './social-projectie.js'
 import { AUDIT, regelVan, teOud } from './audit.js'
 import { maakAgendaFeed } from './agenda.js'
+import { maakPortaal } from './portaal.js'
 
 initializeApp()
 const db = getFirestore()
@@ -659,6 +660,15 @@ export const notifyOverdueDigest = onSchedule(
  * ze met `invoker: 'private'` uitrolt en pas daarna publiek gezet wordt.
  */
 export const agenda = maakAgendaFeed({ db, region: REGION })
+
+/**
+ * Wat een klant ziet: zijn offerte en zijn dossiers, zonder account.
+ *
+ * Waarom dat een functie is en geen Firestore-lezing, staat in `portaal.js`.
+ * Kort: een browser leest altijd een heel document, en op een offerte staan
+ * marges en interne notities.
+ */
+export const portaal = maakPortaal({ db, region: REGION })
 
 /**
  * Een binnengekomen mail aan het juiste event hangen.

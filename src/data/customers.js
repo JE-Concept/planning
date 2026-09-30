@@ -43,6 +43,32 @@ export const nieuwContact = () => ({
   primary: false,
 })
 
+/**
+ * Het adres waarop een klant al zijn dossiers volgt.
+ *
+ * De sleutel wordt pas aangemaakt wanneer iemand de link opvraagt: een sleutel
+ * die nooit gedeeld is, hoeft niet te bestaan. Daarna blijft hij staan, want
+ * hij zit dan in een mail bij de klant.
+ */
+export async function klantLink(klant) {
+  let token = klant?.portalToken
+  if (!token) {
+    token = nieuwToken()
+    await updateDoc(ref(COL.customers, klant.id), { portalToken: token })
+  }
+  return `${import.meta.env.VITE_APP_URL ?? window.location.origin}/#/klant/${token}`
+}
+
+/** Dezelfde vorm als de sleutel van een offerte en van de agendafeed. */
+function nieuwToken() {
+  const bytes = new Uint8Array(24)
+  crypto.getRandomValues(bytes)
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+
 export function useCustomers({ includeArchived = false } = {}) {
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)

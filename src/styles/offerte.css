@@ -305,3 +305,290 @@
     margin: 16mm;
   }
 }
+
+/* ── De pagina eromheen, voor de klant ─────────────────────────────────── */
+
+/*
+ * Dit is de enige pagina die iemand van buiten de zaak te zien krijgt, en
+ * vaak op een telefoon. Ze staat daarom in één wereld — wit papier, navy inkt
+ * — en volgt niet het thema van wie ze bekijkt: een offerte in donkere modus
+ * is een offerte die er anders uitziet dan de afdruk, en dan gaat iemand
+ * twijfelen of het wel hetzelfde document is.
+ */
+.je-publiek {
+  --p-ink: #002246;
+  --p-accent: #1b3a6b;
+  --p-zacht: #5a6b80;
+  --p-lijn: #dde3ea;
+  --p-grond: #eef1f5;
+  --p-blad: #ffffff;
+  --p-goed: #2e7d55;
+  --p-let-op: #9a6a12;
+
+  max-width: 840px;
+  margin: 0 auto;
+  padding: clamp(20px, 5vw, 48px) 16px 64px;
+  background: transparent;
+  color: var(--p-ink);
+  font-family: "Source Sans 3", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 4vw, 36px);
+}
+.je-publiek--midden {
+  min-height: 70vh;
+  justify-content: center;
+  text-align: center;
+}
+.je-publiek a {
+  color: var(--p-accent);
+}
+
+.je-publiek__merk {
+  font-family: "Prata", Didot, "Times New Roman", serif;
+  font-size: 26px;
+  line-height: 1;
+}
+.je-publiek__merk em {
+  font-family: "Parisienne", cursive;
+  font-style: normal;
+  font-size: 0.62em;
+  color: var(--p-accent);
+  margin-left: 0.15em;
+}
+
+.je-publiek__kop {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.je-publiek h1 {
+  margin: 8px 0 0;
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: clamp(26px, 5vw, 38px);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+.je-publiek h2 {
+  margin: 0;
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.je-publiek__intro {
+  margin: 0;
+  max-width: 62ch;
+}
+
+/* Wat wij begrepen hebben. Een misverstand hoort op te vallen vóór het geld
+   kost, niet erna — dus staat dit boven de prijs en niet eronder. */
+.je-publiek__samenvatting {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px 24px;
+  margin: 8px 0 0;
+  padding: 16px 20px;
+  background: var(--p-blad);
+  border: 1px solid var(--p-lijn);
+  border-radius: 6px;
+}
+.je-publiek__regel dt {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--p-zacht);
+}
+.je-publiek__regel dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.je-publiek__aanleiding {
+  margin: 0;
+  padding: 14px 18px;
+  border-left: 2px solid var(--p-accent);
+  background: var(--p-blad);
+  color: var(--p-zacht);
+  font-size: 15px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.je-publiek__aanleiding-kop {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--p-ink);
+}
+
+/* Het antwoordblok: één knop die eruit springt, en een vak voor wie twijfelt. */
+.je-publiek__antwoord {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(20px, 4vw, 32px);
+  background: var(--p-blad);
+  border: 1px solid var(--p-lijn);
+  border-radius: 6px;
+}
+.je-publiek__antwoord p {
+  margin: 0;
+  max-width: 60ch;
+}
+.je-publiek__knoppen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.je-publiek button {
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--p-accent);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--p-accent);
+  padding: 11px 20px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.je-publiek button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.je-publiek__ja {
+  background: var(--p-accent) !important;
+  color: #fff !important;
+  padding: 14px 28px !important;
+  font-size: 15px !important;
+}
+.je-publiek__vraag {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--p-lijn);
+}
+.je-publiek__vraag label {
+  font-size: 14px;
+  color: var(--p-zacht);
+}
+.je-publiek__vraag textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--p-lijn);
+  border-radius: 4px;
+  resize: vertical;
+  color: inherit;
+  background: #fff;
+}
+.je-publiek__vraag button {
+  align-self: flex-start;
+}
+.je-publiek__gelukt {
+  color: var(--p-goed);
+}
+.je-publiek__fout {
+  color: #a3372f;
+}
+.je-publiek__bevestigd {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.je-publiek__bevestigd h2 {
+  color: var(--p-goed);
+}
+
+/* Het portaal: de dossiers onder elkaar. */
+.je-publiek__lijst {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.je-publiek__lijst--stil {
+  opacity: 0.72;
+}
+.je-publiek__lijst h2 {
+  margin-bottom: 4px;
+  color: var(--p-zacht);
+}
+.je-publiek__dossier {
+  padding: 18px 20px;
+  background: var(--p-blad);
+  border: 1px solid var(--p-lijn);
+  border-left: 3px solid var(--p-lijn);
+  border-radius: 6px;
+}
+.je-publiek__dossier[data-toon='jij'] {
+  border-left-color: var(--p-let-op);
+}
+.je-publiek__dossier[data-toon='goed'] {
+  border-left-color: var(--p-goed);
+}
+.je-publiek__dossier[data-toon='bezig'] {
+  border-left-color: var(--p-accent);
+}
+.je-publiek__dossierkop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+}
+.je-publiek__dossier h3 {
+  margin: 0;
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+.je-publiek__stand {
+  margin-left: auto;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--p-zacht);
+}
+.je-publiek__stand[data-toon='jij'] {
+  color: var(--p-let-op);
+  font-weight: 600;
+}
+.je-publiek__stand[data-toon='goed'] {
+  color: var(--p-goed);
+}
+.je-publiek__meta {
+  margin: 4px 0 0;
+  color: var(--p-zacht);
+  font-size: 15px;
+}
+.je-publiek__link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+.je-publiek__voet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 20px;
+  border-top: 1px solid var(--p-lijn);
+  color: var(--p-zacht);
+  font-size: 15px;
+}
+.je-publiek__voet p {
+  margin: 0;
+}
+
+/* De achtergrond van de hele pagina, want de app zet er zelf geen. */
+body:has(.je-publiek) {
+  background: #eef1f5;
+}

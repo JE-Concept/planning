@@ -126,6 +126,9 @@ export default defineConfig(({ mode }) => {
             'firebase/app': resolve('./demo/stubs.js'),
             'firebase/functions': resolve('./demo/stubs.js'),
             'firebase/storage': resolve('./demo/stubs.js'),
+            // De klantenpagina's praten met een Cloud Function; die draait
+            // in de demo niet. Zelfde naad, één module verder.
+            '@data/portaal': resolve('./demo/portaal.js'),
           }
         : {}),
       '@': resolve('./src'),

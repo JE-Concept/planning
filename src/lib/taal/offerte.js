@@ -24,6 +24,29 @@ export default {
     en: 'The quote is marked as sent; the amount is on the event too.',
   },
   'offerte.tab': { nl: 'Offerte', en: 'Quote' },
+  'offerte.klantpagina': { nl: 'Klantenpagina', en: 'Customer page' },
+  'offerte.link_kopieren': { nl: 'Link kopiëren', en: 'Copy link' },
+  'offerte.link_openen': { nl: 'Openen', en: 'Open' },
+  'offerte.link_gekopieerd': {
+    nl: 'De link staat op je klembord.',
+    en: 'The link is on your clipboard.',
+  },
+  'offerte.link_kopieer_mislukt': {
+    nl: 'Kopiëren lukte niet; selecteer de link hierboven.',
+    en: 'Copying failed; select the link above.',
+  },
+  'offerte.stand.verstuurd': {
+    nl: 'Verstuurd — de klant heeft nog niet geantwoord.',
+    en: 'Sent — the customer has not answered yet.',
+  },
+  'offerte.stand.goedgekeurd': {
+    nl: 'Goedgekeurd door de klant.',
+    en: 'Approved by the customer.',
+  },
+  'offerte.stand.feedback': {
+    nl: 'De klant heeft een vraag gesteld.',
+    en: 'The customer asked a question.',
+  },
 
   // ── Het blad zoals de klant het krijgt ─────────────────────────────────
   'offerte.voor': { nl: 'Voor', en: 'For' },

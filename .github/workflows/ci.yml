@@ -147,6 +147,16 @@ jobs:
             --member allUsers --role roles/run.invoker --quiet \
             || echo "::warning::Kon allUsers/run.invoker niet zetten op agenda — de feed is dan niet bereikbaar."
 
+          # En voor het klantenportaal, om precies dezelfde reden. Een klant
+          # die zijn offerte opent heeft geen account en hoort er ook geen
+          # nodig te hebben; de sleutel in het adres is wat het afschermt, en
+          # welke velden hij te zien krijgt beslist de functie zelf. Zie
+          # functions/portaal.js.
+          gcloud run services add-iam-policy-binding portaal \
+            --region europe-west1 --project "$FIREBASE_PROJECT" \
+            --member allUsers --role roles/run.invoker --quiet \
+            || echo "::warning::Kon allUsers/run.invoker niet zetten op portaal — de klantenpagina is dan niet bereikbaar."
+
           # De functie draait onder haar eigen runtime-service-account. Op een
           # vers project krijgt die niet meer automatisch Editor, en zonder
           # Firestore-recht crasht ensureProfile bij de eerste lees — wat bij de

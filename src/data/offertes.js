@@ -128,3 +128,12 @@ export async function verstuurOfferte(offerte, uid = null) {
 export const vernieuwToken = (id, uid = null) => bewerkOfferte(id, { token: nieuwToken() }, uid)
 
 export const wisOfferte = (id) => deleteDoc(ref(COL.offertes, id))
+
+/**
+ * Het adres waarop de klant deze offerte opent.
+ *
+ * Volledig en niet relatief: dit gaat in een mail, in een bericht, of iemand
+ * leest het voor aan de telefoon. Een pad zonder domein helpt daar niemand.
+ */
+export const offerteLink = (offerte) =>
+  offerte?.token ? `${import.meta.env.VITE_APP_URL ?? window.location.origin}/#/offerte/${offerte.token}` : null

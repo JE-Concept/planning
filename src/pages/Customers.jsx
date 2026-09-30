@@ -24,12 +24,13 @@ import {
   archiveCustomer,
   createCustomer,
   deleteCustomer,
+  klantLink,
   leegAdres,
   nieuwContact,
   restoreCustomer,
   updateCustomer,
-  useCustomerTasks,
   useCustomers,
+  useCustomerTasks,
 } from '@data/customers'
 
 /**
@@ -165,6 +166,58 @@ export default function Customers() {
 
 // ─── Eén klant ──────────────────────────────────────────────────────────────
 
+/**
+ * De link naar het klantenportaal, met één knop om hem te kopiëren.
+ *
+ * Een klant is zelden één event, en drie losse offertelinks in drie mails
+ * terugzoeken is precies het werk dat deze tool moest wegnemen. Dit adres
+ * blijft staan en toont alles wat er loopt.
+ */
+function KlantLink({ klant, toast }) {
+  const { t } = useTaal()
+  const [link, setLink] = useState(klant.portalToken ? portaalAdres(klant.portalToken) : '')
+  const [bezig, setBezig] = useState(false)
+
+  const maak = async () => {
+    setBezig(true)
+    try {
+      const adres = await klantLink(klant)
+      setLink(adres)
+      try {
+        await navigator.clipboard.writeText(adres)
+        toast.success(t('klant.portaal.gekopieerd'))
+      } catch {
+        // Sommige browsers weigeren het klembord; het adres staat er dan nog
+        // altijd om zelf te selecteren.
+        toast.success(t('klant.portaal.gemaakt'))
+      }
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBezig(false)
+    }
+  }
+
+  return (
+    <div className="je-klantlink">
+      <span className="je-caps">{t('klant.portaal.titel')}</span>
+      {link ? (
+        <a href={link} target="_blank" rel="noreferrer" className="je-link-quiet">
+          {link.replace(/^https?:\/\//, '')}
+        </a>
+      ) : (
+        <span className="je-muted-caption">{t('klant.portaal.nog_niet')}</span>
+      )}
+      <Button variant="ghost" size="sm" iconLeft="copy" loading={bezig} onClick={maak}>
+        {link ? t('klant.portaal.kopieren') : t('klant.portaal.maken')}
+      </Button>
+    </div>
+  )
+}
+
+const portaalAdres = (token) =>
+  `${import.meta.env.VITE_APP_URL ?? window.location.origin}/#/klant/${token}`
+
 function KlantPaneel({ id, onClose, toast }) {
   const { t } = useTaal()
   const { customers } = useCustomers({ includeArchived: true })
@@ -253,6 +306,15 @@ function KlantPaneel({ id, onClose, toast }) {
               onBlur={(e) => e.target.value.trim() && zet({ name: e.target.value.trim() })}
             />
           </Field>
+
+          {/*
+            Het adres waarop deze klant al zijn dossiers volgt. De sleutel
+            wordt pas aangemaakt bij de eerste klik: een sleutel die nooit
+            gedeeld is, hoeft niet te bestaan.
+          */}
+          <div className="sm:col-span-2">
+            <KlantLink klant={klant} toast={toast} />
+          </div>
           {/* Wat je typt wordt netjes gezet, niet geweigerd: een half nummer
               is beter dan een leeg veld, en de opmerking eronder zegt waarom
               het nagekeken moet worden. */}

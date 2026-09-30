@@ -192,6 +192,11 @@ service cloud.firestore {
     // Klanten: bedrijfsgegevens, contactpersonen en wat er aan documenten bij
     // hoort. Hetzelfde recht als de events die eraan hangen — wie de planning
     // doet, doet de klant.
+    /*
+      Klanten. `portalToken` is de sleutel van hun eigen pagina; die wordt
+      vanuit de tool gezet en verder alleen door de functie gelezen — die gaat
+      hier met beheerdersrechten langs en niet door deze regels.
+    */
     match /customers/{id}   { allow read: if isTeam(); allow write: if isTeam(); }
     /*
       Notities: het gesprek tussen medewerkers.

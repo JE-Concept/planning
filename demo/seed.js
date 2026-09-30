@@ -110,6 +110,8 @@ const KLANTEN = [
     address: { street: 'Hoeve Vanhove', postalCode: '3720', city: 'Kortessem', country: 'België' },
     contacts: [{ id: 'c-ni-1', name: 'Inez Claes', role: 'Bruid', email: 'inez@telenet.be', phone: '0495 66 77 88', primary: true }],
     notes: 'Regenplan in de schuur. Dansvloer breder dan bij de Odeurs-trouw.',
+    // De sleutel van hun eigen pagina, waar al hun dossiers bij elkaar staan.
+    portalToken: 'demo-klant-token-nielsinez',
   },
   {
     id: 'k-borgloon', name: 'Stad Borgloon', vatNumber: 'BE 0207.474.981',
@@ -986,4 +988,31 @@ mail('m-aanvraag-kristien', {
     'Kristien Maris',
   ].join('\n'),
   datum: dag(-1),
+})
+
+/*
+  Eén verstuurde offerte, zodat de klantenpagina iets te tonen heeft — en een
+  portaalsleutel op dezelfde klant, zodat het overzicht van al zijn dossiers
+  te openen is.
+*/
+seedDoc('offertes', 'off-trouw', {
+  eventId: 't-trouw',
+  nummer: '2026-014',
+  datum: dag(-9),
+  geldigTot: dag(21),
+  klantId: 'k-niels-inez',
+  klantNaam: KLANTNAMEN['k-niels-inez'],
+  eventNaam: 'Trouw Niels en Inez',
+  eventDatum: dag(12),
+  locatie: 'Hoeve Vanhove, Kortessem',
+  personen: 140,
+  status: 'verstuurd',
+  token: 'demo-offerte-token-niels',
+  regels: [
+    { id: 'r1', rubriek: 'catering', omschrijving: 'Walking dinner, zes gangen', eenheidExcl: 82, aantal: 140, eenheid: 'pp', btwPercent: 12, optioneel: false },
+    { id: 'r2', rubriek: 'dranken', omschrijving: 'Open bar tot 03.00', eenheidExcl: 35.14, aantal: 140, eenheid: 'pp', btwPercent: 21, optioneel: false },
+    { id: 'r3', rubriek: 'personeel', omschrijving: 'Bediening en toog, 8 uur', eenheidExcl: 28, aantal: 48, eenheid: 'u', btwPercent: 21, optioneel: false },
+    { id: 'r4', rubriek: 'optioneel', omschrijving: 'Vuurkorven op het terras', eenheidExcl: 240, aantal: 1, eenheid: 'st', btwPercent: 21, optioneel: true },
+  ],
+  createdAt: dag(-9),
 })

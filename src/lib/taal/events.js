@@ -113,6 +113,23 @@ export default {
   'events.tab.bestellijst': { nl: 'Bestellijst · {aantal}', en: 'Order list · {aantal}' },
   'events.tab.draaiboek': { nl: 'Draaiboek', en: 'Run sheet' },
   'events.tab.bijlagen': { nl: 'Bijlagen', en: 'Attachments' },
+  // ── Het klantenportaal ─────────────────────────────────────────────────
+  'klant.portaal.titel': { nl: 'Klantenpagina', en: 'Customer page' },
+  'klant.portaal.nog_niet': {
+    nl: 'Nog geen link gemaakt.',
+    en: 'No link created yet.',
+  },
+  'klant.portaal.maken': { nl: 'Link maken', en: 'Create link' },
+  'klant.portaal.kopieren': { nl: 'Link kopiëren', en: 'Copy link' },
+  'klant.portaal.gekopieerd': {
+    nl: 'De link staat op je klembord. Daar volgt de klant al zijn dossiers.',
+    en: 'The link is on your clipboard. The customer follows all their files there.',
+  },
+  'klant.portaal.gemaakt': {
+    nl: 'De link staat er; selecteer hem hierboven om te kopiëren.',
+    en: 'The link is there; select it above to copy it.',
+  },
+
   'events.omschrijving.titel': { nl: 'Omschrijving', en: 'Description' },
   'events.omschrijving.plaatshouder': {
     nl: 'Waar gaat dit event over? Opbouw, plan B, afspraken met de klant — alles wat niet in een veld past.',

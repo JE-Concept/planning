@@ -6,7 +6,16 @@ import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { maakOfferte, useOffertes, useOfferte, verstuurOfferte, voegRegelToe, wijzigRegel, wisRegel } from '@data/offertes'
+import {
+  maakOfferte,
+  offerteLink,
+  useOffertes,
+  useOfferte,
+  verstuurOfferte,
+  voegRegelToe,
+  wijzigRegel,
+  wisRegel,
+} from '@data/offertes'
 import OfferteBlad from './OfferteBlad'
 
 const BTW_TARIEVEN = [6, 12, 21]
@@ -81,6 +90,8 @@ export default function OfferteTab({ ev }) {
   const totalen = totalenVan(offerte.regels)
   const mist = ontbrekend(offerte, { date: ev.eventDate })
 
+  const link = offerteLink(offerte)
+
   const versturen = async () => {
     setBezig(true)
     try {
@@ -90,6 +101,21 @@ export default function OfferteTab({ ev }) {
       toast.error(err.message)
     } finally {
       setBezig(false)
+    }
+  }
+
+  /*
+    Kopiëren en niet alleen tonen: dit adres gaat in een mail, en een link die
+    je moet overtypen wordt verkeerd overgetypt. Lukt het klembord niet — dat
+    weigeren sommige browsers — dan staat de link er nog altijd om zelf te
+    selecteren.
+  */
+  const kopieer = async () => {
+    try {
+      await navigator.clipboard.writeText(link)
+      toast.success(t('offerte.link_gekopieerd'))
+    } catch {
+      toast.error(t('offerte.link_kopieer_mislukt'))
     }
   }
 
@@ -111,6 +137,36 @@ export default function OfferteTab({ ev }) {
             </Button>
           </span>
         </div>
+
+        {/*
+          De klantenpagina. Ze staat hier en niet achteraan: wie een offerte
+          nakijkt, wil met één blik zien wat de klant te zien krijgt — en met
+          één klik het adres hebben dat hij hem stuurt.
+        */}
+        {link ? (
+          <div className="je-offertewerk__link">
+            <span className="je-caps">{t('offerte.klantpagina')}</span>
+            <a href={link} target="_blank" rel="noreferrer" className="je-link-quiet">
+              {link.replace(/^https?:\/\//, '')}
+            </a>
+            <span style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-3)' }}>
+              <Button variant="ghost" size="sm" iconLeft="copy" onClick={kopieer}>
+                {t('offerte.link_kopieren')}
+              </Button>
+              <Button variant="secondary" size="sm" iconLeft="share-2" onClick={() => window.open(link, '_blank')}>
+                {t('offerte.link_openen')}
+              </Button>
+            </span>
+          </div>
+        ) : null}
+
+        {offerte.status !== 'concept' ? (
+          <p className="je-offertewerk__stand" data-stand={offerte.status}>
+            <Icon name={offerte.status === 'goedgekeurd' ? 'check-circle' : 'info'} size={14} />
+            {t(`offerte.stand.${offerte.status}`)}
+            {offerte.feedback ? <span className="je-offertewerk__feedback">{offerte.feedback}</span> : null}
+          </p>
+        ) : null}
 
         {mist.length ? (
           <p className="je-offertewerk__mist">

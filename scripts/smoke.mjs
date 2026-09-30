@@ -1628,6 +1628,46 @@ await test('een bord met weinig kolommen vult de rij en schuift niet', async () 
   await page.close()
 })
 
+await test('de klant opent zijn offerte zonder account en kan ze goedkeuren', async () => {
+  const page = await tabblad('/offerte/demo-offerte-token-niels')
+  await page.waitForTimeout(1200)
+
+  const tekst = await inhoud(page)
+  // Geen aanmeldscherm: een offerte goedkeuren mag geen account kosten.
+  zouden(!bevat(tekst, 'Aanmelden') && !bevat(tekst, 'Wachtwoord'), 'de klant krijgt een inlogscherm')
+  // Persoonlijk: bij naam, met de afspraak erbij zoals wij ze begrepen hebben.
+  zouden(bevat(tekst, 'Dag Inez'), `geen persoonlijke aanhef: ${tekst.slice(0, 200)}`)
+  zouden(bevat(tekst, 'Trouw Niels en Inez'), 'het event staat er niet bij')
+  zouden(bevat(tekst, 'Hoeve Vanhove'), 'de locatie staat er niet bij')
+  zouden(bevat(tekst, '140 personen'), 'het aantal personen staat er niet bij')
+  // Het blad zelf, met de twee tarieven.
+  zouden(bevat(tekst, '12%') && bevat(tekst, '21%'), 'de btw-lijnen staan niet op het blad')
+  // En één naam om op terug te vallen.
+  zouden(bevat(tekst, 'Jasper'), 'er staat geen aanspreekpunt op')
+
+  await page.getByRole('button', { name: /Ja, hiermee akkoord/i }).click()
+  await page.waitForTimeout(800)
+  zouden(bevat(await inhoud(page), 'Afgesproken'), 'goedkeuren gaf geen bevestiging')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een klant volgt al zijn dossiers op één pagina', async () => {
+  const page = await tabblad('/klant/demo-klant-token-nielsinez')
+  await page.waitForTimeout(1200)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Niels & Inez'), `het portaal opende niet: ${tekst.slice(0, 200)}`)
+  zouden(bevat(tekst, 'Trouw Niels en Inez'), 'het dossier staat er niet bij')
+  // De stand in woorden die een klant iets zeggen, niet onze pijplijnnamen.
+  zouden(!bevat(tekst, 'create offer') && !bevat(tekst, 'planning ongoing'), 'onze pijplijnnamen lekken naar de klant')
+  zouden(bevat(tekst, 'offerte 2026-014'), 'de offerte is niet te openen vanaf het portaal')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de mailwisseling staat op het event', async () => {
   const page = await tabblad('/events/t-trouw?tab=mail')
   await page.waitForTimeout(900)
