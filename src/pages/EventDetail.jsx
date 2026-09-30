@@ -26,6 +26,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { addComment, deleteComment, useComments } from '@data/comments'
+import EventNotities from '@components/events/EventNotities'
 import { deleteDocument, leesbareGrootte, uploadDocument, useDocuments } from '@data/documents'
 import { BlockedError, addEventTask, isDone, moveEvent, updateEvent, useEventTime, useEvents } from '@data/events'
 import { durationOf } from '@lib/time-math'
@@ -157,7 +158,16 @@ export default function EventDetail() {
         }
       />
 
+      {/*
+        Het werk links, het gesprek rechts.
+
+        De notities stonden achter een tabblad, en dat is voor communicatie de
+        verkeerde plek: een tabblad open je pas wanneer je al weet dat er iets
+        staat. Nu staan ze ernaast, meescrollend, met het schrijfvak onderaan.
+        Onder 1100px past die kolom niet meer en valt ze terug op een tabblad.
+      */}
       <div className="je-pagebody">
+        <div className={narrow ? undefined : 'je-event-met-notities'} style={{ maxWidth: 1480 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 1120 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, minmax(0, 1fr))', gap: 3 }}>
             {PIPELINE.map((step, i) => (
@@ -230,7 +240,12 @@ export default function EventDetail() {
                 ? [{ value: 'bestellijst', label: t('events.tab.bestellijst', { aantal: bestelRegels.length }) }]
                 : []),
               { value: 'draaiboek', label: t('events.tab.draaiboek') },
-              { value: 'notities', label: t('events.tab.notities') },
+              { value: 'dossier', label: t('events.tab.dossier') },
+              // Op een smal scherm past de notitiekolom niet naast het werk;
+              // daar blijft ze een tabblad. Zonder dat zou communicatie op een
+              // telefoon onvindbaar worden, en dat is net het toestel waarop
+              // iemand onderweg iets doorgeeft.
+              ...(narrow ? [{ value: 'notities', label: t('events.notities.titel') }] : []),
               { value: 'tijd', label: t('events.tab.tijd', { tijd: hours(totalS) }) },
             ]}
             value={tab}
@@ -243,11 +258,16 @@ export default function EventDetail() {
             <Bestellijst ev={ev} />
           ) : tab === 'draaiboek' ? (
             <RunsheetTab ev={ev} />
-          ) : tab === 'notities' ? (
+          ) : tab === 'dossier' ? (
             <NotesTab ev={ev} onOpenDetails={() => setDrawer(ev.id)} />
+          ) : tab === 'notities' ? (
+            <EventNotities ev={ev} compact />
           ) : (
             <TimeTab entries={time} totalS={totalS} billS={billS} days={days} profileById={profileById} eventTasks={tasks} ev={ev} />
           )}
+        </div>
+
+        {narrow ? null : <EventNotities ev={ev} />}
         </div>
       </div>
 

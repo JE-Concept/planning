@@ -1532,6 +1532,24 @@ await test('het logboek toont wie wat veranderde, en filtert', async () => {
   await page.close()
 })
 
+await test('de notities staan naast het event en zijn het gesprek', async () => {
+  const page = await tabblad('/events/t-trouw')
+
+  // Zonder ergens op te klikken: dat is het punt van een kolom naast het werk.
+  // Een tabblad open je pas wanneer je al weet dat er iets staat.
+  const kolom = page.getByLabel('Notities')
+  zouden(await kolom.isVisible(), 'de notitiekolom staat er niet')
+
+  const bericht = `Tent komt een dag vroeger — ${Date.now()}`
+  await kolom.getByRole('textbox').fill(bericht)
+  await kolom.getByRole('button', { name: /Bewaren|Save/i }).click()
+  await page.waitForTimeout(700)
+
+  zouden(bevat(await kolom.innerText(), bericht), 'de notitie staat er niet bij')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 // ─── 5. Installeerbaar op de telefoon ───────────────────────────────────────
 
 await test('het manifest en de iconen staan er', async () => {

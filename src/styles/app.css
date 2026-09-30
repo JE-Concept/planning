@@ -1874,3 +1874,100 @@ select.je-compact { padding-right: 24px; }
   align-items: center;
   gap: var(--space-2);
 }
+
+/* ─── De notitiekolom op een event ─────────────────────────────────────────
+   Notities zijn hier het gesprek tussen de mensen die aan een event werken,
+   niet een bijlage bij het dossier. Daarom staan ze naast het werk in een
+   eigen kolom die meescrolt, met het schrijfvak onderaan vast — zoals elk
+   gesprek dat je kent. Onder 1100px past die kolom niet meer naast de rest;
+   daar valt ze terug op een gewoon blok onder de tabbladen. */
+.je-notities {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 220px);
+  position: sticky;
+  top: var(--space-5);
+  padding: 0;
+  overflow: hidden;
+}
+
+.je-notities[data-compact] {
+  position: static;
+  max-height: none;
+}
+
+.je-notities__kop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.je-notities__draad {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.je-notities[data-compact] .je-notities__draad {
+  overflow: visible;
+  max-height: none;
+}
+
+.je-notitie {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.je-notitie__kop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.je-notitie__wie {
+  font: var(--type-body-sm);
+  font-weight: 600;
+}
+
+.je-notitie__tekst {
+  font: var(--type-body-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-top: 2px;
+}
+
+.je-notities__schrijf {
+  border-top: 1px solid var(--border-hairline);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-1, transparent);
+}
+
+.je-notities__knop {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}
+
+/* De eventpagina in twee kolommen: het werk links, het gesprek rechts. */
+.je-event-met-notities {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .je-event-met-notities {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

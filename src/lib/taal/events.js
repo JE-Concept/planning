@@ -107,6 +107,14 @@ export default {
   'events.tab.taken': { nl: 'Taken · {aantal}', en: 'Tasks · {aantal}' },
   'events.tab.bestellijst': { nl: 'Bestellijst · {aantal}', en: 'Order list · {aantal}' },
   'events.tab.draaiboek': { nl: 'Draaiboek', en: 'Run sheet' },
+  'events.tab.dossier': { nl: 'Dossier', en: 'File' },
+  'events.notities.titel': { nl: 'Notities', en: 'Notes' },
+  'events.notities.aantal_een': { nl: '{aantal} bericht', en: '{aantal} message' },
+  'events.notities.aantal_meer': { nl: '{aantal} berichten', en: '{aantal} messages' },
+  'events.notities.nog_niets': {
+    nl: 'Nog niets gezegd over dit event. Wat je hier schrijft, komt bij de mensen die eraan werken.',
+    en: 'Nothing said about this event yet. What you write here reaches the people working on it.',
+  },
   'events.tab.notities': { nl: 'Notities & bijlagen', en: 'Notes & attachments' },
   'events.tab.tijd': { nl: 'Tijd · {tijd}', en: 'Time · {tijd}' },
 
