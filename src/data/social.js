@@ -341,6 +341,13 @@ export function usePostsForTask(taskId) {
  * `enabled: false` slaat het abonnement over. Personeel mag socialPosts niet
  * lezen, en een query die toch vertrekt levert daar een rechtenfout op in
  * plaats van een leeg lijstje.
+ *
+ * Er staat een `orderBy` bij, en die is niet cosmetisch. Een `limit` zonder
+ * sortering geeft de eerste vijftig in de volgorde van het document-id, en dat
+ * is willekeurig: wachten er eenenvijftig posts, dan valt er één stil uit de
+ * lijst en is niet te zeggen welke. Nu vallen de laatste af in plaats van een
+ * willekeurige, en staat wat het eerst online moet bovenaan. De index ervoor
+ * lag al klaar in `firestore.indexes.json`, voor beide vormen van deze vraag.
  */
 export function useReviewQueue(reviewerId, { enabled = true } = {}) {
   const [posts, setPosts] = useState([])
@@ -355,7 +362,7 @@ export function useReviewQueue(reviewerId, { enabled = true } = {}) {
     if (reviewerId) clauses.push(where('reviewerId', '==', reviewerId))
 
     return onSnapshot(
-      query(col(COL.socialPosts), ...clauses, limit(50)),
+      query(col(COL.socialPosts), ...clauses, orderBy('scheduledAt'), limit(50)),
       (snap) => setPosts(fromQuery(snap)),
       () => setPosts([])
     )

@@ -28,6 +28,7 @@
 import { onRequest } from 'firebase-functions/v2/https'
 import { logger } from 'firebase-functions'
 import { agendaVan } from './ical.js'
+import { eventsVoorFeed } from './events-bron.js'
 
 const APP = process.env.APP_URL ?? 'https://planning.jeconcept.be'
 
@@ -68,14 +69,11 @@ export function maakAgendaFeed({ db, region }) {
     const profiel = (await db.collection('profiles').doc(uid).get()).data()
     if (!profiel || profiel.active === false || profiel.role === 'staff') return weiger()
 
-    const events = await db.collection('events').where('archived', '==', false).get()
+    const events = await eventsVoorFeed(db)
 
-    const tekst = agendaVan(
-      events.docs.map((d) => ({ id: d.id, ...d.data() })),
-      { naam: 'JE Plan — events', basis: APP }
-    )
+    const tekst = agendaVan(events, { naam: 'JE Plan — events', basis: APP })
 
-    logger.info('Agenda opgehaald', { uid, events: events.size })
+    logger.info('Agenda opgehaald', { uid, events: events.length })
 
     antwoord
       .status(200)
