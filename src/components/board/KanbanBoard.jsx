@@ -91,7 +91,13 @@ export default function KanbanBoard({
   )
 
   return (
-    <div className="flex h-full gap-3 overflow-x-auto px-4 pb-4 sm:px-6">
+    <div
+      className="je-kanban flex h-full gap-3 overflow-x-auto px-4 pb-4 sm:px-6"
+      // Een bord met een handvol kolommen hoort de rij te vullen; een bord met
+      // negen kolommen past op geen enkel scherm en schuift. Het aantal staat
+      // hier omdat CSS zijn broers en zussen niet kan tellen.
+      data-weinig={columns.length <= 4 ? '' : undefined}
+    >
       {columns.map((column) => {
         const tasks = [...(tasksByColumn[column.key] ?? [])].sort(byPosition)
         const isTarget = target?.columnKey === column.key
@@ -105,7 +111,7 @@ export default function KanbanBoard({
             onDrop={(e) => handleDrop(e, column.key)}
             aria-label={`${column.label} (${totals[column.key]})`}
             className={cn(
-              'flex w-72 shrink-0 flex-col rounded-lg bg-ink-100/70 transition-colors',
+              'je-kanbankolom flex flex-col rounded-lg bg-ink-100/70 transition-colors',
               isTarget && 'bg-accent-50 ring-1 ring-accent-300'
             )}
           >

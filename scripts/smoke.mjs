@@ -1601,6 +1601,33 @@ await test('de offerte staat er vanzelf en is regel voor regel aan te passen', a
   await page.close()
 })
 
+await test('een bord met weinig kolommen vult de rij en schuift niet', async () => {
+  const page = await tabblad('/social', { breedte: 1440 })
+  await page.waitForTimeout(900)
+
+  const rij = page.locator('.je-kanban').first()
+  const schuift = await rij.evaluate((el) => el.scrollWidth - el.clientWidth)
+  zouden(schuift === 0, `de drie kolommen passen niet: ${schuift}px te veel`)
+
+  const kolommen = await page.locator('.je-kanbankolom').all()
+  zouden(kolommen.length === 3, `niet drie kolommen maar ${kolommen.length}`)
+  const breedtes = []
+  for (const k of kolommen) breedtes.push(Math.round((await k.boundingBox()).width))
+  // Samen vullen ze de rij: geen halfleeg scherm naast drie smalle kolommen.
+  const samen = breedtes.reduce((a, b) => a + b, 0)
+  const beschikbaar = await rij.evaluate((el) => el.clientWidth)
+  zouden(samen > beschikbaar - 100, `de kolommen vullen de rij niet: ${samen} van ${beschikbaar}`)
+
+  // En een bord met negen kolommen blijft wél schuiven: die passen nergens op.
+  await page.goto(`${adres}/#/bord/l-overview`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(1200)
+  const breed = await page.locator('.je-kanban').first().evaluate((el) => el.scrollWidth - el.clientWidth)
+  zouden(breed > 0, 'het takenbord van negen kolommen schuift niet meer')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de mailwisseling staat op het event', async () => {
   const page = await tabblad('/events/t-trouw?tab=mail')
   await page.waitForTimeout(900)

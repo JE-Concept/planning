@@ -549,6 +549,34 @@
   resize: vertical;
 }
 
+/* ── De kolommen van een bord ──────────────────────────────────────────── */
+
+/*
+  Een kolom is minstens 18rem breed en deelt daarboven de ruimte met de andere.
+
+  Het socialbord heeft er drie; die stonden op een vaste breedte naast elkaar
+  met een halfleeg scherm ernaast. Het takenbord heeft er negen, en die passen
+  op geen enkel scherm. Eén regel dekt beide gevallen: passen ze, dan groeien
+  ze mee; passen ze niet, dan blijven ze leesbaar en schuift de rij — en dat is
+  precies wanneer horizontaal scrollen wél de bedoeling is.
+*/
+.je-kanbankolom {
+  flex: 1 1 18rem;
+  min-width: 18rem;
+}
+
+/*
+  Vier kolommen of minder: samen vullen ze de rij, en mogen ze smaller dan
+  18rem worden. Het socialbord heeft er drie en stond met een halfleeg scherm
+  ernaast, terwijl die drie samen net niet pasten en dus gingen schuiven — het
+  slechtste van twee werelden. Zo passen ze altijd, en op een breed scherm
+  groeien ze mee.
+*/
+.je-kanban[data-weinig] .je-kanbankolom {
+  flex-basis: 0;
+  min-width: 0;
+}
+
 /* ── De post rond een event ────────────────────────────────────────────── */
 
 .je-maildraad {
