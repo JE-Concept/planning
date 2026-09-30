@@ -74,7 +74,6 @@ export const DEFAULT_TEMPLATES = [
       tt('Offertes leveranciers opvragen', 'Elke', 45, '', ['Verhuur', 'Catering', 'Sanitair', 'Drank']),
       tt('Voorschot 40% ontvangen', 'Elke', 30, 'Urgent'),
       tt('Plaatsbezoek', 'Jasper', 30),
-      tt('Personeelsplanning', 'Anneleen', 14),
       tt('Draaiboek', 'Jasper', 7),
     ],
   },

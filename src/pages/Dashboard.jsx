@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { addDays, dayKey, daysUntil, formatDay, isOverdue, relativeDay, startOfWeek } from '@lib/dates'
 import { publicatieMoment } from '@lib/social-planning'
 import { isTeLaat } from '@lib/laat'
+import { planningVan } from '@lib/planning'
 import { formatDuration, priorityOf } from '@lib/format'
 import { runProgress } from '@lib/checklist-templates'
 import { Badge, Bar, Button, Icon, ProgressBar, Spinner } from '@components/ds'
@@ -219,7 +220,9 @@ export default function Dashboard() {
                         <span className="je-taskline__title">
                           {event.name}
                           <span className="je-dash__sub">
-                            {[event.conceptShort, event.customerName, event.statusName].filter(Boolean).join(' · ')}
+                            {[event.conceptShort, event.customerName, event.statusName, planningVan(event)?.label]
+                              .filter(Boolean)
+                              .join(' · ')}
                           </span>
                         </span>
                         {event.teLaat ? (

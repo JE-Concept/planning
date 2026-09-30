@@ -82,6 +82,7 @@ export default {
   'logboek.veld.offertebedrag': { nl: 'het offertebedrag', en: 'the quoted amount' },
   'logboek.veld.klant': { nl: 'de klant', en: 'the customer' },
   'logboek.veld.locatie': { nl: 'de locatie', en: 'the venue' },
+  'logboek.veld.planning': { nl: 'de planning', en: 'the planning' },
   'logboek.veld.gasten': { nl: 'het aantal gasten', en: 'the number of guests' },
   'logboek.veld.socialstand': { nl: 'de socialstand', en: 'the social stage' },
   'logboek.veld.lijst': { nl: 'de lijst', en: 'the list' },

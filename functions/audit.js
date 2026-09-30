@@ -46,6 +46,7 @@ export const AUDIT = {
       'quoteAmount',
       'customerId',
       'location',
+      'planning',
       'pax',
       'socialStage',
       'listId',

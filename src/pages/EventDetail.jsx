@@ -23,7 +23,7 @@ import Bestellijst from '@components/events/Bestellijst'
 import EventFiche from '@components/events/EventFiche'
 import EventOmschrijving from '@components/events/EventOmschrijving'
 import TaskRow from '@components/events/TaskRow'
-import { StatusBadge, dayLabel, hours } from '@components/events/parts'
+import { PlanningBadge, StatusBadge, dayLabel, hours } from '@components/events/parts'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -119,6 +119,7 @@ export default function EventDetail() {
         actions={
           <>
             <StatusBadge statusName={ev.statusName} statuses={eventStatuses} />
+            <PlanningBadge event={ev} />
             {next ? (
               <Button size="sm" iconRight="arrow-right" onClick={() => move(next)}>
                 {t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}

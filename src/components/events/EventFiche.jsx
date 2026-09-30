@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { dayKey, fromDateInput } from '@lib/dates'
+import { planningKeuzes } from '@lib/planning'
 import { missingForOffer } from '@lib/pipeline'
 import { Checkbox, Icon, Input, Select } from '@components/ds'
 import { euro, longDate } from '@components/events/parts'
@@ -96,6 +97,20 @@ export default function EventFiche({ ev }) {
           onBewaar={(n) => bewaar({ quoteAmount: n, budget: n })}
           onder={ev.quoteAmount ? t('events.fiche.voorschot_van', { bedrag: euro(Math.round(ev.quoteAmount * 0.4)) }) : null}
         />
+
+        {/*
+          De planning staat naast de pijplijn en niet erin: de pijplijn zegt
+          waar het dossier tegenover de klant staat, dit zegt of het intern
+          rond is. Die twee lopen niet gelijk.
+        */}
+        <Cel label={t('planning.titel')}>
+          <Select
+            aria-label={t('planning.titel')}
+            value={ev.planning ?? ''}
+            onChange={(e) => bewaar({ planning: e.target.value || null })}
+            options={planningKeuzes()}
+          />
+        </Cel>
 
         <Cel label={t('events.velden.concept')}>
           <Select

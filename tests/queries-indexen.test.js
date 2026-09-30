@@ -307,7 +307,10 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  const QUERIES_IN_DE_APP = 59
+  // 60 sinds `deleteEvent` de offerte van een event opzoekt om ze mee weg te
+  // gooien. Eén gelijkheid zonder `orderBy`: Firestore bedient dat uit zijn
+  // eigen veldindexen, dus er hoort geen regel bij in de tabel hierboven.
+  const QUERIES_IN_DE_APP = 60
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

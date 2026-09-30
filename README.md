@@ -190,6 +190,16 @@ Een klant wordt **uit gebruik genomen**, niet gewist, zolang er events aan hange
 
 ---
 
+## De planning van een event
+
+Naast de pijplijn staat een eigen veld: **Planning** — *nog te plannen · bezig · rond · niet nodig*. Het stond eerder als subtaak ("Personeelsplanning") in de templates, en dat werkte niet. Een taak is af of niet af, terwijl planning een toestand is die weken duurt; en een taak zie je alleen als je het event opent — precies niet waar je hem nodig hebt.
+
+Het staat náást de pijplijn en niet erin, want die twee lopen niet gelijk: de pijplijn zegt waar het dossier tegenover de klant staat (aanvraag, offerte, akkoord, factuur), de planning zegt of het intern rond is. Een event kan gefactureerd zijn terwijl het personeel al lang geregeld was, en nog op "offerte verstuurd" staan terwijl het materiaal al besproken is.
+
+De stand kies je op de fiche en ze komt terug op het bord, in de lijst, op het dashboard en als tweede stipje in de kalender. Er is géén standaardwaarde: zou elk event bij het aanmaken op "nog te plannen" staan, dan kreeg elk afgelopen dossier uit de migratie diezelfde badge en zei ze niets meer. De badge verschijnt zodra iemand ze zet — en dan betekent ze iets. Om diezelfde reden verschijnt het filter op de eventpagina pas wanneer er ergens een stand gezet is.
+
+---
+
 ## De locatie van een event
 
 Het locatieveld is een tekstveld met Google Maps eronder. Typen mag altijd — "bij de klant thuis" en "nog te bepalen" zijn geldige antwoorden — maar wie een echt adres kiest, koppelt de plek eraan vast. Naast de tekst komen dan `locationPlaceId`, `locationLat` en `locationLng` op het event te staan, en opent de knop *Op de kaart* exact die zaal in plaats van de eerste met dezelfde naam. Typt iemand de tekst daarna met de hand over, dan gaan die drie mee weg: coördinaten die niet meer bij de tekst horen, sturen het team naar het verkeerde adres.

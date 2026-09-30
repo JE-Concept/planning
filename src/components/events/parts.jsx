@@ -1,6 +1,7 @@
 import { Badge, Bar, Hex, initialsOf } from '@components/ds'
 import { asDate, huidigeLocaleVan } from '@lib/dates'
 import { labelOf, toneOf } from '@lib/pipeline'
+import { planningVan } from '@lib/planning'
 import { isDone } from '@data/events'
 
 /**
@@ -68,6 +69,23 @@ export function StatusBadge({ statusName, statuses }) {
   return (
     <Badge tone={toneOf(statusName)} dot>
       {labelOf(statusName, statuses)}
+    </Badge>
+  )
+}
+
+/**
+ * De stand van de planning, als badge.
+ *
+ * Geeft niets terug zolang niemand iets koos: een badge die op elk event staat
+ * omdat er een standaardwaarde is, zegt niets meer. Zo is het overzicht stil
+ * tot er iets te zeggen valt.
+ */
+export function PlanningBadge({ event, compact = false }) {
+  const stand = planningVan(event)
+  if (!stand) return null
+  return (
+    <Badge tone={stand.tone} dot={!compact}>
+      {stand.label}
     </Badge>
   )
 }

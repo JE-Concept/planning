@@ -1565,6 +1565,38 @@ await test('de locatie staat op de fiche, met een link naar de kaart', async () 
   await page.close()
 })
 
+await test('de planningstand staat op het event en in elk overzicht', async () => {
+  const page = await tabblad('/events/t-trouw')
+
+  // Op de fiche kies je hem; een pop-up komt er niet aan te pas.
+  const keuze = page.getByLabel('Planning').first()
+  zouden((await keuze.inputValue()) === 'bezig', `de stand staat niet op de fiche: ${await keuze.inputValue()}`)
+  await keuze.selectOption('rond')
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Rond'), 'de badge in de kop volgt de keuze niet')
+
+  // En in de overzichten: de lijst en het bord tonen dezelfde badge.
+  await page.goto(`${adres}/#/?weergave=lijst`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Nog te plannen'), 'de lijst toont de planningstand niet')
+
+  await page.goto(`${adres}/#/?weergave=bord`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Nog te plannen'), 'het bord toont de planningstand niet')
+
+  // Filteren op de stand houdt over wat die stand heeft.
+  await page.getByLabel('Planning').first().selectOption('te_plannen')
+  await page.waitForTimeout(700)
+  // Alleen het bord zelf: in de zijbalk staat de lopende timer, en die noemt
+  // het event waar hij bij hoort.
+  const gefilterd = await page.locator('.je-pagebody').innerText()
+  zouden(bevat(gefilterd, 'Jolien'), 'het gefilterde event staat er niet meer')
+  zouden(!bevat(gefilterd, 'Trouw Niels'), 'er staat een event bij dat een andere stand heeft')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een event verwijderen zegt eerst wat er weggaat', async () => {
   const page = await tabblad('/events/t-jolien')
 

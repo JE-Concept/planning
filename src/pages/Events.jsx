@@ -2,9 +2,10 @@ import { useCallback, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { addMonths, dayKey, startOfDay, startOfMonth } from '@lib/dates'
 import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
+import { PLANNING, planningKleur, planningVan } from '@lib/planning'
 import { useNarrow } from '@lib/useNarrow'
 import { ARCHIEF_NA_DAGEN, jaarVan, jarenIn, splitsArchief } from '@lib/archief'
-import { Bar, Button, Icon, IconButton, Stat, Tabs, Tag } from '@components/ds'
+import { Bar, Button, Icon, IconButton, Select, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
 import EventRow from '@components/events/EventRow'
@@ -88,6 +89,14 @@ export default function Events() {
     setParams(next, { replace: true })
   }
 
+  const planningFilter = params.get('planning') || 'alle'
+  const setPlanningFilter = (k) => {
+    const next = new URLSearchParams(params)
+    if (k === 'alle') next.delete('planning')
+    else next.set('planning', k)
+    setParams(next, { replace: true })
+  }
+
   // Concepten: de actieve merken, plus "Los event" voor wat aan geen merk hangt.
   const conceptTags = useMemo(() => {
     const active = brands.filter((b) => !b.archived)
@@ -114,8 +123,9 @@ export default function Events() {
     () =>
       zichtbaar
         .filter((e) => concept === 'Alle' || (concept === LOS ? !e.brandId || !brandById[e.brandId] : e.brandId === concept))
+        .filter((e) => planningFilter === 'alle' || (e.planning ?? '') === planningFilter)
         .sort(byEventDate),
-    [zichtbaar, concept, brandById]
+    [zichtbaar, concept, brandById, planningFilter]
   )
 
   const lopend = actief.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice'))
@@ -141,6 +151,20 @@ export default function Events() {
                 {c.label}
               </Tag>
             ))}
+            {/*
+              Filteren op de planningstand. Geen tags erbij — die rij is al
+              lang genoeg — maar één lijstje, en alleen wanneer er ergens een
+              stand gezet is: een filter op een veld dat niemand gebruikt, is
+              een knop die altijd alles toont.
+            */}
+            {events.some((e) => e.planning) ? (
+              <Select
+                aria-label={t('planning.filter')}
+                value={planningFilter}
+                onChange={(e) => setPlanningFilter(e.target.value)}
+                options={[{ value: 'alle', label: t('planning.alle') }, ...PLANNING.map((p) => ({ value: p.key, label: p.label }))]}
+              />
+            ) : null}
           </div>
         </div>
 
@@ -542,7 +566,9 @@ function CalendarView({ events, narrow }) {
               <button
                 key={e.id}
                 type="button"
-                title={e.name}
+                // In een chip van tachtig pixels past geen badge; de stand
+                // staat er als tweede stipje en voluit in de tooltip.
+                title={[e.name, planningVan(e)?.label].filter(Boolean).join(' · ')}
                 onClick={() => navigate(`/events/${e.id}`)}
                 className="je-calchip"
               >
@@ -554,6 +580,12 @@ function CalendarView({ events, narrow }) {
                     background: indexOf(e.statusName) >= indexOf('offer accepted') ? 'var(--navy-700)' : 'var(--navy-300)',
                   }}
                 />
+                {planningKleur(e) ? (
+                  <span
+                    aria-hidden="true"
+                    style={{ width: 6, height: 6, flex: '0 0 6px', borderRadius: 3, background: planningKleur(e) }}
+                  />
+                ) : null}
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {narrow ? e.name.split(' ')[0] : e.name}
                 </span>

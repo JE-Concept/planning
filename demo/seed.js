@@ -170,6 +170,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
     customerId: o.customerId ?? null,
     customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
     socialStage: o.socialStage ?? null,
+    planning: o.planning ?? null,
     // Wat de fiche uit het design toont: gasten, formule, type, offerte, dag.
     eventDate: o.eventDate ?? (o.parentId ? null : o.dueDate ?? null),
     pax: o.pax ?? null, kids: o.kids ?? null, formule: o.formule ?? null,
@@ -231,7 +232,7 @@ function spiegelSocial(id, kaart) {
   seedDoc('socialEvents', id, { ...kaart, taskId: id, bijgewerkt: NU })
 }
 
-taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],
+taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { planning: 'bezig', pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],
   title: 'Trouw Niels en Inez', assignees: ['u-jasper', 'u-elke'], priority: 2, customerId: 'k-niels-inez',
   dueDate: dag(6), budget: 16399, location: 'Hoeve Vanhove, Kortessem',
   // Eén event met een echte plek erachter, zodat de kaartlink op de fiche te
@@ -264,7 +265,7 @@ taak('t-blum-1', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum',
 taak('t-blum-2', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Allergieënlijst opvragen bij HR', assignees: ['u-jasper'] })
 taak('t-blum-3', 'l-overview', OVERVIEW, 'offer accepted', { parentId: 't-blum', title: 'Herasdoeken laten bedrukken', assignees: ['u-jasper'] })
 
-taak('t-haspengouw', 'l-overview', OVERVIEW, 'planning ready', { pax: 600, formule: 'Standen + centrale bar', eventType: 'Stadsevent',
+taak('t-haspengouw', 'l-overview', OVERVIEW, 'planning ready', { planning: 'rond', pax: 600, formule: 'Standen + centrale bar', eventType: 'Stadsevent',
   title: 'Haspengouw Culinair — Grote Markt', assignees: ['u-jasper', 'u-anneleen'], customerId: 'k-borgloon',
   dueDate: dag(-7), budget: 38900, location: 'Grote Markt, Borgloon', tracked: 85500,
   tags: ['losse events'], priority: 2,
@@ -299,7 +300,7 @@ taak('t-ruben', 'l-overview', OVERVIEW, 'request', { pax: 40, kids: 10, eventTyp
   title: 'Ruben Theuwen — 25 april 2027', assignees: ['u-jasper'], tags: ['feestbeest'], brandId: 'feestbeest',
   description: 'Aanvraag per mail: communie eind april 2027, veertigtal personen waarvan een tiental kinderen.',
 })
-taak('t-jolien', 'l-overview', OVERVIEW, 'request', { pax: 60, eventType: 'Verjaardag',
+taak('t-jolien', 'l-overview', OVERVIEW, 'request', { planning: 'te_plannen', pax: 60, eventType: 'Verjaardag',
   title: 'Verjaardag & doopsel — 15 november (Jolien en Bernd)', assignees: ['u-jasper'],
   dueDate: dag(48), brandId: 'feestbeest', tags: ['feestbeest'],
 })

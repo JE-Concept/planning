@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
-import { TeamHexes, paxLabel, shortDate } from './parts'
+import { PlanningBadge, TeamHexes, paxLabel, shortDate } from './parts'
 
 /**
  * Eén event als kaart op het bord.
@@ -29,6 +29,9 @@ function EventBoardCard({ event, progress, profileById, dragging, onOpen, onDrag
           .join(' · ')}
       </span>
       <span style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>{event.name}</span>
+      {/* Alleen wanneer er een stand gekozen is; anders staat op elke kaart
+          dezelfde badge en zegt ze niets meer. */}
+      <PlanningBadge event={event} compact />
       <span
         className="je-muted-caption"
         style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}

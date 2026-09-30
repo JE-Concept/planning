@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
-import { StatusBadge, TeamHexes, monthShort, paxLabel } from './parts'
+import { PlanningBadge, StatusBadge, TeamHexes, monthShort, paxLabel } from './parts'
 
 /**
  * Eén event in de lijst.
@@ -72,8 +72,9 @@ function EventRow({ event, progress, statuses, profileById, columns, narrow, fir
           {meta}
         </div>
         {narrow ? (
-          <div style={{ marginTop: 6 }}>
+          <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             <StatusBadge statusName={event.statusName} statuses={statuses} />
+            <PlanningBadge event={event} compact />
           </div>
         ) : null}
       </div>
@@ -89,8 +90,9 @@ function EventRow({ event, progress, statuses, profileById, columns, narrow, fir
           >
             {paxLabel(event)}
           </span>
-          <span>
+          <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             <StatusBadge statusName={event.statusName} statuses={statuses} />
+            <PlanningBadge event={event} compact />
           </span>
           <TeamHexes ids={event.team} profileById={profileById} />
           <span style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
