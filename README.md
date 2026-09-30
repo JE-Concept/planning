@@ -260,6 +260,18 @@ De favicon blijft de drie balken alleen: op 16 pixels valt een schreefletter uit
 
 ---
 
+## Back-ups
+
+Er is er **geen**, en dat is het grootste openstaande risico van deze tool. De gegevens
+staan bij Google, dus een kapotte schijf is het probleem niet — een fout van ons is dat
+wel, en daar helpt redundantie niet tegen.
+
+Wat er moet gebeuren en hoe, staat in [`docs/back-ups.md`](docs/back-ups.md): eerst
+point-in-time recovery (één commando, zeven dagen terug tot op de minuut), daarna een
+wekelijkse export naar Cloud Storage voor wat langer terug moet kunnen.
+
+---
+
 ## Nederlands en Engels
 
 De tool staat in het Nederlands en in het Engels. De keuze staat in het
@@ -314,7 +326,10 @@ npm run dev              # http://localhost:5173
 npm run lint
 npm test                 # unit tests op de rekenlogica
 npm run smoke            # de echte app in een echte browser
+npm run taalcheck        # elk scherm in het Engels, wat is er nog Nederlands
 npm run build
+
+npm run controleer       # alles hierboven, in één keer — draai dit voor een uitrol
 
 npm run emulators        # zet VITE_USE_EMULATORS=1 in .env.local
 ```

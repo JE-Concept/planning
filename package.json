@@ -3,24 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "JE Plan — interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
+  "description": "JE Plan \u2014 interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint .",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "smoke": "npm run build:demo && node scripts/smoke.mjs",
-    "emulators": "firebase emulators:start",
+    "build:demo": "vite build --mode demo",
+    "controleer": "npm run lint && npm test && npm run build && npm run smoke && npm run taalcheck",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
+    "dev": "vite",
+    "emulators": "firebase emulators:start",
+    "lint": "eslint .",
     "migrate:clickup": "node scripts/migrate-clickup.mjs",
-    "build:demo": "vite build --mode demo"
+    "preview": "vite preview",
+    "smoke": "npm run build:demo && node scripts/smoke.mjs",
+    "taalcheck": "node scripts/taalcheck.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "firebase": "^11.0.2",
