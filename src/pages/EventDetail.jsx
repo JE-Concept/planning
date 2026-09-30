@@ -3,10 +3,12 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { startOfDay } from '@lib/dates'
 import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
+import { verwijderVraag } from '@lib/verwijdervraag'
 import {
   Badge,
   Button,
   Checkbox,
+  ConfirmButton,
   Hex,
   Icon,
   IconButton,
@@ -28,7 +30,7 @@ import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import EventNotities from '@components/events/EventNotities'
 import { deleteDocument, leesbareGrootte, uploadDocument, useDocuments } from '@data/documents'
-import { addEventTask, isDone, moveEvent, updateEvent, useEventTime, useEvents } from '@data/events'
+import { addEventTask, deleteEvent, isDone, moveEvent, updateEvent, useEventTime, useEvents } from '@data/events'
 import { durationOf } from '@lib/time-math'
 import { useRunningTimer } from '@data/time'
 import { Spinner } from '@ui/index'
@@ -47,6 +49,10 @@ export default function EventDetail() {
 
   const ev = eventById[id]
   const tasks = useMemo(() => tasksByEvent[id] ?? [], [tasksByEvent, id])
+  // Alleen om de verwijdervraag te kunnen laten zeggen wát er weggaat; het
+  // tabblad Bijlagen leest dezelfde lijst nog eens, en dat is één abonnement
+  // waard boven een vraag die liegt over wat ze weggooit.
+  const { documents: documenten } = useDocuments({ taskId: id })
   const tab = params.get('tab') || 'taken'
   const setTab = (v) => {
     const next = new URLSearchParams(params)
@@ -118,6 +124,28 @@ export default function EventDetail() {
                 {t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}
               </Button>
             ) : null}
+            {/*
+              Verwijderen staat hier stil en achteraan, want archiveren is
+              bijna altijd het juiste. Maar een dubbel aangemaakt dossier of
+              een test hoort niet in de geschiedenis, en zolang die alleen te
+              archiveren zijn, vervuilen ze elk overzicht.
+            */}
+            <ConfirmButton
+              variant="ghost"
+              size="sm"
+              iconLeft="trash-2"
+              question={verwijderVraag({ task: ev, subtaken: tasks.length, bijlagen: documenten.length, soort: 'event' })}
+              onConfirm={() =>
+                deleteEvent(ev.id)
+                  .then(() => {
+                    toast.success(t('events.detail.verwijderd', { naam: ev.name }))
+                    navigate('/')
+                  })
+                  .catch((err) => toast.error(err.message))
+              }
+            >
+              {t('alg.verwijderen')}
+            </ConfirmButton>
           </>
         }
       />

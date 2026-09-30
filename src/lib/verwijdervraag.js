@@ -20,11 +20,14 @@ import { tekst } from './i18n'
  * De titel komt uit de database en blijft staan zoals hij daar staat; alleen de
  * zin eromheen volgt de taal waarin iemand werkt.
  */
-export function verwijderVraag({ task, subtaken = 0, bijlagen = 0 }) {
+export function verwijderVraag({ task, subtaken = 0, bijlagen = 0, soort = 'taak' }) {
   const titel = (task?.title ?? '').trim() || tekst('taaklib.verwijder.deze_taak')
   const weg = []
 
-  if (subtaken > 0) weg.push(tekst('taaklib.verwijder.subtaak', { aantal: subtaken }))
+  // Onder een event hangen geen "subtaken" maar gewoon taken; wie leest wat hij
+  // weggooit, moet er het woord in herkennen dat op het scherm staat.
+  const stuk = soort === 'event' ? 'taaklib.verwijder.taak' : 'taaklib.verwijder.subtaak'
+  if (subtaken > 0) weg.push(tekst(stuk, { aantal: subtaken }))
   if (bijlagen > 0) weg.push(tekst('taaklib.verwijder.bijlage', { aantal: bijlagen }))
 
   const reacties = Number(task?.commentCount ?? 0)

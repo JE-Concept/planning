@@ -28,6 +28,8 @@ export default {
   'taaklib.verwijder.weg_ook': { nl: 'Weg zijn dan ook: {lijst}.', en: 'Also gone: {lijst}.' },
   'taaklib.verwijder.subtaak_een': { nl: '{aantal} subtaak', en: '{aantal} subtask' },
   'taaklib.verwijder.subtaak_meer': { nl: '{aantal} subtaken', en: '{aantal} subtasks' },
+  'taaklib.verwijder.taak_een': { nl: '{aantal} taak', en: '{aantal} task' },
+  'taaklib.verwijder.taak_meer': { nl: '{aantal} taken', en: '{aantal} tasks' },
   'taaklib.verwijder.bijlage_een': { nl: '{aantal} bijlage', en: '{aantal} attachment' },
   'taaklib.verwijder.bijlage_meer': { nl: '{aantal} bijlagen', en: '{aantal} attachments' },
   'taaklib.verwijder.reactie_een': { nl: '{aantal} reactie', en: '{aantal} comment' },

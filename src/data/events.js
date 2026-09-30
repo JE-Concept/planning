@@ -1,12 +1,12 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState } from 'react'
-import { onSnapshot, query, where, writeBatch } from 'firebase/firestore'
+import { getDocs, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
 import { bestellijstVoorEvent, prijsVan } from '@lib/formules'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { createTask, setTaskStatus, statusFields, updateTask, useTasks } from './tasks'
+import { createTask, deleteTask, setTaskStatus, statusFields, updateTask, useTasks } from './tasks'
 
 /**
  * Events zijn de taken op het hoofdniveau van de eventlijst; de taken van een
@@ -126,6 +126,32 @@ export function moveEvent(event, statusName, statuses) {
 
 export function updateEvent(id, patch) {
   return updateTask(id, patch)
+}
+
+/**
+ * Een event weggooien, met alles wat er alleen door bestond.
+ *
+ * Archiveren is bijna altijd het juiste: een afgelopen event hoort in de
+ * geschiedenis en niet in de vuilbak. Maar een dubbel aangemaakt dossier, een
+ * aanvraag die nooit een aanvraag was, een test van een nieuw template — die
+ * horen daar juist niet in, en zolang ze alleen te archiveren zijn, vervuilen
+ * ze elk overzicht en elke rapportage.
+ *
+ * De taken, reacties en bijlagen gaan mee (`deleteTask` doet dat), de geboekte
+ * tijd blijft staan en verliest alleen haar koppeling: die uren gaan over
+ * iemands week en niet over dit dossier. De kopie voor de socialrol ruimt de
+ * trigger op. De offerte staat los van de taak en moet hier apart weg, anders
+ * blijft er een publieke goedkeuringspagina staan voor een event dat niet meer
+ * bestaat.
+ */
+export async function deleteEvent(id) {
+  const offertes = await getDocs(query(col(COL.offertes), where('eventId', '==', id)))
+  if (!offertes.empty) {
+    const batch = writeBatch(db)
+    offertes.docs.forEach((snap) => batch.delete(snap.ref))
+    await batch.commit()
+  }
+  await deleteTask(id)
 }
 
 /**

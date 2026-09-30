@@ -1565,6 +1565,29 @@ await test('de locatie staat op de fiche, met een link naar de kaart', async () 
   await page.close()
 })
 
+await test('een event verwijderen zegt eerst wat er weggaat', async () => {
+  const page = await tabblad('/events/t-jolien')
+
+  let vraag = ''
+  page.on('dialog', (d) => {
+    vraag = d.message()
+    d.accept()
+  })
+
+  await page.getByRole('button', { name: /^Verwijderen$/ }).click()
+  await page.waitForTimeout(1200)
+
+  zouden(bevat(vraag, 'definitief verwijderen'), `geen vraag voor het verwijderen: ${vraag}`)
+  zouden(bevat(vraag, 'Archiveren bewaart alles'), 'de vraag zegt niet dat archiveren het alternatief is')
+
+  // En het dossier is echt weg, niet alleen uit beeld.
+  await page.goto(`${adres}/#/events/t-jolien`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'bestaat niet'), 'het event bestaat nog')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een veld op de fiche pas je aan waar het staat', async () => {
   // Geen potlood, geen venster, geen bewaarknop: verder klikken is bewaren.
   const page = await tabblad('/events/t-trouw')

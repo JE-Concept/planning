@@ -106,6 +106,7 @@ export default {
   'events.detail.alle_events': { nl: 'Alle events', en: 'All events' },
   'events.detail.naar_alle': { nl: 'Naar alle events', en: 'Go to all events' },
   'events.detail.naar_stap': { nl: 'Naar {stap}', en: 'To {stap}' },
+  'events.detail.verwijderd': { nl: '{naam} is verwijderd.', en: '{naam} has been deleted.' },
 
   // ── De tabbladen van een event ─────────────────────────────────────────
   'events.tab.taken': { nl: 'Taken · {aantal}', en: 'Tasks · {aantal}' },
