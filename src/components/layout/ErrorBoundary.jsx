@@ -42,10 +42,16 @@ const RUSTTIJD = 60_000
  * want dan gaat het om een nieuwe uitrol.
  */
 export function magHerladen(storage = globalThis.sessionStorage, nu = Date.now()) {
+  // Geen opslag, geen rem. Zonder deze regel las een ontbrekende
+  // sessionStorage (een webview die hem niet aanbiedt) elke keer als "nog niet
+  // eerder geprobeerd", en dan herlaadt het tabblad zichzelf eindeloos op
+  // dezelfde ontbrekende brok. Dezelfde afweging als bij de `catch` hieronder.
+  if (!storage) return false
+
   try {
-    const vorige = Number(storage?.getItem(GEPROBEERD) ?? 0)
+    const vorige = Number(storage.getItem(GEPROBEERD) ?? 0)
     if (vorige && nu - vorige < RUSTTIJD) return false
-    storage?.setItem(GEPROBEERD, String(nu))
+    storage.setItem(GEPROBEERD, String(nu))
     return true
   } catch {
     // Safari in privémodus geeft hier een fout. Dan liever niet herladen dan

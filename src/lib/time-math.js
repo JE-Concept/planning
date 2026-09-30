@@ -5,11 +5,22 @@ import { dayKey } from './dates'
  * reasoned about (and tested) on its own.
  */
 
-/** Seconds on a finished entry; live seconds on a running one. */
+/**
+ * Seconds on a finished entry; live seconds on a running one.
+ *
+ * Een onleesbare datum geeft 0 en geen NaN, en dat is hier geen detail. De
+ * schrijvers in `src/data/time.js` weigeren een boeking met
+ * `durationSeconds <= 0` — maar `NaN <= 0` is onwaar, dus met NaN glipte een
+ * boeking langs die controle en belandde ze met een lege dag- en maandsleutel
+ * in de database. Die uren staan dan nergens meer in een overzicht en niemand
+ * ziet dat ze weg zijn. Een leeg datumveld in het urenformulier ("") wordt
+ * `new Date('')` en is precies zo'n waarde.
+ */
 export function durationOf(entry, now = Date.now()) {
   if (!entry?.startedAt) return 0
   const start = new Date(entry.startedAt).getTime()
   const end = entry.endedAt ? new Date(entry.endedAt).getTime() : now
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return 0
   return Math.max(0, Math.round((end - start) / 1000))
 }
 
@@ -22,6 +33,11 @@ export function durationOf(entry, now = Date.now()) {
 export function periodKeys(date) {
   const d = new Date(date)
   const day = dayKey(d)
+
+  // Zonder leesbare datum geen verzonnen sleutels. `dayKey` gaf al een lege
+  // dag, maar de weekberekening eronder maakte er "NaN-WNaN" van — een bak
+  // waar geen enkel overzicht naar vraagt, dus werk dat stil verdwijnt.
+  if (!day) return { day: '', month: '', week: '' }
 
   // ISO 8601: the Thursday of the current week decides both year and number.
   const thursday = new Date(d)

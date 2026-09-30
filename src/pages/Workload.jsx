@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addDays, dayKey, startOfWeek } from '@lib/dates'
 import { periodKeys } from '@lib/time-math'
-import { Bar, Hex, IconButton, initialsOf } from '@components/ds'
+import { Bar, EmptyState, Hex, IconButton, initialsOf } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { hours, shortDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
@@ -140,6 +140,23 @@ export default function Workload() {
                 <Row key={r.p.id} r={r} todayKey={todayKey} eventById={eventById} />
               ))}
             </div>
+
+            {/*
+              Zonder dit stond er bij een leeg team een kop met zeven
+              dagkolommen en daaronder niets — geen regel, geen uitleg. Wie dat
+              ziet, leest het als een kapot scherm en niet als "er is nog
+              niemand", en gaat ergens zoeken waar niets te vinden is. Dit
+              gebeurt niet alleen bij een verse werkruimte: `people` hierboven
+              laat personeel en gasten weg, dus een zaak waar alleen personeel
+              in staat komt hier ook op uit.
+            */}
+            {rows.length === 0 ? (
+              <EmptyState
+                icon="users"
+                title={t('tasks.werklast.leeg')}
+                description={t('tasks.werklast.leeg_uitleg')}
+              />
+            ) : null}
           </div>
           <div className="je-muted-caption" style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -79,7 +79,11 @@ export function useAttachments({ taskId, postId }) {
     }
     return onSnapshot(
       query(col(COL.attachments), where(field, '==', value), orderBy('createdAt', 'desc')),
-      (snap) => setFiles(fromQuery(snap))
+      (snap) => setFiles(fromQuery(snap)),
+      // Zonder deze tak gooit Firestore de fout naar de console en stopt het
+      // abonnement; het scherm blijft dan de bijlagen van de vórige taak tonen
+      // alsof ze bij deze horen. Leeg is verkeerd, maar niet misleidend.
+      () => setFiles([])
     )
   }, [taskId, postId])
 

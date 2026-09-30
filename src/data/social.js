@@ -304,7 +304,11 @@ export function useUnscheduledPosts() {
     () =>
       onSnapshot(
         query(col(COL.socialPosts), where('scheduledAt', '==', null), orderBy('createdAt', 'desc')),
-        (snap) => setPosts(fromQuery(snap).filter((post) => !publicatieMoment(post)))
+        (snap) => setPosts(fromQuery(snap).filter((post) => !publicatieMoment(post))),
+        // Personeel mag socialPosts niet lezen. Zonder deze tak blijft er een
+        // onafgehandelde fout in de console staan en houdt de lijst de vorige
+        // stand; hetzelfde antwoord als de andere posthooks hieronder.
+        () => setPosts([])
       ),
     []
   )
@@ -387,8 +391,13 @@ export function usePost(id) {
       setPost(null)
       return undefined
     }
-    return onSnapshot(doc(db, COL.socialPosts, id), (snap) =>
-      setPost(snap.exists() ? normalise({ id: snap.id, ...snap.data() }) : null)
+    return onSnapshot(
+      doc(db, COL.socialPosts, id),
+      (snap) => setPost(snap.exists() ? normalise({ id: snap.id, ...snap.data() }) : null),
+      // Een geweigerde of afgebroken leesbeurt hoort hetzelfde te lezen als een
+      // post die er niet is: leeg. Anders blijft de vorige post in het paneel
+      // staan onder de naam van deze.
+      () => setPost(null)
     )
   }, [id])
 

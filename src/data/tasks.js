@@ -263,8 +263,13 @@ export function useTask(id) {
       setTask(null)
       return undefined
     }
-    return onSnapshot(doc(db, COL.tasks, id), (snap) =>
-      setTask(snap.exists() ? { id: snap.id, ...snap.data() } : null)
+    return onSnapshot(
+      doc(db, COL.tasks, id),
+      (snap) => setTask(snap.exists() ? { id: snap.id, ...snap.data() } : null),
+      // Zonder deze tak stopt het abonnement stil en blijft de lade de vorige
+      // taak tonen. Leeg is het eerlijke antwoord: dan zie je dat er niets
+      // staat in plaats van iets dat er niet meer hoort.
+      () => setTask(null)
     )
   }, [id])
 

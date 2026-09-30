@@ -329,6 +329,11 @@ export default {
   'rooster.wie': { nl: 'Wie', en: 'Who' },
   'rooster.week': { nl: 'Week', en: 'Week' },
   'rooster.per_dag': { nl: 'Per dag', en: 'Per day' },
+  'rooster.leeg': { nl: 'Nog niemand om in te roosteren', en: 'Nobody to schedule yet' },
+  'rooster.leeg_uitleg': {
+    nl: 'Iedereen met een actief profiel staat hier, ook zonder dienst. Nodig collega’s uit bij Instellingen → Team.',
+    en: 'Everyone with an active profile appears here, shift or no shift. Invite colleagues under Settings → Team.',
+  },
   'rooster.dienst_toevoegen_voor': {
     nl: 'Dienst toevoegen voor {wie} op {dag} {nummer}',
     en: 'Add a shift for {wie} on {dag} {nummer}',

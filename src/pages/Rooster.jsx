@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { addDays, dayKey, formatDate, formatWeekday, startOfWeek } from '@lib/dates'
 import { geplandTegenoverGeboekt, roosterVan, urenTekst } from '@lib/rooster'
 import { Icon } from '@components/ds'
-import { Button, Field, Input, Modal, Select, Spinner } from '@ui/index'
+import { Button, EmptyState, Field, Input, Modal, Select, Spinner } from '@ui/index'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -232,6 +232,16 @@ export default function Rooster() {
               </tr>
             </tfoot>
           </table>
+
+          {/*
+            Zonder dit stond er bij een lege ploeg een kop met zeven dagen, een
+            voettekst met streepjes en niets ertussen. Dat leest als een scherm
+            dat het niet doet, niet als "er is nog niemand" — en dan gaat iemand
+            het rooster zoeken op een plek waar het niet staat.
+          */}
+          {rooster.rijen.length === 0 ? (
+            <EmptyState icon="users" title={t('rooster.leeg')} description={t('rooster.leeg_uitleg')} />
+          ) : null}
         </div>
       )}
 

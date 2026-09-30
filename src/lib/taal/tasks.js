@@ -109,6 +109,11 @@ export default {
   'tasks.werklast.legenda_taak': { nl: 'Taak met deadline', en: 'Task with a deadline' },
   'tasks.werklast.legenda_telaat': { nl: 'Te laat of urgent', en: 'Overdue or urgent' },
   'tasks.werklast.legenda_event': { nl: 'Event', en: 'Event' },
+  'tasks.werklast.leeg': { nl: 'Nog niemand om in te plannen', en: 'Nobody to plan yet' },
+  'tasks.werklast.leeg_uitleg': {
+    nl: 'Dit overzicht toont het team. Nodig collega’s uit bij Instellingen → Team, dan staan ze hier.',
+    en: 'This overview shows the team. Invite colleagues under Settings → Team and they will appear here.',
+  },
 
   // De dagen boven de werklast, kort genoeg voor een kolom van 56 pixels.
   'tasks.wd.zo': { nl: 'zo', en: 'Sun' },

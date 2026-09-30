@@ -29,6 +29,18 @@ describe('durationOf', () => {
     expect(durationOf(null)).toBe(0)
     expect(durationOf({})).toBe(0)
   })
+
+  /*
+    De schrijvers in src/data/time.js weigeren een boeking met
+    `durationSeconds <= 0`. Met NaN was die vergelijking onwaar en glipte er een
+    boeking langs met een lege maandsleutel — uren die in geen enkel overzicht
+    meer opduiken. Een leeg datumveld in het urenformulier levert precies dit op.
+  */
+  it('is zero on an unreadable date, so the guard in src/data/time.js still bites', () => {
+    expect(durationOf({ startedAt: new Date(''), endedAt: new Date('') })).toBe(0)
+    expect(durationOf({ startedAt: new Date('2026-09-15T09:00:00Z'), endedAt: new Date('') })).toBe(0)
+    expect(durationOf({ startedAt: 'niet een datum', endedAt: 'ook niet' })).toBe(0)
+  })
 })
 
 describe('periodKeys', () => {
@@ -54,6 +66,14 @@ describe('periodKeys', () => {
     // 1 January 2027 is a Friday, so its week belongs to 2026.
     expect(periodKeys(new Date(2027, 0, 1, 12)).week.startsWith('2026-W')).toBe(true)
   })
+
+  // "NaN-WNaN" was een bak waar geen enkel overzicht naar vraagt: werk dat
+  // geschreven werd en daarna nergens meer te zien was.
+  it('invents no keys for a date it cannot read', () => {
+    expect(periodKeys(new Date(''))).toEqual({ day: '', month: '', week: '' })
+    expect(periodKeys(undefined)).toEqual({ day: '', month: '', week: '' })
+    expect(periodKeys('rommel')).toEqual({ day: '', month: '', week: '' })
+  })
 })
 
 describe('formatDuration', () => {
@@ -67,11 +87,25 @@ describe('formatDuration', () => {
   it('switches to a clock while a timer runs', () => {
     expect(formatDuration(9045, { withSeconds: true })).toBe('02:30:45')
   })
+
+  // Gaf een leeg vakje, en dat leest in een urenlijst als "niets geboekt".
+  it('reads as zero when the number is unusable', () => {
+    expect(formatDuration(NaN)).toBe('0m')
+    expect(formatDuration('rommel')).toBe('0m')
+    expect(formatDuration(undefined)).toBe('0m')
+    expect(formatDuration(NaN, { withSeconds: true })).toBe('00:00:00')
+  })
 })
 
 describe('toDecimalHours', () => {
   it('rounds to two decimals for invoicing', () => {
     expect(toDecimalHours(9045)).toBe(2.51)
     expect(toDecimalHours(3600)).toBe(1)
+  })
+
+  // Dit getal gaat maal het uurtarief; NaN werd zo "€ NaN" op een rapport.
+  it('is zero when the number is unusable', () => {
+    expect(toDecimalHours(NaN)).toBe(0)
+    expect(toDecimalHours('rommel')).toBe(0)
   })
 })

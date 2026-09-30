@@ -165,8 +165,13 @@ export function useRunningTimer(uid) {
 
   useEffect(() => {
     if (!uid) return undefined
-    return onSnapshot(doc(db, COL.runningTimers, uid), (snap) =>
-      setTimer(snap.exists() ? normalise({ id: snap.id, ...snap.data() }) : null)
+    return onSnapshot(
+      doc(db, COL.runningTimers, uid),
+      (snap) => setTimer(snap.exists() ? normalise({ id: snap.id, ...snap.data() }) : null),
+      // Deze staat in de zijbalk op elk scherm. Bleef hij na een geweigerde of
+      // verbroken leesbeurt op de laatste stand staan, dan blijft de teller
+      // lopen voor een timer die misschien allang gestopt is.
+      () => setTimer(null)
     )
   }, [uid])
 
@@ -224,7 +229,9 @@ export function useTaskTimeEntries(taskId) {
         orderBy('startedAt', 'desc'),
         limit(50)
       ),
-      (snap) => setEntries(fromQuery(snap))
+      (snap) => setEntries(fromQuery(snap)),
+      // Anders blijven de boekingen van de vorige taak in de lade staan.
+      () => setEntries([])
     )
   }, [taskId])
 
