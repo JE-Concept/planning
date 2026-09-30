@@ -221,4 +221,31 @@ export default {
   },
   'fout.iets_mis': { nl: 'Er ging iets mis.', en: 'Something went wrong.' },
   'fout.dit_onderdeel': { nl: 'Dit onderdeel', en: 'This part' },
+
+  // ── Een schrijfactie die niet doorging ─────────────────────────────────
+  // Elke zin zegt eerst dát het niet bewaard is; dat is wat iemand moet weten.
+  'fout.niet_bewaard': {
+    nl: 'Niet bewaard. Probeer het opnieuw, en kijk na of het er daarna wel staat.',
+    en: 'Not saved. Try again, and check afterwards that it stuck.',
+  },
+  'fout.niet_bewaard_geen_toegang': {
+    nl: 'Niet bewaard: je hebt hier geen toegang toe. Wat je zag was alleen op dit scherm.',
+    en: 'Not saved: you do not have access to this. What you saw was only on this screen.',
+  },
+  'fout.niet_bewaard_weg': {
+    nl: 'Niet bewaard: dit bestaat niet meer. Iemand heeft het ondertussen verwijderd.',
+    en: 'Not saved: this no longer exists. Someone has deleted it in the meantime.',
+  },
+  'fout.niet_bewaard_veranderd': {
+    nl: 'Niet bewaard: er is ondertussen iets veranderd. Herlaad en probeer opnieuw.',
+    en: 'Not saved: something changed in the meantime. Reload and try again.',
+  },
+  'fout.niet_bewaard_te_druk': {
+    nl: 'Niet bewaard: het is even te druk. Probeer het zo opnieuw.',
+    en: 'Not saved: it is too busy right now. Try again in a moment.',
+  },
+  'fout.wacht_op_verbinding': {
+    nl: 'Nog niet verstuurd — dit gaat mee zodra er weer verbinding is.',
+    en: 'Not sent yet — this will go through once there is a connection again.',
+  },
 }

@@ -18,6 +18,7 @@ import { EventsProvider, useEvents } from '@data/events'
 import { useNavCounts } from '@data/counts'
 import { stopTimer, useRunningTimer } from '@data/time'
 import { luisterNaarMeldingen } from '@lib/push'
+import { isSchrijffout, leesSchrijffout } from '@lib/schrijffout'
 import AssistantPanel from './AssistantPanel'
 import GlobalSearch from './GlobalSearch'
 import OfflineBar from './OfflineBar'
@@ -59,6 +60,31 @@ function Shell({ children }) {
   // hem sluit (dat wordt onthouden), op een telefoon dicht — daar zou hij het
   // hele scherm afdekken.
   const chatOpen = !isStaff && !isSocial && (narrow ? open === true : open ?? true)
+
+  /*
+    Een schrijfactie die niet doorging, zichtbaar maken.
+
+    De velden in de panelen schrijven zonder `await` en zonder `catch` — bij een
+    los veld valt er ook weinig zinnigs te doen. Maar Firestore past een
+    schrijving eerst lokaal toe: het scherm toont de nieuwe waarde alsof ze
+    bewaard is, en rolt ze pas een moment later stilletjes terug wanneer de
+    server weigert. Voor een planningstool is dat de ergste fout die er is — een
+    taak die niet bewaard wordt zonder dat iemand het merkt.
+
+    Daarom hier, op één plek, in plaats van tientallen keren in de schermen. Wat
+    van de database of een functie komt wordt een toast; de rest laten we met
+    rust, want een programmeerfout hoort in de console en niet als melding bij
+    iemand die aan het werk is.
+  */
+  useEffect(() => {
+    const opAfwijzing = (e) => {
+      if (!isSchrijffout(e.reason)) return
+      e.preventDefault()
+      toast.error(leesSchrijffout(e.reason))
+    }
+    window.addEventListener('unhandledrejection', opAfwijzing)
+    return () => window.removeEventListener('unhandledrejection', opAfwijzing)
+  }, [toast])
 
   // Een melding terwijl de app open staat toont de browser niet zelf — dan
   // wordt het een toast.
