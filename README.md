@@ -413,6 +413,8 @@ npm run build
 
 npm run controleer       # alles hierboven, in één keer — draai dit voor een uitrol
 
+npm run test:rules       # firestore.rules tegen de emulator (heeft Java nodig)
+npm run offerte:voorbeeld # het offerteblad als los bestand, om te delen
 npm run emulators        # zet VITE_USE_EMULATORS=1 in .env.local
 ```
 
@@ -426,7 +428,9 @@ Twee lagen, met een duidelijke taakverdeling.
 
 Dat laatste staat er omdat het gebeurd is. Wie een tabblad open had staan terwijl er uitgerold werd, kreeg bij de volgende klik een **wit scherm**: de pagina vroeg een bestandsnaam op die na de uitrol niet meer bestond, React haalde de hele boom weg en er bleef niets over. Nu vangt een foutgrens dat op, ruimt de cache op en herlaadt één keer; lukt dat niet, dan staat er een uitleg met een knop in plaats van niets. De test speelt precies dat na door een bestand te laten verdwijnen.
 
-**De regels draaien mee in de demo.** De fout die in dit project bleef terugkomen is dat de client iets opvraagt wat `firestore.rules` weigert: dat komt niet terug als een leeg antwoord maar als een fout, en die strandt een heel scherm — of ze wordt opgevangen en je houdt een teller over die altijd nul zegt. De demo had geen regels, dus de browsertest zei groen over schermen die live half stukliepen. Sinds `demo/regels.js` weigert de demo wat de regels weigeren en houdt ze bij wát er geweigerd werd; `scripts/smoke.mjs` loopt elke rol (`?rol=owner|admin|member|guest|personeel|social`) langs elk scherm en eist dat die lijst leeg blijft. Dat de tabel in de demo hetzelfde zegt als `firestore.rules`, bewaakt `tests/rollen.test.js` — die leest het regelbestand en vergelijkt het regel voor regel.
+**`npm run test:rules`** draait `firestore.rules` tegen de emulator — het echte bestand, geen kopie. Dat kwam er later bij en om een vervelende reden: de regels stonden in geen enkele test, dus een fout erin kwam pas in productie aan het licht, op een tool waar klantgegevens en bedragen in staan. Wat er getest wordt zijn de gevallen waar het om gaat: komt personeel bij de bedragen, blijft de vorm van een bedrag kloppen, kan iemand andermans notitie wissen, kan het logboek aangevuld worden, zet iemand zijn eigen rol. Zonder emulator slaan die tests zichzelf over en staan ze als *skipped* — niet als geslaagd. Een test die stilletjes slaagt terwijl hij niet gedraaid heeft, leest als bewijs en is er geen.
+
+**De regels draaien ook mee in de demo.** De fout die in dit project bleef terugkomen is dat de client iets opvraagt wat `firestore.rules` weigert: dat komt niet terug als een leeg antwoord maar als een fout, en die strandt een heel scherm — of ze wordt opgevangen en je houdt een teller over die altijd nul zegt. De demo had geen regels, dus de browsertest zei groen over schermen die live half stukliepen. Sinds `demo/regels.js` weigert de demo wat de regels weigeren en houdt ze bij wát er geweigerd werd; `scripts/smoke.mjs` loopt elke rol (`?rol=owner|admin|member|guest|personeel|social`) langs elk scherm en eist dat die lijst leeg blijft. Dat de tabel in de demo hetzelfde zegt als `firestore.rules`, bewaakt `tests/rollen.test.js` — die leest het regelbestand en vergelijkt het regel voor regel.
 
 ### Deploy
 
@@ -442,14 +446,33 @@ Zonder `FIREBASE_SERVICE_ACCOUNT` blijft CI groen en wordt de deploy overgeslage
 
 Handmatig: `npm run deploy`.
 
+### Hoeveel er over de lijn gaat
+
+Wie de tool opent, haalt de schil op plus de pagina waar hij op staat: samen ongeveer **200 kB gecomprimeerd**, waarvan Firebase het grootste deel is. Elk scherm komt daarna apart binnen — Instellingen is het zwaarst met 23 kB en dat betaalt alleen wie het opent.
+
+**De klantenpagina's zijn een andere applicatie.** `/offerte/<sleutel>` en `/klant/<sleutel>` laden geen aanmelding, geen werkruimte en **geen Firebase**: ze praten met één functie en verder met niets. Dat scheelt ruim een halve megabyte op een pagina die één voorstel moet tonen, en het maakt ze bestand tegen een link die rondgaat — er is geen database-abonnement dat openblijft, alleen een HTTP-verzoek dat de CDN een minuut vasthoudt. De functie zelf staat op tachtig gelijktijdige verzoeken per instantie met een plafond van twintig: niet omdat we dat verwachten, maar omdat een publiek adres zonder plafond een factuur is die iemand anders kan bepalen.
+
+Wat er nog ligt: de vertalingen zitten volledig in de hoofdbundel (**43 kB gecomprimeerd**, alle achttien bestanden, beide talen). Alleen `instellingen.js` is daar al een kwart van, terwijl het enkel op het instellingenscherm nodig is. Dat opsplitsen is de volgende winst.
+
 ---
 
 ## Wat nog niet in deze versie zit
 
-Bewust buiten scope gehouden, in volgorde van wat het meest gevraagd zal worden:
+Bewust buiten scope gehouden:
 
 - **Automatisch publiceren** naar Instagram/Facebook. De kalender plant en keurt goed; posten gebeurt nog met de hand. Meta's Graph API kan dit, maar vraagt app-review en een gekoppelde bedrijfspagina.
-- **Terugkerende taken** en sjablonen voor een standaard-event.
-- **Notificaties** (e-mail of push) bij toewijzing of naderende deadline.
 - **Documenten/wiki**, zoals ClickUp Docs.
-- **Gastentoegang voor klanten** op één project.
+- **Antwoorden op een mail vanuit de tool.** De draad staat op het event, maar beantwoorden doe je in Gmail. Dat vraagt zorgvuldigheid met het afzenderadres en de threading, en tot nu weegt dat niet op tegen één keer wisselen van tabblad.
+- **Een tweede omgeving.** Elke uitrol gaat rechtstreeks naar productie. Zolang er veel verandert is dat een bewuste keuze; zodra het rustiger wordt, is een testproject een halve dag werk.
+
+### Wat op een sleutel wacht
+
+Alles hieronder is gebouwd en getest, maar doet pas iets zodra het geheim gezet is. Zonder die sleutel draait de rest gewoon door — dat is met opzet zo gebouwd.
+
+| Sleutel | Wat het aanzet |
+|---|---|
+| `SMTP_URL` | Uitgaande post: meldingen, de ochtendlijst, de offerte naar de klant |
+| `IMAP_URL` | Inkomende post van info@jeconcept.be ophalen |
+| `VITE_FIREBASE_VAPID_KEY` | Meldingen op de telefoon |
+| `VITE_GOOGLE_MAPS_API_KEY` | Adressen kiezen op de kaart bij een event |
+| `ANTHROPIC_API_KEY` | De assistent, de samenvatting van een teamoverleg |

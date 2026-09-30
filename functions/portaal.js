@@ -75,7 +75,36 @@ export function maakPortaal({ db, region }) {
     bereikbaar wordt ze een stap later in de workflow. Dezelfde uitleg als bij
     `agenda.js`, en om dezelfde reden: zonder dit strandt de hele uitrol.
   */
-  return onRequest({ region, cors: false, invoker: 'private' }, async (verzoek, antwoord) => {
+  return onRequest(
+    {
+      region,
+      cors: false,
+      invoker: 'private',
+      /*
+        ── Klaar voor een link die rondgaat ────────────────────────────────
+
+        Een offertelink gaat naar één klant, maar een klantenpagina kan
+        rondgaan in een familie of een bedrijf, en een mail met een link komt
+        soms in één keer bij dertig mensen terecht. Drie maatregelen:
+
+        `concurrency: 80` — één instantie handelt tachtig gelijktijdige
+        verzoeken af. Deze functie wacht vooral op Firestore en rekent bijna
+        niets; met één verzoek per instantie zou elke bezoeker een koude start
+        kunnen betalen.
+
+        `maxInstances: 20` — een bovengrens, niet omdat we die verwachten maar
+        omdat een publiek adres zonder plafond een factuur is die iemand
+        anders kan bepalen. Twintig instanties van tachtig is 1600 verzoeken
+        tegelijk; daar komt geen offerte ooit aan.
+
+        `memory: 256MiB` — het minimum dat ruim volstaat. Meer geheugen is hier
+        alleen meer geld per seconde.
+      */
+      concurrency: 80,
+      maxInstances: 20,
+      memory: '256MiB',
+    },
+    async (verzoek, antwoord) => {
     // Achter een hosting-rewrite draagt het pad nog het voorvoegsel; los
     // aangeroepen niet. Allebei moeten werken, anders is het lokaal testen
     // iets anders dan wat er live gebeurt.
@@ -84,7 +113,21 @@ export function maakPortaal({ db, region }) {
 
     const weiger = () => antwoord.status(404).json({ fout: 'niet_gevonden' })
 
-    antwoord.set('Cache-Control', 'no-store')
+    /*
+      Wat de klant opvraagt, mag de CDN van Hosting even vasthouden.
+
+      Een minuut is genoeg om een link die rondgaat op te vangen zonder dat de
+      functie er iets van merkt, en kort genoeg dat een goedkeuring of een
+      prijswijziging meteen zichtbaar is. `stale-while-revalidate` zorgt dat
+      niemand op het verversen wacht.
+
+      Een antwoord ván de klant niet: dat is een schrijfactie, en die hoort
+      nergens te blijven hangen.
+    */
+    antwoord.set(
+      'Cache-Control',
+      verzoek.method === 'GET' ? 'public, max-age=0, s-maxage=60, stale-while-revalidate=300' : 'no-store'
+    )
 
     try {
       if (delen[0] === 'offerte' && TOKEN.test(delen[1] ?? '')) {
@@ -104,8 +147,9 @@ export function maakPortaal({ db, region }) {
       return antwoord.status(500).json({ fout: 'server' })
     }
 
-    return weiger()
-  })
+      return weiger()
+    }
+  )
 }
 
 /** De offerte zelf, met het minimum eromheen dat ze leesbaar maakt. */

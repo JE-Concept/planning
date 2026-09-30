@@ -11,6 +11,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, normalise, ref } from '@lib/collections'
+import { klantAdres } from '@lib/klantadres'
 import { auth, db } from '@lib/firebase'
 
 /**
@@ -56,7 +57,7 @@ export async function klantLink(klant) {
     token = nieuwToken()
     await updateDoc(ref(COL.customers, klant.id), { portalToken: token })
   }
-  return `${import.meta.env.VITE_APP_URL ?? window.location.origin}/#/klant/${token}`
+  return klantAdres(`klant/${token}`)
 }
 
 /** Dezelfde vorm als de sleutel van een offerte en van de agendafeed. */

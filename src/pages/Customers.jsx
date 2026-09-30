@@ -17,6 +17,7 @@ import { Checkbox } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import Documents from '@components/common/Documents'
 import TaskDrawer from '@components/board/TaskDrawer'
+import { klantAdres } from '@lib/klantadres'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -215,8 +216,7 @@ function KlantLink({ klant, toast }) {
   )
 }
 
-const portaalAdres = (token) =>
-  `${import.meta.env.VITE_APP_URL ?? window.location.origin}/#/klant/${token}`
+const portaalAdres = (token) => klantAdres(`klant/${token}`)
 
 function KlantPaneel({ id, onClose, toast }) {
   const { t } = useTaal()

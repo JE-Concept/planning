@@ -1,5 +1,5 @@
 import { GELDIG_DAGEN, VOORSCHOT_DEEL, perRubriek, regelBedrag, totalenVan, voorschotVan } from '@lib/offerte'
-import { useTaal } from '@context/TaalProvider'
+import { useTaal } from '@context/taal-context'
 
 /**
  * De offerte zoals de klant ze ziet.

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { deleteDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 import { maakRegel, offerteVanEvent, totalenVan } from '@lib/offerte'
+import { klantAdres } from '@lib/klantadres'
 
 /**
  * De offertes: één document per offerte, met het event erbij.
@@ -135,5 +136,4 @@ export const wisOfferte = (id) => deleteDoc(ref(COL.offertes, id))
  * Volledig en niet relatief: dit gaat in een mail, in een bericht, of iemand
  * leest het voor aan de telefoon. Een pad zonder domein helpt daar niemand.
  */
-export const offerteLink = (offerte) =>
-  offerte?.token ? `${import.meta.env.VITE_APP_URL ?? window.location.origin}/#/offerte/${offerte.token}` : null
+export const offerteLink = (offerte) => (offerte?.token ? klantAdres(`offerte/${offerte.token}`) : null)

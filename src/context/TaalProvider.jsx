@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { STANDAARDTAAL, geldigeTaal, localeVan, vertaal, zetHuidigeTaal } from '@lib/i18n'
+import { TaalContext, useTaal } from './taal-context'
 import { zetLocale } from '@lib/dates'
 import { useAuth } from '@context/AuthProvider'
 import { zetTaal as bewaarTaal } from '@data/taal'
@@ -19,7 +20,6 @@ import { zetTaal as bewaarTaal } from '@data/taal'
  * in de andere — en dat ziet er kapot uit, ook al is het dat niet.
  */
 
-const TaalContext = createContext(null)
 const BEWAARD = 'je-plan:taal'
 
 function uitOpslag() {
@@ -75,20 +75,9 @@ export function TaalProvider({ children }) {
   return <TaalContext.Provider value={waarde}>{children}</TaalContext.Provider>
 }
 
-/**
- * `const { t } = useTaal()` en dan `t('nav.tasks')`.
- *
- * Buiten de provider valt hij terug op het Nederlands in plaats van te crashen:
- * dit wordt in tientallen componenten gebruikt, en een scherm dat omvalt omdat
- * het toevallig buiten de boom staat, is erger dan een scherm in de brontaal.
- */
-export function useTaal() {
-  return (
-    useContext(TaalContext) ?? {
-      taal: STANDAARDTAAL,
-      locale: localeVan(STANDAARDTAAL),
-      kies: async () => {},
-      t: (sleutel, waarden) => vertaal(STANDAARDTAAL, sleutel, waarden),
-    }
-  )
-}
+/*
+  `useTaal` staat in `taal-context.js` en wordt hier doorgegeven, zodat de
+  tientallen componenten die hem al importeren niets hoeven te veranderen.
+  Waarom die splitsing er is, staat daar.
+*/
+export { useTaal }
