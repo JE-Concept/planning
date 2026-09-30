@@ -21,7 +21,7 @@ import {
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { BlockedError, byEventDate, moveEvent, useEvents } from '@data/events'
+import { byEventDate, moveEvent, useEvents } from '@data/events'
 import { Spinner } from '@ui/index'
 
 const VIEWS = [
@@ -392,7 +392,7 @@ function BoardView({ events, tasksByEvent, profileById, statuses }) {
     try {
       await moveEvent(ev, key, statuses)
     } catch (err) {
-      toast.error(err instanceof BlockedError ? `${ev.name}: ${err.message}` : err.message)
+      toast.error(err.message)
     }
   }
 

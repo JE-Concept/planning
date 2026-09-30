@@ -66,7 +66,7 @@ export const PHASES = [
 
 /** Uitleg per stap in Instellingen → Pijplijn. */
 export const STEP_RULES = {
-  request: 'Vereist: klant, datum, gasten, offerte',
+  request: 'Herinnering: klant, datum, gasten, offerte',
   'ready to invoice': 'Start facturatie-opvolging',
   complete: 'Naar archief',
 }
@@ -102,8 +102,16 @@ export function labelOf(status, statuses = []) {
 }
 
 /**
- * De ene regel die het verschil maakt (briefing §9): een aanvraag wordt pas
- * een offerte als klant, datum, gasten en offertebedrag gekend zijn.
+ * Wat er nog niet ingevuld is voor de offertestap.
+ *
+ * Dit wás een slot: een aanvraag kon niet naar de offertestap zolang klant,
+ * datum, gasten en bedrag niet gekend waren. In de praktijk staat een event
+ * vaak op de offertestap juist omdát die dingen nog uitgezocht worden — de
+ * klant belt, je zet het dossier aan, en dan pas wordt er gerekend. Een tool
+ * die dan "nee" zegt, wordt omzeild en niet gevolgd.
+ *
+ * Het blijft wel staan als herinnering op de fiche: wat ontbreekt hoort zicht-
+ * baar te zijn, maar het werk niet tegen te houden.
  */
 export function missingForOffer(event) {
   const missing = []
@@ -112,11 +120,4 @@ export function missingForOffer(event) {
   if (!event.pax) missing.push('gasten')
   if (!event.quoteAmount) missing.push('offertebedrag')
   return missing
-}
-
-export function blockedTransition(event, targetName) {
-  if (event.statusName !== 'request') return null
-  if (indexOf(targetName) <= 0) return null
-  const missing = missingForOffer(event)
-  return missing.length ? missing : null
 }

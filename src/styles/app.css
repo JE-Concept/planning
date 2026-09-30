@@ -462,49 +462,91 @@
 .je-calchip:hover {
   border-color: var(--border-accent);
 }
-.je-fiche {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  background: var(--surface-1);
-  border: 1px solid var(--border-hairline);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.je-fiche > * {
-  padding: var(--space-4) var(--space-5);
-  border-right: 1px solid var(--border-hairline);
-  border-bottom: 1px solid var(--border-hairline);
-  margin: 0 -1px -1px 0;
-}
-.je-fiche button:hover {
-  background: var(--accent-quiet);
-}
 .je-link-quiet:hover {
   color: var(--text-accent) !important;
 }
 
-/* Een fichecel met een kaartlink kan geen knop meer zijn: een link mag niet in
-   een knop staan. De knop vult de cel, zodat klikken nog altijd bewerkt. */
-.je-fichecel {
+/* ── De fiche, bewerkbaar waar ze staat ────────────────────────────────── */
+
+/* Geen raster van knoppen meer maar een raster van velden. De cellen zijn
+   breder dan vroeger: er staat een invoerveld in en geen regel tekst. */
+.je-fiche {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+}
+.je-fiche__velden {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+.je-fiche__cel {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
-.je-fichecel:hover {
-  background: var(--accent-quiet);
+/* De locatie heeft een lijst met adressen onder zich en een cel breed is
+   daarvoor te smal om een straatnaam in te lezen. */
+.je-fiche__cel[data-breed] {
+  grid-column: span 2;
 }
-.je-fichecel > button {
-  text-align: left;
-  width: 100%;
+@media (max-width: 720px) {
+  .je-fiche__cel[data-breed] {
+    grid-column: span 1;
+  }
 }
-.je-fichecel__kaart {
+.je-fiche__getal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.je-fiche__getal .je-input {
+  min-width: 0;
+}
+.je-fiche__team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-hairline);
+}
+.je-fiche__mensen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+}
+.je-fiche__ontbreekt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--warning);
+}
+.je-fiche__kaart {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font: var(--type-caption);
   color: var(--text-2);
   text-decoration: none;
+}
+
+/* De omschrijving: het dossier in gewone zinnen, midden op de pagina. */
+.je-omschrijving {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+}
+.je-omschrijving .je-textarea {
+  resize: vertical;
 }
 
 /* ── Locatie kiezen ────────────────────────────────────────────────────── */
@@ -2019,8 +2061,52 @@ select.je-compact { padding-right: 24px; }
 
 .je-notities__knop {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   margin-top: var(--space-3);
+}
+
+/* ── Iemand vermelden ──────────────────────────────────────────────────── */
+
+/* Een vermelding die eruitziet als gewone tekst is geen vermelding maar een
+   woord; wat over jou gaat, mag nog een tikje meer opvallen. */
+.je-vermelding {
+  color: var(--text-accent);
+  font-weight: 600;
+}
+.je-vermelding[data-mij] {
+  background: var(--accent-quiet);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+/* De lijst staat bóven het schrijfvak: dat vak zit onderaan de kolom vast, en
+   eronder zou de lijst buiten beeld vallen. */
+.je-vermeldlijst {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-3);
+  max-height: 210px;
+  overflow-y: auto;
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  box-shadow: var(--shadow-2);
+}
+.je-vermeldoptie {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+}
+.je-vermeldoptie__naam {
+  font: var(--type-body-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* De eventpagina in twee kolommen: het werk links, het gesprek rechts. */

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { app } from '@lib/firebase'
 import { addDays, dayKey, huidigeLocaleVan, startOfDay } from '@lib/dates'
-import { PIPELINE, blockedTransition, labelOf } from '@lib/pipeline'
+import { PIPELINE, labelOf } from '@lib/pipeline'
 import { leesFunctieFout } from '@lib/functie-fout'
 import { huidigeTaalVan, tekst } from '@lib/i18n'
 import { useAuth } from '@context/AuthProvider'
@@ -199,10 +199,6 @@ export function AssistantProvider({ children }) {
           run: async ({ event, status }) => {
             const ev = findEvent(event)
             if (!ev) return 'Fout: event onbekend.'
-            if (blockedTransition(ev, status)) {
-              actions.push({ ok: false, text: `${ev.name}: eerst klant, datum, gasten en offerte invullen`, eventId: ev.id })
-              return 'Geweigerd: klant, datum, pax en offertebedrag zijn verplicht voor de offertestap.'
-            }
             await moveEvent(ev, status, L().eventStatuses)
             actions.push({ ok: true, text: `${ev.name} staat nu op ${labelOf(status, L().eventStatuses)}`, eventId: ev.id })
             return 'OK'

@@ -152,14 +152,21 @@ export function bepaalOntvangers({ soort, kandidaten, profielen, behalve = null 
 /**
  * Wie een reactie op een taak moet zien.
  *
- * De uitvoerders, want het gaat over hun werk, en iedereen die er eerder al op
- * reageerde — anders is een gesprek van drie berichten een gesprek waar de
- * eerste twee sprekers niets meer van horen. De schrijver zelf valt af.
+ * Wie vermeld is gaat voorop: die is persoonlijk aangesproken, en dat is
+ * sterker dan op de lijst staan. Daarna de uitvoerders, want het gaat over hun
+ * werk, en dan iedereen die er eerder al op reageerde — anders is een gesprek
+ * van drie berichten een gesprek waar de eerste twee sprekers niets meer van
+ * horen. De schrijver zelf valt af, ook als hij zichzelf vermeldt.
  *
- * De volgorde blijft die van de lijst: uitvoerders eerst, dan de reageerders
- * op volgorde van hun reactie. Dat maakt de uitkomst na te rekenen in een test.
+ * Een vermelding bereikt iemand die niet op het event staat. Dat is precies
+ * waarvoor je iemand vermeldt: "Elke, kun jij hier even naar kijken." Of ze
+ * het dossier mag openen, beslissen de rules — een melding over iets wat op
+ * slot zit is vervelend, maar stilte waar iemand op antwoord wacht is erger.
+ *
+ * De volgorde is vast: vermeld, uitvoerders, reageerders op volgorde van hun
+ * reactie. Dat maakt de uitkomst na te rekenen in een test.
  */
-export function wieBijReactie({ taak, eerdereReacties, auteur }) {
+export function wieBijReactie({ taak, eerdereReacties, auteur, vermeld }) {
   const uit = []
   const gezien = new Set(auteur ? [auteur] : [])
 
@@ -169,9 +176,25 @@ export function wieBijReactie({ taak, eerdereReacties, auteur }) {
     uit.push(uid)
   }
 
+  lijst(vermeld).forEach(bij)
   lijst(taak?.assignees).forEach(bij)
   lijst(eerdereReacties).forEach((reactie) => bij(reactie?.authorId ?? null))
   return uit
+}
+
+/**
+ * De tekst van een notitie zoals een mens hem leest.
+ *
+ * In de database staat een vermelding als `@[Elke Vandeput](u-elke)`; in een
+ * pushbericht of een e-mail hoort daar gewoon "@Elke Vandeput" te staan — daar
+ * is geen scherm dat markering kan tekenen.
+ *
+ * Dezelfde regel als op het scherm (`src/lib/vermelding.js`), en bewust een
+ * tweede keer opgeschreven: `functions/` wordt apart verpakt en uitgerold en
+ * kan niets uit `src/` importeren.
+ */
+export function leesbaar(tekst) {
+  return (tekst ?? '').replace(/@\[([^\]\n]{1,80})\]\(([A-Za-z0-9_-]{1,64})\)/g, (_, naam) => `@${naam}`)
 }
 
 // ╔══════════════════════════════════════════════════════════════════════════╗

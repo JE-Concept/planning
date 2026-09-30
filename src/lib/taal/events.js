@@ -78,7 +78,6 @@ export default {
   'events.maand.meer': { nl: '+{aantal} meer', en: '+{aantal} more' },
 
   // ── De fiche van een event ─────────────────────────────────────────────
-  'events.fiche.bewerken': { nl: 'Fiche bewerken', en: 'Edit details' },
   'events.fiche.klant': { nl: 'Klant', en: 'Customer' },
   'events.fiche.datum': { nl: 'Datum', en: 'Date' },
   'events.fiche.gasten': { nl: 'Gasten', en: 'Guests' },
@@ -96,6 +95,9 @@ export default {
   'events.fiche.pp': { nl: '{bedrag} p.p.', en: '{bedrag} pp' },
   'events.fiche.offerte': { nl: 'Offerte', en: 'Quote' },
   'events.fiche.voorschot': { nl: 'Voorschot 40%', en: 'Deposit 40%' },
+  'events.fiche.voorschot_van': { nl: 'voorschot {bedrag}', en: 'deposit {bedrag}' },
+  'events.fiche.titel': { nl: 'Fiche', en: 'Details' },
+  'events.fiche.geen_datum': { nl: 'nog geen datum', en: 'no date yet' },
   'events.fiche.team': { nl: 'Team', en: 'Team' },
 
   // ── Eén event ──────────────────────────────────────────────────────────
@@ -104,17 +106,17 @@ export default {
   'events.detail.alle_events': { nl: 'Alle events', en: 'All events' },
   'events.detail.naar_alle': { nl: 'Naar alle events', en: 'Go to all events' },
   'events.detail.naar_stap': { nl: 'Naar {stap}', en: 'To {stap}' },
-  'events.detail.blokkade': {
-    nl: 'Vul klant, datum, aantal gasten en offertebedrag in voor je een offerte start. Zo blijft elk event rapporteerbaar.',
-    en: 'Fill in customer, date, number of guests and quote amount before you start a quote. That is what keeps every event reportable.',
-  },
-  'events.detail.invullen': { nl: 'Invullen', en: 'Fill in' },
 
   // ── De tabbladen van een event ─────────────────────────────────────────
   'events.tab.taken': { nl: 'Taken · {aantal}', en: 'Tasks · {aantal}' },
   'events.tab.bestellijst': { nl: 'Bestellijst · {aantal}', en: 'Order list · {aantal}' },
   'events.tab.draaiboek': { nl: 'Draaiboek', en: 'Run sheet' },
-  'events.tab.dossier': { nl: 'Dossier', en: 'File' },
+  'events.tab.bijlagen': { nl: 'Bijlagen', en: 'Attachments' },
+  'events.omschrijving.titel': { nl: 'Omschrijving', en: 'Description' },
+  'events.omschrijving.plaatshouder': {
+    nl: 'Waar gaat dit event over? Opbouw, plan B, afspraken met de klant — alles wat niet in een veld past.',
+    en: 'What is this event about? Set-up, plan B, what was agreed with the customer — everything that does not fit a field.',
+  },
   'events.notities.titel': { nl: 'Notities', en: 'Notes' },
   'events.notities.aantal_een': { nl: '{aantal} bericht', en: '{aantal} message' },
   'events.notities.aantal_meer': { nl: '{aantal} berichten', en: '{aantal} messages' },
@@ -122,7 +124,6 @@ export default {
     nl: 'Nog niets gezegd over dit event. Wat je hier schrijft, komt bij de mensen die eraan werken.',
     en: 'Nothing said about this event yet. What you write here reaches the people working on it.',
   },
-  'events.tab.notities': { nl: 'Notities & bijlagen', en: 'Notes & attachments' },
   'events.tab.tijd': { nl: 'Tijd · {tijd}', en: 'Time · {tijd}' },
 
   // ── De taken van een event ─────────────────────────────────────────────
@@ -146,18 +147,13 @@ export default {
   'events.draaiboek.regel_weg': { nl: 'Regel verwijderen', en: 'Delete line' },
 
   // ── Notities en het dossier ────────────────────────────────────────────
-  'events.notities.dossier': { nl: 'Dossier', en: 'Brief' },
-  'events.notities.dossier_bewerken': { nl: 'Dossier bewerken', en: 'Edit brief' },
-  'events.notities.geen_dossier': { nl: 'Nog geen dossier.', en: 'No brief yet.' },
-  'events.notities.alle_details': {
-    nl: 'Alle details (social, klant, labels)',
-    en: 'All details (social, customer, labels)',
-  },
   'events.notities.toevoegen': { nl: 'Notitie toevoegen', en: 'Add a note' },
   'events.notities.plaatshouder': {
-    nl: 'Notitie toevoegen…\nTip: "- [ ] iets" wordt een vinkje.',
-    en: 'Add a note…\nTip: "- [ ] something" becomes a tick box.',
+    nl: 'Iets doorgeven… typ @ om iemand aan te spreken.',
+    en: 'Say something… type @ to reach someone.',
   },
+  'events.notities.vermelden': { nl: 'Iemand vermelden', en: 'Mention someone' },
+  'events.notities.vermeld_hint': { nl: '@ spreekt iemand aan', en: '@ reaches someone' },
   'events.notities.bewaren': { nl: 'Notitie bewaren', en: 'Save note' },
   'events.notities.notitie_weg': { nl: 'Notitie verwijderen', en: 'Delete note' },
   'events.notities.notitie_weg_vraag': { nl: 'Deze notitie verwijderen?', en: 'Delete this note?' },
@@ -217,8 +213,8 @@ export default {
   'events.velden.type': { nl: 'Type', en: 'Type' },
   'events.velden.type_hint': { nl: 'bv. Huwelijk', en: 'e.g. Wedding' },
   'events.velden.ontbreekt': {
-    nl: 'Dit event staat voorbij de aanvraag; {wat} ontbreekt nog.',
-    en: 'This event is past the request stage; {wat} is still missing.',
+    nl: 'Nog in te vullen voor de offerte: {wat}.',
+    en: 'Still to fill in before the quote: {wat}.',
   },
   // De vier dingen die een aanvraag een offerte maken. Ze komen als woord uit
   // @lib/pipeline; hier staat hoe ze in een zin passen.

@@ -4,7 +4,6 @@ import { COL, col, fromQuery, newRef } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
 import { bestellijstVoorEvent, prijsVan } from '@lib/formules'
-import { blockedTransition } from '@lib/pipeline'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask, setTaskStatus, statusFields, updateTask, useTasks } from './tasks'
@@ -112,17 +111,14 @@ export function byEventDate(a, b) {
 
 // ─── Schrijven ─────────────────────────────────────────────────────────────
 
-export class BlockedError extends Error {
-  constructor(missing) {
-    super(`Vul eerst ${missing.join(', ')} in voor je een offerte start.`)
-    this.missing = missing
-  }
-}
-
-/** Zet een event op een andere stap, met de offerteregel ervoor. */
+/**
+ * Zet een event op een andere stap.
+ *
+ * Zonder voorwaarden: wat er nog niet ingevuld is, staat op de fiche en houdt
+ * het werk niet tegen. Zie `missingForOffer` in `@lib/pipeline` voor waarom
+ * die regel geen slot meer is.
+ */
 export function moveEvent(event, statusName, statuses) {
-  const missing = blockedTransition(event, statusName)
-  if (missing) throw new BlockedError(missing)
   const status = statuses.find((s) => s.name === statusName)
   if (!status) throw new Error(`Status "${statusName}" bestaat niet in deze lijst.`)
   return setTaskStatus(event.id, status)

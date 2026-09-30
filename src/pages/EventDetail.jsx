@@ -1,8 +1,7 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { startOfDay } from '@lib/dates'
-import { kaartLink } from '@lib/kaart'
-import { PIPELINE, indexOf, labelOf, missingForOffer } from '@lib/pipeline'
+import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import {
   Badge,
@@ -19,17 +18,17 @@ import {
 import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
-import EventEditDialog from '@components/events/EventEditDialog'
+import EventFiche from '@components/events/EventFiche'
+import EventOmschrijving from '@components/events/EventOmschrijving'
 import TaskRow from '@components/events/TaskRow'
-import { StatusBadge, dayLabel, euro, hours, longDate, shortDate } from '@components/events/parts'
+import { StatusBadge, dayLabel, hours } from '@components/events/parts'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { addComment, deleteComment, useComments } from '@data/comments'
 import EventNotities from '@components/events/EventNotities'
 import { deleteDocument, leesbareGrootte, uploadDocument, useDocuments } from '@data/documents'
-import { BlockedError, addEventTask, isDone, moveEvent, updateEvent, useEventTime, useEvents } from '@data/events'
+import { addEventTask, isDone, moveEvent, updateEvent, useEventTime, useEvents } from '@data/events'
 import { durationOf } from '@lib/time-math'
 import { useRunningTimer } from '@data/time'
 import { Spinner } from '@ui/index'
@@ -44,7 +43,6 @@ export default function EventDetail() {
   const { t } = useTaal()
   const { eventStatuses, profileById } = useWorkspace()
   const { eventById, tasksByEvent, loading } = useEvents()
-  const [editing, setEditing] = useState(false)
   const [drawer, setDrawer] = useState(null)
 
   const ev = eventById[id]
@@ -83,14 +81,12 @@ export default function EventDetail() {
 
   const si = indexOf(ev.statusName)
   const next = si >= 0 && si < PIPELINE.length - 1 ? PIPELINE[si + 1].key : null
-  const blocked = ev.statusName === 'request' && missingForOffer(ev).length > 0
   const days = ev.eventDate ? Math.round((startOfDay(ev.eventDate) - startOfDay()) / 864e5) : null
 
   const move = async (key) => {
     try {
       await moveEvent(ev, key, eventStatuses)
     } catch (err) {
-      if (err instanceof BlockedError) setEditing(true)
       toast.error(err.message)
     }
   }
@@ -101,32 +97,6 @@ export default function EventDetail() {
   const billS = time.filter((e) => e.billable !== false).reduce((a, e) => a + (e.durationSeconds ?? 0), 0)
   const openCount = tasks.filter((taak) => !isDone(taak)).length
   const bestelRegels = ev.bestellijst ?? []
-
-  // "pax" blijft staan: zo staat het op de offerte en zo zegt het team het,
-  // in allebei de talen.
-  const fiche = [
-    ['events.fiche.klant', ev.customerName],
-    ['events.fiche.datum', longDate(ev.eventDate)],
-    [
-      'events.fiche.gasten',
-      ev.pax ? `${ev.pax} pax${ev.kids ? ` + ${t('events.fiche.kinderen', { aantal: ev.kids })}` : ''}` : null,
-    ],
-    ['events.fiche.locatie', ev.location, kaartLink(ev)],
-    [
-      'events.fiche.formule',
-      ev.formule
-        ? [
-            ev.formule,
-            ev.formulePrijsPerPersoon ? t('events.fiche.pp', { bedrag: euro(ev.formulePrijsPerPersoon) }) : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')
-        : null,
-    ],
-    ['events.fiche.offerte', euro(ev.quoteAmount)],
-    ['events.fiche.voorschot', ev.quoteAmount ? euro(Math.round(ev.quoteAmount * 0.4)) : null],
-    ['events.fiche.team', ev.team.map((p) => (profileById[p]?.fullName ?? '').split(' ')[0]).filter(Boolean).join(', ') || null],
-  ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
@@ -143,15 +113,8 @@ export default function EventDetail() {
         actions={
           <>
             <StatusBadge statusName={ev.statusName} statuses={eventStatuses} />
-            <IconButton
-              icon="pencil"
-              label={t('events.fiche.bewerken')}
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(true)}
-            />
             {next ? (
-              <Button size="sm" iconRight="arrow-right" disabled={blocked} onClick={() => move(next)}>
+              <Button size="sm" iconRight="arrow-right" onClick={() => move(next)}>
                 {t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}
               </Button>
             ) : null}
@@ -199,51 +162,9 @@ export default function EventDetail() {
             ))}
           </div>
 
-          {blocked ? (
-            <div
-              className="je-panel"
-              style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start', padding: 'var(--space-4) var(--space-5)', borderColor: 'var(--border-subtle)', font: 'var(--type-body-sm)' }}
-            >
-              <span style={{ color: 'var(--warning)', display: 'flex', marginTop: 2 }}>
-                <Icon name="info" size={16} />
-              </span>
-              <span style={{ flex: 1 }}>{t('events.detail.blokkade')}</span>
-              <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-                {t('events.detail.invullen')}
-              </Button>
-            </div>
-          ) : null}
+          <EventFiche ev={ev} />
 
-          <div className="je-fiche">
-            {fiche.map(([sleutel, value, link]) => {
-              const cel = (
-                <button
-                  type="button"
-                  className="je-plainbtn"
-                  onClick={() => setEditing(true)}
-                  title={t('events.fiche.bewerken')}
-                >
-                  <div className="je-caps">{t(sleutel)}</div>
-                  <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, color: value ? 'var(--text-1)' : 'var(--text-3)', marginTop: 2 }}>
-                    {value ?? '—'}
-                  </div>
-                </button>
-              )
-              // Een link mag niet in een knop staan, dus krijgt de cel met de
-              // kaart een omhulsel in plaats van er een tweede knop bij te
-              // verzinnen die stiekem een link is.
-              if (!link) return <Fragment key={sleutel}>{cel}</Fragment>
-              return (
-                <div key={sleutel} className="je-fichecel">
-                  {cel}
-                  <a className="je-fichecel__kaart je-link-quiet" href={link} target="_blank" rel="noreferrer">
-                    <Icon name="map-pin" size={14} />
-                    {t('events.locatie.openen')}
-                  </a>
-                </div>
-              )
-            })}
-          </div>
+          <EventOmschrijving ev={ev} />
 
           <Tabs
             items={[
@@ -255,7 +176,7 @@ export default function EventDetail() {
                 ? [{ value: 'bestellijst', label: t('events.tab.bestellijst', { aantal: bestelRegels.length }) }]
                 : []),
               { value: 'draaiboek', label: t('events.tab.draaiboek') },
-              { value: 'dossier', label: t('events.tab.dossier') },
+              { value: 'bijlagen', label: t('events.tab.bijlagen') },
               // Op een smal scherm past de notitiekolom niet naast het werk;
               // daar blijft ze een tabblad. Zonder dat zou communicatie op een
               // telefoon onvindbaar worden, en dat is net het toestel waarop
@@ -273,8 +194,8 @@ export default function EventDetail() {
             <Bestellijst ev={ev} />
           ) : tab === 'draaiboek' ? (
             <RunsheetTab ev={ev} />
-          ) : tab === 'dossier' ? (
-            <NotesTab ev={ev} onOpenDetails={() => setDrawer(ev.id)} />
+          ) : tab === 'bijlagen' ? (
+            <Attachments taskId={ev.id} />
           ) : tab === 'notities' ? (
             <EventNotities ev={ev} compact />
           ) : (
@@ -286,7 +207,6 @@ export default function EventDetail() {
         </div>
       </div>
 
-      <EventEditDialog open={editing} onClose={() => setEditing(false)} ev={ev} />
       {drawer ? (
         <TaskDrawer
           taskId={drawer}
@@ -451,147 +371,7 @@ function RunsheetTab({ ev }) {
   )
 }
 
-// ─── Notities & bijlagen ───────────────────────────────────────────────────
-
-/** "- [ ] iets" en "- [x] iets" worden vinkjes, de rest is tekst. */
-function parseNote(body = '') {
-  const lines = body.split('\n')
-  const text = []
-  const checks = []
-  lines.forEach((line, i) => {
-    const m = line.match(/^\s*[-*]\s+\[( |x|X)\]\s+(.*)$/)
-    if (m) checks.push({ i, done: m[1] !== ' ', t: m[2] })
-    else text.push(line)
-  })
-  return { text: text.join('\n').trim(), checks }
-}
-
-function NotesTab({ ev, onOpenDetails }) {
-  const { t } = useTaal()
-  const { profile, profileById } = { ...useAuth(), ...useWorkspace() }
-  const comments = useComments({ taskId: ev.id })
-  const toast = useToast()
-  const [draft, setDraft] = useState('')
-  const [dossier, setDossier] = useState(ev.description ?? '')
-  const [dossierOpen, setDossierOpen] = useState(false)
-
-  useEffect(() => setDossier(ev.description ?? ''), [ev.description])
-
-  const add = async () => {
-    try {
-      await addComment({ taskId: ev.id, body: draft, author: profile })
-      setDraft('')
-    } catch (err) {
-      toast.error(err.message)
-    }
-  }
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-6)', alignItems: 'start' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        {/* Het vrije dossier uit ClickUp: draaiboeken zijn nu eenmaal proza. */}
-        <div className="je-panel" style={{ padding: 'var(--space-5) var(--space-6)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-            <span className="je-eyebrow">{t('events.notities.dossier')}</span>
-            <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-              <IconButton
-                icon="pencil"
-                label={t('events.notities.dossier_bewerken')}
-                size="sm"
-                onClick={() => setDossierOpen((o) => !o)}
-              />
-              <IconButton
-                icon="settings"
-                label={t('events.notities.alle_details')}
-                size="sm"
-                onClick={onOpenDetails}
-              />
-            </span>
-          </div>
-          {dossierOpen ? (
-            <>
-              <Textarea boxed rows={10} value={dossier} onChange={(e) => setDossier(e.target.value)} />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                <Button variant="ghost" size="sm" onClick={() => setDossierOpen(false)}>
-                  {t('alg.annuleren')}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    updateEvent(ev.id, { description: dossier })
-                      .then(() => setDossierOpen(false))
-                      .catch((err) => toast.error(err.message))
-                  }
-                >
-                  {t('alg.opslaan')}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div style={{ font: 'var(--type-body-sm)', whiteSpace: 'pre-wrap', color: ev.description ? 'var(--text-1)' : 'var(--text-3)' }}>
-              {ev.description ? ev.description.replace(/\*\*/g, '') : t('events.notities.geen_dossier')}
-            </div>
-          )}
-        </div>
-
-        {comments.map((c) => {
-          const note = parseNote(c.body)
-          const author = profileById[c.authorId]
-          return (
-            <div key={c.id} className="je-panel" style={{ padding: 'var(--space-5) var(--space-6)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                <Hex size={24}>{initialsOf(author ?? { fullName: c.authorName })}</Hex>
-                <span style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{author?.fullName ?? c.authorName}</span>
-                <span className="je-muted-caption" style={{ marginLeft: 'auto' }}>
-                  {c.createdAt ? shortDate(c.createdAt) : ''}
-                </span>
-                {c.authorId === profile?.id ? (
-                  <IconButton
-                    icon="trash-2"
-                    label={t('events.notities.notitie_weg')}
-                    size="sm"
-                    onClick={() => {
-                      if (window.confirm(t('events.notities.notitie_weg_vraag')))
-                        deleteComment(c).catch((err) => toast.error(err.message))
-                    }}
-                  />
-                ) : null}
-              </div>
-              {note.text ? <div style={{ font: 'var(--type-body-sm)', whiteSpace: 'pre-wrap', marginBottom: note.checks.length ? 'var(--space-3)' : 0 }}>{note.text}</div> : null}
-              {note.checks.length ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                  {note.checks.map((ch) => (
-                    <Checkbox key={ch.i} defaultChecked={ch.done} label={ch.t} />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          )
-        })}
-
-        <div className="je-panel" style={{ padding: 'var(--space-4) var(--space-5)' }}>
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder={t('events.notities.plaatshouder')}
-            rows={draft ? 4 : 1}
-            style={{ border: 0, padding: 0 }}
-            aria-label={t('events.notities.toevoegen')}
-          />
-          {draft.trim() ? (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-              <Button size="sm" onClick={add}>
-                {t('events.notities.bewaren')}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <Attachments taskId={ev.id} />
-    </div>
-  )
-}
+// ─── Bijlagen ──────────────────────────────────────────────────────────────
 
 function Attachments({ taskId }) {
   const { documents } = useDocuments({ taskId })

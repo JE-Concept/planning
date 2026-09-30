@@ -104,6 +104,11 @@ async function tabblad(pad = '/', { breedte = 1280, hoogte = 900 } = {}) {
 
 const inhoud = async (page) => (await page.locator('body').innerText()).trim()
 
+// De fiche van een event bestaat uit invoervelden; die dragen hun waarde niet
+// in de tekst van de pagina. Wat erin staat, lees je dus uit het veld zelf.
+const veld = (page, naam) => page.locator('.je-fiche').getByLabel(naam).first()
+const veldwaarde = (page, naam) => veld(page, naam).inputValue()
+
 // De app zet koppen in kapitalen via CSS, en innerText geeft terug wat er
 // staat — dus vergelijken zonder op hoofdletters te letten.
 const bevat = (tekst, naald) => tekst.toLowerCase().includes(naald.toLowerCase())
@@ -313,13 +318,9 @@ await test('de klantfiche toont de historiek en wat er nog te factureren valt', 
 
 await test('een klant kiezen op een event zet hem in de historiek van die klant', async () => {
   const page = await tabblad('/events/t-ruben')
-  await page.getByRole('button', { name: 'Fiche bewerken' }).first().click()
-  await page.waitForTimeout(600)
 
-  const dialoog = page.getByRole('dialog')
-  await dialoog.getByLabel('Klant van dit event').selectOption({ label: 'Stad Borgloon' })
-  await page.waitForTimeout(300)
-  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  // Geen potlood en geen venster meer: de fiche is het formulier.
+  await page.getByLabel('Klant van dit event').selectOption({ label: 'Stad Borgloon' })
   await page.waitForTimeout(1000)
   zouden(bevat(await inhoud(page), 'Stad Borgloon'), 'de klant staat niet op de fiche van het event')
 
@@ -338,21 +339,16 @@ await test('een klant die nog niet bestaat maak je aan vanaf het event', async (
   // De reden dat de klantenlijst leeg bleef: wie eerst naar Klanten moest,
   // typte in de praktijk gewoon een naam in het vrije veld.
   const page = await tabblad('/events/t-jolien')
-  await page.getByRole('button', { name: 'Fiche bewerken' }).first().click()
-  await page.waitForTimeout(600)
 
-  const dialoog = page.getByRole('dialog')
-  await dialoog.getByLabel('Klant van dit event').selectOption('__nieuw')
+  await page.getByLabel('Klant van dit event').selectOption('__nieuw')
   await page.waitForTimeout(400)
-  await dialoog.getByLabel('Naam van de klant').fill('Jolien en Bernd')
-  await dialoog.getByLabel('Btw-nummer').fill('0400378485')
-  await dialoog.getByRole('button', { name: 'Klant aanmaken' }).click()
-  await page.waitForTimeout(900)
-
-  const gekozen = await dialoog.getByLabel('Klant van dit event').evaluate((el) => el.selectedOptions[0].text)
-  zouden(gekozen === 'Jolien en Bernd', `de nieuwe klant staat niet gekozen: ${gekozen}`)
-  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  await page.getByLabel('Naam van de klant').fill('Jolien en Bernd')
+  await page.getByLabel('Btw-nummer').fill('0400378485')
+  await page.getByRole('button', { name: 'Klant aanmaken' }).click()
   await page.waitForTimeout(1000)
+
+  const gekozen = await page.getByLabel('Klant van dit event').evaluate((el) => el.selectedOptions[0].text)
+  zouden(gekozen === 'Jolien en Bernd', `de nieuwe klant staat niet gekozen: ${gekozen}`)
 
   await page.goto(`${adres}/#/klanten`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(900)
@@ -1214,11 +1210,20 @@ await test('de tool schakelt over naar het Engels en onthoudt dat', async () => 
 
 // ─── Het design: events, pijplijn, templates ────────────────────────────────
 
-await test('een aanvraag zonder klant, gasten en offerte gaat niet naar de offertestap', async () => {
+await test('een aanvraag zonder alles ingevuld mag naar de offertestap, met een herinnering', async () => {
+  // Dit wás een slot. Een event staat vaak op de offertestap juist omdát die
+  // dingen nog uitgezocht worden; een tool die dan "nee" zegt, wordt omzeild.
   const page = await tabblad('/events/t-ruben')
   const knop = page.getByRole('button', { name: /Naar offerte maken/i })
-  zouden(await knop.isDisabled(), 'de knop naar de offertestap is niet geblokkeerd')
-  zouden((await inhoud(page)).includes('Vul klant, datum, aantal gasten en offertebedrag in'), 'geen uitleg bij de blokkering')
+  zouden(!(await knop.isDisabled()), 'de knop naar de offertestap is nog altijd geblokkeerd')
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Nog in te vullen'), `geen herinnering van wat ontbreekt: ${tekst.slice(0, 200)}`)
+
+  await knop.click()
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Offerte verstuurd'), 'het event verzette niet naar de offertestap')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
 
@@ -1251,10 +1256,11 @@ await test('een event uit een formule krijgt prijs, taken en een berekende beste
 
   const fiche = await inhoud(page)
   zouden(fiche.includes('Winterfeest Blum'), 'het event opende niet')
-  zouden(fiche.includes('37 pax'), `het aantal personen staat niet op de fiche: ${fiche.slice(0, 120)}`)
-  zouden(bevat(fiche, 'Winter BBQ'), 'de formule staat niet op de fiche')
+  zouden((await veldwaarde(page, 'Gasten')) === '37', `het aantal personen klopt niet: ${await veldwaarde(page, 'Gasten')}`)
+  zouden((await veldwaarde(page, 'Formule')) === 'Winter BBQ', 'de formule staat niet op de fiche')
   // 29,90 + 19,00 drank = 48,90 per persoon × 37 = 1.809,30 excl. btw.
-  zouden(fiche.includes('1.809,3'), `het offertebedrag klopt niet: ${fiche.match(/€ [\d.,]+/g)?.join(' ')}`)
+  const bedrag = await veldwaarde(page, 'Offerte')
+  zouden(Math.abs(Number(bedrag) - 1809.3) < 0.01, `het offertebedrag klopt niet: ${bedrag}`)
   zouden(bevat(fiche, 'Offerte opmaken en versturen'), 'de standaardtaken van het template staan er niet')
 
   await page.getByRole('tab', { name: /Bestellijst/ }).click()
@@ -1273,7 +1279,9 @@ await test('een event uit een formule krijgt prijs, taken en een berekende beste
 await test('een taak afvinken telt mee in de voortgang', async () => {
   const page = await tabblad('/events/t-trouw')
   const voor = (await inhoud(page)).match(/Taken · (\d+)/i)?.[1]
-  await page.locator('.je-check').first().click()
+  // Niet zomaar het eerste vinkje van de pagina: de fiche heeft er zelf een
+  // rij, één per teamlid. De takenlijst staat in een paneel.
+  await page.locator('.je-panel .je-check').first().click()
   await page.waitForTimeout(600)
   const na = (await inhoud(page)).match(/Taken · (\d+)/i)?.[1]
   zouden(Number(na) === Number(voor) - 1, `open taken ${voor} → ${na}`)
@@ -1535,8 +1543,8 @@ await test('het logboek toont wie wat veranderde, en filtert', async () => {
 await test('de locatie staat op de fiche, met een link naar de kaart', async () => {
   const page = await tabblad('/events/t-trouw')
 
-  const fiche = await inhoud(page)
-  zouden(bevat(fiche, 'Hoeve Vanhove'), `de locatie staat niet op de fiche: ${fiche.slice(0, 200)}`)
+  const plek = await veldwaarde(page, 'Locatie')
+  zouden(bevat(plek, 'Hoeve Vanhove'), `de locatie staat niet op de fiche: ${plek}`)
 
   // De link opent de gekozen plek en niet de eerste de beste zaal met die naam.
   const kaart = page.getByRole('link', { name: /Op de kaart|On the map/i }).first()
@@ -1545,14 +1553,65 @@ await test('de locatie staat op de fiche, met een link naar de kaart', async () 
   zouden(href?.includes('query_place_id='), `de link kent de plek niet: ${href}`)
 
   // En zonder Google-sleutel blijft het veld doen wat het altijd deed: typen.
-  await page.getByRole('button', { name: 'Fiche bewerken' }).first().click()
-  await page.waitForTimeout(600)
-  const dialoog = page.getByRole('dialog')
-  await dialoog.getByLabel('Locatie').fill('Schuur achteraan, Kortessem')
-  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  await veld(page, 'Locatie').fill('Schuur achteraan, Kortessem')
+  await veld(page, 'Locatie').blur()
   await page.waitForTimeout(900)
-  zouden(bevat(await inhoud(page), 'Schuur achteraan'), 'de getypte locatie werd niet bewaard')
+  zouden(
+    bevat(await veldwaarde(page, 'Locatie'), 'Schuur achteraan'),
+    'de getypte locatie werd niet bewaard'
+  )
 
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een veld op de fiche pas je aan waar het staat', async () => {
+  // Geen potlood, geen venster, geen bewaarknop: verder klikken is bewaren.
+  const page = await tabblad('/events/t-trouw')
+
+  await veld(page, 'Gasten').fill('145')
+  await veld(page, 'Gasten').blur()
+  await page.waitForTimeout(900)
+
+  // En het staat er nog na het verlaten van de pagina — anders was het alleen
+  // in het scherm veranderd.
+  await page.goto(`${adres}/#/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(700)
+  await page.goto(`${adres}/#/events/t-trouw`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  zouden((await veldwaarde(page, 'Gasten')) === '145', `het aantal gasten werd niet bewaard: ${await veldwaarde(page, 'Gasten')}`)
+
+  // De omschrijving staat midden op de pagina en niet meer achter een tabblad.
+  const omschrijving = page.getByLabel('Omschrijving')
+  zouden(await omschrijving.isVisible(), 'de omschrijving staat niet op de pagina')
+  zouden(bevat(await omschrijving.inputValue(), 'Fiche evenement'), 'het dossier staat niet in de omschrijving')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('met @ spreek je iemand aan in een notitie', async () => {
+  const page = await tabblad('/events/t-trouw')
+  const kolom = page.getByLabel('Notities')
+  const schrijf = kolom.getByRole('textbox')
+
+  await schrijf.fill('Kun jij dit bekijken @elke')
+  await page.waitForTimeout(400)
+  const lijst = kolom.getByRole('listbox')
+  zouden(await lijst.isVisible(), 'er wordt niemand voorgesteld bij @')
+  await lijst.getByRole('option').first().click()
+  await page.waitForTimeout(300)
+
+  // In het veld staat de markering; op het scherm hoort alleen de naam.
+  const getypt = await schrijf.inputValue()
+  zouden(getypt.includes('@[Elke'), `de vermelding staat niet in de tekst: ${getypt}`)
+
+  await kolom.getByRole('button', { name: /Bewaren|Save/i }).click()
+  await page.waitForTimeout(900)
+
+  const draad = await kolom.innerText()
+  zouden(draad.includes('@Elke Motmans'), `de naam staat niet in de notitie: ${draad.slice(-200)}`)
+  zouden(!draad.includes('u-elke'), 'de markering lekt naar het scherm')
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })

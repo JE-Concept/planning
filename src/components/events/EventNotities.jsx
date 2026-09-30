@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDateTime } from '@lib/dates'
+import { kandidaten, zetVermelding, zoekopdrachtVan } from '@lib/vermelding'
 import { Button, Hex, IconButton, Textarea, initialsOf } from '@components/ds'
+import Notitietekst from '@components/common/Notitietekst'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -20,27 +22,68 @@ import { addComment, deleteComment, useComments } from '@data/comments'
  * schrijfvak eronder. De kolom scrolt naar de laatste notitie zodra er een
  * bijkomt, want dat is degene waar het over gaat.
  *
- * Wie er een melding van krijgt, staat in `functions/notify.js`: de uitvoerders
- * van het event en iedereen die er eerder op reageerde — behalve de schrijver
- * zelf. Dat is wat een notitie tot een bericht maakt in plaats van een briefje
- * dat toevallig gevonden wordt.
+ * ── Iemand aanspreken ────────────────────────────────────────────────────
+ * Met `@` kies je een collega. Zonder dat is een notitie een mededeling aan de
+ * lucht: ze gaat naar de uitvoerders en naar wie eerder meepraatte, maar er is
+ * geen manier om te zeggen "Elke, dit is voor jou". Wie vermeld wordt krijgt
+ * de melding ook als hij niet op het event staat — dat is precies waarvoor je
+ * iemand vermeldt.
+ *
+ * De rest van het rekenwerk over wie er iets hoort te horen, staat in
+ * `functions/notify.js`. De schrijver zelf krijgt nooit een bericht.
  */
 export default function EventNotities({ ev, compact = false }) {
   const { t } = useTaal()
   const { profile } = useAuth()
-  const { profileById } = useWorkspace()
+  const { profileById, profiles } = useWorkspace()
   const toast = useToast()
   const notities = useComments({ taskId: ev.id })
 
   const [tekst, setTekst] = useState('')
   const [bezig, setBezig] = useState(false)
+  const [vraag, setVraag] = useState(null)
+  const [actief, setActief] = useState(0)
   const onderkant = useRef(null)
+  const veld = useRef(null)
+
+  // Wie er te vermelden valt: het team. Personeel en de socialrol lezen dit
+  // event niet (zie `firestore.rules`), dus hen aanspreken zou een melding zijn
+  // over iets wat ze niet kunnen openen.
+  const team = useMemo(
+    () => profiles.filter((p) => p.active !== false && p.role !== 'staff' && p.role !== 'social'),
+    [profiles]
+  )
+  const voorstellen = useMemo(
+    () => (vraag == null ? [] : kandidaten(team, vraag)),
+    [team, vraag]
+  )
 
   // Naar de laatste notitie zodra er een bijkomt. Bij het openen van het event
   // ook: wat je wil zien is wat er als laatste gezegd is.
   useEffect(() => {
     onderkant.current?.scrollIntoView({ block: 'nearest' })
   }, [notities.length])
+
+  /** Na elke aanslag opnieuw bepalen of er een naam getypt wordt. */
+  const volg = (waarde, cursor) => {
+    const plek = zoekopdrachtVan(waarde, cursor)
+    setVraag(plek ? plek.vraag : null)
+    setActief(0)
+  }
+
+  const kies = (persoon) => {
+    const veldje = veld.current
+    const cursor = veldje?.selectionStart ?? tekst.length
+    const uit = zetVermelding(tekst, cursor, persoon)
+    setTekst(uit.tekst)
+    setVraag(null)
+    // De cursor moet achter de naam komen te staan, en dat kan pas nadat React
+    // de nieuwe waarde in het veld gezet heeft.
+    requestAnimationFrame(() => {
+      veldje?.focus()
+      veldje?.setSelectionRange(uit.cursor, uit.cursor)
+    })
+  }
 
   const plaats = async () => {
     const schoon = tekst.trim()
@@ -49,10 +92,45 @@ export default function EventNotities({ ev, compact = false }) {
     try {
       await addComment({ taskId: ev.id, body: schoon, author: profile })
       setTekst('')
+      setVraag(null)
     } catch (err) {
       toast.error(err.message)
     } finally {
       setBezig(false)
+    }
+  }
+
+  const opToets = (e) => {
+    if (voorstellen.length) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setActief((i) => (i + 1) % voorstellen.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setActief((i) => (i <= 0 ? voorstellen.length : i) - 1)
+        return
+      }
+      // Enter kiest de naam zolang de lijst openstaat; pas daarna is Enter weer
+      // een nieuwe regel. Anders zou kiezen met het toetsenbord niet kunnen.
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        kies(voorstellen[actief])
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setVraag(null)
+        return
+      }
+    }
+    // Verzenden met Ctrl/Cmd+Enter: wie hier de hele dag in werkt, typt sneller
+    // dan hij naar een knop grijpt. Enter alleen blijft een nieuwe regel — een
+    // notitie is vaker drie regels dan één.
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      plaats()
     }
   }
 
@@ -96,7 +174,7 @@ export default function EventNotities({ ev, compact = false }) {
                       />
                     ) : null}
                   </div>
-                  <div className="je-notitie__tekst">{n.body}</div>
+                  <Notitietekst className="je-notitie__tekst" tekst={n.body} mij={profile?.id} />
                 </div>
               </article>
             )
@@ -106,23 +184,47 @@ export default function EventNotities({ ev, compact = false }) {
       </div>
 
       <div className="je-notities__schrijf">
+        {voorstellen.length ? (
+          <div className="je-vermeldlijst" role="listbox" aria-label={t('events.notities.vermelden')}>
+            {voorstellen.map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                role="option"
+                aria-selected={i === actief}
+                className="je-plainbtn je-vermeldoptie"
+                style={{ background: i === actief ? 'var(--accent-quiet)' : 'transparent' }}
+                onMouseEnter={() => setActief(i)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  kies(p)
+                }}
+              >
+                <Hex size={20}>{initialsOf(p)}</Hex>
+                <span className="je-vermeldoptie__naam">{p.fullName || p.email}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         <Textarea
+          ref={veld}
           value={tekst}
-          onChange={(e) => setTekst(e.target.value)}
+          onChange={(e) => {
+            setTekst(e.target.value)
+            volg(e.target.value, e.target.selectionStart)
+          }}
+          // Ook bij klikken en pijltjes verschuift de cursor; zonder dit blijft
+          // de lijst openstaan terwijl er allang ergens anders getypt wordt.
+          onSelect={(e) => volg(e.target.value, e.target.selectionStart)}
+          onBlur={() => setTimeout(() => setVraag(null), 140)}
           placeholder={t('events.notities.plaatshouder')}
           rows={tekst ? 4 : 2}
           aria-label={t('events.notities.toevoegen')}
-          // Verzenden met Ctrl/Cmd+Enter: wie hier de hele dag in werkt, typt
-          // sneller dan hij naar een knop grijpt. Enter alleen blijft een
-          // nieuwe regel — een notitie is vaker drie regels dan één.
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault()
-              plaats()
-            }
-          }}
+          onKeyDown={opToets}
         />
         <div className="je-notities__knop">
+          <span className="je-muted-caption">{t('events.notities.vermeld_hint')}</span>
           <Button size="sm" onClick={plaats} loading={bezig} disabled={!tekst.trim()}>
             {t('events.notities.bewaren')}
           </Button>

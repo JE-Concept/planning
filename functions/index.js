@@ -11,6 +11,7 @@ import {
   isTeLaat,
   perPersoon,
   kort,
+  leesbaar,
   nieuweReviewer,
   nieuweToegewezenen,
   vervaltMorgen,
@@ -509,6 +510,9 @@ export const notifyComment = onDocumentCreated(
       // De nieuwe reactie staat er zelf ook al in; die telt niet als "eerdere".
       eerdereReacties: eerdere.docs.filter((d) => d.id !== event.params.commentId).map((d) => d.data()),
       auteur: reactie.authorId ?? null,
+      // Wie met @ aangesproken is, hoort het te weten — ook als hij niet op
+      // het event staat. Dat is precies waarvoor je iemand vermeldt.
+      vermeld: reactie.mentions ?? [],
     })
     if (kandidaten.length === 0) return
 
@@ -518,11 +522,12 @@ export const notifyComment = onDocumentCreated(
       profielen,
       push: (taal) => ({
         title: zeg(taal, 'push.reactie', { wie: reactie.authorName || zeg(taal, 'push.iemand') }),
-        body: kort(reactie.body),
+        body: kort(leesbaar(reactie.body)),
         url: '/tasks',
         tag: `taak-${reactie.taskId}`,
       }),
-      mail: (taal) => mailVoorReactie({ taak, reactie, link: `${APP}/#/tasks`, taal }),
+      mail: (taal) =>
+        mailVoorReactie({ taak, reactie: { ...reactie, body: leesbaar(reactie.body) }, link: `${APP}/#/tasks`, taal }),
     })
 
     if (uitkomst.push || uitkomst.email) {

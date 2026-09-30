@@ -4,6 +4,7 @@ import {
   bepaalOntvangers,
   dagSleutel,
   isTeLaat,
+  leesbaar,
   perPersoon,
   teLaat,
   vervaltMorgen,
@@ -153,6 +154,50 @@ describe('wie een reactie moet zien', () => {
 
   it('valt niet om op een taak zonder uitvoerders of reacties', () => {
     expect(wieBijReactie({ taak: null, eerdereReacties: null, auteur: null })).toEqual([])
+  })
+
+  // Iemand met @ aanspreken is sterker dan op de lijst staan; daarom voorop.
+  it('zet wie vermeld is vooraan', () => {
+    const uit = wieBijReactie({
+      taak,
+      eerdereReacties: [{ authorId: 'u-charish' }],
+      auteur: 'u-jasper',
+      vermeld: ['u-charish'],
+    })
+    expect(uit).toEqual(['u-charish', 'u-elke'])
+  })
+
+  // Precies waarvoor je iemand vermeldt: "kun jij hier even naar kijken."
+  it('bereikt iemand die niet op het event staat', () => {
+    const uit = wieBijReactie({ taak, eerdereReacties: [], auteur: 'u-jasper', vermeld: ['u-anneleen'] })
+    expect(uit).toContain('u-anneleen')
+  })
+
+  it('stuurt niemand een bericht omdat hij zichzelf vermeldde', () => {
+    const uit = wieBijReactie({
+      taak: { assignees: [] },
+      eerdereReacties: [],
+      auteur: 'u-elke',
+      vermeld: ['u-elke'],
+    })
+    expect(uit).toEqual([])
+  })
+})
+
+describe('een notitie voor een pushbericht', () => {
+  // In een pushbericht is er geen scherm dat markering kan tekenen.
+  it('laat van een vermelding alleen de naam staan', () => {
+    expect(leesbaar('@[Elke Vandeput](u-elke) kun jij dit bekijken?')).toBe(
+      '@Elke Vandeput kun jij dit bekijken?'
+    )
+  })
+
+  it('laat gewone tekst met rust', () => {
+    expect(leesbaar('mail even naar elke@example.be')).toBe('mail even naar elke@example.be')
+  })
+
+  it('valt niet om op niets', () => {
+    expect(leesbaar(null)).toBe('')
   })
 })
 

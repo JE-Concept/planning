@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 import { db } from '@lib/firebase'
+import { vermeldingenIn } from '@lib/vermelding'
 
 export function useComments({ taskId, postId }) {
   const [comments, setComments] = useState([])
@@ -47,6 +48,10 @@ export async function addComment({ taskId, postId, body, author }) {
     authorId: author?.id ?? null,
     authorName: author?.fullName || author?.email || 'Onbekend',
     body: trimmed,
+    // Wie er vermeld is, staat ook los van de tekst op de reactie: de trigger
+    // die de melding stuurt hoeft dan geen tekst te ontleden, en een reactie
+    // die ooit anders geschreven wordt bereikt dezelfde mensen.
+    mentions: vermeldingenIn(trimmed),
     createdAt: serverTimestamp(),
   })
 
