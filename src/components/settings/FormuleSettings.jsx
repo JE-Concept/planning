@@ -58,6 +58,10 @@ export default function FormuleSettings() {
   const huidig = alleFormules.find((f) => f.id === sel) ?? alleFormules[0]
   const [draft, setDraft] = useState(huidig)
   const [proef, setProef] = useState('50')
+  // Eén slot voor "nieuw" en "dupliceren": ze maken hetzelfde soort document
+  // aan, en twee formules die "Winter BBQ (kopie)" heten is opruimwerk voor
+  // iemand anders.
+  const [bezigMaken, setBezigMaken] = useState(false)
   const vuil = useRef(false)
 
   useEffect(() => {
@@ -122,21 +126,29 @@ export default function FormuleSettings() {
   }
 
   const maakNieuw = async () => {
+    if (bezigMaken) return
+    setBezigMaken(true)
     try {
       await zorgVoorOpslag()
       kies(await createFormule(nieuweFormule(alleFormules.length)))
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setBezigMaken(false)
     }
   }
 
   const dupliceer = async () => {
+    if (bezigMaken) return
+    setBezigMaken(true)
     try {
       await zorgVoorOpslag()
       const { id: _id, ...rest } = draft
       kies(await createFormule({ ...rest, name: `${draft.name} (kopie)`, position: alleFormules.length }))
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setBezigMaken(false)
     }
   }
 
@@ -200,7 +212,7 @@ export default function FormuleSettings() {
           )
         })}
         <div style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '1px solid var(--border-hairline)' }}>
-          <Button variant="secondary" size="sm" iconLeft="plus" block onClick={maakNieuw}>
+          <Button variant="secondary" size="sm" iconLeft="plus" block onClick={maakNieuw} loading={bezigMaken}>
             {t('inst.formule.nieuwe')}
           </Button>
         </div>
@@ -227,7 +239,7 @@ export default function FormuleSettings() {
               </Field>
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <IconButton icon="copy" label={t('inst.tpl.dupliceren')} variant="outline" onClick={dupliceer} />
+              <IconButton icon="copy" label={t('inst.tpl.dupliceren')} variant="outline" onClick={dupliceer} disabled={bezigMaken} />
               <IconButton icon="trash-2" label={t('alg.verwijderen')} variant="outline" onClick={verwijder} />
             </div>
           </div>

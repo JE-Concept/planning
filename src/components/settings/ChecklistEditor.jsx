@@ -83,6 +83,9 @@ export default function ChecklistEditor({ isAdmin }) {
   const toast = useToast()
   const [open, setOpen] = useState(null)
   const [nieuweNaam, setNieuweNaam] = useState('')
+  // Op slot terwijl het loopt: twee klikken op "Maken" gaven twee lijsten, en
+  // die staan dan allebei in de zaal op een tablet.
+  const [maken, setMaken] = useState(false)
 
   const actief = useMemo(() => checklists.find((c) => c.id === open) ?? checklists[0], [checklists, open])
 
@@ -99,6 +102,8 @@ export default function ChecklistEditor({ isAdmin }) {
 
   const maakLijst = async (e) => {
     e.preventDefault()
+    if (maken) return
+    setMaken(true)
     try {
       const id = await createChecklist({ name: nieuweNaam })
       setNieuweNaam('')
@@ -106,6 +111,8 @@ export default function ChecklistEditor({ isAdmin }) {
       toast.success(t('inst.lijst.aangemaakt'))
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setMaken(false)
     }
   }
 
@@ -143,7 +150,7 @@ export default function ChecklistEditor({ isAdmin }) {
               required
             />
           </Field>
-          <Button type="submit" variant="primary" size="sm" disabled={!nieuweNaam.trim()}>
+          <Button type="submit" variant="primary" size="sm" loading={maken} disabled={maken || !nieuweNaam.trim()}>
             {t('alg.aanmaken')}
           </Button>
         </form>
