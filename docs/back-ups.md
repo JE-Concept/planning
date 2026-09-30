@@ -1,13 +1,27 @@
 # Back-ups van de gegevens
 
-De planning, de klanten, de offertes en de afvinklijsten staan in Firestore. Er is
-vandaag **geen back-up ingesteld**. Dat is het grootste openstaande risico van deze
-tool, en het is in een half uur op te lossen.
+De planning, de klanten, de offertes en de afvinklijsten staan in Firestore.
 
-Wat er nu al wél is: de gegevens staan bij Google, dus een kapotte schijf is niet het
-probleem. Het probleem is een fout van ons — een script dat te veel wist, een regel die
-te ruim staat, iemand die een lijst verwijdert. Daar helpt redundantie niet tegen, alleen
-een kopie van gisteren.
+**Dit staat nu aan**, via `.github/workflows/back-up.yml`: elke maandagochtend zet die
+point-in-time recovery aan als het uit stond en start een volledige export naar
+`gs://<project>-backups/<datum>`. Exports ouder dan een jaar ruimen zichzelf op.
+
+Dat het een workflow is en geen instructie in dit document, is met opzet: hier stond een
+half jaar wat er moest gebeuren, en het gebeurde niet. Een back-up die je met de hand
+moet starten, is een back-up die er niet is op de dag dat je hem nodig hebt.
+
+Handmatig starten kan via de Actions-tab → Back-up → Run workflow. Wie alleen wil
+controleren of PITR aanstaat zonder een export te betalen, vinkt *alleen_pitr* aan.
+
+Waar het nog op stuk kan: de service-account moet **Cloud Datastore Owner** hebben
+(voor PITR en export) en **Storage Admin** (om de emmer aan te maken). Ontbreekt dat, dan
+zegt de workflow dat in haar log en blijft ze verder groen — een rood kruisje elke maandag
+wordt na drie weken genegeerd, en dan merk je de echte fout ook niet meer.
+
+Waarom het nodig is: de gegevens staan bij Google, dus een kapotte schijf is het probleem
+niet. Het probleem is een fout van ons — een script dat te veel wist, een regel die te ruim
+staat, iemand die een lijst verwijdert. Daar helpt redundantie niet tegen, alleen een kopie
+van gisteren.
 
 ## Twee dingen, en ze doen iets anders
 

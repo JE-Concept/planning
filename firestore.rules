@@ -193,7 +193,29 @@ service cloud.firestore {
     // hoort. Hetzelfde recht als de events die eraan hangen — wie de planning
     // doet, doet de klant.
     match /customers/{id}   { allow read: if isTeam(); allow write: if isTeam(); }
-    match /comments/{id}    { allow read: if isTeam(); allow write: if isTeam(); }
+    /*
+      Notities: het gesprek tussen medewerkers.
+
+      Aanmaken mag iedereen van het team, maar wissen alleen wat je zelf
+      geschreven hebt. Het scherm toonde de prullenbak al enkel bij je eigen
+      notitie; de regels lieten intussen iedereen alles wissen, en dat verschil
+      is precies waar zoiets misgaat. Sinds notities het hoofdkanaal zijn
+      waarlangs het team met elkaar praat, is een bericht dat spoorloos kan
+      verdwijnen geen kleinigheid meer.
+
+      Wijzigen kan niemand — ook de schrijver niet. Wie zich bedenkt, wist en
+      schrijft opnieuw; dan staat er in de draad wat er gebeurd is. Een notitie
+      die achteraf anders kan gaan luiden, is geen gesprek maar een gok.
+
+      Beheerders mogen wél wissen: iemand vertrekt, of er staat iets dat er
+      niet hoort te staan, en dan moet er een weg zijn.
+    */
+    match /comments/{id} {
+      allow read:   if isTeam();
+      allow create: if isTeam() && request.resource.data.authorId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isTeam() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
     match /attachments/{id} { allow read: if isTeam(); allow write: if isTeam(); }
     match /goals/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
     match /goalUpdates/{id} { allow read: if isTeam(); allow write: if isTeam(); }

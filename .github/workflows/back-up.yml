@@ -1,0 +1,119 @@
+# De back-up van de gegevens.
+#
+# ── Waarom dit een workflow is en geen instructie in een document ─────────
+# In `docs/back-ups.md` stond al een half jaar wat er moest gebeuren, en het
+# gebeurde niet. Een back-up die je met de hand moet starten, is een back-up
+# die er niet is op de dag dat je hem nodig hebt. Hier draait ze vanzelf, elke
+# maandagochtend, met dezelfde sleutel die de uitrol toch al gebruikt.
+#
+# ── Twee dingen die iets anders doen ──────────────────────────────────────
+# **PITR** laat de database terugzetten naar elk moment van de afgelopen zeven
+# dagen, tot op de minuut. Dat is wat je wil bij "iemand heeft om kwart over
+# drie iets gedaan wat niet kon". Het is één schakelaar; deze workflow zet hem
+# aan als hij uit staat, elke keer opnieuw — het kost niets en zo kan hij niet
+# stilletjes uit blijven staan.
+#
+# **De export** is een volledige kopie in Cloud Storage, met de datum in de
+# naam. Dat is wat je wil bij "we zijn er drie weken geleden naast beginnen
+# gaan" — verder terug dan PITR reikt, en te herstellen naar een ander project
+# zodat je eerst kan kijken voor je iets overschrijft.
+#
+# ── Waarom maandagochtend ─────────────────────────────────────────────────
+# Een export leest de hele database. Dat kost leestijd en dus geld, en het is
+# het rustigst voor het weekend van de zaak voorbij is. Handmatig starten kan
+# altijd via "Run workflow".
+
+name: Back-up
+
+on:
+  schedule:
+    # Maandag 04:17 UTC. Geen rond uur: daar staat de halve wereld ingepland.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      alleen_pitr:
+        description: 'Enkel PITR controleren, geen export draaien'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: PITR en weekexport
+    runs-on: ubuntu-latest
+    # Zonder sleutel kan er niets, en dan hoort de workflow groen te blijven in
+    # plaats van elke maandag een rood kruisje te sturen dat niemand meer leest.
+    env:
+      HAS_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && 'true' || 'false' }}
+
+    steps:
+      - name: Geen sleutel, geen back-up
+        if: env.HAS_CREDENTIALS != 'true'
+        run: |
+          echo "::warning::FIREBASE_SERVICE_ACCOUNT ontbreekt; er is geen back-up gemaakt."
+
+      - name: Aanmelden
+        if: env.HAS_CREDENTIALS == 'true'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+        run: |
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+
+      # Zeven dagen terug tot op de minuut. Staat hij al aan, dan zegt gcloud
+      # dat en gaat de workflow gewoon door.
+      - name: Point-in-time recovery aanzetten
+        if: env.HAS_CREDENTIALS == 'true'
+        env:
+          FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          set -o pipefail
+          huidig=$(gcloud firestore databases describe --database='(default)' \
+            --project "$FIREBASE_PROJECT" --format='value(pointInTimeRecoveryEnablement)' 2>/dev/null || echo '')
+          echo "PITR staat nu op: ${huidig:-onbekend}"
+          if [ "$huidig" = "POINT_IN_TIME_RECOVERY_ENABLED" ]; then
+            echo "Al aan; niets te doen."
+          else
+            gcloud firestore databases update --database='(default)' \
+              --enable-pitr --project "$FIREBASE_PROJECT" --quiet \
+              || echo "::error::PITR kon niet aangezet worden. Kijk of de service-account de rol Cloud Datastore Owner heeft."
+          fi
+
+      # De emmer met een levensduur erop: exports ouder dan een jaar ruimen
+      # zichzelf op. Zonder die regel groeit de back-up tot iemand hem opmerkt
+      # op de factuur, en dan wordt hij uitgezet in plaats van opgeruimd.
+      - name: Emmer klaarzetten
+        if: env.HAS_CREDENTIALS == 'true' && inputs.alleen_pitr != true
+        env:
+          FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          emmer="gs://${FIREBASE_PROJECT}-backups"
+          if ! gcloud storage buckets describe "$emmer" --project "$FIREBASE_PROJECT" >/dev/null 2>&1; then
+            gcloud storage buckets create "$emmer" \
+              --project "$FIREBASE_PROJECT" --location=europe-west1 --uniform-bucket-level-access
+          fi
+          cat > /tmp/levensduur.json <<'JSON'
+          {
+            "rule": [
+              { "action": { "type": "Delete" }, "condition": { "age": 365 } }
+            ]
+          }
+          JSON
+          gcloud storage buckets update "$emmer" --lifecycle-file=/tmp/levensduur.json --project "$FIREBASE_PROJECT"
+
+      - name: Exporteren
+        if: env.HAS_CREDENTIALS == 'true' && inputs.alleen_pitr != true
+        env:
+          FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          set -o pipefail
+          pad="gs://${FIREBASE_PROJECT}-backups/$(date -u +%Y-%m-%d)"
+          echo "Exporteren naar $pad"
+          # De export draait aan de kant van Google en duurt langer dan deze
+          # stap; --async betekent dat we niet blijven wachten. Of hij geslaagd
+          # is, zie je in de Firestore-console onder Import/Export.
+          gcloud firestore export "$pad" --database='(default)' \
+            --project "$FIREBASE_PROJECT" --async
+          echo "De export is gestart. Terugzetten: zie docs/back-ups.md."

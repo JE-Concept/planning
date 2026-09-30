@@ -342,9 +342,11 @@ De favicon blijft de drie balken alleen: op 16 pixels valt een schreefletter uit
 
 ## Back-ups
 
-Er is er **geen**, en dat is het grootste openstaande risico van deze tool. De gegevens
-staan bij Google, dus een kapotte schijf is het probleem niet — een fout van ons is dat
-wel, en daar helpt redundantie niet tegen.
+**Die draaien**, elke maandagochtend, via `.github/workflows/back-up.yml`: point-in-time
+recovery (zeven dagen terug tot op de minuut) en een volledige export naar Cloud Storage
+die zichzelf na een jaar opruimt. De gegevens staan bij Google, dus een kapotte schijf is
+het probleem niet — een fout van ons is dat wel, en daar helpt redundantie niet tegen.
+Zie `docs/back-ups.md` voor het terugzetten.
 
 Wat er moet gebeuren en hoe, staat in [`docs/back-ups.md`](docs/back-ups.md): eerst
 point-in-time recovery (één commando, zeven dagen terug tot op de minuut), daarna een

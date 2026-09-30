@@ -153,7 +153,10 @@ export default function EventNotities({ ev, compact = false }) {
         ) : (
           notities.map((n) => {
             const auteur = profileById[n.authorId]
-            const vanMij = n.authorId === profile?.id
+            // Beheerders mogen ook wissen: iemand vertrekt, of er staat iets
+            // dat er niet hoort te staan, en dan moet er een weg zijn. De
+            // rules staan precies hetzelfde toe.
+            const magWeg = n.authorId === profile?.id || profile?.role === 'owner' || profile?.role === 'admin'
             return (
               <article key={n.id} className="je-notitie">
                 <Hex size={22}>{initialsOf(auteur ?? { fullName: n.authorName })}</Hex>
@@ -161,7 +164,7 @@ export default function EventNotities({ ev, compact = false }) {
                   <div className="je-notitie__kop">
                     <span className="je-notitie__wie">{auteur?.fullName ?? n.authorName}</span>
                     <span className="je-muted-caption">{n.createdAt ? formatDateTime(n.createdAt) : ''}</span>
-                    {vanMij ? (
+                    {magWeg ? (
                       <IconButton
                         icon="trash-2"
                         label={t('events.notities.notitie_weg')}
