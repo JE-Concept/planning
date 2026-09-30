@@ -241,6 +241,16 @@ function KeyResultRow({ kr, onCheckIn }) {
   const progress = keyResultProgress(kr)
   const derived = kr.kind === 'tasks'
 
+  /*
+    Een leeg veld is geen nul.
+
+    `checkIn` doet `Number(value)`, en `Number('')` is 0. Wie het veld leegmaakte
+    en toch op Opslaan drukte, zette zijn key result daarmee stilletjes op nul —
+    én schreef die nul als ijkpunt in het verloop. Er was niets dat dat
+    tegenhield en niets dat het meldde. Nu kan de knop niet.
+  */
+  const bruikbaar = String(value).trim() !== '' && Number.isFinite(Number(value))
+
   return (
     <li className="rounded-md bg-ink-50 px-2.5 py-2">
       <div className="flex items-baseline justify-between gap-2 text-xs">
@@ -257,6 +267,7 @@ function KeyResultRow({ kr, onCheckIn }) {
         <form
           onSubmit={(e) => {
             e.preventDefault()
+            if (!bruikbaar) return
             onCheckIn(kr.id, value, note)
             setNote('')
             setOpen(false)
@@ -278,7 +289,7 @@ function KeyResultRow({ kr, onCheckIn }) {
             className="h-8 flex-1 text-xs"
             aria-label={t('goals.notitie')}
           />
-          <Button type="submit" variant="primary" size="sm">
+          <Button type="submit" variant="primary" size="sm" disabled={!bruikbaar}>
             {t('bord.opslaan')}
           </Button>
         </form>

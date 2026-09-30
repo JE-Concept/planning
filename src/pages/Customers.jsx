@@ -60,18 +60,30 @@ export default function Customers() {
     })
   }, [customers, zoek])
 
+  /*
+    De knop gaat op slot zolang het aanmaken loopt.
+
+    Dat stond er al (`disabled={nieuw}`) maar `nieuw` werd nooit op waar gezet,
+    dus deed het slot niets: twee keer klikken gaf twee fiches "Nieuwe klant",
+    en die tweede vindt pas iemand terug als hij een klant opzoekt en er twee
+    ziet staan. Het schrijven gaat over het netwerk, dus die tweede klik is op
+    een trage verbinding eerder regel dan uitzondering.
+  */
   const maak = async () => {
+    if (nieuw) return
+    setNieuw(true)
     try {
       // De naam die in de database terechtkomt blijft Nederlands: hij is
       // vanaf dat moment een gegeven, en een fiche die voor de ene collega
       // "Nieuwe klant" heet en voor de andere "New customer" is dezelfde
       // fiche niet.
       const id = await createCustomer({ name: 'Nieuwe klant', address: leegAdres() })
-      setNieuw(false)
       setOpen(id)
       toast.success(t('klant.aangemaakt'))
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setNieuw(false)
     }
   }
 
