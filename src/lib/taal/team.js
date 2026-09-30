@@ -102,12 +102,12 @@ export default {
   'overleg.agenda': { nl: 'Agenda', en: 'Agenda' },
   'overleg.verslagen': { nl: 'Verslagen', en: 'Reports' },
   'overleg.agenda_samenvatting_een': {
-    nl: '{aantal} punt · {minuten} min gepland',
-    en: '{aantal} item · {minuten} min planned',
+    nl: '{aantal} punt · {duur} gepland',
+    en: '{aantal} item · {duur} planned',
   },
   'overleg.agenda_samenvatting_meer': {
-    nl: '{aantal} punten · {minuten} min gepland',
-    en: '{aantal} items · {minuten} min planned',
+    nl: '{aantal} punten · {duur} gepland',
+    en: '{aantal} items · {duur} planned',
   },
   'overleg.verslag_aantal_een': { nl: '{aantal} verslag', en: '{aantal} report' },
   'overleg.verslag_aantal_meer': { nl: '{aantal} verslagen', en: '{aantal} reports' },
@@ -154,10 +154,7 @@ export default {
     en: 'Anyone can put an item here for the next meeting.',
   },
   'overleg.volgende': { nl: 'Volgende overleg', en: 'Next meeting' },
-  'overleg.past_niet': {
-    nl: '{minuten} min — past niet in een uur',
-    en: '{minuten} min — will not fit in an hour',
-  },
+  'overleg.geplande_duur': { nl: '{duur} gepland', en: '{duur} planned' },
   'overleg.geen_eigenaar': { nl: 'Geen eigenaar', en: 'No owner' },
   'overleg.besproken': { nl: 'Besproken', en: 'Discussed' },
   'overleg.punt_verwijderen': { nl: 'Dit punt verwijderen?', en: 'Delete this item?' },

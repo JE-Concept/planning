@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { cn } from '@lib/cn'
 import { dayKey, formatDate } from '@lib/dates'
 import { leesFunctieFout } from '@lib/functie-fout'
 import { beginstatus, kiesTakenlijst, standaardDeadline } from '@lib/agenda-taak'
+import { urenTekst } from '@lib/rooster'
 import { groepeerActies, zoekVerslagen } from '@lib/verslag-zoek'
 import {
   Avatar,
@@ -72,7 +72,7 @@ export default function Meetings() {
         title={t('nav.teamoverleg')}
         subtitle={
           tab === 'agenda'
-            ? t('overleg.agenda_samenvatting', { aantal: agenda.length, minuten: totalMinutes(agenda) })
+            ? t('overleg.agenda_samenvatting', { aantal: agenda.length, duur: urenTekst(totalMinutes(agenda)) })
             : zoek.trim()
               ? t('overleg.gevonden', { aantal: meetings.length, gevonden: gevonden.length })
               : t('overleg.verslag_aantal', { aantal: meetings.length })
@@ -192,9 +192,12 @@ export default function Meetings() {
 /**
  * De agenda: wat er op het volgende overleg moet.
  *
- * Elk punt heeft een eigenaar en een verwachte tijd. Die tijd staat er niet om
- * streng te zijn maar om zichtbaar te maken wanneer de agenda niet meer in een
- * uur past — dat gesprek is makkelijker vooraf dan halverwege.
+ * Elk punt heeft een eigenaar en een verwachte tijd. Die tijd staat er om te
+ * zien hoe lang het overleg gaat duren, niet om het af te kappen: een overleg
+ * duurt zolang de punten duren. Er stond hier eerder een waarschuwing zodra de
+ * agenda niet meer "in een uur paste" — dat uur bestond alleen in deze code, en
+ * een tool die oranje kleurt bij een agenda die gewoon vol is, leert je haar
+ * negeren.
  */
 function Agenda({ items }) {
   const { uid, isAdmin } = useAuth()
@@ -279,8 +282,10 @@ function Agenda({ items }) {
           <>
             <div className="flex items-center justify-between px-1">
               <h2 className="label mb-0">{t('overleg.volgende')}</h2>
-              <span className={cn('text-xs font-semibold tabular-nums', totaal > 60 ? 'text-amber-700' : 'text-ink-500')}>
-                {totaal > 60 ? t('overleg.past_niet', { minuten: totaal }) : t('overleg.minuten', { minuten: totaal })}
+              {/* Boven het uur leest "1u30" beter dan "95 min" — zelfde
+                  notatie als de urenregistratie. */}
+              <span className="text-xs font-semibold tabular-nums text-ink-500">
+                {t('overleg.geplande_duur', { duur: urenTekst(totaal) })}
               </span>
             </div>
 

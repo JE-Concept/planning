@@ -31,13 +31,33 @@ service cloud.firestore {
       return get(profilePath()).data.role;
     }
 
-    // De planningsgebruikers: iedereen met een profiel behalve personeel.
+    // De planningsgebruikers: iedereen met een profiel behalve personeel en de
+    // socialrol.
     //
     // Personeel heeft een beperkte login — de openings- en sluitingslijst, en
-    // verder niets. Dat onderscheid staat hier en niet alleen in de interface,
-    // want een verborgen knop is geen beveiliging.
+    // verder niets. De socialrol werkt alleen in de socials. Dat onderscheid
+    // staat hier en niet alleen in de interface, want een verborgen knop is
+    // geen beveiliging.
     function isTeam() {
-      return isMember() && role() != 'staff';
+      return isMember() && role() != 'staff' && role() != 'social';
+    }
+
+    /*
+      De socialrol: een medewerker die de content doet en verder niets.
+
+      Wat ze niet mag lezen, is even belangrijk als wat ze wel mag: `tasks`
+      staat niet in haar lijst, en daar staan de offertebedragen, budgetten en
+      kostprijzen van elk event op. Firestore kan geen velden verbergen — wie
+      een document mag lezen, leest het hele document, ook wat het scherm niet
+      toont. Daarom leest ze de events uit `socialEvents`, een kale kopie
+      zonder één bedrag erin, die een trigger bijhoudt.
+
+      Datzelfde geldt voor `formules` (prijzen per persoon), `customers`
+      (facturatiegegevens) en `offertes`. Die staan hier niet, en dat is het
+      antwoord op "ze ziet geen prijzen".
+    */
+    function isSocial() {
+      return isMember() && role() == 'social';
     }
 
     function isAdmin() {
@@ -102,12 +122,57 @@ service cloud.firestore {
 
     // ── The workspace itself ──────────────────────────────────────────────
 
-    match /brands/{id}      { allow read: if isTeam(); allow write: if isTeam(); }
+    // De merken en de lijsten leest de socialrol mee: zonder merk is een post
+    // van niemand, en zonder lijst weet het bord niet welke kolommen het heeft.
+    // Er staat geen bedrag in.
+    match /brands/{id}      { allow read: if isTeam() || isSocial(); allow write: if isTeam(); }
     match /spaces/{id}      { allow read: if isTeam(); allow write: if isTeam(); }
     match /folders/{id}     { allow read: if isTeam(); allow write: if isTeam(); }
-    match /lists/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
-    match /tags/{id}        { allow read: if isTeam(); allow write: if isTeam(); }
-    match /tasks/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
+    match /lists/{id}       { allow read: if isTeam() || isSocial(); allow write: if isTeam(); }
+    match /tags/{id}        { allow read: if isTeam() || isSocial(); allow write: if isTeam(); }
+    /*
+      De events en de taken. `tasks` draagt de bedragen, dus de socialrol leest
+      er niets uit — ze werkt met de kale kopie in `socialEvents`.
+
+      Schrijven mag ze wel, maar alleen wat over content gaat: de stand op het
+      socialbord verzetten. Welke velden dat zijn staat hieronder als lijst, en
+      niet als "alles behalve": vergeet je bij een verbodslijst één veld, dan
+      kan ze het offertebedrag aanpassen zonder het ooit gezien te hebben.
+
+      Een eigen socialtaak aanmaken en bijwerken mag volledig — die hangt aan
+      een sociallijst en heeft met geld niets te maken.
+    */
+    function socialVelden() {
+      return changedKeys().hasOnly(['socialStage', 'socialWanted', 'updatedAt', 'updatedBy', 'position']);
+    }
+
+    // Een sociallijst herken je aan de lijst zelf (`kind: 'social'`), niet aan
+    // een veld op de taak: dat veld zou de schrijver zelf kunnen invullen.
+    function lijstIsSocial(listId) {
+      return exists(/databases/$(database)/documents/lists/$(listId))
+        && get(/databases/$(database)/documents/lists/$(listId)).data.kind == 'social';
+    }
+
+    match /tasks/{id} {
+      allow read:   if isTeam();
+      allow write:  if isTeam();
+      allow create: if isSocial() && lijstIsSocial(request.resource.data.listId);
+      allow update: if isSocial()
+        && (socialVelden() || (lijstIsSocial(resource.data.listId) && lijstIsSocial(request.resource.data.listId)));
+      allow delete: if isSocial() && lijstIsSocial(resource.data.listId);
+    }
+
+    /*
+      De kale kopie van de events, voor de socialrol.
+
+      Alleen de trigger schrijft erin, met beheerdersrechten — die gaan hier
+      sowieso niet langs. Dat niemand anders mag schrijven staat er toch, want
+      een kopie die een browser kan bewerken is geen kopie meer.
+    */
+    match /socialEvents/{id} {
+      allow read:  if isTeam() || isSocial();
+      allow write: if false;
+    }
 
     // Klanten: bedrijfsgegevens, contactpersonen en wat er aan documenten bij
     // hoort. Hetzelfde recht als de events die eraan hangen — wie de planning
@@ -117,7 +182,8 @@ service cloud.firestore {
     match /attachments/{id} { allow read: if isTeam(); allow write: if isTeam(); }
     match /goals/{id}       { allow read: if isTeam(); allow write: if isTeam(); }
     match /goalUpdates/{id} { allow read: if isTeam(); allow write: if isTeam(); }
-    match /socialPosts/{id} { allow read: if isTeam(); allow write: if isTeam(); }
+    // De posts zelf: het werk van de socialrol.
+    match /socialPosts/{id} { allow read: if isTeam() || isSocial(); allow write: if isTeam() || isSocial(); }
 
     // De lijsten zelf zijn beleid — die maakt een beheerder. De dagelijkse
     // runs zijn werk, en dat doet iedereen; niemand wist er een.
@@ -199,8 +265,8 @@ service cloud.firestore {
     // The review log is written by the reviewer and read by
     // everyone; nobody edits a decision after the fact, they add the next one.
     match /postReviews/{id} {
-      allow read:   if isTeam();
-      allow create: if isTeam();
+      allow read:   if isTeam() || isSocial();
+      allow create: if isTeam() || isSocial();
       allow update: if false;
       allow delete: if isAdmin();
     }
@@ -231,18 +297,24 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /*
+      De urenregistratie. De socialrol boekt ook tijd — dat was nu net de reden
+      dat de content op het bord staat — maar alleen haar eigen uren, en ze
+      leest die van niemand anders. Wat het team geboekt heeft, is een
+      bedrijfscijfer.
+    */
     match /timeEntries/{id} {
-      allow read: if isTeam();
-      allow create: if isTeam()
+      allow read: if isTeam() || (isSocial() && resource.data.profileId == request.auth.uid);
+      allow create: if (isTeam() || isSocial())
         && (request.resource.data.profileId == request.auth.uid || isAdmin());
-      allow update, delete: if isTeam()
+      allow update, delete: if (isTeam() || isSocial())
         && (resource.data.profileId == request.auth.uid || isAdmin());
     }
 
     // The running timer is keyed by uid, which is what makes "one timer per
     // person" true by construction instead of by convention.
     match /runningTimers/{uid} {
-      allow read: if isTeam();
+      allow read: if isTeam() || (isSocial() && request.auth.uid == uid);
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
@@ -259,6 +331,20 @@ service cloud.firestore {
     */
     match /agendaSleutels/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    /*
+      De offertes.
+
+      Alleen het planningsteam: er staan bedragen, kortingen en
+      klantgegevens in. De klant zelf leest haar offerte niet hier maar op de
+      publieke pagina, en die wordt door een functie met beheerdersrechten
+      uitgeserveerd — die gaat hier niet langs. Zo is er geen enkele weg waarop
+      een browser zonder login in deze collectie kan kijken, ook niet met het
+      juiste token.
+    */
+    match /offertes/{id} {
+      allow read, write: if isTeam();
     }
 
     // Anything not named above stays closed.

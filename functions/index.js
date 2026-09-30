@@ -24,6 +24,7 @@ import {
 } from './mail.js'
 import { taalVan, zeg } from './teksten.js'
 import { maakAgendaFeed } from './agenda.js'
+import { heeftSocial, kopieVan, moetBijwerken } from './social-projectie.js'
 
 initializeApp()
 const db = getFirestore()
@@ -650,3 +651,32 @@ export const notifyOverdueDigest = onSchedule(
  * De uitleg over hoe dat afgeschermd is, staat in `agenda.js`.
  */
 export const agenda = maakAgendaFeed({ db, region: REGION })
+
+/**
+ * De kale kopie van een event voor de socialrol, bijgehouden.
+ *
+ * Waarom die kopie bestaat, staat in `social-projectie.js`. Kort: Firestore kan
+ * geen velden verbergen, dus "geen prijzen zien" kan alleen door ze niet te
+ * mogen lezen — en dan moet er iets anders zijn om wél te lezen.
+ *
+ * De kopie verdwijnt zodra een event van het socialbord af gaat: gearchiveerd,
+ * verwijderd, of met de hand uitgezet. Een kopie die blijft staan is een event
+ * dat op het socialbord blijft hangen terwijl het er niet meer hoort.
+ */
+export const spiegelSocialEvent = onDocumentWritten(
+  { region: REGION, document: 'tasks/{taskId}' },
+  async (event) => {
+    const na = event.data?.after?.exists ? event.data.after.data() : null
+    const voor = event.data?.before?.exists ? event.data.before.data() : null
+    const spiegel = db.collection('socialEvents').doc(event.params.taskId)
+
+    const hoort = Boolean(na) && !na.archived && !na.parentId && heeftSocial(na)
+    if (!hoort) {
+      if (voor && heeftSocial(voor)) await spiegel.delete().catch(() => {})
+      return
+    }
+
+    if (!moetBijwerken(voor, na)) return
+    await spiegel.set({ ...kopieVan(na), taskId: event.params.taskId, bijgewerkt: FieldValue.serverTimestamp() })
+  }
+)

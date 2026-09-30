@@ -523,9 +523,20 @@ CHECKLIST_TEMPLATES.forEach((template, position) =>
     sections: template.sections, position, archived: false, updatedAt: NU,
   }))
 
-// De ochtendlijst van vandaag, half afgewerkt door twee mensen — zo leest de
-// demo als een dienst die bezig is in plaats van als een leeg formulier.
-const vandaag = NU.toISOString().slice(0, 10)
+/*
+  De ochtendlijst van vandaag, half afgewerkt door twee mensen — zo leest de
+  demo als een dienst die bezig is in plaats van als een leeg formulier.
+
+  Deze twee dagen hangen aan de echte klok en niet aan `NU`. De rest van de demo
+  mag op een vaste datum staan (dan blijven de events en de bedragen elke dag
+  gelijk), maar het scherm "Openen & sluiten" zoekt de lijst van vandaag op de
+  dag van de bezoeker. Stonden ze op een vaste datum, dan was de demo de dag
+  erna een leeg formulier — en dan breekt de browsertest die juist nakijkt of de
+  vorige dag nog opent.
+*/
+const ECHTE_DAG = new Date()
+const echteDag = (n) => new Date(ECHTE_DAG.getTime() + n * 86400000)
+const vandaag = echteDag(0).toISOString().slice(0, 10)
 const afgevinkt = (id, wie, naam, uur) => [id, {
   done: true, byId: wie, byName: naam,
   at: new Date(`${vandaag}T${uur}:00`),
@@ -566,7 +577,7 @@ const stempel = (datum) => ({
   toDate: () => datum,
 })
 
-const gisteren = dag(-1).toISOString().slice(0, 10)
+const gisteren = echteDag(-1).toISOString().slice(0, 10)
 const afgevinktGisteren = (id, wie, naam, uur) => [id, {
   done: true, byId: wie, byName: naam,
   at: stempel(new Date(`${gisteren}T${uur}:00`)),
