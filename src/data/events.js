@@ -213,6 +213,8 @@ export async function createEventFromTemplate({
   keuzes = null,
   pax = null,
   plek = null,
+  omschrijving = '',
+  soort = null,
 }) {
   const first = list.statuses?.find((s) => s.name === 'request') ?? list.statuses?.[0]
   const uid = createdBy ?? auth.currentUser?.uid ?? null
@@ -255,6 +257,7 @@ export async function createEventFromTemplate({
     base({
       parentId: null,
       title: name.trim(),
+      description: omschrijving ?? '',
       eventDate: date,
       dueDate: date,
       // De klant staat op het event en niet op zijn taken: anders telt de
@@ -263,7 +266,9 @@ export async function createEventFromTemplate({
       customerName: customerName?.trim() || null,
       // Een formule zegt meer over het soort event dan de naam van het
       // takentemplate; staat er geen formule, dan blijft het template de bron.
-      eventType: formule?.name ?? (template && template.id !== 'leeg' ? template.name : null),
+      // Wat uit de aanvraag gelezen is, wint van de naam van de formule: "een
+      // verjaardag" zegt meer over het dossier dan "Winter BBQ".
+      eventType: soort ?? formule?.name ?? (template && template.id !== 'leeg' ? template.name : null),
       templateId: template?.id ?? null,
       priority: null,
       timeEstimateMinutes: null,

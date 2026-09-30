@@ -13,6 +13,7 @@ import { resolveTemplate, templateSummary } from '@data/templates'
 import { formuleSamenvatting } from '@data/formules'
 import CustomerPicker from './CustomerPicker'
 import LocatieVeld from './LocatieVeld'
+import AanvraagInlezen from './AanvraagInlezen'
 
 const euro = (bedrag) =>
   new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(Number(bedrag) || 0)
@@ -49,6 +50,10 @@ export default function NewEventDialog({ open, onClose }) {
   const [keuzes, setKeuzes] = useState({})
   const [personen, setPersonen] = useState('50')
   const [busy, setBusy] = useState(false)
+  // De mail van de klant, zoals ze binnenkwam. Ze wordt de omschrijving van
+  // het event: dan blijft de vraag bij het antwoord staan.
+  const [mail, setMail] = useState('')
+  const [soort, setSoort] = useState('')
 
   const formule = formules.find((f) => f.id === formuleId) ?? null
   const pax = Math.max(0, parseInt(personen || '0', 10) || 0)
@@ -68,7 +73,9 @@ export default function NewEventDialog({ open, onClose }) {
     templates.find((t) => t.id === formule?.templateId) ?? templates.find((t) => t.id === 'nieuw-event') ?? templates[0]
   const gekozenTemplate = modus === 'formule' ? templateVoorFormule : templates.find((t) => t.id === tplId)
 
-  const klaar = Boolean(name.trim() && eventsList && (modus === 'custom' || (formule && pax > 0)))
+  const klaar = Boolean(
+    name.trim() && eventsList && (modus === 'custom' || modus === 'aanvraag' || (formule && pax > 0))
+  )
 
   const create = async () => {
     if (!klaar) return
@@ -85,14 +92,21 @@ export default function NewEventDialog({ open, onClose }) {
         customerId: klant.customerId,
         customerName: klant.customerName,
         plek,
-        formule: modus === 'formule' ? formule : null,
-        keuzes: modus === 'formule' ? keuzes : null,
-        pax: modus === 'formule' ? pax : null,
+        formule: modus === 'custom' ? null : formule,
+        keuzes: modus === 'custom' ? null : keuzes,
+        pax: modus === 'custom' ? null : pax,
+        // De mail van de klant wordt de omschrijving van het event, en het
+        // soort dat eruit gelezen is het eventtype. Zo staat de vraag bij het
+        // antwoord in plaats van in iemands mailbox.
+        omschrijving: modus === 'aanvraag' ? mail.trim() : '',
+        soort: modus === 'aanvraag' ? soort : null,
       })
       toast.success(t('events.nieuw.gemaakt', { naam: name.trim() }))
       setName('')
       setKlant({ customerId: '', customerName: '' })
       setPlek(leegLocatie())
+      setMail('')
+      setSoort('')
       onClose()
       navigate(`/events/${id}`)
     } catch (err) {
@@ -107,7 +121,7 @@ export default function NewEventDialog({ open, onClose }) {
       open={open}
       onClose={onClose}
       title={t('events.nieuw')}
-      width={modus === 'formule' ? 640 : 560}
+      width={modus === 'custom' ? 560 : 640}
       className="je-formule-dialog"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
@@ -119,10 +133,31 @@ export default function NewEventDialog({ open, onClose }) {
           items={[
             { value: 'custom', label: t('events.nieuw.custom') },
             { value: 'formule', label: t('events.nieuw.uit_formule') },
+            { value: 'aanvraag', label: t('aanvraag.tab') },
           ]}
           value={modus}
           onChange={setModus}
         />
+
+        {modus === 'aanvraag' ? (
+          <AanvraagInlezen
+            tekst={mail}
+            onTekst={setMail}
+            formules={formules}
+            plekken={concepts}
+            onGelezen={(uit) => {
+              // Alleen invullen wat leeg is: wie zelf iets aanpaste, mag dat
+              // niet bij de volgende aanslag weer kwijtspelen.
+              if (uit.datum) setDate(dayKey(uit.datum))
+              if (uit.personen) setPersonen(String(uit.personen))
+              if (uit.soort) setSoort(uit.soort)
+              if (uit.formule) setFormuleId(uit.formule.id)
+              if (uit.plek) setBrandId(uit.plek.id)
+              if (uit.afzender) setKlant((k) => (k.customerId || k.customerName ? k : { customerId: '', customerName: uit.afzender }))
+              setName((n) => n || [uit.soort, uit.afzender].filter(Boolean).join(' — '))
+            }}
+          />
+        ) : null}
 
         <Field label={t('events.velden.naam')} required>
           <Input
@@ -155,7 +190,7 @@ export default function NewEventDialog({ open, onClose }) {
           />
         </Field>
 
-        {modus === 'custom' ? (
+        {modus === 'custom' || (modus === 'aanvraag' && !formule) ? (
           <div>
             <div className="je-caps" style={{ marginBottom: 'var(--space-3)' }}>
               {t('events.nieuw.template')}

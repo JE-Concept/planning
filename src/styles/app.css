@@ -549,6 +549,58 @@
   resize: vertical;
 }
 
+/* ── Een aanvraag inlezen ──────────────────────────────────────────────── */
+
+/* Wat er uit de mail gelezen is, staat apart van de mail zelf: het is geen
+   invoer maar een tussenstand waar iemand naar moet kijken. */
+.je-gelezen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--accent-quiet);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+}
+.je-gelezen__lijst {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+}
+.je-gelezen__rij {
+  display: contents;
+}
+.je-gelezen__rij dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  min-width: 0;
+}
+.je-gelezen__waarde {
+  font: var(--type-body-sm);
+  font-weight: 600;
+}
+.je-gelezen__uitleg {
+  flex-basis: 100%;
+}
+.je-gelezen__vragen ul {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.je-gelezen__vragen li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font: var(--type-body-sm);
+}
+
 /* ── Locatie kiezen ────────────────────────────────────────────────────── */
 
 /* De lijst hangt onder het veld en niet onder een balk bovenaan het scherm;

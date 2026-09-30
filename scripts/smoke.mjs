@@ -1565,6 +1565,58 @@ await test('de locatie staat op de fiche, met een link naar de kaart', async () 
   await page.close()
 })
 
+await test('een aanvraagmail wordt een event met datum, gasten en formule', async () => {
+  const page = await tabblad('/')
+  await page.getByRole('button', { name: 'Nieuw event' }).click()
+  await page.getByRole('tab', { name: 'Uit een mail' }).click()
+  await page.waitForTimeout(300)
+
+  await page.getByLabel('De mail van de klant').fill(
+    [
+      'Beste,',
+      '',
+      'Mijn mama wordt op zaterdag 28 november 65 jaar en we zouden dit graag vieren.',
+      'We denken aan een 40-tal personen en dachten aan een gezellige winterbarbecue.',
+      'Werken jullie met vaste formules? We ontvangen graag wat richtprijzen.',
+      '',
+      'met vriendelijke groet,',
+      '',
+      'Kristien Maris',
+    ].join('\n')
+  )
+  await page.waitForTimeout(700)
+
+  const dialoog = page.getByRole('dialog')
+  const gelezen = await dialoog.innerText()
+  // Veertig gasten, niet vijfenzestig: de leeftijd mag geen aantal worden.
+  zouden(bevat(gelezen, '40 pax'), `het aantal gasten werd niet gelezen: ${gelezen.slice(0, 400)}`)
+  zouden(bevat(gelezen, 'Verjaardag'), 'het soort feest werd niet gelezen')
+  zouden(bevat(gelezen, 'Winter BBQ'), 'de formule werd niet herkend')
+  zouden(bevat(gelezen, 'Richtprijzen'), 'de vraag om prijzen staat er niet bij')
+  // Wat geraden is, staat er als geraden bij.
+  zouden(bevat(gelezen, 'geraden'), 'er staat niet bij wat een gok was')
+
+  zouden(
+    (await dialoog.locator('input[type=date]').inputValue()).endsWith('-11-28'),
+    `de datum werd niet overgenomen: ${await dialoog.locator('input[type=date]').inputValue()}`
+  )
+
+  await dialoog.getByRole('button', { name: 'Event aanmaken' }).click()
+  await page.waitForTimeout(1400)
+
+  const fiche = await inhoud(page)
+  zouden(bevat(fiche, 'Kristien Maris'), `het event opende niet: ${fiche.slice(0, 200)}`)
+  // De mail blijft bij het dossier staan in plaats van in iemands mailbox.
+  zouden(
+    bevat(await page.getByLabel('Omschrijving').inputValue(), 'winterbarbecue'),
+    'de mail staat niet als omschrijving op het event'
+  )
+  zouden((await veldwaarde(page, 'Gasten')) === '40', 'het aantal gasten staat niet op de fiche')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de planningstand staat op het event en in elk overzicht', async () => {
   const page = await tabblad('/events/t-trouw')
 
