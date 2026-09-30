@@ -127,6 +127,20 @@ jobs:
             --member allUsers --role roles/run.invoker --quiet \
             || echo "::warning::Kon allUsers/run.invoker niet zetten op ensureprofile."
 
+          # Dezelfde ingreep voor de agenda-feed, om een tweede reden. Die rolt
+          # met `invoker: 'private'` uit, want anders wil de CLI zelf een
+          # IAM-binding zetten en dat mag dit serviceaccount niet
+          # (`cloudfunctions.functions.setIamPolicy`) — waarop de hele
+          # functions-uitrol strandde, alle andere functies inbegrepen.
+          # Op Cloud Run-niveau mag het account het wél; vandaar hier.
+          # Een agenda-abonnement kan geen aanmeldscherm tonen, dus moet dit
+          # adres zonder login te openen zijn; de sleutel in het adres is wat
+          # het afschermt. Zie functions/agenda.js.
+          gcloud run services add-iam-policy-binding agenda \
+            --region europe-west1 --project "$FIREBASE_PROJECT" \
+            --member allUsers --role roles/run.invoker --quiet \
+            || echo "::warning::Kon allUsers/run.invoker niet zetten op agenda — de feed is dan niet bereikbaar."
+
           # De functie draait onder haar eigen runtime-service-account. Op een
           # vers project krijgt die niet meer automatisch Editor, en zonder
           # Firestore-recht crasht ensureProfile bij de eerste lees — wat bij de

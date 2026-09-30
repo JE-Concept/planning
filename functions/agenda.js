@@ -33,7 +33,20 @@ const APP = process.env.APP_URL ?? 'https://planning.jeconcept.be'
 
 /** Maakt de functie met de database erbij, zodat ze in een test na te rekenen is. */
 export function maakAgendaFeed({ db, region }) {
-  return onRequest({ region, cors: false }, async (verzoek, antwoord) => {
+  /*
+    `invoker: 'private'` betekent hier niet dat de feed privé is.
+
+    Het zegt tegen de Firebase CLI: zet zelf geen IAM-binding. Dat recht
+    (`cloudfunctions.functions.setIamPolicy`) heeft het serviceaccount van de
+    uitrol niet, en daarop strandde de hele functions-uitrol — één functie die
+    alle andere meesleepte.
+
+    Publiek bereikbaar wordt ze een stap later, in de workflow, met
+    `gcloud run services add-iam-policy-binding`. Dat recht heeft het account
+    wél: dezelfde stap staat er al voor `ensureProfile` en die slaagt. Zo is er
+    geen nieuwe rol nodig om dit aan te zetten.
+  */
+  return onRequest({ region, cors: false, invoker: 'private' }, async (verzoek, antwoord) => {
     const sleutel = String(verzoek.query?.sleutel ?? '').trim()
 
     /*
