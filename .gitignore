@@ -12,3 +12,4 @@ service-account.json
 .DS_Store
 coverage/
 *.log
+dist-offerte

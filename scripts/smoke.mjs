@@ -1565,6 +1565,41 @@ await test('de locatie staat op de fiche, met een link naar de kaart', async () 
   await page.close()
 })
 
+await test('de offerte staat er vanzelf en is regel voor regel aan te passen', async () => {
+  const page = await tabblad('/events/t-trouw?tab=offerte')
+  await page.waitForTimeout(1400)
+
+  // Niemand hoeft hem aan te maken: een offerte die je eerst moet aanmaken,
+  // wordt een offerte die je vergeet.
+  const blad = page.locator('.je-offerteblad')
+  zouden(await blad.isVisible(), 'er staat geen offerte')
+
+  const werk = page.locator('.je-offertewerk')
+  const regels = await werk.locator('tbody tr').count()
+  zouden(regels >= 2, `de offerte heeft te weinig regels: ${regels}`)
+
+  // De 70/30-splitsing: spijzen aan 12%, dranken aan 21%. Eén tarief op alles
+  // is precies de fout die in de oude Canva-offertes gemaakt werd.
+  const bladtekst = await blad.innerText()
+  zouden(bevat(bladtekst, '12%'), `geen spijzenlijn aan 12%: ${bladtekst.slice(0, 400)}`)
+  zouden(bevat(bladtekst, '21%'), 'geen drankenlijn aan 21%')
+  zouden(bevat(bladtekst, 'Trouw Niels en Inez'), 'het event staat niet op het blad')
+  zouden(bevat(bladtekst, 'Voorschot') || bevat(bladtekst, 'voorschot'), 'het voorschot staat er niet bij')
+
+  // Aanpassen na het genereren: dat is het punt van een draft.
+  const omschrijving = werk.getByLabel('Omschrijving').first()
+  await omschrijving.fill('Winterbarbecue, all-in per persoon')
+  await omschrijving.blur()
+  await page.waitForTimeout(900)
+  zouden(
+    bevat(await blad.innerText(), 'Winterbarbecue, all-in'),
+    'de aangepaste regel staat niet op het blad'
+  )
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een aanvraagmail wordt een event met datum, gasten en formule', async () => {
   const page = await tabblad('/')
   await page.getByRole('button', { name: 'Nieuw event' }).click()

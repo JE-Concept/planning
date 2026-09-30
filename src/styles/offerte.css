@@ -1,0 +1,307 @@
+/*
+ * De offerte van JE Concept, als blad.
+ *
+ * ── Waarom dit een eigen bestand is ───────────────────────────────────────
+ * Dit is het enige stuk van de tool dat een klant onder ogen krijgt. Het moet
+ * er hetzelfde uitzien in de app, op de publieke goedkeuringspagina, in de
+ * afdruk en in het voorbeeld dat we delen — en dat lukt alleen als er één
+ * bestand is dat ze alle vier laden. Een tweede kopie loopt achter, en dan
+ * staat er op de offerte van de klant iets anders dan op het scherm.
+ *
+ * ── Waarom eigen tokens ───────────────────────────────────────────────────
+ * De rest van de app hangt aan `je-ds.css`. Dit blad hangt bewust nergens aan:
+ * het wordt ook buiten de app gerenderd (het gedeelde voorbeeld, straks een
+ * PDF), en dan moeten de kleuren en maten gewoon meekomen. De waarden zijn
+ * dezelfde als in het design system; ze staan hier los zodat het blad op zijn
+ * eentje klopt.
+ *
+ * ── Waarom in millimeter ──────────────────────────────────────────────────
+ * Een offerte wordt afgedrukt of als PDF verstuurd. Een blad dat in pixels
+ * gedacht is, valt bij het afdrukken uit elkaar: de marge klopt niet, de
+ * tabel breekt midden in een lijn. A4 met echte marges is het vertrekpunt; het
+ * scherm schaalt dat mee.
+ */
+
+.je-offerteblad {
+  --o-ink: #002246;
+  --o-accent: #1b3a6b;
+  --o-zacht: #5a6b80;
+  --o-lijn: #d8dee6;
+  --o-lijn-zacht: #eaeef3;
+  --o-papier: #ffffff;
+  --o-tint: #f4f6f9;
+  --o-display: "Oswald", "Helvetica Neue Condensed", "Arial Narrow", sans-serif;
+  --o-tekst: "Source Sans 3", "Helvetica Neue", Helvetica, sans-serif;
+  --o-serif: "Prata", Didot, "Times New Roman", serif;
+  --o-script: "Parisienne", cursive;
+
+  width: 210mm;
+  min-height: 297mm;
+  padding: 18mm 16mm 16mm;
+  margin: 0 auto;
+  box-sizing: border-box;
+  background: var(--o-papier);
+  color: var(--o-ink);
+  font-family: var(--o-tekst);
+  font-size: 10.5pt;
+  line-height: 1.5;
+}
+
+/* Op een scherm is 210mm vaak breder dan de kolom. Schalen in plaats van
+   afkappen: een offerte die half wegvalt, kan niemand nakijken. */
+.je-offerteblad-schaal {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+@media (max-width: 900px) {
+  .je-offerteblad {
+    width: 100%;
+    min-height: 0;
+    padding: 6mm;
+    font-size: 10pt;
+  }
+}
+
+/* ── De kop ───────────────────────────────────────────────────────────── */
+
+.je-offerteblad__kop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12mm;
+  padding-bottom: 6mm;
+  border-bottom: 2px solid var(--o-ink);
+}
+.je-offerteblad__merk {
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+}
+.je-offerteblad__logo {
+  font-family: var(--o-serif);
+  font-size: 22pt;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.je-offerteblad__logo em {
+  font-family: var(--o-script);
+  font-style: normal;
+  font-size: 0.62em;
+  color: var(--o-accent);
+  margin-left: 0.15em;
+}
+.je-offerteblad__adres {
+  font-size: 8.5pt;
+  color: var(--o-zacht);
+  line-height: 1.45;
+}
+.je-offerteblad__titel {
+  text-align: right;
+}
+.je-offerteblad__titel h1 {
+  margin: 0;
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 20pt;
+  line-height: 1.1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.je-offerteblad__nummer {
+  font-family: var(--o-display);
+  font-size: 10pt;
+  letter-spacing: 0.14em;
+  color: var(--o-accent);
+}
+
+/* ── Klant en event, naast elkaar ─────────────────────────────────────── */
+
+.je-offerteblad__partijen {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10mm;
+  margin-top: 7mm;
+}
+.je-offerteblad__blok h2 {
+  margin: 0 0 2mm;
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 8.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--o-zacht);
+}
+.je-offerteblad__blok dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.6mm 4mm;
+  margin: 0;
+  font-size: 10pt;
+}
+.je-offerteblad__blok dt {
+  color: var(--o-zacht);
+}
+.je-offerteblad__blok dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ── De tabel ─────────────────────────────────────────────────────────── */
+
+.je-offerteblad__tabel {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8mm;
+  font-size: 10pt;
+}
+.je-offerteblad__tabel thead th {
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 8.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--o-zacht);
+  text-align: left;
+  padding: 0 0 2mm;
+  border-bottom: 1px solid var(--o-ink);
+}
+.je-offerteblad__tabel td {
+  padding: 2.2mm 0;
+  border-bottom: 1px solid var(--o-lijn-zacht);
+  vertical-align: top;
+}
+.je-offerteblad__rubriek td {
+  padding-top: 5mm;
+  border-bottom: none;
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 8.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--o-accent);
+}
+/* Getallen onder elkaar: een kolom bedragen die niet uitlijnt, leest als een
+   rekening die niet klopt. */
+.je-offerteblad__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.je-offerteblad__tabel th.je-offerteblad__num {
+  text-align: right;
+}
+.je-offerteblad__optioneel td {
+  color: var(--o-zacht);
+}
+.je-offerteblad__merkje {
+  display: inline-block;
+  margin-left: 2mm;
+  padding: 0 1.4mm;
+  border: 1px solid var(--o-lijn);
+  border-radius: 2px;
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--o-zacht);
+  vertical-align: 1px;
+}
+
+/* ── De totalen ───────────────────────────────────────────────────────── */
+
+.je-offerteblad__totalen {
+  margin-top: 6mm;
+  margin-left: auto;
+  width: 78mm;
+  font-size: 10pt;
+}
+.je-offerteblad__rij {
+  display: flex;
+  justify-content: space-between;
+  gap: 6mm;
+  padding: 1.4mm 0;
+}
+.je-offerteblad__rij--btw {
+  color: var(--o-zacht);
+  font-size: 9pt;
+}
+.je-offerteblad__rij--eind {
+  margin-top: 1.5mm;
+  padding-top: 2.5mm;
+  border-top: 2px solid var(--o-ink);
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 13pt;
+  letter-spacing: 0.06em;
+}
+.je-offerteblad__rij--eind span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Voorwaarden ──────────────────────────────────────────────────────── */
+
+.je-offerteblad__voet {
+  margin-top: 9mm;
+  padding-top: 5mm;
+  border-top: 1px solid var(--o-lijn);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8mm;
+  font-size: 8.5pt;
+  color: var(--o-zacht);
+  line-height: 1.5;
+}
+.je-offerteblad__voet h2 {
+  margin: 0 0 1.5mm;
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 8.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--o-ink);
+}
+.je-offerteblad__voet ul {
+  margin: 0;
+  padding-left: 4mm;
+}
+.je-offerteblad__slot {
+  margin-top: 7mm;
+  padding: 4mm 5mm;
+  background: var(--o-tint);
+  border-left: 2px solid var(--o-accent);
+  font-size: 9.5pt;
+}
+
+/* ── Afdrukken ────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Alles behalve het blad blijft thuis: een offerte met een zijbalk erop is
+     geen offerte. */
+  body > *:not(.je-print-hier) {
+    display: none !important;
+  }
+  .je-print-hier,
+  .je-print-hier * {
+    visibility: visible;
+  }
+  .je-offerteblad {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .je-offerteblad-schaal {
+    overflow: visible;
+  }
+  /* Een tabel mag niet midden in een lijn breken. */
+  .je-offerteblad__tabel tr,
+  .je-offerteblad__totalen,
+  .je-offerteblad__slot {
+    break-inside: avoid;
+  }
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+}

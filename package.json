@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "JE Plan \u2014 interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
+  "description": "JE Plan — interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
   "engines": {
     "node": ">=20"
   },
@@ -22,7 +22,8 @@
     "smoke": "npm run build:demo && node scripts/smoke.mjs",
     "taalcheck": "node scripts/taalcheck.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "offerte:voorbeeld": "npm run build:demo && node scripts/offerte-voorbeeld.mjs"
   },
   "dependencies": {
     "firebase": "^11.0.2",

@@ -549,6 +549,81 @@
   resize: vertical;
 }
 
+/* ── De offerte, in de tool ────────────────────────────────────────────── */
+
+/* Het werkblad: de lijnen die je aanpast. Het blad dat de klant krijgt staat
+   eronder en heeft zijn eigen bestand (`offerte.css`). */
+.je-offertewerk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+}
+.je-offertewerk__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.je-offertewerk__mist {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--warning);
+}
+.je-offertewerk__tabel {
+  width: 100%;
+  border-collapse: collapse;
+}
+.je-offertewerk__tabel th {
+  font: var(--type-eyebrow);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  text-align: left;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-hairline);
+  font-weight: 500;
+}
+.je-offertewerk__tabel td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border-bottom: 1px solid var(--border-hairline);
+  vertical-align: middle;
+}
+.je-offertewerk__tabel td:first-child {
+  min-width: 180px;
+}
+/* Getallen onder elkaar: een kolom bedragen die niet uitlijnt, leest als een
+   rekening die niet klopt. */
+.je-offertewerk__tabel .je-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.je-offertewerk__tabel .je-num .je-input,
+.je-offertewerk__tabel .je-num .je-select {
+  text-align: right;
+}
+.je-offertewerk__totaal {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+}
+.je-offertewerk__totaal strong {
+  font: var(--type-h3);
+}
+
+/* Het blad krijgt op het scherm een rand, zodat het als papier leest en niet
+   als nog een paneel. */
+.je-offerteblad-schaal .je-offerteblad {
+  border: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-2);
+}
+
 /* ── Een aanvraag inlezen ──────────────────────────────────────────────── */
 
 /* Wat er uit de mail gelezen is, staat apart van de mail zelf: het is geen

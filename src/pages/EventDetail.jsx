@@ -21,6 +21,7 @@ import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
 import EventFiche from '@components/events/EventFiche'
+import OfferteTab from '@components/events/OfferteTab'
 import EventOmschrijving from '@components/events/EventOmschrijving'
 import TaskRow from '@components/events/TaskRow'
 import { PlanningBadge, StatusBadge, dayLabel, hours } from '@components/events/parts'
@@ -204,6 +205,7 @@ export default function EventDetail() {
               ...(bestelRegels.length || ev.formuleId
                 ? [{ value: 'bestellijst', label: t('events.tab.bestellijst', { aantal: bestelRegels.length }) }]
                 : []),
+              { value: 'offerte', label: t('offerte.tab') },
               { value: 'draaiboek', label: t('events.tab.draaiboek') },
               { value: 'bijlagen', label: t('events.tab.bijlagen') },
               // Op een smal scherm past de notitiekolom niet naast het werk;
@@ -221,6 +223,8 @@ export default function EventDetail() {
             <TasksTab ev={ev} tasks={tasks} focus={params.get('taak')} onOpen={setDrawer} runningId={timer?.taskId} />
           ) : tab === 'bestellijst' ? (
             <Bestellijst ev={ev} />
+          ) : tab === 'offerte' ? (
+            <OfferteTab ev={ev} />
           ) : tab === 'draaiboek' ? (
             <RunsheetTab ev={ev} />
           ) : tab === 'bijlagen' ? (
