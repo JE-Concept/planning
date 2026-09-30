@@ -115,19 +115,29 @@ describe('de rollen zoals de regels ze kennen', () => {
   })
 
   /*
-    `guest` staat in de keuzelijst bij Instellingen, maar in `firestore.rules`
-    staat de rol nergens: `isTeam()` sluit alleen personeel en de socialrol uit.
-    Een gast is dus een volwaardig teamlid met een ander woord ervoor.
+    De gastrol is niet meer te kiezen, en deze test houdt dat zo.
 
-    Deze test legt dat vast zoals het nú is, zodat het niet per ongeluk blijft
-    bestaan én niet per ongeluk verandert: wie de gastrol echt wil afgrenzen,
-    komt hier langs en leest meteen wat er aan vast hangt.
+    In `firestore.rules` komt het woord `guest` nergens voor: `isTeam()` sluit
+    alleen personeel en de socialrol uit. Een gast was dus een volwaardig
+    teamlid met een ander woord ervoor — inclusief de offertes, de bedragen en
+    het logboek — terwijl de interface hem juist wegliet uit de kiezers voor
+    uitvoerders. Wie iemand op Gast zette, dacht te beperken en deed dat niet.
+
+    Er stond niemand op, dus de optie is uit de keuzelijst gehaald. Wie de rol
+    ooit echt wil, bouwt hem eerst in de regels en zet hem daarna pas terug —
+    en komt dan hier langs.
   */
-  it('geeft een gast vandaag dezelfde leesrechten als een teamlid', () => {
+  it('geeft een gast nog altijd dezelfde rechten als een teamlid', () => {
     for (const collectie of Object.keys(REGELS)) {
       const gast = toets('lezen', { rol: 'guest', uid: 'u', collectie, id: 'u' })
       const lid = toets('lezen', { rol: 'member', uid: 'u', collectie, id: 'u' })
       expect(Boolean(gast), `${collectie}`).toBe(Boolean(lid))
     }
+  })
+
+  it('is daarom niet meer te kiezen bij Instellingen', () => {
+    const settings = readFileSync(new URL('../src/pages/Settings.jsx', import.meta.url), 'utf8')
+    const lijst = settings.slice(settings.indexOf('const ROLES = ['), settings.indexOf(']', settings.indexOf('const ROLES = [')))
+    expect(lijst).not.toContain("'guest'")
   })
 })

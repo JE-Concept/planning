@@ -155,8 +155,27 @@ const ROLES = [
   // De socialrol: alleen de socials, en geen bedragen. Dat laatste zit in de
   // regels en niet in het scherm — zie `functions/social-projectie.js`.
   { value: 'social', sleutel: 'rol.social' },
-  { value: 'guest', sleutel: 'rol.guest' },
 ]
+
+/*
+  "Gast" staat hier niet meer bij, en dat is een beveiligingskeuze.
+
+  De rol beperkte niets: in `firestore.rules` komt het woord niet voor, dus
+  `isTeam()` liet een gast overal bij — de offertes, de klantgegevens, alle
+  bedragen, het logboek. Tegelijk liet de interface hem juist weg uit de kiezers
+  voor uitvoerders, alsof het een buitenstaander was. Dat verschil is de
+  valkuil: wie iemand op Gast zette, dacht te beperken en deed het niet.
+
+  Er staat vandaag niemand op, dus weghalen kan zonder iemand buiten te sluiten.
+  Wie de rol ooit echt wil, bouwt hem eerst in de regels — bijvoorbeeld met
+  dezelfde kale kopie als bij de socialrol — en zet hem daarna pas terug.
+
+  Mocht er tóch ergens een gast blijken te staan, dan toont de keuzelijst zijn
+  huidige rol nog (zie `rollenVoor` hieronder): anders staat er een leeg vakje
+  en is de rol niet meer te wijzigen.
+*/
+const rollenVoor = (rol) =>
+  rol && !ROLES.some((r) => r.value === rol) ? [...ROLES, { value: rol, sleutel: `rol.${rol}` }] : ROLES
 
 function TeamTab() {
   const { profiles, allowedDomains } = useWorkspace()
@@ -273,7 +292,7 @@ function TeamTab() {
             <div style={{ width: 150 }}>
               <Select
                 boxed
-                options={ROLES.map((r) => ({ value: r.value, label: t(r.sleutel) }))}
+                options={rollenVoor(m.role).map((r) => ({ value: r.value, label: t(r.sleutel) }))}
                 value={m.role}
                 onChange={(e) => setMemberRole(m.id, e.target.value)}
                 aria-label={t('inst.team.rol_van', { wie: m.email })}
