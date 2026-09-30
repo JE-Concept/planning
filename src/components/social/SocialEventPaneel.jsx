@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { SOCIAL_STAGES, stageOf } from '@lib/social-stage'
 import { formatDate } from '@lib/dates'
+import { kaartLink } from '@lib/kaart'
 import { Badge, Button, Drawer, EmptyState } from '@ui/index'
+import { Icon } from '@components/ds'
 import PostCard from '@components/social/PostCard'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -82,6 +84,22 @@ export default function SocialEventPaneel({ taskId, onClose }) {
               <Badge tone="neutral">{formatDate(kaart.date ?? kaart.eventDate)}</Badge>
             ) : null}
             {kaart.listName ? <Badge tone="neutral">{kaart.listName}</Badge> : null}
+            {/*
+              Wie de beelden maakt, moet er geraken. De locatie staat al in de
+              ondertitel; dit is de route erheen.
+            */}
+            {kaartLink(kaart) ? (
+              <a
+                className="je-link-quiet je-locatiekaart"
+                href={kaartLink(kaart)}
+                target="_blank"
+                rel="noreferrer"
+                style={{ marginTop: 0 }}
+              >
+                <Icon name="map-pin" size={14} />
+                {t('events.locatie.openen')}
+              </a>
+            ) : null}
           </div>
 
           <div>

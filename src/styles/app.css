@@ -483,6 +483,71 @@
   color: var(--text-accent) !important;
 }
 
+/* Een fichecel met een kaartlink kan geen knop meer zijn: een link mag niet in
+   een knop staan. De knop vult de cel, zodat klikken nog altijd bewerkt. */
+.je-fichecel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.je-fichecel:hover {
+  background: var(--accent-quiet);
+}
+.je-fichecel > button {
+  text-align: left;
+  width: 100%;
+}
+.je-fichecel__kaart {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--type-caption);
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+/* ── Locatie kiezen ────────────────────────────────────────────────────── */
+
+/* De lijst hangt onder het veld en niet onder een balk bovenaan het scherm;
+   daarom staat hij hier los van `.je-results` op zijn eigen hoogte. */
+.je-locatielijst {
+  top: calc(100% + 4px);
+  max-height: 260px;
+  z-index: 40;
+}
+.je-locatieoptie {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  text-align: left;
+}
+.je-locatieoptie__hoofd {
+  display: block;
+  font: var(--type-body-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-locatieoptie__onder {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-locatiekaart {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--space-2);
+  font: var(--type-caption);
+  color: var(--text-2);
+  text-decoration: none;
+}
+
 /* ── Tasks ─────────────────────────────────────────────────────────────── */
 
 /* De balk met de weergavekeuzes. Wikkelt op een smal scherm in plaats van

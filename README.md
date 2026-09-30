@@ -190,6 +190,18 @@ Een klant wordt **uit gebruik genomen**, niet gewist, zolang er events aan hange
 
 ---
 
+## De locatie van een event
+
+Het locatieveld is een tekstveld met Google Maps eronder. Typen mag altijd — "bij de klant thuis" en "nog te bepalen" zijn geldige antwoorden — maar wie een echt adres kiest, koppelt de plek eraan vast. Naast de tekst komen dan `locationPlaceId`, `locationLat` en `locationLng` op het event te staan, en opent de knop *Op de kaart* exact die zaal in plaats van de eerste met dezelfde naam. Typt iemand de tekst daarna met de hand over, dan gaan die drie mee weg: coördinaten die niet meer bij de tekst horen, sturen het team naar het verkeerde adres.
+
+De tekst blijft de bron voor de offerte, de agenda-uitnodiging en de zoekbalk; de coördinaten zijn er alleen voor de kaart. Ook de socialrol krijgt ze mee (`functions/social-projectie.js`) — wie de beelden maakt, moet er geraken.
+
+Er wordt geen Maps-SDK geladen: de Places API (New) antwoordt op een gewone `fetch`, dus vraagt `src/lib/kaart.js` de adressen zelf op en tekent het scherm de lijst met dezelfde bouwstenen als de rest van de tool. Een verzoek vertrekt pas na 260 ms stilte en vanaf drie letters; wordt de sleutel geweigerd (4xx), dan stopt het veld met vragen en is het weer gewoon tekst.
+
+**Aanzetten.** Google Cloud Console → *APIs & Services* → **Places API (New)** aanzetten → *Credentials* → **Create API key**, en die sleutel beperken tot HTTP-verwijzers (`https://planning.jeconcept.be/*`). Daarna als GitHub-secret **`VITE_GOOGLE_MAPS_API_KEY`** zetten en opnieuw uitrollen. Zonder de sleutel bouwt en draait alles gewoon: geen adressenlijst, wel gewoon typen, en de kaartknop zoekt dan op de tekst.
+
+---
+
 ## Socials
 
 Twee dingen die uit elkaar gehaald horen te worden: de **content per event** en de **posts per dag**.

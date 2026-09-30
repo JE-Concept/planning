@@ -165,6 +165,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
     startDate: o.startDate ?? null, dueDate: o.dueDate ?? null,
     timeEstimateMinutes: o.estimate ?? null,
     budget: o.budget ?? null, location: o.location ?? null,
+    locationPlaceId: o.placeId ?? null, locationLat: o.lat ?? null, locationLng: o.lng ?? null,
     assignees: o.assignees ?? [], tags: o.tags ?? [],
     customerId: o.customerId ?? null,
     customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
@@ -195,6 +196,9 @@ function taak(id, listId, statuses, statusName, o = {}) {
     dueDate: o.dueDate ?? null,
     eventDate: o.eventDate ?? (o.parentId ? null : o.dueDate ?? null),
     location: o.location ?? null,
+    locationPlaceId: o.placeId ?? null,
+    locationLat: o.lat ?? null,
+    locationLng: o.lng ?? null,
     customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
     brandId: o.brandId ?? null,
     assignees: o.assignees ?? [],
@@ -230,6 +234,9 @@ function spiegelSocial(id, kaart) {
 taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],
   title: 'Trouw Niels en Inez', assignees: ['u-jasper', 'u-elke'], priority: 2, customerId: 'k-niels-inez',
   dueDate: dag(6), budget: 16399, location: 'Hoeve Vanhove, Kortessem',
+  // Eén event met een echte plek erachter, zodat de kaartlink op de fiche te
+  // zien is zonder dat de demo een Google-sleutel nodig heeft.
+  placeId: 'ChIJdemoHoeveVanhove', lat: 50.856, lng: 5.383,
   estimate: 480, tracked: 20700, comments: 2, tags: ['losse events'],
   description: '**Fiche evenement**\n\n- Opbouw zaterdag 3 juli vanaf 14.00 — tent, vloer, verlichting\n- Ceremonie 15.30 in de boomgaard, plan B in de schuur bij regen\n- Receptie 16.30 · walking dinner 18.30 · avondbar tot 03.00\n- 140 personen, waarvan 12 kinderen\n\n**Openstaande punten**\n\n- Regenplan bevestigen met de eigenaar\n- Aantal vegetarische gasten navragen',
 })

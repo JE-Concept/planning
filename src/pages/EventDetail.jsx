@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { startOfDay } from '@lib/dates'
+import { kaartLink } from '@lib/kaart'
 import { PIPELINE, indexOf, labelOf, missingForOffer } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import {
@@ -110,7 +111,7 @@ export default function EventDetail() {
       'events.fiche.gasten',
       ev.pax ? `${ev.pax} pax${ev.kids ? ` + ${t('events.fiche.kinderen', { aantal: ev.kids })}` : ''}` : null,
     ],
-    ['events.fiche.locatie', ev.location],
+    ['events.fiche.locatie', ev.location, kaartLink(ev)],
     [
       'events.fiche.formule',
       ev.formule
@@ -214,20 +215,34 @@ export default function EventDetail() {
           ) : null}
 
           <div className="je-fiche">
-            {fiche.map(([sleutel, value]) => (
-              <button
-                key={sleutel}
-                type="button"
-                className="je-plainbtn"
-                onClick={() => setEditing(true)}
-                title={t('events.fiche.bewerken')}
-              >
-                <div className="je-caps">{t(sleutel)}</div>
-                <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, color: value ? 'var(--text-1)' : 'var(--text-3)', marginTop: 2 }}>
-                  {value ?? '—'}
+            {fiche.map(([sleutel, value, link]) => {
+              const cel = (
+                <button
+                  type="button"
+                  className="je-plainbtn"
+                  onClick={() => setEditing(true)}
+                  title={t('events.fiche.bewerken')}
+                >
+                  <div className="je-caps">{t(sleutel)}</div>
+                  <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, color: value ? 'var(--text-1)' : 'var(--text-3)', marginTop: 2 }}>
+                    {value ?? '—'}
+                  </div>
+                </button>
+              )
+              // Een link mag niet in een knop staan, dus krijgt de cel met de
+              // kaart een omhulsel in plaats van er een tweede knop bij te
+              // verzinnen die stiekem een link is.
+              if (!link) return <Fragment key={sleutel}>{cel}</Fragment>
+              return (
+                <div key={sleutel} className="je-fichecel">
+                  {cel}
+                  <a className="je-fichecel__kaart je-link-quiet" href={link} target="_blank" rel="noreferrer">
+                    <Icon name="map-pin" size={14} />
+                    {t('events.locatie.openen')}
+                  </a>
                 </div>
-              </button>
-            ))}
+              )
+            })}
           </div>
 
           <Tabs

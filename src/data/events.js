@@ -190,6 +190,7 @@ export async function createEventFromTemplate({
   formule = null,
   keuzes = null,
   pax = null,
+  plek = null,
 }) {
   const first = list.statuses?.find((s) => s.name === 'request') ?? list.statuses?.[0]
   const uid = createdBy ?? auth.currentUser?.uid ?? null
@@ -247,6 +248,12 @@ export async function createEventFromTemplate({
       assignees: team,
       position: Date.now(),
       pax: personen,
+      // De locatie staat op het event zelf en niet op zijn taken: één plek,
+      // één adres. De taken eronder houden `location: null` uit `base()`.
+      location: plek?.location ?? null,
+      locationPlaceId: plek?.locationPlaceId ?? null,
+      locationLat: plek?.locationLat ?? null,
+      locationLng: plek?.locationLng ?? null,
       // `formule` is het veld dat de fiche al toonde: de naam van het aanbod.
       formule: formule?.name ?? null,
       formuleId: formule?.id ?? null,

@@ -42,6 +42,9 @@ jobs:
           # Zonder deze sleutel bouwt alles gewoon, maar blijft de knop
           # "Meldingen aanzetten" uitgeschakeld. Zie README → Op de telefoon.
           VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
+          # Zonder deze sleutel blijft het locatieveld op een event een gewoon
+          # tekstveld: geen adressenlijst, wel gewoon typen. Zie .env.example.
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
 
@@ -74,6 +77,9 @@ jobs:
           # Zonder deze sleutel bouwt alles gewoon, maar blijft de knop
           # "Meldingen aanzetten" uitgeschakeld. Zie README → Op de telefoon.
           VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
+          # Zonder deze sleutel blijft het locatieveld op een event een gewoon
+          # tekstveld: geen adressenlijst, wel gewoon typen. Zie .env.example.
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
 

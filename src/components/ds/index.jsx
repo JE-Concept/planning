@@ -3,7 +3,7 @@ import {
   AlertTriangle, ArrowRight, ArrowUp, Briefcase, Building2, CalendarDays, Check, CheckCircle, ChevronDown,
   ChevronLeft, ChevronRight, Circle, ClipboardCheck, Clock, CloudOff, Copy, CornerDownLeft, Download, Euro,
   FileText, Info, Kanban, Keyboard, LayoutDashboard, Lightbulb, ListChecks, Loader, Lock, LogIn, LogOut,
-  Mail, Menu, MessageSquare, MessagesSquare, Music4, Paperclip, Pencil, Play, Plus, Repeat, Search, Settings, Share2,
+  Mail, MapPin, Menu, MessageSquare, MessagesSquare, Music4, Paperclip, Pencil, Play, Plus, Repeat, Search, Settings, Share2,
   ShieldCheck, Sparkles, Square, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
 } from 'lucide-react'
 import { cn } from '@lib/cn'
@@ -52,6 +52,7 @@ const ICONS = {
   'log-in': LogIn,
   'log-out': LogOut,
   mail: Mail,
+  'map-pin': MapPin,
   menu: Menu,
   'message-square': MessageSquare,
   'messages-square': MessagesSquare,

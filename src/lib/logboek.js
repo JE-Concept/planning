@@ -38,6 +38,7 @@ export const VELDNAAM = {
   budget: 'logboek.veld.budget',
   quoteAmount: 'logboek.veld.offertebedrag',
   customerId: 'logboek.veld.klant',
+  location: 'logboek.veld.locatie',
   pax: 'logboek.veld.gasten',
   socialStage: 'logboek.veld.socialstand',
   listId: 'logboek.veld.lijst',

@@ -137,6 +137,7 @@ Ga naar <https://github.com/Kenjeklanten/planning/settings/secrets/actions> →
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | uit stap 6a |
 | `VITE_FIREBASE_APP_ID` | uit stap 6a |
 | `VITE_FIREBASE_VAPID_KEY` | zie stap 6d |
+| `VITE_GOOGLE_MAPS_API_KEY` | mag leeg blijven; zie README → De locatie van een event |
 
 Controleer dat er negen geheimen staan voor je verdergaat. Verwijder daarna het gedownloade
 JSON-bestand van stap 6b uit de downloadmap.

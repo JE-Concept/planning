@@ -85,6 +85,13 @@ export default {
   'events.fiche.kinderen_een': { nl: '{aantal} kind', en: '{aantal} child' },
   'events.fiche.kinderen_meer': { nl: '{aantal} kinderen', en: '{aantal} children' },
   'events.fiche.locatie': { nl: 'Locatie', en: 'Venue' },
+  'events.locatie.hint': {
+    nl: 'Kies een adres om de kaart te koppelen, of typ gewoon wat je kwijt wil.',
+    en: 'Pick an address to attach the map, or just type whatever you need.',
+  },
+  'events.locatie.plaatshouder': { nl: 'Zoek een zaal of adres', en: 'Search a venue or address' },
+  'events.locatie.lijst': { nl: 'Adressen', en: 'Addresses' },
+  'events.locatie.openen': { nl: 'Op de kaart', en: 'On the map' },
   'events.fiche.formule': { nl: 'Formule', en: 'Formule' },
   'events.fiche.pp': { nl: '{bedrag} p.p.', en: '{bedrag} pp' },
   'events.fiche.offerte': { nl: 'Offerte', en: 'Quote' },

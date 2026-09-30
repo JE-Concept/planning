@@ -7,6 +7,7 @@ import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { updateEvent } from '@data/events'
 import CustomerPicker from './CustomerPicker'
+import LocatieVeld from './LocatieVeld'
 
 const num = (v) => (v === '' || v == null ? null : Number(v))
 
@@ -32,6 +33,9 @@ export default function EventEditDialog({ open, onClose, ev }) {
       pax: ev.pax ?? '',
       kids: ev.kids ?? '',
       location: ev.location ?? '',
+      locationPlaceId: ev.locationPlaceId ?? null,
+      locationLat: ev.locationLat ?? null,
+      locationLng: ev.locationLng ?? null,
       formule: ev.formule ?? '',
       quoteAmount: ev.quoteAmount ?? '',
       brandId: ev.brandId ?? '',
@@ -63,7 +67,13 @@ export default function EventEditDialog({ open, onClose, ev }) {
         ...(ev.dueDate || date ? { dueDate: date ?? ev.dueDate } : {}),
         pax: num(f.pax),
         kids: num(f.kids),
-        location: f.location.trim() || null,
+        location: f.location?.trim() || null,
+        // De drie kaartvelden gaan altijd samen met de tekst mee, ook als ze
+        // leeg zijn: anders blijven de oude coördinaten op een nieuw adres
+        // staan en opent de kaart de vorige zaal.
+        locationPlaceId: f.locationPlaceId ?? null,
+        locationLat: f.locationLat ?? null,
+        locationLng: f.locationLng ?? null,
         formule: f.formule.trim() || null,
         quoteAmount: num(f.quoteAmount),
         budget: num(f.quoteAmount),
@@ -111,9 +121,10 @@ export default function EventEditDialog({ open, onClose, ev }) {
         </div>
 
         <div style={grid}>
-          <Field label={t('events.fiche.locatie')}>
-            <Input value={f.location} onChange={set('location')} />
-          </Field>
+          <LocatieVeld
+            value={f}
+            onChange={(plek) => setF((x) => ({ ...x, ...plek, location: plek.location ?? '' }))}
+          />
           <Field label={t('events.fiche.formule')}>
             <Input value={f.formule} onChange={set('formule')} placeholder={t('events.velden.formule_hint')} />
           </Field>

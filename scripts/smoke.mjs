@@ -1532,6 +1532,31 @@ await test('het logboek toont wie wat veranderde, en filtert', async () => {
   await page.close()
 })
 
+await test('de locatie staat op de fiche, met een link naar de kaart', async () => {
+  const page = await tabblad('/events/t-trouw')
+
+  const fiche = await inhoud(page)
+  zouden(bevat(fiche, 'Hoeve Vanhove'), `de locatie staat niet op de fiche: ${fiche.slice(0, 200)}`)
+
+  // De link opent de gekozen plek en niet de eerste de beste zaal met die naam.
+  const kaart = page.getByRole('link', { name: /Op de kaart|On the map/i }).first()
+  const href = await kaart.getAttribute('href')
+  zouden(href?.includes('google.com/maps'), `de kaartlink wijst nergens heen: ${href}`)
+  zouden(href?.includes('query_place_id='), `de link kent de plek niet: ${href}`)
+
+  // En zonder Google-sleutel blijft het veld doen wat het altijd deed: typen.
+  await page.getByRole('button', { name: 'Fiche bewerken' }).first().click()
+  await page.waitForTimeout(600)
+  const dialoog = page.getByRole('dialog')
+  await dialoog.getByLabel('Locatie').fill('Schuur achteraan, Kortessem')
+  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  await page.waitForTimeout(900)
+  zouden(bevat(await inhoud(page), 'Schuur achteraan'), 'de getypte locatie werd niet bewaard')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de notities staan naast het event en zijn het gesprek', async () => {
   const page = await tabblad('/events/t-trouw')
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addDays, dayKey } from '@lib/dates'
 import { bestelTekst, bestellijstVan, prijsVan, standaardKeuzes } from '@lib/formules'
+import { leegLocatie } from '@lib/kaart'
 import { Button, Dialog, Field, Icon, Input, Select, Tabs } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -11,6 +12,7 @@ import { createEventFromTemplate } from '@data/events'
 import { resolveTemplate, templateSummary } from '@data/templates'
 import { formuleSamenvatting } from '@data/formules'
 import CustomerPicker from './CustomerPicker'
+import LocatieVeld from './LocatieVeld'
 
 const euro = (bedrag) =>
   new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(Number(bedrag) || 0)
@@ -35,6 +37,10 @@ export default function NewEventDialog({ open, onClose }) {
   const [name, setName] = useState('')
   const [date, setDate] = useState(() => dayKey(addDays(new Date(), 45)))
   const [brandId, setBrandId] = useState('')
+  // De zaal is bijna altijd bekend op het moment dat de telefoon opgelegd
+  // wordt. Hier vragen scheelt een tweede keer de fiche opendoen — en een
+  // event zonder locatie is een event waar niemand naartoe kan rijden.
+  const [plek, setPlek] = useState(() => leegLocatie())
   // Een event zonder klant is een event zonder historiek; daarom staat de keuze
   // hier al en niet pas op de fiche.
   const [klant, setKlant] = useState({ customerId: '', customerName: '' })
@@ -78,6 +84,7 @@ export default function NewEventDialog({ open, onClose }) {
         createdBy: uid,
         customerId: klant.customerId,
         customerName: klant.customerName,
+        plek,
         formule: modus === 'formule' ? formule : null,
         keuzes: modus === 'formule' ? keuzes : null,
         pax: modus === 'formule' ? pax : null,
@@ -85,6 +92,7 @@ export default function NewEventDialog({ open, onClose }) {
       toast.success(t('events.nieuw.gemaakt', { naam: name.trim() }))
       setName('')
       setKlant({ customerId: '', customerName: '' })
+      setPlek(leegLocatie())
       onClose()
       navigate(`/events/${id}`)
     } catch (err) {
@@ -135,6 +143,7 @@ export default function NewEventDialog({ open, onClose }) {
         <Field label={t('events.velden.datum')} hint={t('events.nieuw.datum_hint')}>
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
+        <LocatieVeld value={plek} onChange={setPlek} />
         <Field label={t('events.velden.concept')}>
           <Select
             value={brandId}
