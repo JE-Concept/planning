@@ -83,6 +83,67 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    /*
+      ── Waarom hier vormcontroles staan ──────────────────────────────────
+
+      Tot nu keken de regels alleen naar wie er schreef, niet naar wát er
+      geschreven werd. Wie mocht schrijven, mocht álles schrijven: een
+      offertebedrag als tekst, een titel die leeg is, een aantal gasten van
+      min tien. Dat is geen wantrouwen tegenover het team — het is een
+      openstaand tabblad met oude code, een script dat ernaast zit, of een
+      veld dat ooit een keuzelijst was en nu vrije tekst. De rapportage klopt
+      dan niet meer en niemand weet waarom.
+
+      Alleen de velden waar geld, tijd en rapportage aan hangen worden
+      gecontroleerd. De rest blijft vrij: een regel die elk nieuw veld
+      vooraf moet kennen, is een regel die bij elke wijziging in de weg
+      staat en dan uitgezet wordt.
+    */
+
+    /** Een veld dat er mag zijn of niet, maar als het er is, het juiste type. */
+    function tekstOfNiets(veld) {
+      return !(veld in request.resource.data)
+        || request.resource.data[veld] == null
+        || request.resource.data[veld] is string;
+    }
+
+    function getalOfNiets(veld) {
+      return !(veld in request.resource.data)
+        || request.resource.data[veld] == null
+        || request.resource.data[veld] is number;
+    }
+
+    /** Een bedrag: een getal, niet negatief, en binnen wat een event kan kosten. */
+    function bedragOfNiets(veld) {
+      return getalOfNiets(veld)
+        && (!(veld in request.resource.data) || request.resource.data[veld] == null
+            || (request.resource.data[veld] >= 0 && request.resource.data[veld] <= 10000000));
+    }
+
+    /** Een aantal personen, dagen of uren: een heel getal dat niet negatief is. */
+    function aantalOfNiets(veld) {
+      return getalOfNiets(veld)
+        && (!(veld in request.resource.data) || request.resource.data[veld] == null
+            || (request.resource.data[veld] >= 0 && request.resource.data[veld] <= 100000));
+    }
+
+    function lijstOfNiets(veld) {
+      return !(veld in request.resource.data)
+        || request.resource.data[veld] == null
+        || request.resource.data[veld] is list;
+    }
+
+    /*
+      Wie iets aanmaakte en wanneer, verandert nooit meer.
+
+      Een aanmaakdatum die opschuift maakt elk rapport over doorlooptijd
+      waardeloos, en een `createdBy` die van naam wisselt maakt het logboek
+      een verhaal in plaats van een geheugen. Bijwerken mag alles behalve dit.
+    */
+    function herkomstBlijft() {
+      return !changedKeys().hasAny(['createdAt', 'createdBy']);
+    }
+
     // ── People ────────────────────────────────────────────────────────────
 
     match /profiles/{uid} {
@@ -168,9 +229,36 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/lists/$(listId)).data.kind == 'social';
     }
 
+    /*
+      De vorm van een taak of event.
+
+      `title` is het enige dat er moet zijn: een taak zonder titel is een lege
+      rij die niemand kan thuisbrengen. De rest mag ontbreken — een aanvraag
+      begint nu eenmaal met een naam en verder niets — maar als ze er staat,
+      staat ze in het juiste type.
+    */
+    function taakVorm() {
+      return request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 500
+        && bedragOfNiets('quoteAmount')
+        && bedragOfNiets('budget')
+        && aantalOfNiets('pax')
+        && aantalOfNiets('kids')
+        && aantalOfNiets('trackedSeconds')
+        && tekstOfNiets('location')
+        && tekstOfNiets('statusName')
+        && tekstOfNiets('planning')
+        && tekstOfNiets('customerId')
+        && lijstOfNiets('assignees')
+        && lijstOfNiets('tags');
+    }
+
     match /tasks/{id} {
       allow read:   if isTeam();
-      allow write:  if isTeam();
+      allow create: if isTeam() && taakVorm();
+      allow update: if isTeam() && taakVorm() && herkomstBlijft();
+      allow delete: if isTeam();
       allow create: if isSocial() && lijstIsSocial(request.resource.data.listId);
       allow update: if isSocial()
         && (socialVelden() || (lijstIsSocial(resource.data.listId) && lijstIsSocial(request.resource.data.listId)));
@@ -197,7 +285,29 @@ service cloud.firestore {
       vanuit de tool gezet en verder alleen door de functie gelezen — die gaat
       hier met beheerdersrechten langs en niet door deze regels.
     */
-    match /customers/{id}   { allow read: if isTeam(); allow write: if isTeam(); }
+    /*
+      Een klant heeft een naam nodig en verder niets. Het btw-nummer wordt
+      netjes gezet en niet geweigerd (zie `@lib/klanten`): een half nummer is
+      beter dan een leeg veld, en op het scherm staat waarom het nagekeken
+      moet worden.
+    */
+    function klantVorm() {
+      return request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 300
+        && tekstOfNiets('vatNumber')
+        && tekstOfNiets('email')
+        && tekstOfNiets('phone')
+        && tekstOfNiets('portalToken')
+        && lijstOfNiets('contacts');
+    }
+
+    match /customers/{id} {
+      allow read:   if isTeam();
+      allow create: if isTeam() && klantVorm();
+      allow update: if isTeam() && klantVorm() && herkomstBlijft();
+      allow delete: if isTeam();
+    }
     /*
       Notities: het gesprek tussen medewerkers.
 
@@ -385,8 +495,34 @@ service cloud.firestore {
       een browser zonder login in deze collectie kan kijken, ook niet met het
       juiste token.
     */
+    /*
+      Een offerte draagt het geld. De regels staan als lijst op het document,
+      dus die kan een regel hier niet stuk voor stuk nakijken — wel dat het
+      een lijst is, en dat de sleutel waarmee de klant ze opent niet stilletjes
+      van eigenaar verandert.
+
+      `token` blijft: wie hem wijzigt, breekt de link die al bij de klant in
+      een mail staat. Vernieuwen kan wel bewust, via `vernieuwToken`, en dat
+      schrijft ook `updatedAt` — vandaar dat die uitzondering hier staat.
+    */
+    function offerteVorm() {
+      return tekstOfNiets('nummer')
+        && tekstOfNiets('status')
+        && tekstOfNiets('klantNaam')
+        && tekstOfNiets('eventNaam')
+        && tekstOfNiets('locatie')
+        && tekstOfNiets('token')
+        && aantalOfNiets('personen')
+        && bedragOfNiets('bedragExcl')
+        && bedragOfNiets('bedragIncl')
+        && lijstOfNiets('regels');
+    }
+
     match /offertes/{id} {
-      allow read, write: if isTeam();
+      allow read:   if isTeam();
+      allow create: if isTeam() && offerteVorm();
+      allow update: if isTeam() && offerteVorm() && herkomstBlijft();
+      allow delete: if isTeam();
     }
 
     /*

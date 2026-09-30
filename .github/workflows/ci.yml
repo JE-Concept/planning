@@ -17,9 +17,24 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      # De Firestore-emulator draait op Java. Die staat op de runner, maar
+      # niet altijd in een versie die de emulator aanvaardt; vastzetten scheelt
+      # een test die op een dinsdag ineens niet meer start.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - run: npm ci --no-audit --no-fund
       - run: npm run lint
       - run: npm test
+
+      # De echte `firestore.rules` tegen een echte database. Dit draait niet
+      # mee in `npm test` omdat het een emulator nodig heeft (en dus Java);
+      # lokaal slaan die tests zichzelf over en zeggen ze dat. Hier moeten ze
+      # wél draaien: een fout in de rules kwam tot nu pas in productie aan het
+      # licht, op een tool waar klantgegevens en bedragen in staan.
+      - name: Regeltest
+        run: npm run test:rules
 
       # De browsertest draait de echte app op de demobuild: elke pagina open,
       # geen wit scherm, geen fout in de console. De unittests dekken het
