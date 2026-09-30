@@ -43,7 +43,7 @@ export default function AppShell({ children }) {
 }
 
 function Shell({ children }) {
-  const { isStaff, isAdmin, uid } = useAuth()
+  const { isStaff, isAdmin, isSocial, uid } = useAuth()
   const { loading, error, vastgelopen } = useWorkspace()
   const { events } = useEvents()
   const navCounts = useNavCounts()
@@ -58,7 +58,7 @@ function Shell({ children }) {
   // Zoals in het design: op een breed scherm staat de assistent open tot je
   // hem sluit (dat wordt onthouden), op een telefoon dicht — daar zou hij het
   // hele scherm afdekken.
-  const chatOpen = !isStaff && (narrow ? open === true : open ?? true)
+  const chatOpen = !isStaff && !isSocial && (narrow ? open === true : open ?? true)
 
   // Een melding terwijl de app open staat toont de browser niet zelf — dan
   // wordt het een toast.
@@ -86,7 +86,7 @@ function Shell({ children }) {
     [navCounts, events]
   )
 
-  const nav = mainNav({ isAdmin, isStaff })
+  const nav = mainNav({ isAdmin, isStaff, isSocial })
 
   return (
     <div className="je-shell">
@@ -118,7 +118,7 @@ function Shell({ children }) {
 
         {narrow ? <MobileBar uid={uid} isStaff={isStaff} /> : null}
 
-        {isStaff ? null : (
+        {isStaff || isSocial ? null : (
           <div className="je-topbar">
             <GlobalSearch narrow={narrow} />
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>

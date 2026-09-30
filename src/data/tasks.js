@@ -443,12 +443,22 @@ export function useTaskSearch(term, { max = 250, enabled = true } = {}) {
  * wordt: wat vandaag op "invoiced" staat, staat morgen op dit bord, zonder
  * migratie.
  */
-export function useSocialEvents() {
+export function useSocialEvents({ aan = true } = {}) {
   const [perStatus, setPerStatus] = useState([])
   const [metStand, setMetStand] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(aan)
 
   useEffect(() => {
+    // De socialrol mag `tasks` niet lezen en leest de kale kopie; dan hoort dit
+    // abonnement niet open te gaan. Een geweigerde vraag is geen lege lijst maar
+    // een fout, en die strandt het scherm.
+    if (!aan) {
+      setPerStatus([])
+      setMetStand([])
+      setLoading(false)
+      return undefined
+    }
+
     const klaar = new Set(['status', 'stand'])
     const af = (welke) => {
       klaar.delete(welke)
@@ -487,7 +497,7 @@ export function useSocialEvents() {
       stop1()
       stop2()
     }
-  }, [])
+  }, [aan])
 
   const events = useMemo(() => {
     const perId = new Map()

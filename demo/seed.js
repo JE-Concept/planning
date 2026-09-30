@@ -183,6 +183,48 @@ function taak(id, listId, statuses, statusName, o = {}) {
     clickupId: o.clickupId ?? null,
     createdBy: 'u-jasper', createdAt: o.createdAt ?? dag(-30), updatedAt: dag(-1),
   })
+
+  spiegelSocial(id, {
+    title: o.title,
+    listId,
+    listName: list,
+    statusName: s.name,
+    statusKind: s.kind,
+    socialStage: o.socialStage ?? null,
+    socialWanted: o.socialWanted ?? null,
+    dueDate: o.dueDate ?? null,
+    eventDate: o.eventDate ?? (o.parentId ? null : o.dueDate ?? null),
+    location: o.location ?? null,
+    customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
+    brandId: o.brandId ?? null,
+    assignees: o.assignees ?? [],
+    tags: o.tags ?? [],
+    parentId: o.parentId ?? null,
+    position: pos,
+    archived: false,
+  })
+}
+
+/**
+ * De kale kopie van een event, zoals de socialrol ze ziet.
+ *
+ * In de echte tool houdt een trigger deze bij (`functions/social-projectie.js`);
+ * de demo heeft geen functions, dus doet de seed het. Wat erin mag staat daar
+ * als witte lijst, en hier staat precies hetzelfde — met opzet géén `budget`,
+ * `quoteAmount` of `pax`.
+ *
+ * Dat de twee uit elkaar kunnen lopen is het risico van een demo zonder server.
+ * Het alternatief — de socialrol in de demo op de echte events laten kijken —
+ * is erger: dan zegt de browsertest groen over een scherm dat live iets anders
+ * toont.
+ */
+const SOCIAL_VANAF = ['ready to invoice', 'invoiced', 'complete']
+function spiegelSocial(id, kaart) {
+  const hoortErop =
+    kaart.socialWanted !== false &&
+    (Boolean(kaart.socialStage) || kaart.socialWanted === true || SOCIAL_VANAF.includes(kaart.statusName))
+  if (!hoortErop || kaart.parentId) return
+  seedDoc('socialEvents', id, { ...kaart, taskId: id, bijgewerkt: NU })
 }
 
 taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],

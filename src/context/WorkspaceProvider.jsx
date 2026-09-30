@@ -22,7 +22,7 @@ export const DEFAULT_COST_CENTERS = [
  * subscription per collection costs far less than re-reading them per view.
  */
 export function WorkspaceProvider({ children }) {
-  const { state, isStaff } = useAuth()
+  const { state, isStaff, isSocial } = useAuth()
   const [data, setData] = useState({
     profiles: [],
     brands: [],
@@ -47,7 +47,9 @@ export function WorkspaceProvider({ children }) {
     // rechtenfouten op in plaats van een lijst.
     const pending = isStaff
       ? new Set(['profiles'])
-      : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags', 'templates', 'formules'])
+      : isSocial
+        ? new Set(['profiles', 'brands', 'lists', 'tags'])
+        : new Set(['profiles', 'brands', 'spaces', 'folders', 'lists', 'tags', 'templates', 'formules'])
     const settle = (key) => {
       pending.delete(key)
       if (pending.size === 0) {
@@ -86,9 +88,24 @@ export function WorkspaceProvider({ children }) {
 
     const unsubscribers = [
       subscribe('profiles', query(col(COL.profiles), orderBy('email'))),
+      /*
+        De socialrol leest alleen wat ze nodig heeft, en dat is precies wat de
+        regels haar toestaan. Dat is geen overdaad aan voorzichtigheid: een
+        abonnement dat de regels weigeren laat het hele scherm op een
+        foutmelding stranden. Wat de client vraagt, moet spiegelen wat de regels
+        toelaten — anders werkt er niets in plaats van iets minder.
+
+        `formules` en `templates` staan er niet bij: daar staan prijzen in.
+      */
       ...(isStaff
         ? []
-        : [
+        : isSocial
+          ? [
+              subscribe('brands', query(col(COL.brands), orderBy('position'))),
+              subscribe('lists', query(col(COL.lists), orderBy('position'))),
+              subscribe('tags', query(col(COL.tags), orderBy('name'))),
+            ]
+          : [
             subscribe('brands', query(col(COL.brands), orderBy('position'))),
             subscribe('spaces', query(col(COL.spaces), orderBy('position'))),
             subscribe('folders', query(col(COL.folders), orderBy('position'))),
@@ -116,7 +133,7 @@ export function WorkspaceProvider({ children }) {
       clearTimeout(klok)
       unsubscribers.forEach((stop) => stop())
     }
-  }, [state, isStaff])
+  }, [state, isStaff, isSocial])
 
   const value = useMemo(() => {
     const byId = (items) => Object.fromEntries(items.map((i) => [i.id, i]))

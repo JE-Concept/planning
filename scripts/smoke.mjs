@@ -1386,6 +1386,32 @@ await test('personeel komt op de dagelijkse lijst en nergens anders', async () =
   await page.close()
 })
 
+await test('de socialrol komt op de socials en ziet geen bedragen', async () => {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  const fouten = []
+  page.on('pageerror', (e) => fouten.push(String(e).split('\n')[0]))
+  await page.goto(`${adres}/?rol=social#/instellingen`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(1200)
+
+  const tekst = (await page.locator('body').innerText()).trim()
+  zouden(bevat(tekst, 'Socials'), 'de socialrol ziet de socials niet')
+  for (const verboden of ['Instellingen', 'Teamoverleg', 'Werklast', 'Klanten', 'Dashboard']) {
+    zouden(!tekst.includes(verboden), `de socialrol ziet "${verboden}"`)
+  }
+
+  // Het eventbord van de socials opent een eigen paneel: naam, datum, stand en
+  // de posts — en geen enkel bedrag. Dat het ook echt niet op te vragen is,
+  // staat in firestore.rules; dit kijkt na of het scherm klopt.
+  await page.getByText('Blum België — kerstborrel 2025').first().click()
+  await page.waitForTimeout(700)
+  const paneel = (await page.locator('body').innerText()).trim()
+  zouden(bevat(paneel, 'Stand van de content'), `het event opent niet: ${paneel.replace(/\n/g, ' | ').slice(-400)}`)
+  zouden(!/€|16\.399|Budget|Offerte/i.test(paneel), `er staat een bedrag op: ${paneel.replace(/\n/g, ' | ').slice(0, 300)}`)
+
+  zouden(fouten.length === 0, `fouten: ${fouten[0]}`)
+  await page.close()
+})
+
 // ─── 5. Installeerbaar op de telefoon ───────────────────────────────────────
 
 await test('het manifest en de iconen staan er', async () => {

@@ -142,6 +142,14 @@ export function AuthProvider({ children }) {
       isAdmin: profile?.role === 'owner' || profile?.role === 'admin',
       /** Personeel: alleen de openings- en sluitingslijst, verder niets. */
       isStaff: profile?.role === 'staff',
+      /**
+       * De socialrol: alleen de socials.
+       *
+       * Ze ziet geen bedragen — niet omdat het scherm ze verzwijgt, maar omdat
+       * de regels haar de events niet laten lezen. Ze werkt met een kale kopie
+       * zonder één bedrag erin. Zie `functions/social-projectie.js`.
+       */
+      isSocial: profile?.role === 'social',
     }),
     [state, user, profile, error, signIn, logOut]
   )

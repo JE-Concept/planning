@@ -40,6 +40,7 @@ export const COL = {
   shifts: 'shifts',
   formules: 'formules',
   offertes: 'offertes',
+  socialEvents: 'socialEvents',
 }
 
 export const col = (name) => collection(db, name)

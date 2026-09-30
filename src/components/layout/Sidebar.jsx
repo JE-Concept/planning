@@ -28,9 +28,15 @@ import AgendaAbonnement from '@components/kalenderfeed/AgendaAbonnement'
  * `match` bestaat omdat het pad niet altijd het menu-item is: /events/<id> hoort
  * bij Events, en /bord/<id> bij het bord waar je op klikte.
  */
-export function navSecties({ isAdmin, isStaff }) {
+export function navSecties({ isAdmin, isStaff, isSocial }) {
   if (isStaff) {
     return [{ to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten', kinderen: [] }]
+  }
+
+  // De socialrol heeft één plek. De rest weigeren de regels toch; dit zorgt dat
+  // ze er niet op stuit in plaats van op een leeg scherm met foutmeldingen.
+  if (isSocial) {
+    return [{ to: '/social', icon: 'share-2', sleutel: 'nav.socials', kinderen: [] }]
   }
 
   /*
@@ -50,14 +56,21 @@ export function navSecties({ isAdmin, isStaff }) {
       icon: 'kanban',
       sleutel: 'nav.events',
       end: true,
-      match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten' || p === '/social',
+      match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten',
       kinderen: [
         { to: '/', icon: 'kanban', sleutel: 'nav.bord', end: true, match: (p) => p === '/' || p.startsWith('/events') },
         { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
         { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
-        { to: '/social', icon: 'share-2', sleutel: 'nav.socials' },
       ],
     },
+    /*
+      Socials staat op zichzelf en niet meer onder Events.
+
+      Het hing daar omdat de content uit een event komt, maar dat is niet hoe
+      er gewerkt wordt: wie de socials doet, doet de hele week socials en komt
+      niet eerst langs het eventbord. En er is nu een rol die niets anders doet.
+    */
+    { to: '/social', icon: 'share-2', sleutel: 'nav.socials', kinderen: [] },
     {
       to: '/tasks',
       icon: 'check-circle',
@@ -94,13 +107,14 @@ export function navSecties({ isAdmin, isStaff }) {
 }
 
 /** De platte lijst die de onderbalk op een telefoon nodig heeft. */
-export function mainNav({ isAdmin, isStaff }) {
+export function mainNav({ isAdmin, isStaff, isSocial }) {
   if (isStaff) return [{ to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' }]
+  if (isSocial) return [{ to: '/social', icon: 'share-2', sleutel: 'nav.socials' }]
   return [
     { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
     { to: '/', icon: 'kanban', sleutel: 'nav.events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
     { to: '/tasks', icon: 'check-circle', sleutel: 'nav.tasks' },
-    { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
+    { to: '/social', icon: 'share-2', sleutel: 'nav.socials' },
     { to: '/werklast', icon: 'users', sleutel: 'nav.werklast' },
     ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', sleutel: 'nav.instellingen' }] : []),
   ]
@@ -110,7 +124,7 @@ export function mainNav({ isAdmin, isStaff }) {
 export const MORE = [
   { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
   { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
-  { to: '/social', icon: 'share-2', sleutel: 'nav.socials' },
+  { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
   { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
   { to: '/registraties', icon: 'file-text', sleutel: 'nav.registraties' },
   { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
@@ -124,16 +138,17 @@ export const ROLE_LABEL = {
   admin: 'rol.admin',
   member: 'rol.member',
   staff: 'rol.staff',
+  social: 'rol.social',
   guest: 'rol.guest',
 }
 
 export default function Sidebar({ counts = {} }) {
-  const { isAdmin, isStaff } = useAuth()
+  const { isAdmin, isStaff, isSocial } = useAuth()
   const { t } = useTaal()
   const location = useLocation()
   const [zoekArgs] = useSearchParams()
 
-  const secties = useMemo(() => navSecties({ isAdmin, isStaff }), [isAdmin, isStaff])
+  const secties = useMemo(() => navSecties({ isAdmin, isStaff, isSocial }), [isAdmin, isStaff, isSocial])
 
   // De borden van Tasks staan op hetzelfde pad en verschillen alleen in de lijst
   // die erbij hoort; daarom kijkt `match` ook naar wat er achter het vraagteken
@@ -205,6 +220,7 @@ export default function Sidebar({ counts = {} }) {
         </nav>
       </div>
 
+      {/* De socialrol boekt ook tijd op haar posts, dus de timer blijft staan. */}
       {isStaff ? null : <SideTimer />}
 
       <Me />

@@ -60,7 +60,7 @@ function Pages({ children }) {
 }
 
 function Authenticated() {
-  const { state, isStaff } = useAuth()
+  const { state, isStaff, isSocial } = useAuth()
 
   if (state === 'loading') return <Loading />
   if (state !== 'ready') return <Login />
@@ -75,6 +75,28 @@ function Authenticated() {
             <Routes>
               <Route path="/openen-sluiten" element={<Checklists />} />
               <Route path="*" element={<Navigate to="/openen-sluiten" replace />} />
+            </Routes>
+          </Pages>
+        </AppShell>
+      </WorkspaceProvider>
+    )
+  }
+
+  /*
+    De socialrol heeft één scherm, net als personeel.
+
+    Ook hier geldt: de regels weigeren de rest sowieso, dit zorgt dat ze er niet
+    op stuit. Het verschil met personeel is dat zij wél tijd boekt — op haar
+    posts — en daarvoor is de timer in de zijbalk genoeg.
+  */
+  if (isSocial) {
+    return (
+      <WorkspaceProvider>
+        <AppShell>
+          <Pages>
+            <Routes>
+              <Route path="/social" element={<SocialCalendar />} />
+              <Route path="*" element={<Navigate to="/social" replace />} />
             </Routes>
           </Pages>
         </AppShell>

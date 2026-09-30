@@ -152,6 +152,9 @@ const ROLES = [
   { value: 'admin', sleutel: 'rol.admin' },
   { value: 'member', sleutel: 'rol.member' },
   { value: 'staff', sleutel: 'rol.staff' },
+  // De socialrol: alleen de socials, en geen bedragen. Dat laatste zit in de
+  // regels en niet in het scherm — zie `functions/social-projectie.js`.
+  { value: 'social', sleutel: 'rol.social' },
   { value: 'guest', sleutel: 'rol.guest' },
 ]
 

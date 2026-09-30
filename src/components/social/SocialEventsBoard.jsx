@@ -8,6 +8,8 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask, updateTask, useSocialEvents, useTasks } from '@data/tasks'
+import { useSocialEventKaarten } from '@data/social-events'
+import SocialEventPaneel from './SocialEventPaneel'
 
 /**
  * Het socialbord: elk event dat content moet opleveren, in drie stappen.
@@ -18,11 +20,23 @@ import { createTask, updateTask, useSocialEvents, useTasks } from '@data/tasks'
  * niet over het beeldmateriaal.
  */
 export default function SocialEventsBoard({ socialOwner = null }) {
-  const { events: alles, loading } = useSocialEvents()
-  const { profileById, tags, boards, socialLists } = useWorkspace()
   const { t } = useTaal()
   const toast = useToast()
-  const { uid } = useAuth()
+  const { uid, isSocial } = useAuth()
+
+  /*
+    Twee bronnen voor dezelfde kaarten, en met opzet maar één tegelijk open.
+
+    Het team leest de events zelf. De socialrol mag dat niet — daar staan de
+    bedragen op — en leest de kale kopie uit `socialEvents`. Het `aan`-vlaggetje
+    zorgt dat er geen abonnement opengaat dat de regels toch weigeren: zo'n
+    geweigerde vraag laat het hele scherm op een foutmelding stranden.
+  */
+  const team = useSocialEvents({ aan: !isSocial })
+  const kopie = useSocialEventKaarten({ aan: isSocial })
+  const { events: alles, loading } = isSocial ? kopie : team
+
+  const { profileById, tags, boards, socialLists } = useWorkspace()
   const [openTaskId, setOpenTaskId] = useState(null)
   const [nieuw, setNieuw] = useState('')
   const [bezig, setBezig] = useState(false)
@@ -177,7 +191,11 @@ export default function SocialEventsBoard({ socialOwner = null }) {
       </div>
 
       {openTaskId ? (
-        <EventPaneel taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
+        isSocial ? (
+          <SocialEventPaneel taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
+        ) : (
+          <EventPaneel taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
+        )
       ) : null}
     </>
   )

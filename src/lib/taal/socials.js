@@ -190,4 +190,18 @@ export default {
     en: 'An event turns up here by itself once it reaches “ready to invoice”. Sooner works too: switch it on in the event. Work that stands apart from an event, you add here.',
   },
   'social.bord.sleep_hier': { nl: 'Sleep hier een event naartoe', en: 'Drag an event over here' },
+
+  // ── Het event zoals de socialrol het opent ─────────────────────────────
+  'social.event.geen_naam': { nl: 'Event zonder naam', en: 'Event without a name' },
+  'social.event.stand': { nl: 'Stand van de content', en: 'Content stage' },
+  'social.event.posts': { nl: 'Posts van dit event', en: 'Posts for this event' },
+  'social.event.geen_posts': {
+    nl: 'Nog geen post voor dit event.',
+    en: 'No post for this event yet.',
+  },
+  'social.event.weg': { nl: 'Dit event staat niet meer op het bord', en: 'This event is no longer on the board' },
+  'social.event.weg_uitleg': {
+    nl: 'Het is gearchiveerd, of er hoeft geen content meer van te komen.',
+    en: 'It has been archived, or no content is expected from it any more.',
+  },
 }

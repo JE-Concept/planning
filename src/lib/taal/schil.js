@@ -169,6 +169,7 @@ export default {
   'rol.admin': { nl: 'Beheerder', en: 'Administrator' },
   'rol.member': { nl: 'Lid', en: 'Member' },
   'rol.staff': { nl: 'Personeel', en: 'Staff' },
+  'rol.social': { nl: 'Social media', en: 'Social media' },
   'rol.guest': { nl: 'Gast', en: 'Guest' },
 
   // ── Tijd en prioriteit ─────────────────────────────────────────────────

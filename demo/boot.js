@@ -17,6 +17,20 @@ if (rol === 'personeel' || rol === 'staff') {
   updateDoc(doc(null, 'profiles', 'u-jasper'), { role: 'staff', fullName: 'Lotte Vrijsen' })
 }
 
+/**
+ * `?rol=social` toont wat een socialmedewerker ziet: de socials, en verder
+ * niets — geen bedragen, geen offertes, geen klantenfiches.
+ *
+ * In de echte tool komt dat verschil uit de beveiligingsregels: haar rol mag de
+ * events niet lezen en werkt met een kale kopie zonder bedragen. Deze demo
+ * heeft geen regels, dus hier doet de schakelaar alsof. Wat de browsertest
+ * hiermee nakijkt is dus of het scherm klopt; dat de gegevens echt afgeschermd
+ * zijn, staat in `firestore.rules` en in de trigger die de kopie bijhoudt.
+ */
+if (rol === 'social') {
+  updateDoc(doc(null, 'profiles', 'u-jasper'), { role: 'social', fullName: 'Charish Nolmans' })
+}
+
 console.info('JE Plan — demomodus: gegevens staan in het geheugen, niets wordt bewaard.')
 
 // Eerlijk zichtbaar maken dat dit voorbeeldgegevens zijn.
