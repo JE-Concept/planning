@@ -9,12 +9,17 @@
  * de rest naar het postvak waar iemand ernaar kijkt.
  *
  * ── De volgorde, van zeker naar waarschijnlijk ────────────────────────────
- * 1. **Het antwoordadres.** Post die JE Plan over een event stuurt, draagt
- *    `Reply-To: info+e<eventId>@jeconcept.be`. Antwoordt de klant, dan staat
- *    het event letterlijk in het adres. Dat is geen gok.
- * 2. **De draad.** `In-Reply-To` en `References` wijzen naar berichten die we
- *    al kennen. Hangt daar een event aan, dan hangt dit bericht er ook aan.
- *    Ook exact: die kop komt van het mailprogramma, niet van ons.
+ * 1. **De draad.** `In-Reply-To` en `References` wijzen naar berichten die we
+ *    al kennen — post die we zelf naar de klant stuurden. Hangt daar een event
+ *    aan, dan hangt dit bericht er ook aan. Exact: die koppen komen van het
+ *    mailprogramma van de klant, niet van ons, en ze overleven de tocht door
+ *    een Google Groep.
+ * 2. **Het antwoordadres.** Een adres van de vorm `naam+e<eventId>@domein`
+ *    draagt het event met zich mee. Let op: `info@jeconcept.be` is een groep,
+ *    en een groep kent geen plusadressering — mail naar `info+e123@` bouncet.
+ *    Deze regel geldt dus alleen wanneer iemand rechtstreeks naar de postbus
+ *    van de tool schrijft. Hij staat er omdat hij gratis is en omdat het adres
+ *    ooit wél een postbus kan worden, niet omdat we erop rekenen.
  * 3. **De afzender.** Het adres hoort bij een klant, en die klant heeft precies
  *    één lopend dossier. Dan is het dat. Heeft hij er meer, dan koppelen we
  *    niet: kiezen tussen twee dossiers van dezelfde klant is precies waar het
@@ -40,13 +45,14 @@ export const adressenVan = (waarde) =>
     .filter(Boolean)
 
 /**
- * Het antwoordadres voor een event.
+ * Een adres dat het event met zich meedraagt.
  *
  * Plusadressering: alles achter de `+` negeert de mailserver bij het bezorgen,
- * dus `info+e<id>@jeconcept.be` komt gewoon in `info@` terecht. Google Workspace
- * doet dat standaard. Zo draagt elk antwoord zijn eigen event bij zich zonder
- * dat er iets in het onderwerp hoeft — en een onderwerp knipt een klant af, een
- * adres niet.
+ * dus `plan+e<id>@jeconcept.be` komt gewoon in `plan@` terecht. Dat werkt voor
+ * een postbus, maar níét voor een Google Groep: `info+e<id>@jeconcept.be`
+ * wordt door Groups niet herkend en bouncet. Daarom wordt dit niet gebruikt
+ * als antwoordadres op post aan een klant — dat is de groep, waar het team het
+ * ook wil zien — en leunt het koppelen op de draad.
  */
 export function antwoordAdres(postbus, eventId) {
   const adres = adresVan(postbus)
@@ -110,20 +116,21 @@ export function kiesEvent({ bericht, bekend = [], events = [], klanten = [] }) {
     ...adressenVan(bericht?.deliveredTo),
   ]
 
-  // 1. Het antwoordadres draagt het event met zich mee.
-  for (const adres of ontvangers) {
-    const id = eventUitAdres(adres)
-    if (id && events.some((e) => e.id === id)) {
-      return { eventId: id, customerId: events.find((e) => e.id === id)?.customerId ?? null, reden: 'adres' }
-    }
-  }
-
-  // 2. De draad: een bericht dat we al kennen en dat aan een event hangt.
+  // 1. De draad: een bericht dat we al kennen en dat aan een event hangt.
   const perMessageId = new Map((bekend ?? []).filter((m) => m?.messageId).map((m) => [m.messageId, m]))
   for (const id of draadVan(bericht)) {
     const eerder = perMessageId.get(id)
     if (eerder?.eventId) {
       return { eventId: eerder.eventId, customerId: eerder.customerId ?? null, reden: 'draad' }
+    }
+  }
+
+  // 2. Een plusadres dat het event draagt. Zeldzaam sinds info@ een groep is;
+  //    zie de uitleg bovenaan.
+  for (const adres of ontvangers) {
+    const id = eventUitAdres(adres)
+    if (id && events.some((e) => e.id === id)) {
+      return { eventId: id, customerId: events.find((e) => e.id === id)?.customerId ?? null, reden: 'adres' }
     }
   }
 

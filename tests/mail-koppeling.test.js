@@ -153,7 +153,13 @@ describe('welk event', () => {
     expect(uit).toEqual({ eventId: null, customerId: null, reden: null })
   })
 
-  // Het adres wint van de draad, en de draad van de klant.
+  /*
+    De draad wint van het adres, en het adres van de klant.
+
+    De draad staat vooraan sinds info@ een groep bleek te zijn: een groep kent
+    geen plusadressering, dus het adres draagt daar zelden nog een event. De
+    koppen van het mailprogramma overleven de groep wél.
+  */
   it('houdt de volgorde van zeker naar waarschijnlijk aan', () => {
     const uit = kiesEvent({
       bericht: {
@@ -165,7 +171,18 @@ describe('welk event', () => {
       events: EVENTS,
       klanten: KLANTEN,
     })
-    expect(uit.eventId).toBe('t-blum')
+    expect(uit.eventId).toBe('t-blum-kerst')
+  })
+
+  // En zonder draad doet het plusadres nog gewoon zijn werk — voor het geval
+  // er ooit rechtstreeks naar de postbus van de tool geschreven wordt.
+  it('valt zonder draad terug op het plusadres', () => {
+    const uit = kiesEvent({
+      bericht: { van: 'niels@example.be', aan: 'plan+et-blum@jeconcept.be' },
+      events: EVENTS,
+      klanten: KLANTEN,
+    })
+    expect(uit).toEqual({ eventId: 't-blum', customerId: 'k-blum', reden: 'adres' })
   })
 })
 

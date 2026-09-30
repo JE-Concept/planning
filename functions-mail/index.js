@@ -47,26 +47,26 @@ const SMTP_URL = defineSecret('SMTP_URL')
 /** Van wie de post komt. Overschrijfbaar, want het adres is niet van de code. */
 const AFZENDER = process.env.MAIL_FROM ?? 'JE Plan <plan@jeconcept.be>'
 
-/** De postbus die de ophaler leest; daar horen de antwoorden terecht te komen. */
-const POSTBUS = process.env.MAIL_INBOX ?? 'info@jeconcept.be'
-
 /**
- * Het antwoordadres voor een event.
+ * Waar een antwoord van de klant hoort aan te komen.
  *
- * Plusadressering: alles achter de `+` negeert de mailserver bij het bezorgen,
- * dus `info+e<id>@jeconcept.be` komt gewoon in `info@` terecht. Antwoordt de
- * klant, dan staat het event letterlijk in het adres en hoeft er niets geraden
- * te worden.
+ * `info@jeconcept.be` is een Google Groep en geen postbus. Dat heeft twee
+ * gevolgen die hier allebei staan omdat ze anders stilletjes fout gaan:
  *
- * Dezelfde regel als in `functions/mail-koppeling.js`, en bewust een tweede
- * keer opgeschreven: deze codebase wordt apart verpakt en kan daar niets uit
- * importeren. Verandert de regel, dan moet het op beide plaatsen.
+ * 1. **Een groep kent geen plusadressering.** `info+e<id>@jeconcept.be` wordt
+ *    door Google Groups niet als de groep herkend en bouncet. Het event kan
+ *    dus niet in het antwoordadres — waar het in een gewone postbus wél had
+ *    gekund. Het antwoordadres is gewoon de groep.
+ * 2. **Het koppelen leunt dan op de draad.** `In-Reply-To` en `References`
+ *    wijzen naar het bericht dat wij verstuurd hebben, en die koppen komen van
+ *    het mailprogramma van de klant. Dat is even exact als een adres, en het
+ *    werkt door een groep heen: Google Groups laat die koppen staan.
+ *
+ * Wie antwoordt, antwoordt dus aan de groep — en dat is ook waar het team het
+ * wil zien. De tool leest mee via een postbus die lid is van die groep; zie
+ * `postvak.js`.
  */
-function antwoordAdres(eventId) {
-  if (!eventId) return null
-  const [lokaal, domein] = POSTBUS.split('@')
-  return domein ? `${lokaal}+e${eventId}@${domein}` : null
-}
+const ANTWOORD_AAN = process.env.MAIL_REPLY_TO ?? 'info@jeconcept.be'
 
 /**
  * Eén rij uit de wachtrij versturen.
@@ -97,13 +97,14 @@ export const sendQueuedMail = onDocumentCreated(
 
     try {
       const post = nodemailer.createTransport(url)
-      const replyTo = antwoordAdres(rij.eventId)
       const antwoord = await post.sendMail({
         from: AFZENDER,
         to: rij.aan,
         subject: rij.onderwerp,
         text: rij.tekst,
-        ...(replyTo ? { replyTo } : {}),
+        // Alleen bij post aan een klant: een melding aan een collega hoort
+        // niet in de groep te belanden.
+        ...(rij.klantMail ? { replyTo: ANTWOORD_AAN } : {}),
       })
 
       await event.data.ref.update({
@@ -164,7 +165,7 @@ async function bewaarUitgaand(db, rij, messageId) {
         eventId: rij.eventId,
         customerId: rij.customerId ?? null,
         // Geen gok: wij hebben hem zelf verstuurd vanaf dit event.
-        koppeling: 'adres',
+        koppeling: 'verstuurd',
         opgehaaldOp: FieldValue.serverTimestamp(),
       },
       { merge: true }

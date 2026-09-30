@@ -964,7 +964,7 @@ mail('m-trouw-2', {
   datum: dag(-10),
   eventId: 't-trouw',
   customerId: 'k-niels-inez',
-  koppeling: 'adres',
+  koppeling: 'verstuurd',
 })
 mail('m-aanvraag-kristien', {
   van: 'Kristien Maris <k.maris@example.be>',

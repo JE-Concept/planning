@@ -5,6 +5,9 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { ontkoppelMail, useEventMails } from '@data/mails'
 
+/** Koppelingen waar niets aan te twijfelen valt. */
+const ZEKER = ['verstuurd', 'adres', 'draad', 'handmatig']
+
 /**
  * De mailwisseling met de klant, op het event.
  *
@@ -61,7 +64,13 @@ function MailBericht({ mail, toast, t }) {
         <Icon name={uitgaand ? 'arrow-right' : 'mail'} size={14} />
         <span className="je-mail__wie">{uitgaand ? mail.aan : mail.van}</span>
         <span className="je-muted-caption">{mail.datum ? formatDateTime(mail.datum) : ''}</span>
-        {mail.koppeling && mail.koppeling !== 'adres' && mail.koppeling !== 'handmatig' ? (
+        {/*
+          Zeker zijn: wij hebben hem zelf verstuurd, hij droeg het event in
+          het adres, hij hangt aan een bericht uit deze draad, of iemand heeft
+          hem met de hand gekoppeld. De rest is een redenering, en die hoort
+          zichtbaar te zijn.
+        */}
+        {mail.koppeling && !ZEKER.includes(mail.koppeling) ? (
           <Badge tone="warning" title={t(`mail.koppeling.${mail.koppeling}`)}>
             {t('mail.geraden')}
           </Badge>
@@ -88,7 +97,7 @@ function MailBericht({ mail, toast, t }) {
             {open ? t('mail.minder') : t('mail.meer')}
           </Button>
         ) : null}
-        {mail.koppeling && mail.koppeling !== 'adres' ? (
+        {mail.koppeling && !ZEKER.includes(mail.koppeling) ? (
           <Button
             variant="ghost"
             size="sm"

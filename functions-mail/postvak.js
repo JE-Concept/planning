@@ -6,20 +6,38 @@ import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
 
 /**
- * De post van info@jeconcept.be ophalen.
+ * De post van info@jeconcept.be ophalen, uit de postbus die lid is van die groep.
+ *
+ * ── info@ is een groep, geen postbus ──────────────────────────────────────
+ * Dit is het eerste dat je moet weten, want het bepaalt de hele opzet: een
+ * Google Groep heeft geen IMAP. Er valt niets in te loggen, want er staat
+ * niets: een groep bezorgt post aan haar leden en houdt zelf alleen een
+ * archief bij dat je enkel in de webinterface ziet.
+ *
+ * Daarom leest deze functie niet de groep maar een **postbus die lid is van
+ * die groep**. Alles wat naar `info@jeconcept.be` gaat, wordt aan dat lid
+ * bezorgd, en dát is een gewone Gmail-postbus met IMAP. In de praktijk is dat
+ * `plan@jeconcept.be`, dezelfde postbus waarvandaan de tool verstuurt: één
+ * adres, één app-wachtwoord, en de verzonden post staat in Verzonden en niet
+ * in Postvak IN, dus de tool leest zijn eigen berichten niet terug.
+ *
+ * Wat er ingesteld moet worden, staat in de README. Kort: het lid toevoegen
+ * aan de groep met bezorging "elke e-mail", anders komt er niets binnen en
+ * lijkt het alsof de ophaler stuk is.
  *
  * ── Waarom IMAP en niet de Gmail-API ──────────────────────────────────────
  * Dezelfde afweging als bij het versturen (zie `functions/mail.js`): geen
  * nieuwe leverancier, geen tweede account, geen extra koppeling die kan
  * verlopen. Het versturen gebruikt al een app-wachtwoord van de eigen Google
- * Workspace; het ophalen gebruikt er nog zo een. De Gmail-API met push is
- * sneller, maar vraagt een OAuth-client, een Pub/Sub-topic en een `watch` die
- * elke week vernieuwd moet worden — drie dingen die stil kunnen stoppen, voor
- * een paar minuten winst op een aanvraag die toch dezelfde dag beantwoord
- * wordt.
+ * Workspace; het ophalen gebruikt hetzelfde. De Gmail-API met push is sneller,
+ * maar vraagt een OAuth-client, een Pub/Sub-topic en een `watch` die elke week
+ * vernieuwd moet worden — drie dingen die stil kunnen stoppen, voor een paar
+ * minuten winst op een aanvraag die toch dezelfde dag beantwoord wordt. En op
+ * een groep werkt die API net zomin.
  *
  * ── Waarom er niets aan de mailbox verandert ──────────────────────────────
- * Dit is een gedeelde postbus waar mensen in werken. Berichten als gelezen
+ * Ook een leespostbus kan door mensen geopend worden, en de groep bezorgt
+ * dezelfde post aan hen allemaal. Berichten als gelezen
  * markeren of verplaatsen zou hun postvak overhoophalen, en de eerste keer dat
  * dat gebeurt is het vertrouwen weg. Daarom raakt deze functie geen enkele
  * vlag aan en onthoudt ze zelf waar ze gebleven was: het hoogste UID dat ze
@@ -32,7 +50,7 @@ import { simpleParser } from 'mailparser'
  * en gaat de rest gewoon door — dezelfde reden waarom de verzender hier staat.
  *
  *   firebase functions:secrets:set IMAP_URL --project je-planning
- *   imaps://info%40jeconcept.be:<app-wachtwoord>@imap.gmail.com:993
+ *   imaps://plan%40jeconcept.be:<app-wachtwoord>@imap.gmail.com:993
  *
  * De gebruikersnaam en het wachtwoord moeten URL-gecodeerd zijn (een @ wordt
  * %40); een app-wachtwoord van Google bevat spaties, die eruit mogen.

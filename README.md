@@ -194,15 +194,29 @@ Een klant wordt **uit gebruik genomen**, niet gewist, zolang er events aan hange
 
 Een aanvraag komt binnen in een mailbox, en daar blijft ze — samen met de prijsvraag erna, het "kan het ook een week later" en de bevestiging. Wie het dossier overneemt, weet dan niet wat er afgesproken is. Daarom haalt JE Plan die post op en hangt ze aan het juiste event.
 
-**Ophalen** doet `functions-mail/postvak.js`, elke vijf minuten over IMAP, met een app-wachtwoord van de eigen Google Workspace. Dezelfde afweging als bij het versturen: geen nieuwe leverancier, geen tweede account, geen koppeling die stil kan verlopen. De Gmail-API met push is sneller maar vraagt een OAuth-client, een Pub/Sub-topic en een `watch` die elke week vernieuwd moet worden — drie dingen die stil kunnen stoppen, voor een paar minuten winst.
+**`info@jeconcept.be` is een Google Groep, geen postbus.** Dat bepaalt de hele opzet, dus het staat vooraan: een groep heeft geen IMAP. Er valt niets in te loggen, want er staat niets — een groep bezorgt post aan haar leden en houdt zelf alleen een archief bij dat je enkel in de webinterface ziet.
+
+JE Plan leest daarom niet de groep maar **een postbus die lid is van die groep**. Alles wat naar `info@jeconcept.be` gaat, wordt aan dat lid bezorgd, en dát is een gewone Gmail-postbus met IMAP. In de praktijk is dat `plan@jeconcept.be` — dezelfde postbus waarvandaan de tool verstuurt, dus één adres en één app-wachtwoord. Wat de tool zelf verstuurt komt in Verzonden en niet in Postvak IN, dus ze leest haar eigen berichten niet terug.
+
+**Instellen (dit moet iemand één keer doen):**
+
+1. Google Admin → Groepen → `info@jeconcept.be` → **Leden** → `plan@jeconcept.be` toevoegen, met bezorging **"Elke e-mail"**. Zonder dit komt er niets binnen en lijkt het alsof de ophaler stuk is.
+2. In Gmail van `plan@jeconcept.be`: **Instellingen → Doorsturen en POP/IMAP → IMAP inschakelen**.
+3. Een app-wachtwoord maken voor dat account en als geheim zetten:
+   `firebase functions:secrets:set IMAP_URL --project je-planning` met
+   `imaps://plan%40jeconcept.be:<app-wachtwoord>@imap.gmail.com:993`
+
+**Ophalen** doet `functions-mail/postvak.js`, elke vijf minuten over IMAP. Dezelfde afweging als bij het versturen: geen nieuwe leverancier, geen tweede account, geen koppeling die stil kan verlopen. De Gmail-API met push is sneller maar vraagt een OAuth-client, een Pub/Sub-topic en een `watch` die elke week vernieuwd moet worden — en op een groep werkt die API net zomin.
 
 De functie **raakt de mailbox niet aan**. Geen berichten als gelezen markeren, niets verplaatsen: het is een gedeelde postbus waar mensen in werken, en de eerste keer dat hun postvak overhoop ligt, is het vertrouwen weg. Ze onthoudt zelf waar ze gebleven was — het hoogste UID dat ze gezien heeft, in `instellingen/postvak`. Bij de allereerste keer gaat ze veertien dagen terug en niet verder: een postbus die jaren meegaat, bevat duizenden berichten die met geen enkel event te maken hebben.
 
 **Koppelen** gebeurt in `functions/mail-koppeling.js`, en dat staat apart en getest omdat een mail bij het verkeerde event zetten erger is dan hem nergens zetten. De volgorde loopt van zeker naar waarschijnlijk:
 
-1. **Het antwoordadres.** Post die JE Plan over een event stuurt, draagt `Reply-To: info+e<eventId>@jeconcept.be`. Alles achter de `+` negeert de mailserver bij het bezorgen, dus het antwoord komt gewoon in `info@` terecht — met het event erin. Dat is geen gok.
-2. **De draad.** `In-Reply-To` en `References` wijzen naar berichten die we al kennen. Ook exact: die koppen komen van het mailprogramma.
+1. **De draad.** `In-Reply-To` en `References` wijzen naar post die wij zelf naar de klant stuurden. Die koppen komen van het mailprogramma van de klant en overleven de tocht door de groep, dus dit is exact.
+2. **Een plusadres.** Een adres van de vorm `plan+e<eventId>@jeconcept.be` draagt het event met zich mee. Let op: dit geldt alleen voor de postbus, niet voor de groep — Google Groups kent geen plusadressering en `info+e123@` bouncet. De regel staat er omdat ze gratis is, niet omdat we erop rekenen.
 3. **De afzender.** Het adres hoort bij een klant (op de fiche of bij een contactpersoon) die precies één lopend dossier heeft. Heeft hij er meer, dan koppelen we niet — kiezen tussen twee dossiers van dezelfde klant is precies waar het misgaat.
+
+Post die JE Plan naar een klant stuurt, krijgt `Reply-To: info@jeconcept.be`: het antwoord hoort in de groep, waar het team het ook wil zien. Het event hoeft niet in dat adres, want de draad draagt het al.
 
 Wat overblijft staat in **Aanvragen**, onder Events. Meestal is dat een nieuwe klant die schrijft: er is nog geen event om het aan te hangen. Wat er uit de mail te lezen valt staat er al bij (zie hieronder), en met één knop wordt het een event met de mail erbij.
 
