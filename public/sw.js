@@ -121,8 +121,15 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((antwoord) => {
-          const kopie = antwoord.clone()
-          caches.open(CACHE).then((cache) => cache.put(bij('index.html'), kopie))
+          // Alleen een echte pagina mag de schil worden. Zonder deze controle
+          // verving een 404 of een 500 — een uitrol die halverwege staat, een
+          // storing bij Hosting — het bewaarde beginscherm door een foutpagina,
+          // en kreeg iedereen zonder verbinding díé te zien tot er weer bereik
+          // was. Dat is precies andersom dan de bedoeling.
+          if (antwoord.ok && antwoord.type === 'basic') {
+            const kopie = antwoord.clone()
+            caches.open(CACHE).then((cache) => cache.put(bij('index.html'), kopie))
+          }
           return antwoord
         })
         .catch(async () => (await caches.match(bij('index.html'))) ?? Response.error())
@@ -134,7 +141,14 @@ self.addEventListener('fetch', (event) => {
   // is per definitie het juiste. Wat er nog niet in staat — een scherm dat deze
   // persoon voor het eerst opent — komt er bij het ophalen in, zodat het de
   // volgende keer ook zonder verbinding opent.
-  if (url.pathname.includes('/assets/') || url.pathname.includes('/icons/')) {
+  // Wat in de schil staat, moet er ook uit gehaald kunnen worden. `favicon.svg`
+  // en `manifest.webmanifest` gingen wél de cache in bij het installeren maar
+  // werden nooit uit de cache geserveerd — zonder verbinding viel het icoon van
+  // de geïnstalleerde app dan alsnog weg.
+  const uitDeSchil =
+    url.pathname.endsWith('/favicon.svg') || url.pathname.endsWith('/manifest.webmanifest')
+
+  if (url.pathname.includes('/assets/') || url.pathname.includes('/icons/') || uitDeSchil) {
     event.respondWith(
       caches.match(request).then(
         (gecachet) =>
