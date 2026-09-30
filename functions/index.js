@@ -25,6 +25,7 @@ import {
 import { taalVan, zeg } from './teksten.js'
 import { maakAgendaFeed } from './agenda.js'
 import { heeftSocial, kopieVan, moetBijwerken } from './social-projectie.js'
+import { AUDIT, regelVan, teOud } from './audit.js'
 
 initializeApp()
 const db = getFirestore()
@@ -678,5 +679,86 @@ export const spiegelSocialEvent = onDocumentWritten(
 
     if (!moetBijwerken(voor, na)) return
     await spiegel.set({ ...kopieVan(na), taskId: event.params.taskId, bijgewerkt: FieldValue.serverTimestamp() })
+  }
+)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║ Het logboek                                                              ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+/**
+ * Eén trigger per collectie, allemaal met dezelfde inhoud.
+ *
+ * Firestore-triggers willen een vast pad, dus één trigger over alle collecties
+ * bestaat niet. Daarom deze fabriek: wat er gelogd wordt staat in `audit.js`, en
+ * hieronder staat alleen welke collecties meedoen. Komt er een collectie bij,
+ * dan is het daar één regel en hier één.
+ */
+function logboekTrigger(collectie) {
+  return onDocumentWritten({ region: REGION, document: `${collectie}/{id}` }, async (event) => {
+    const regel = regelVan({
+      collectie,
+      id: event.params.id,
+      voor: event.data?.before?.exists ? event.data.before.data() : null,
+      na: event.data?.after?.exists ? event.data.after.data() : null,
+    })
+    if (!regel) return
+
+    // De naam van wie het deed staat mee in de regel. Dat is dubbelop met het
+    // profiel, en met opzet: een logboek dat pas leesbaar is wanneer je er een
+    // tweede collectie bij haalt, is onleesbaar zodra iemand vertrekt en zijn
+    // profiel verdwijnt.
+    let actorNaam = null
+    if (regel.actorId) {
+      const profiel = await db.collection('profiles').doc(regel.actorId).get()
+      actorNaam = profiel.exists ? (profiel.data().fullName ?? profiel.data().email ?? null) : null
+    }
+
+    await db.collection('auditLog').add({ ...regel, actorNaam, at: FieldValue.serverTimestamp() })
+  })
+}
+
+export const logboekTaken = logboekTrigger('tasks')
+export const logboekKlanten = logboekTrigger('customers')
+export const logboekLijsten = logboekTrigger('lists')
+export const logboekProfielen = logboekTrigger('profiles')
+export const logboekFormules = logboekTrigger('formules')
+export const logboekTemplates = logboekTrigger('templates')
+export const logboekRegels = logboekTrigger('automations')
+export const logboekOffertes = logboekTrigger('offertes')
+export const logboekAfvinklijsten = logboekTrigger('checklists')
+export const logboekDiensten = logboekTrigger('shifts')
+export const logboekInstellingen = logboekTrigger('config')
+
+/**
+ * Het logboek opruimen, één keer per maand.
+ *
+ * Twee jaar is lang genoeg om nog iets te kunnen navragen en kort genoeg om
+ * geen archief te worden dat niemand meer doorzoekt. Zonder opruimen groeit
+ * dit eeuwig door — en een logboek dat te groot is om te doorzoeken, is
+ * hetzelfde als geen logboek.
+ */
+export const logboekOpruimen = onSchedule(
+  { region: REGION, schedule: '0 4 1 * *', timeZone: 'Europe/Brussels' },
+  async () => {
+    const nu = new Date()
+    const grens = new Date(nu)
+    grens.setMonth(grens.getMonth() - 24)
+
+    let weg = 0
+    // In stukken: een verwijderbatch mag er vijfhonderd, en een logboek van
+    // twee jaar telt er meer.
+    for (let ronde = 0; ronde < 20; ronde += 1) {
+      const oud = await db.collection('auditLog').where('at', '<', grens).limit(400).get()
+      if (oud.empty) break
+
+      const batch = db.batch()
+      for (const rij of oud.docs) if (teOud({ at: rij.data().at }, nu)) batch.delete(rij.ref)
+      await batch.commit()
+      weg += oud.size
+      if (oud.size < 400) break
+    }
+
+    logger.info('Logboek opgeruimd', { verwijderd: weg, soorten: Object.keys(AUDIT).length })
   }
 )

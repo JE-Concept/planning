@@ -347,6 +347,28 @@ service cloud.firestore {
       allow read, write: if isTeam();
     }
 
+    /*
+      Het logboek: wie heeft wat veranderd.
+
+      Lezen doet het planningsteam — niet alleen de beheerders. Een logboek dat
+      alleen de baas mag inkijken, is een controlemiddel; een logboek dat
+      iedereen mag inkijken, is een geheugen. Dit is het tweede: de vraag die
+      ermee beantwoord wordt is "wie heeft dit verzet en waarom", en die stelt
+      het hele team aan elkaar.
+
+      Personeel en de socialrol niet: er staan bedragen, rollen en klantnamen
+      in.
+
+      Schrijven kan niemand. De regels worden door triggers gezet, met
+      beheerdersrechten, die hier sowieso niet langs gaan. Een logboek dat een
+      browser kan aanvullen of bijwerken, bewijst niets — dan is elke regel erin
+      "wat iemand wilde dat er stond".
+    */
+    match /auditLog/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
     // Anything not named above stays closed.
     match /{document=**} {
       allow read, write: if false;

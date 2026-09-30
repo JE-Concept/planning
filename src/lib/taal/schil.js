@@ -56,6 +56,7 @@ export default {
   'nav.teamoverleg': { nl: 'Teamoverleg', en: 'Team meeting' },
   'nav.rooster': { nl: 'Rooster', en: 'Rota' },
   'nav.uren': { nl: 'Uren', en: 'Hours' },
+  'nav.logboek': { nl: 'Logboek', en: 'Audit log' },
   'nav.instellingen': { nl: 'Instellingen', en: 'Settings' },
   'nav.meer': { nl: 'Meer', en: 'More' },
 

@@ -128,6 +128,7 @@ const PAGINAS = [
   ['Teamoverleg', '/overleg', 'Teamoverleg'],
   ['Uren', '/uren', 'Uren'],
   ['Rooster', '/rooster', 'Rooster'],
+  ['Logboek', '/logboek', 'Logboek'],
   ['Goals', '/goals', 'Goals'],
   ['Instellingen', '/instellingen', 'Instellingen'],
   ['Instellingen — formules', '/instellingen?tab=formules', 'Winter BBQ'],
@@ -1409,6 +1410,24 @@ await test('de socialrol komt op de socials en ziet geen bedragen', async () => 
   zouden(!/€|16\.399|Budget|Offerte/i.test(paneel), `er staat een bedrag op: ${paneel.replace(/\n/g, ' | ').slice(0, 300)}`)
 
   zouden(fouten.length === 0, `fouten: ${fouten[0]}`)
+  await page.close()
+})
+
+await test('het logboek toont wie wat veranderde, en filtert', async () => {
+  const page = await tabblad('/logboek')
+  const alles = await inhoud(page)
+  zouden(bevat(alles, 'offertebedrag'), `de regels staan er niet: ${alles.slice(0, 200)}`)
+  zouden(bevat(alles, 'Elke Motmans'), 'wie het deed staat er niet')
+
+  // Op soort filteren laat alleen dat soort staan. Dat is waar het filter voor
+  // is: je weet wát er veranderde, niet wanneer.
+  await page.getByLabel('Alles').selectOption('formule')
+  await page.waitForTimeout(500)
+  const alleen = await inhoud(page)
+  zouden(bevat(alleen, 'prijs per persoon'), 'de formuleregel staat er niet meer')
+  zouden(!bevat(alleen, 'offertebedrag'), 'er staat nog een taakregel bij')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
 

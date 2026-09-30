@@ -41,6 +41,7 @@ export const COL = {
   formules: 'formules',
   offertes: 'offertes',
   socialEvents: 'socialEvents',
+  auditLog: 'auditLog',
 }
 
 export const col = (name) => collection(db, name)

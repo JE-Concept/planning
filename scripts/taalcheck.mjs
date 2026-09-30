@@ -48,7 +48,7 @@ const MAG = [
 const PADEN = [
   '/', '/kalender', '/events/t-trouw', '/tasks', '/werklast', '/dashboard',
   '/social', '/klanten', '/openen-sluiten', '/registraties', '/overleg',
-  '/uren', '/rooster', '/goals', '/instellingen', '/meer',
+  '/uren', '/rooster', '/goals', '/logboek', '/instellingen', '/meer',
 ]
 
 const browser = await chromium.launch()

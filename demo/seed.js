@@ -869,3 +869,36 @@ seedDoc('config', 'access', {
   socialOwnerEmail: 'charish.talento@gmail.com',
   updatedAt: NU,
 })
+
+// ─── Het logboek ────────────────────────────────────────────────────────────
+/*
+  In de echte tool schrijven triggers dit, met beheerdersrechten en buiten de
+  browser om. De demo heeft geen functions, dus staat er hier een handvol regels
+  vast in — genoeg om te zien hoe het leest en om de browsertest iets te geven
+  om op te filteren.
+
+  De regels zijn met opzet van verschillende soorten en van verschillende
+  mensen: dat is precies waar de filters voor zijn.
+*/
+;[
+  ['log-1', -0.2, 'taak', 't-trouw', 'Trouw Niels en Inez', 'u-elke', 'Elke Motmans', 'gewijzigd',
+    [{ veld: 'quoteAmount', van: '16399', naar: '17200' }]],
+  ['log-2', -0.4, 'taak', 't-trouw', 'Trouw Niels en Inez', 'u-jasper', 'Jasper Hansen', 'gewijzigd',
+    [{ veld: 'statusName', van: 'request', naar: 'create offer' }]],
+  ['log-3', -0.9, 'klant', 'k-blum', 'Blum België', 'u-jasper', 'Jasper Hansen', 'gewijzigd',
+    [{ veld: 'vatNumber', van: 'leeg', naar: 'BE 0412.345.678' }]],
+  ['log-4', -1.2, 'formule', 'f-winter-bbq', 'Winter BBQ', 'u-elke', 'Elke Motmans', 'gewijzigd',
+    [{ veld: 'prijsPerPersoon', van: '27.5', naar: '29.9' }]],
+  ['log-5', -1.6, 'profiel', 'u-charish', 'Charish Nolmans', 'u-jasper', 'Jasper Hansen', 'gewijzigd',
+    [{ veld: 'role', van: 'member', naar: 'social' }]],
+  ['log-6', -2.1, 'regel', 'grote-aanvraag', 'Grote aanvraag meteen bij Jasper', 'u-jasper', 'Jasper Hansen', 'aangemaakt', []],
+  ['log-7', -3.4, 'dienst', 'sh-3', '2026-10-01 17:00-23:00', 'u-elke', 'Elke Motmans', 'gewijzigd',
+    [{ veld: 'profileId', van: 'u-sam', naar: 'u-lotte' }]],
+  ['log-8', -4.5, 'taak', 't-oud', 'Standenplan naar de stad', 'u-elke', 'Elke Motmans', 'verwijderd', []],
+].forEach(([id, dagen, soort, documentId, naam, actorId, actorNaam, actie, wijzigingen]) =>
+  seedDoc('auditLog', id, {
+    at: new Date(ECHTE_DAG.getTime() + dagen * 86400000),
+    collectie: { taak: 'tasks', klant: 'customers', formule: 'formules', profiel: 'profiles', regel: 'automations', dienst: 'shifts' }[soort],
+    soort, documentId, naam, actie, wijzigingen, actorId, actorNaam,
+    actorZeker: actie !== 'verwijderd',
+  }))

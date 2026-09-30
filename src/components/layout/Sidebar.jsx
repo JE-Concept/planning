@@ -95,11 +95,12 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       to: '/overleg',
       icon: 'messages-square',
       sleutel: 'nav.team',
-      match: (p) => p === '/overleg' || p === '/uren' || p === '/rooster',
+      match: (p) => p === '/overleg' || p === '/uren' || p === '/rooster' || p === '/logboek',
       kinderen: [
         { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
         { to: '/rooster', icon: 'calendar-days', sleutel: 'nav.rooster' },
         { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
+        { to: '/logboek', icon: 'file-text', sleutel: 'nav.logboek' },
       ],
     },
     ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', sleutel: 'nav.instellingen', kinderen: [] }] : []),
@@ -130,6 +131,7 @@ export const MORE = [
   { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
   { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
   { to: '/goals', icon: 'target', sleutel: 'nav.goals' },
+  { to: '/logboek', icon: 'file-text', sleutel: 'nav.logboek' },
 ]
 
 /** De rol zoals ze op het scherm staat. De sleutel, de tekst hangt aan de taal. */
