@@ -99,6 +99,30 @@ describe('een bestand dat niet klopt', () => {
     expect(() => parseBlad([zonder, rij()])).toThrow(/Start Datetime/)
   })
 
+  /*
+    Een rij zonder Employee Id was hier een fout, en dat was net verkeerd om:
+    dat is een dienst die ingepland staat zonder dat er iemand op staat — het
+    gat in de planning, en precies wat je wil zien.
+  */
+  it('leest een dienst zonder medewerker als openstaand', () => {
+    const { shifts, fouten } = parseBlad([kop, rij({ B: '', C: '' })])
+    expect(fouten).toEqual([])
+    expect(shifts).toHaveLength(1)
+    expect(shifts[0].open).toBe(true)
+    expect(shifts[0].aapiEmployeeId).toBe(null)
+    expect(shifts[0].aapiPlanningId).toBe('p-1')
+  })
+
+  it('maar een rij zonder Planning Id blijft een fout', () => {
+    const { shifts, fouten } = parseBlad([kop, rij({ D: '' })])
+    expect(shifts).toHaveLength(0)
+    expect(fouten[0].reden).toMatch(/Planning Id/)
+  })
+
+  it('een gewone rij staat niet open', () => {
+    expect(parseBlad([kop, rij()]).shifts[0].open).toBe(false)
+  })
+
   it('stopt bij een leeg blad', () => {
     expect(() => parseBlad([])).toThrow(ImportFout)
   })

@@ -53,6 +53,7 @@ export default {
   'aapi.statuut.onbekend': { nl: 'Onbekend', en: 'Unknown' },
 
   // ── De stand van een shift ──────────────────────────────────────────────
+  'aapi.stand.open': { nl: 'Nog in te vullen', en: 'Still open' },
   'aapi.stand.gepland': { nl: 'Gepland', en: 'Scheduled' },
   'aapi.stand.voorgesteld': { nl: 'Voorgesteld', en: 'Suggested' },
   'aapi.stand.twijfel': { nl: 'Welk event?', en: 'Which event?' },
@@ -94,6 +95,17 @@ export default {
   // ── Het blok op een event ───────────────────────────────────────────────
   'aapi.event.titel': { nl: 'Personeel', en: 'Crew' },
   'aapi.event.uit_aapi': { nl: 'Uit AAPI', en: 'From AAPI' },
+  'aapi.event.open_aantal': { nl: '{aantal} nog in te vullen', en: '{aantal} still open' },
+  'aapi.event.open_titel': { nl: 'Nog in te vullen', en: 'Still to fill' },
+  'aapi.event.open_uitleg': {
+    nl: 'Diensten die in AAPI ingepland staan zonder dat er iemand op staat. Invullen doe je in AAPI.',
+    en: 'Shifts scheduled in AAPI with nobody on them. Fill them in AAPI.',
+  },
+  'aapi.open.niemand': { nl: 'Nog niemand', en: 'Nobody yet' },
+  'aapi.tab.titel': { nl: 'Personeel', en: 'Crew' },
+  'aapi.tab.rond': { nl: 'De planning is rond', en: 'Crew is complete' },
+  'aapi.tab.aandacht': { nl: 'Er staat nog iets open', en: 'Something needs a look' },
+  'aapi.tab.gat': { nl: 'Er is een gat in de planning', en: 'There is a gap in the crew' },
   'aapi.event.leeg': { nl: 'Er staat nog niemand van AAPI op dit event.', en: 'Nobody from AAPI is on this event yet.' },
   'aapi.event.samenvatting': {
     nl: '{aantal} ingepland · {uren} samen',

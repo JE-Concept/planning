@@ -108,9 +108,17 @@ export function parseBlad(rijen) {
     const geannuleerd = booleanVan(lees(rij, koppen, 'Canceled'))
     const pauze = minutenVan(lees(rij, koppen, 'Pause'))
 
+    /*
+      Geen Employee Id is geen fout maar een openstaande dienst.
+
+      Dat stond hier eerst wél als fout, en dan verdween zo'n rij met de
+      melding "geen Employee Id" in de foutenlijst. Net verkeerd om: een dienst
+      waar nog niemand op staat, is precies wat je wil zien — dat is het gat in
+      de planning. Een dienst die er niet is, is onzichtbaar; een naam die
+      ontbreekt is een vraag.
+    */
     const klacht =
       !planningId ? 'geen Planning Id'
-      : !employeeId ? 'geen Employee Id'
       : !start ? `onleesbare starttijd "${lees(rij, koppen, 'Start Datetime')}"`
       : !eind ? `onleesbare eindtijd "${lees(rij, koppen, 'End Datetime')}"`
       : eind <= start ? 'de eindtijd ligt niet na de starttijd'
@@ -130,7 +138,11 @@ export function parseBlad(rijen) {
 
     shifts.push({
       aapiPlanningId: planningId,
-      aapiEmployeeId: employeeId,
+      aapiEmployeeId: employeeId || null,
+      // Een openstaande dienst: ingepland, nog niemand op. Een eigen veld en
+      // niet "afleiden uit een lege naam": een naam kan om tien redenen leeg
+      // zijn, dit is er één en de enige die iets betekent.
+      open: !employeeId,
       naam: naamNetjes(ruweNaam),
       ruweNaam,
       afdeling: afdelingVan(ruweAfdeling),

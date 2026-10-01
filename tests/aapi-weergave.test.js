@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AFDELINGEN,
   ZEKER_VANAF,
+  isOpen,
   kleurVan,
   minutenVan,
   mogelijkVoor,
@@ -9,6 +10,7 @@ import {
   perDag,
   samenvatting,
   standVan,
+  tabStand,
   teltMee,
   urenTekst,
   vraagtAandacht,
@@ -143,7 +145,7 @@ describe('de samenvatting boven een event', () => {
   })
 
   it('verdraagt een event waar niemand op staat', () => {
-    expect(samenvatting([])).toEqual({ gepland: 0, afgezegd: 0, minuten: 0, perStatuut: {} })
+    expect(samenvatting([])).toEqual({ gepland: 0, open: 0, afgezegd: 0, minuten: 0, perStatuut: {} })
   })
 })
 
@@ -195,5 +197,91 @@ describe('de kalender', () => {
   it('geeft elke afdeling een eigen kleur en de rest een neutrale', () => {
     expect(new Set(AFDELINGEN.map(kleurVan)).size).toBe(4)
     expect(kleurVan('terras')).toBe('#55637a')
+  })
+})
+
+/*
+  Een dienst die in AAPI ingepland staat zonder dat er iemand op staat. Die
+  rijen vielen vroeger weg als fout ("geen Employee Id") — net verkeerd om: een
+  gat in de planning is precies wat je wil zien.
+*/
+describe('een openstaande dienst', () => {
+  const open = { aapiPlanningId: 'p1', open: true, locationName: 'evenementen', linkStatus: 'manual', start: new Date('2026-10-12T16:00:00Z'), end: new Date('2026-10-12T22:00:00Z'), pauseMinutes: 30, dag: '2026-10-12' }
+  const ingevuld = { ...open, aapiPlanningId: 'p2', open: false, aapiEmployeeId: 'e1' }
+
+  it('telt niet mee als ingeplande kracht', () => {
+    expect(teltMee(open)).toBe(false)
+    expect(teltMee(ingevuld)).toBe(true)
+    expect(isOpen(open)).toBe(true)
+  })
+
+  it('levert geen uren op', () => {
+    expect(minutenVan(open)).toBe(0)
+    expect(minutenVan(ingevuld)).toBe(330)
+  })
+
+  it('heeft een eigen stand, vóór de koppelingsvraag', () => {
+    expect(standVan(open)).toBe('open')
+    // Ook wanneer de koppeling twijfelt: er staat niemand, dat komt eerst.
+    expect(standVan({ ...open, linkStatus: 'ambiguous' })).toBe('open')
+  })
+
+  it('is afgezegd of verdwenen geen openstaande dienst meer', () => {
+    expect(isOpen({ ...open, canceled: true })).toBe(false)
+    expect(isOpen({ ...open, removedFromSourceAt: new Date() })).toBe(false)
+    expect(standVan({ ...open, canceled: true })).toBe('geannuleerd')
+  })
+
+  it('staat apart in de samenvatting', () => {
+    const telling = samenvatting([open, ingevuld, { ...ingevuld, aapiPlanningId: 'p3', canceled: true }])
+    expect(telling.gepland).toBe(1)
+    expect(telling.open).toBe(1)
+    expect(telling.afgezegd).toBe(1)
+  })
+
+  it('en wordt wél aangeboden om aan een event te hangen', () => {
+    // `mogelijkVoor` gebruikt `leeftNog` en niet `teltMee`: dat er niemand op
+    // staat, is juist de reden om ze aan het goede event te hangen.
+    const los = { ...open, aapiPlanningId: 'p4', linkStatus: 'unlinked', eventRef: null }
+    expect(mogelijkVoor('t-1', ['2026-10-12'], [los]).map((s) => s.aapiPlanningId)).toEqual(['p4'])
+  })
+})
+
+describe('het bolletje op de personeelstab', () => {
+  const gepland = (over = {}) => ({ aapiPlanningId: 'p', linkStatus: 'auto', linkScore: 1, locationName: 'evenementen', start: new Date('2026-10-12T10:00:00Z'), end: new Date('2026-10-12T18:00:00Z'), pauseMinutes: 0, ...over })
+
+  it('blijft weg wanneer AAPI er niet aan te pas komt', () => {
+    expect(tabStand({ shifts: [], kandidaten: [] })).toBe(null)
+  })
+
+  it('is groen wanneer er volk staat en er niets te beslissen valt', () => {
+    expect(tabStand({ shifts: [gepland()], kandidaten: [] })).toBe('groen')
+  })
+
+  it('is rood zodra er een dienst openstaat', () => {
+    expect(tabStand({ shifts: [gepland(), gepland({ aapiPlanningId: 'p2', open: true })] })).toBe('rood')
+  })
+
+  it('is rood wanneer er alleen afgezegde shifts staan', () => {
+    expect(tabStand({ shifts: [gepland({ canceled: true })] })).toBe('rood')
+  })
+
+  it('is oranje bij een koppeling waarover getwijfeld wordt', () => {
+    expect(tabStand({ shifts: [gepland(), gepland({ aapiPlanningId: 'p2', linkStatus: 'ambiguous' })] })).toBe('oranje')
+  })
+
+  it('is oranje wanneer er een shift van die dag nergens bij hoort', () => {
+    expect(tabStand({ shifts: [gepland()], kandidaten: [gepland({ aapiPlanningId: 'p9' })] })).toBe('oranje')
+  })
+
+  it('is oranje wanneer iemand afgezegd heeft zonder vervanging', () => {
+    expect(tabStand({ shifts: [gepland(), gepland({ aapiPlanningId: 'p2', canceled: true })] })).toBe('oranje')
+  })
+
+  // Rood weegt zwaarder dan oranje: een gat is erger dan een vraag.
+  it('is rood en niet oranje wanneer allebei waar is', () => {
+    expect(tabStand({
+      shifts: [gepland(), gepland({ aapiPlanningId: 'p2', open: true }), gepland({ aapiPlanningId: 'p3', linkStatus: 'ambiguous' })],
+    })).toBe('rood')
   })
 })

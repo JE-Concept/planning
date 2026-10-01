@@ -9,7 +9,7 @@ import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
 import EventFiche from '@components/events/EventFiche'
-import EventPersoneel from '@components/events/EventPersoneel'
+import EventPersoneel, { useEventPersoneel } from '@components/events/EventPersoneel'
 import OfferteTab from '@components/events/OfferteTab'
 import MailDraad from '@components/events/MailDraad'
 import EventOmschrijving from '@components/events/EventOmschrijving'
@@ -26,6 +26,7 @@ import { addEventTask, deleteEvent, isDone, moveEvent, updateEvent, useEventTime
 import { durationOf } from '@lib/time-math'
 import { useRunningTimer } from '@data/time'
 import { Spinner } from '@ui/index'
+import { TAB_STAND_TEKST } from '@lib/aapi-weergave'
 
 /** Eén event: pijplijn, fiche, en de vier tabbladen uit het design. */
 export default function EventDetail() {
@@ -46,6 +47,13 @@ export default function EventDetail() {
   // waard boven een vraag die liegt over wat ze weggooit.
   const { documents: documenten } = useDocuments({ taskId: id })
   const tab = params.get('tab') || 'overzicht'
+  /*
+    Het personeel hangt aan één abonnement dat hier opengaat en niet in het
+    tabblad: het bolletje op de tab moet er zijn vóór je de tab opent, want dat
+    is er net de bedoeling van.
+  */
+  const personeel = useEventPersoneel(ev)
+
   const setTab = (v) => {
     const next = new URLSearchParams(params)
     next.set('tab', v)
@@ -204,6 +212,27 @@ export default function EventDetail() {
               ...(bestelRegels.length || ev.formuleId
                 ? [{ value: 'bestellijst', label: t('events.tab.bestellijst', { aantal: bestelRegels.length }) }]
                 : []),
+              /*
+                Personeel staat vóór de offerte: "staat er volk" is de vraag
+                die het vaakst gesteld wordt zodra een event verkocht is. Het
+                bolletje beantwoordt haar zonder klik — zie `tabStand`.
+              */
+              {
+                value: 'personeel',
+                label: (
+                  <span className="je-tab__met-bol">
+                    {t('aapi.tab.titel')}
+                    {personeel.stand ? (
+                      <span
+                        className={`je-bol je-bol--${personeel.stand}`}
+                        title={t(TAB_STAND_TEKST[personeel.stand])}
+                        aria-label={t(TAB_STAND_TEKST[personeel.stand])}
+                        role="img"
+                      />
+                    ) : null}
+                  </span>
+                ),
+              },
               { value: 'offerte', label: t('offerte.tab') },
               { value: 'mail', label: t('mail.tab') },
               { value: 'draaiboek', label: t('events.tab.draaiboek') },
@@ -229,19 +258,10 @@ export default function EventDetail() {
                 onTab={setTab}
               />
               <EventFiche ev={ev} />
-              {/*
-                Wie er die dag komt werken: de ploeg die je met de hand
-                aanduidt én wat uit AAPI komt. Staat op het overzicht en niet
-                in een eigen tab: "is er genoeg volk" hoort bij de stand van
-                een event, en een tab die je moet openen om dat te weten, open
-                je pas als je al twijfelt.
-
-                Het AAPI-deel blijft weg op events waar AAPI niet aan te pas
-                komt; de ploeg staat er altijd, want daar moet je bij kunnen.
-              */}
-              <EventPersoneel event={ev} />
               <EventOmschrijving ev={ev} />
             </>
+          ) : tab === 'personeel' ? (
+            <EventPersoneel event={ev} personeel={personeel} />
           ) : tab === 'taken' ? (
             <TasksTab ev={ev} tasks={tasks} focus={params.get('taak')} onOpen={setDrawer} runningId={timer?.taskId} />
           ) : tab === 'bestellijst' ? (

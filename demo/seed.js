@@ -1206,6 +1206,9 @@ const uurOp = (datum, uur, minuut = 0) => {
   // Hoort bij geen enkel event — dit is wat het blok "mogelijk voor dit event"
   // laat zien.
   ['s-5', 'a-faycal', 'Faycal El Amraoui', 'student', 'evenementen', 8, 12, 0, false, { linkStatus: 'unlinked', eventRef: null, linkScore: null }],
+  // Ingepland zonder dat er iemand op staat: het gat in de planning. Daar is
+  // het rode bolletje op de personeelstab voor.
+  ['s-8', null, '', 'flexi', 'evenementen', 16, 23, 30, false, { linkStatus: 'manual', eventRef: 't-trouw', linkScore: null, linkedBy: 'u-jasper', open: true }],
   // En de gewone bistro, die niets met events te maken heeft.
   ['s-6', 'a-roeland', 'Roeland Kempeneers', 'vast', 'keuken', 11, 15, 15, false, { linkStatus: 'notApplicable', eventRef: null, linkScore: null }],
   ['s-7', 'a-jumana', 'Jumana Mhanawi', 'flexi', 'bar', 17, 23, 0, false, { linkStatus: 'notApplicable', eventRef: null, linkScore: null }],
@@ -1213,6 +1216,8 @@ const uurOp = (datum, uur, minuut = 0) => {
   seedDoc('aapiShifts', id, {
     aapiPlanningId: id,
     aapiEmployeeId: employeeId,
+    // Standaard ingevuld; `koppeling` zet `open` aan waar dat niet zo is.
+    open: false,
     /*
       De naam staat hier met opzet níét op, hoewel de import hem er sinds kort
       wel op schrijft. Live staan er shifts van vóór die regel, en een

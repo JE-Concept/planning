@@ -10,9 +10,25 @@ niets terug — AAPI blijft de baas over de planning.
 statuut (student, flexi, vast, zelfstandig, extern) erbij. Week of maand,
 filters op afdeling en persoon, en een filter voor "enkel wat aandacht vraagt".
 
-**Op een event** staat een blok *Personeel*: wie er komt, hoeveel uren samen (met
-de pauze eraf), de uitsplitsing per statuut, en daaronder wat er mogelijk nog bij
-hoort — shifts van die dag die nergens aan hangen of waar de koppeling twijfelde.
+**Op een event** staat een eigen tab *Personeel*: wie er komt, hoeveel uren samen
+(met de pauze eraf), de uitsplitsing per statuut, en daaronder wat er mogelijk
+nog bij hoort — shifts van die dag die nergens aan hangen of waar de koppeling
+twijfelde.
+
+Op de tab zelf staat een bolletje, zodat je de planning niet hoeft te openen om
+te weten of ze rond is:
+
+| Kleur | Wat het zegt |
+| --- | --- |
+| 🟢 groen | Er staat volk en er valt niets te beslissen. |
+| 🟠 oranje | Er staat volk, maar er is een vraag open: een koppeling waarover getwijfeld werd, een shift van die dag die nergens bij hoort, of iemand die afzegde zonder vervanging. |
+| 🔴 rood | Er staat niemand, of er staat een dienst open. |
+| *geen* | AAPI komt bij dit event niet aan te pas. Dan is er niets om over te oordelen, en liegt elke kleur. |
+
+**Diensten die nog niet ingevuld zijn** staan bovenaan dat tabblad. Dat zijn
+rijen uit AAPI met een Planning Id maar zonder Employee Id: ingepland, nog
+niemand op. Ze tellen niet mee in het aantal of in de uren — er komt niemand —
+en invullen doe je in AAPI, want daar hangt de Dimona aan.
 
 Geannuleerde shifts blijven staan, doorgestreept. Shifts die uit AAPI verdwenen
 zijn ook, met het label *Niet meer in AAPI*. Ze verdwijnen nooit uit JE Plan:

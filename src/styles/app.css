@@ -3016,6 +3016,32 @@ button.je-paneel-kaart:hover {
 }
 .je-panel__head + .je-importrij { border-top: none; }
 
+/* Het bolletje op de personeelstab: groen, oranje of rood. */
+.je-tab__met-bol {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.je-bol {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  /* Een rand, want een gekleurde stip van acht pixels verdwijnt tegen een
+     donkere achtergrond en is voor wie kleuren slecht onderscheidt alleen een
+     vlekje. De titel ernaast zegt in woorden wat de kleur zegt. */
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
+}
+.je-bol--groen { background: var(--success); }
+.je-bol--oranje { background: var(--warning); }
+.je-bol--rood { background: var(--danger); }
+
+/* De kop van het blok met wat nog ingevuld moet worden. */
+.je-panel__head--open {
+  border-top: 1px solid var(--border-hairline);
+  color: var(--danger);
+}
+
 /* Het personeelsblok op een event. */
 .je-personeelstatuten {
   display: flex;

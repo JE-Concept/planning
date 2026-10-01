@@ -52,6 +52,11 @@ export function naamVan(shift, medewerkerOpId = {}) {
   return kaartje || shift?.naam || shift?.aapiEmployeeId || '—'
 }
 
+/** De naam op een kaartje, of de mededeling dat er nog niemand op staat. */
+export function naamOfOpen(t, shift, medewerkerOpId = {}) {
+  return shift?.open ? t('aapi.open.niemand') : naamVan(shift, medewerkerOpId)
+}
+
 export function afdelingLabel(t, afdeling) {
   if (!afdeling) return '—'
   return AFDELINGEN.includes(afdeling) ? t(`aapi.afdeling.${afdeling}`) : afdeling
@@ -103,6 +108,10 @@ export function standVan(shift) {
   if (!shift) return null
   if (shift.removedFromSourceAt) return 'verdwenen'
   if (shift.canceled) return 'geannuleerd'
+  // Een dienst die ingepland staat zonder dat er iemand op staat. Dat is het
+  // gat in de planning, en het hoort vóór de koppelingsvraag te komen: of zo'n
+  // dienst aan het juiste event hangt is pas interessant als ze ingevuld is.
+  if (shift.open) return 'open'
   if (shift.linkStatus === 'auto' && (shift.linkScore ?? 1) < ZEKER_VANAF) return 'voorgesteld'
   if (shift.linkStatus === 'auto' || shift.linkStatus === 'manual') return 'gepland'
   if (shift.linkStatus === 'ambiguous') return 'twijfel'
@@ -110,6 +119,7 @@ export function standVan(shift) {
 }
 
 export const STAND_TEKST = {
+  open: 'aapi.stand.open',
   gepland: 'aapi.stand.gepland',
   voorgesteld: 'aapi.stand.voorgesteld',
   twijfel: 'aapi.stand.twijfel',
@@ -119,6 +129,7 @@ export const STAND_TEKST = {
 }
 
 export const STAND_TOON = {
+  open: 'danger',
   gepland: 'success',
   voorgesteld: 'accent',
   twijfel: 'warning',
@@ -127,9 +138,25 @@ export const STAND_TOON = {
   verdwenen: 'neutral',
 }
 
-/** Telt deze shift mee als ingeplande kracht? */
+/**
+ * Telt deze shift mee als ingeplande kracht?
+ *
+ * Een openstaande dienst niet: er staat niemand op. Ze meetellen zou van een
+ * gat in de planning een gevulde plaats maken, en dat is precies de vergissing
+ * die je op de dag zelf ontdekt.
+ */
 export function teltMee(shift) {
+  return Boolean(shift) && !shift.canceled && !shift.removedFromSourceAt && !shift.open
+}
+
+/** Staat deze dienst er nog: niet afgezegd en niet uit AAPI verdwenen. */
+export function leeftNog(shift) {
   return Boolean(shift) && !shift.canceled && !shift.removedFromSourceAt
+}
+
+/** Een dienst die ingepland staat zonder iemand erop. */
+export function isOpen(shift) {
+  return leeftNog(shift) && Boolean(shift.open)
 }
 
 /**
@@ -168,12 +195,59 @@ export function samenvatting(shifts = []) {
     const statuut = s.statuut ?? 'onbekend'
     perStatuut[statuut] = (perStatuut[statuut] ?? 0) + 1
   }
+  const open = shifts.filter(isOpen)
   return {
     gepland: meetellend.length,
-    afgezegd: shifts.length - meetellend.length,
+    open: open.length,
+    // Wat er niet meetelt én niet openstaat: afgezegd of uit AAPI verdwenen.
+    afgezegd: shifts.length - meetellend.length - open.length,
     minuten: meetellend.reduce((op, s) => op + minutenVan(s), 0),
     perStatuut,
   }
+}
+
+/**
+ * Het bolletje op de personeelstab: groen, oranje of rood.
+ *
+ * ── Waarom dit bestaat ────────────────────────────────────────────────────
+ * Om te weten of de planning rond is, moest je het tabblad openen. Dat doe je
+ * niet voor elk event, dus doe je het voor geen enkel, en dan ontdek je een
+ * gat op de dag zelf. Eén kleur op de tab zelf beantwoordt de vraag zonder
+ * klik.
+ *
+ * ── Waarom drie kleuren en niet vijf ──────────────────────────────────────
+ * Omdat er drie antwoorden zijn: het is rond, er is iets te doen, er is iets
+ * mis. Wie er vijf maakt, maakt er vijf die niemand uit elkaar houdt — zie
+ * dezelfde afweging in `eventstand.js`.
+ *
+ * - **rood** — er staat niemand, of er staat een dienst open die niemand
+ *   ingevuld heeft. Dat is een gat, en een gat is geen detail.
+ * - **oranje** — er staat volk, maar er is een vraag open: een koppeling waar
+ *   de machine over twijfelde, een shift van die dag die nergens bij hoort,
+ *   of iemand die afgezegd heeft zonder vervanging.
+ * - **groen** — er staat volk en er is niets te beslissen.
+ *
+ * Geen kleur (null) wanneer er helemaal niets uit AAPI bij dit event in de
+ * buurt komt: dan is er niets om over te oordelen en liegt elke kleur. Een
+ * trouw van twintig man waar het bureau zelf achter de bar staat, hoort geen
+ * rood bolletje te krijgen.
+ */
+export function tabStand({ shifts = [], kandidaten = [] } = {}) {
+  if (!shifts.length && !kandidaten.length) return null
+  const telling = samenvatting(shifts)
+
+  if (telling.open > 0) return 'rood'
+  if (telling.gepland === 0) return 'rood'
+
+  const twijfel = shifts.some((s) => standVan(s) === 'twijfel' || standVan(s) === 'voorgesteld')
+  if (twijfel || kandidaten.length > 0 || telling.afgezegd > 0) return 'oranje'
+  return 'groen'
+}
+
+export const TAB_STAND_TEKST = {
+  groen: 'aapi.tab.rond',
+  oranje: 'aapi.tab.aandacht',
+  rood: 'aapi.tab.gat',
 }
 
 /**
@@ -188,7 +262,10 @@ export function mogelijkVoor(eventId, dagen, shifts = []) {
   return shifts.filter((s) => {
     if (s.eventRef) return false
     if (s.locationName !== 'evenementen') return false
-    if (!teltMee(s)) return false
+    // `leeftNog` en niet `teltMee`: een openstaande dienst hoort hier juist
+    // wél bij. Dat ze nog niemand heeft, is de reden om ze aan het juiste
+    // event te hangen — anders staat het gat op geen enkel event.
+    if (!leeftNog(s)) return false
     if (!dagenSet.has(s.dag)) return false
     if (s.linkStatus === 'ambiguous') {
       return (s.linkCandidates ?? []).some((k) => k.eventId === eventId)
@@ -212,9 +289,9 @@ export function perDag(shifts = []) {
 
 /** Wat er aandacht vraagt: twijfel en ongekoppeld, alleen bij Evenementen. */
 export function vraagtAandacht(shift) {
-  return (
-    shift?.locationName === 'evenementen'
-    && teltMee(shift)
-    && ['ambiguous', 'unlinked'].includes(shift.linkStatus)
-  )
+  if (shift?.locationName !== 'evenementen' || !leeftNog(shift)) return false
+  // Een openstaande dienst vraagt altijd aandacht: er staat niemand op, en dat
+  // is een gat of de koppeling nu klopt of niet.
+  if (shift.open) return true
+  return ['ambiguous', 'unlinked'].includes(shift.linkStatus)
 }

@@ -6,6 +6,7 @@ import {
   AFDELINGEN,
   afdelingLabel,
   kleurVan,
+  naamOfOpen,
   naamVan,
   perDag,
   teltMee,
@@ -22,6 +23,7 @@ import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useAapiMedewerkers, useAapiShifts } from '@data/aapi'
 import { useEvents } from '@data/events'
+import { dagenVan } from '@lib/eventdagen'
 
 /**
  * De planning: wie wanneer werkt, uit AAPI.
@@ -78,8 +80,14 @@ export default function Planning() {
   const { opId: medewerkerOpId } = useAapiMedewerkers()
   const { events, eventById } = useEvents()
 
+  /*
+    Eén regel per dag die een event beslaat. De shiftkiezer zoekt op `dag`, en
+    een meerdaags event hoort op élke dag van zijn reeks te kiezen te zijn —
+    anders kun je een shift van de zaterdag niet aan het festival hangen dat
+    vrijdag begon.
+  */
   const eventsMetDag = useMemo(
-    () => events.map((e) => ({ ...e, dag: e.eventDate ? dayKey(e.eventDate) : null })),
+    () => events.flatMap((e) => dagenVan(e).map((dag) => ({ ...e, dag }))),
     [events]
   )
 
@@ -241,7 +249,7 @@ export default function Planning() {
                           <ShiftBlok
                             key={s.aapiPlanningId}
                             shift={s}
-                            naam={naamVan(s, medewerkerOpId)}
+                            naam={naamOfOpen(t, s, medewerkerOpId)}
                             eventNaam={s.eventRef ? eventById[s.eventRef]?.name : null}
                             onClick={() => setOpen(s)}
                             compact={weergave === 'maand' && !narrow}
@@ -270,7 +278,7 @@ export default function Planning() {
       {open ? (
         <ShiftDetail
           shift={open}
-          naam={naamVan(open, medewerkerOpId)}
+          naam={naamOfOpen(t, open, medewerkerOpId)}
           events={eventsMetDag}
           eventById={eventById}
           onClose={() => setOpen(null)}

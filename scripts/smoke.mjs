@@ -1340,6 +1340,9 @@ await test('de planning uit AAPI staat in een kalender', async () => {
   */
   const page = await tabblad('/events/t-trouw')
   await page.waitForTimeout(1200)
+  // Personeel is een eigen tab sinds het bolletje erop staat.
+  await page.getByRole('tab', { name: /Personeel/ }).click()
+  await page.waitForTimeout(900)
   await page.getByRole('button', { name: /planning van die dag/i }).click()
   await page.waitForTimeout(1200)
 
@@ -1379,6 +1382,9 @@ await test('de planning uit AAPI staat in een kalender', async () => {
 await test('een shift opent met zijn ruwe AAPI-gegevens en koppelacties', async () => {
   const page = await tabblad('/events/t-trouw')
   await page.waitForTimeout(1200)
+  // Personeel is een eigen tab sinds het bolletje erop staat.
+  await page.getByRole('tab', { name: /Personeel/ }).click()
+  await page.waitForTimeout(900)
   await page.getByRole('button', { name: /planning van die dag/i }).click()
   await page.waitForTimeout(1200)
   await page.locator('.je-shiftblok').first().click()
@@ -1414,20 +1420,38 @@ await test('het importscherm zegt wat er per mail binnenkwam', async () => {
   await page.close()
 })
 
-await test('op een event staat wie er komt werken', async () => {
+await test('op een event staat wie er komt werken, met een bolletje op de tab', async () => {
   const page = await tabblad('/events/t-trouw')
-  await page.waitForTimeout(1200)
+  await page.waitForTimeout(1400)
 
+  /*
+    Het bolletje is waarvoor de tab bestaat: of de planning rond is, hoor je te
+    zien zonder te klikken. Er staat een dienst open in de demo, dus rood.
+  */
+  const tab = page.getByRole('tab', { name: /Personeel/ })
+  zouden((await tab.count()) === 1, 'de personeelstab staat er niet')
+  zouden(
+    (await tab.locator('.je-bol--rood').count()) === 1,
+    `het bolletje op de tab is niet rood: ${await tab.innerHTML()}`
+  )
+
+  await tab.click()
+  await page.waitForTimeout(900)
   const tekst = await inhoud(page)
-  zouden(bevat(tekst, 'Personeel'), `het personeelsblok staat er niet: ${tekst.slice(0, 400)}`)
 
   /*
     Drie mensen komen werken en één is afgezegd; de uren tellen alleen de drie,
-    met de pauze eraf. Dat is 7u30 + 13u30 + 8u = 29u.
+    met de pauze eraf. Dat is 7u30 + 13u30 + 8u = 29u. De openstaande dienst
+    telt niet mee — er staat niemand op.
   */
   zouden(bevat(tekst, '3 ingepland'), `de telling klopt niet: ${tekst.slice(0, 600)}`)
   zouden(bevat(tekst, '1 afgezegd'), 'de afgezegde shift wordt niet geteld')
   zouden(bevat(tekst, '29u'), `het urentotaal klopt niet: ${tekst.slice(0, 600)}`)
+
+  // En het gat in de planning, bovenaan en met zoveel woorden.
+  zouden(bevat(tekst, 'Nog in te vullen'), `de openstaande dienst staat er niet: ${tekst.slice(0, 600)}`)
+  zouden(bevat(tekst, 'Nog niemand'), 'er staat geen naam-vervanger bij de openstaande dienst')
+  zouden(bevat(tekst, '1 nog in te vullen'), 'de openstaande dienst staat niet in de samenvatting')
 
   // De uitsplitsing per statuut, en de shift die nergens bij hoort als kandidaat.
   zouden(bevat(tekst, 'Mogelijk voor dit event'), 'de kandidaten staan er niet bij')
@@ -2267,7 +2291,7 @@ await test('de planningstand staat op het event en in elk overzicht', async () =
   const page = await tabblad('/events/t-trouw')
 
   // Op de fiche kies je hem; een pop-up komt er niet aan te pas.
-  const keuze = page.getByLabel('Planning').first()
+  const keuze = page.getByLabel('Planning', { exact: true }).first()
   zouden((await keuze.inputValue()) === 'bezig', `de stand staat niet op de fiche: ${await keuze.inputValue()}`)
   await keuze.selectOption('rond')
   await page.waitForTimeout(900)
@@ -2283,7 +2307,7 @@ await test('de planningstand staat op het event en in elk overzicht', async () =
   zouden(bevat(await inhoud(page), 'Nog te plannen'), 'het bord toont de planningstand niet')
 
   // Filteren op de stand houdt over wat die stand heeft.
-  await page.getByLabel('Planning').first().selectOption('te_plannen')
+  await page.getByLabel('Planning', { exact: true }).first().selectOption('te_plannen')
   await page.waitForTimeout(700)
   // Alleen het bord zelf: in de zijbalk staat de lopende timer, en die noemt
   // het event waar hij bij hoort.

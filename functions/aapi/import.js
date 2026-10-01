@@ -53,7 +53,9 @@ const gelijk = (a, b) => {
 export function shiftUitBron(rij) {
   return {
     aapiPlanningId: rij.aapiPlanningId,
-    aapiEmployeeId: rij.aapiEmployeeId,
+    aapiEmployeeId: rij.aapiEmployeeId ?? null,
+    // Ingepland, nog niemand op. Zie `parseBlad`.
+    open: Boolean(rij.open),
     /*
       De naam staat ook op de shift en niet alleen op het medewerkerskaartje.
       Firestore kan niet joinen, en een kalender van veertig blokjes wil geen
@@ -156,6 +158,8 @@ export function planImport({
   const gezien = new Set()
 
   for (const rij of bronShifts) {
+    // Een openstaande dienst heeft geen medewerker om bij te werken.
+    if (!rij.aapiEmployeeId) continue
     if (gezien.has(rij.aapiEmployeeId)) continue
     gezien.add(rij.aapiEmployeeId)
 
