@@ -116,12 +116,21 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       icon: 'messages-square',
       sleutel: 'nav.team',
       match: (p) =>
-        p === '/overleg' || p === '/uren' || p === '/rooster' || p === '/logboek' || p === '/medewerkers',
+        p === '/overleg' || p === '/uren' || p === '/rooster' || p === '/logboek'
+        || p === '/medewerkers' || p === '/planning',
       kinderen: [
         { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
         // De ploeg die komt werken: studenten en flexi's. Staat bij Team en
         // niet achter het tandwiel, want dit is wekelijks werk en geen instelling.
         { to: '/medewerkers', icon: 'users', sleutel: 'nav.medewerkers' },
+        /*
+          De planning uit AAPI staat naast het eigen rooster en niet erin. Het
+          ene is met de hand gemaakt en hangt aan profielen hier, het andere
+          komt uit AAPI en hangt aan mensen die hier geen account hebben. Dat
+          die twee op termijn dubbel werk zijn, klopt; welke blijft is een
+          beslissing van wie ermee plant.
+        */
+        { to: '/planning', icon: 'users', sleutel: 'nav.planning' },
         { to: '/rooster', icon: 'calendar-days', sleutel: 'nav.rooster' },
         { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
         { to: '/logboek', icon: 'file-text', sleutel: 'nav.logboek' },

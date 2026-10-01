@@ -9,6 +9,7 @@ import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
 import EventFiche from '@components/events/EventFiche'
+import EventPersoneel from '@components/events/EventPersoneel'
 import OfferteTab from '@components/events/OfferteTab'
 import MailDraad from '@components/events/MailDraad'
 import EventOmschrijving from '@components/events/EventOmschrijving'
@@ -228,6 +229,16 @@ export default function EventDetail() {
                 onTab={setTab}
               />
               <EventFiche ev={ev} />
+              {/*
+                Wie er die dag komt werken, uit AAPI. Staat op het overzicht en
+                niet in een eigen tab: "is er genoeg volk" hoort bij de stand
+                van een event, en een tab die je moet openen om dat te weten,
+                open je pas als je al twijfelt.
+
+                Het blok tekent zichzelf niet wanneer er niets te melden valt —
+                op events waar AAPI niet aan te pas komt, blijft het weg.
+              */}
+              <EventPersoneel event={ev} />
               <EventOmschrijving ev={ev} />
             </>
           ) : tab === 'taken' ? (

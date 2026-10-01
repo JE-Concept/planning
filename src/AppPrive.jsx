@@ -45,6 +45,7 @@ const Settings       = lazy(() => import('@pages/Settings'))
 const Profiel        = lazy(() => import('@pages/Profiel'))
 const Medewerkers    = lazy(() => import('@pages/Medewerkers'))
 const MijnEvents     = lazy(() => import('@pages/MijnEvents'))
+const Planning       = lazy(() => import('@pages/Planning'))
 const NotFound       = lazy(() => import('@pages/NotFound'))
 
 function Loading() {
@@ -154,6 +155,7 @@ function Authenticated() {
             <Route path="/uren" element={<TimeTracking />} />
             <Route path="/rooster" element={<Rooster />} />
             <Route path="/medewerkers" element={<Medewerkers />} />
+            <Route path="/planning" element={<Planning />} />
             <Route path="/logboek" element={<Logboek />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/instellingen" element={<Settings />} />

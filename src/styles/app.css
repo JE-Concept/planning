@@ -2854,3 +2854,173 @@ button.je-paneel-kaart:hover {
   border-top: 1px solid var(--border-hairline);
 }
 .je-voorkeur__naam { font: var(--type-body-sm); font-weight: 600; }
+
+/* ── Planning uit AAPI ─────────────────────────────────────────────────── */
+
+/* Eén shift. De afdeling is een streep links en geen vlak: met twintig
+   blokjes onder elkaar wordt een gekleurd vlak een kermis, een streep niet. */
+.je-shiftblok {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--afdeling, var(--navy-300));
+  border-radius: var(--radius-sm, 4px);
+  background: var(--surface-1);
+  font: var(--type-caption);
+  font-weight: 400;
+  cursor: pointer;
+  transition: var(--transition-control);
+}
+.je-shiftblok:hover { background: var(--surface-2); }
+.je-shiftblok__uren { font-variant-numeric: tabular-nums; color: var(--text-2); }
+.je-shiftblok__naam {
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-shiftblok__onder {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-3);
+  min-width: 0;
+}
+.je-shiftblok__event {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-accent);
+}
+/* Afgezegd of uit AAPI verdwenen: nog zichtbaar, maar niet meer meetellend. */
+.je-shiftblok[data-gedempt] { opacity: .55; }
+.je-shiftblok[data-gedempt] .je-shiftblok__naam { text-decoration: line-through; }
+
+/* De kalender zelf: zeven kolommen, elk een stapel shifts. */
+.je-planrooster {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--border-hairline);
+}
+.je-planrooster__dag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 120px;
+  padding: var(--space-3);
+  border-right: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
+  min-width: 0;
+}
+.je-planrooster__dag:nth-child(7n) { border-right: none; }
+.je-planrooster__dag[data-buiten] { background: var(--paper); }
+.je-planrooster__kop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.je-planrooster__nummer { font: var(--fw-medium) 15px/1 var(--font-display); }
+.je-planrooster__dag[data-vandaag] .je-planrooster__nummer { color: var(--text-accent); }
+
+@media (max-width: 859px) {
+  /* Op een telefoon past geen week naast elkaar; dan onder elkaar, met de
+     dagnaam erbij zodat een kolom zonder kop niet zwevend wordt. */
+  .je-planrooster { grid-template-columns: 1fr; }
+  .je-planrooster__dag:nth-child(n) { border-right: none; }
+}
+
+/* Het detail van een shift: label links, waarde rechts. */
+.je-shiftdetail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-3) var(--space-5);
+  margin: 0;
+}
+.je-shiftdetail dt { font: var(--type-body-sm); color: var(--text-2); }
+.je-shiftdetail dd { font: var(--type-body-sm); margin: 0; }
+
+.je-planbalk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+.je-planfilters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.je-planfilters > select { width: auto; min-width: 160px; }
+/* De legende van de afdelingskleuren: een stipje en een woord. */
+.je-planlegende {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-left: auto;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+}
+.je-planlegende > span { display: inline-flex; align-items: center; gap: 5px; }
+.je-planlegende > span > span { width: 9px; height: 9px; border-radius: 2px; }
+
+/* Het vak waar je een bestand in laat vallen. */
+.je-neerzetvak {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  color: var(--text-2);
+  background: var(--surface-2);
+  transition: var(--transition-control);
+}
+.je-neerzetvak[data-sleept] { border-color: var(--accent); background: var(--navy-50); }
+
+.je-importcijfers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-5);
+}
+.je-importrij {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-hairline);
+  flex-wrap: wrap;
+}
+.je-panel__head + .je-importrij { border-top: none; }
+
+/* Het personeelsblok op een event. */
+.je-personeelstatuten {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-6) 0;
+}
+.je-personeelrij {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-hairline);
+  flex-wrap: wrap;
+}
+.je-personeelrij__streep {
+  width: 3px;
+  align-self: stretch;
+  min-height: 28px;
+  background: var(--afdeling, var(--navy-300));
+  border-radius: 2px;
+}

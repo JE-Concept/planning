@@ -1130,3 +1130,108 @@ seedDoc('mailQueue', 'mq-1', {
   pogingen: 1,
   createdAt: new Date(ECHTE_DAG.getTime() - 3600000),
 })
+
+// ─── De planning uit AAPI ───────────────────────────────────────────────────
+/*
+  Een handvol shifts rond het trouwfeest, zodat de kalender en het
+  personeelsblok iets te tonen hebben. In de echte tool zet een import deze
+  rijen neer (zie `functions/aapi/`); de demo heeft geen functions en schrijft
+  ze dus hier — net als bij de kale eventkopieën hierboven.
+
+  Wat erin zit is met opzet niet allemaal keurig: één geannuleerde shift, één
+  die bij geen event hoort, en één waar de machine tussen twee events twijfelde.
+  Een demo waarin alles klopt, laat de helft van de schermen niet zien.
+*/
+const TROUW_DAG = (() => {
+  const d = dag(12)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+})()
+
+const uurOp = (datum, uur, minuut = 0) => {
+  const d = new Date(`${datum}T00:00:00`)
+  d.setHours(uur, minuut, 0, 0)
+  return d
+}
+
+;[
+  ['a-jumana', 'Jumana Mhanawi', 'flexi', 'FLX_DAY'],
+  ['a-roeland', 'Roeland Kempeneers', 'vast', 'OTH'],
+  ['a-faycal', 'Faycal El Amraoui', 'student', 'STU_COT'],
+  ['a-herman', 'Herman Van Ormelingen', 'zelfstandig', 'INDEPENDENT'],
+].forEach(([id, naam, , dimona]) =>
+  seedDoc('aapiEmployees', id, {
+    aapiEmployeeId: id,
+    displayName: naam,
+    rawName: naam.toUpperCase(),
+    dimonaType: dimona,
+    planningType: 'PLANNING',
+    active: true,
+    firstSeenAt: dag(-20),
+    lastSeenAt: dag(-1),
+  }))
+
+;[
+  // Gekoppeld aan het trouwfeest, vanzelf en met zekerheid.
+  ['s-1', 'a-jumana', 'Jumana Mhanawi', 'flexi', 'evenementen', 6, 14, 30, false, { linkStatus: 'auto', eventRef: 't-trouw', linkScore: 1 }],
+  ['s-2', 'a-roeland', 'Roeland Kempeneers', 'vast', 'evenementen', 9, 23, 30, false, { linkStatus: 'auto', eventRef: 't-trouw', linkScore: 0.92 }],
+  // Met de hand gekoppeld door iemand die het beter wist.
+  ['s-3', 'a-herman', 'Herman Van Ormelingen', 'zelfstandig', 'evenementen', 14, 22, 0, false, { linkStatus: 'manual', eventRef: 't-trouw', linkScore: null, linkedBy: 'u-jasper' }],
+  // Afgezegd: staat er nog, telt niet mee.
+  ['s-4', 'a-faycal', 'Faycal El Amraoui', 'student', 'evenementen', 10, 18, 30, true, { linkStatus: 'auto', eventRef: 't-trouw', linkScore: 1 }],
+  // Hoort bij geen enkel event — dit is wat het blok "mogelijk voor dit event"
+  // laat zien.
+  ['s-5', 'a-faycal', 'Faycal El Amraoui', 'student', 'evenementen', 8, 12, 0, false, { linkStatus: 'unlinked', eventRef: null, linkScore: null }],
+  // En de gewone bistro, die niets met events te maken heeft.
+  ['s-6', 'a-roeland', 'Roeland Kempeneers', 'vast', 'keuken', 11, 15, 15, false, { linkStatus: 'notApplicable', eventRef: null, linkScore: null }],
+  ['s-7', 'a-jumana', 'Jumana Mhanawi', 'flexi', 'bar', 17, 23, 0, false, { linkStatus: 'notApplicable', eventRef: null, linkScore: null }],
+].forEach(([id, employeeId, naam, statuut, afdeling, van, tot, pauze, geannuleerd, koppeling]) =>
+  seedDoc('aapiShifts', id, {
+    aapiPlanningId: id,
+    aapiEmployeeId: employeeId,
+    naam,
+    statuut,
+    establishmentName: 'Meer-Bistro Het Vinne',
+    locationName: afdeling,
+    rawLocationName: afdeling,
+    dag: TROUW_DAG,
+    start: uurOp(TROUW_DAG, van),
+    end: uurOp(TROUW_DAG, tot),
+    pauseMinutes: pauze,
+    defaultStart: uurOp(TROUW_DAG, van),
+    defaultEnd: uurOp(TROUW_DAG, tot),
+    defaultPauseMinutes: pauze,
+    canceled: geannuleerd,
+    removedFromSourceAt: null,
+    linkCandidates: [],
+    linkedAt: dag(-1),
+    linkedBy: null,
+    aapiCreatedOn: dag(-20),
+    aapiLastModifiedOn: dag(-2),
+    importedAt: dag(-1),
+    importRunId: 'ir-1',
+    ...koppeling,
+  }))
+
+seedDoc('aapiImportRuns', 'ir-1', {
+  source: 'xlsx-upload',
+  fileName: 'Planning Overview.xlsx',
+  startedAt: dag(-1),
+  finishedAt: dag(-1),
+  windowStart: uurOp(TROUW_DAG, 0),
+  windowEnd: uurOp(TROUW_DAG, 23),
+  rowsRead: 7,
+  shiftsCreated: 7,
+  shiftsUpdated: 0,
+  shiftsUnchanged: 0,
+  shiftsRemoved: 0,
+  employeesCreated: 4,
+  employeesSeen: 4,
+  linksAuto: 3,
+  linksAmbiguous: 0,
+  eventShifts: 5,
+  unknownColumns: [],
+  errors: [],
+  status: 'ok',
+  byId: 'u-jasper',
+  byName: 'Jasper Hansen',
+})

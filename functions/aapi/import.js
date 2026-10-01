@@ -25,7 +25,7 @@
  */
 import { parseBlad, vensterVan } from './parser.js'
 import { matchShift, VASTGEZET } from './matcher.js'
-import { dagenTussen } from './tijd.js'
+import { brusselseDag, dagenTussen } from './tijd.js'
 
 /** De velden die uit de bron komen; verschilt er één, dan is de shift gewijzigd. */
 const BRONVELDEN = [
@@ -62,6 +62,13 @@ export function shiftUitBron(rij) {
     planningType: rij.planningType,
     start: rij.start,
     end: rij.eind,
+    /*
+      De Brusselse kalenderdag, meegeschreven en niet in de browser berekend.
+      Een shift van 05:00 op 25 oktober hoort bij die dag, en wie dat in de
+      browser uitrekent krijgt het antwoord van de tijdzone van die browser.
+      Dat gaat negen van de tien keer goed en precies daarom valt het niet op.
+    */
+    dag: brusselseDag(rij.start),
     pauseMinutes: rij.pauzeMinuten,
     defaultStart: rij.standaardStart,
     defaultEnd: rij.standaardEind,

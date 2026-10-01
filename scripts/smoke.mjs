@@ -1331,6 +1331,79 @@ await test('het postvak hangt aan een envelopje op de eventpagina', async () => 
   await page.close()
 })
 
+await test('de planning uit AAPI staat in een kalender', async () => {
+  /*
+    Via het event ernaartoe en niet rechtstreeks. De kalender opent op de week
+    van vandaag, en de demo zet zijn trouwfeest een eind verderop — een test die
+    rechtstreeks naar /planning gaat, test dan alleen welke week het is.
+    Bovendien is dit de weg die een mens neemt: vanaf het event naar die dag.
+  */
+  const page = await tabblad('/events/t-trouw')
+  await page.waitForTimeout(1200)
+  await page.getByRole('button', { name: /planning van die dag/i }).click()
+  await page.waitForTimeout(1200)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Planning'), 'de planningspagina opent niet')
+  for (const wie of ['Jumana Mhanawi', 'Roeland Kempeneers']) {
+    zouden(bevat(tekst, wie), `${wie} staat niet in de kalender: ${tekst.slice(0, 500)}`)
+  }
+  zouden(bevat(tekst, 'Flexi') && bevat(tekst, 'Zelfstandig'), 'de statuten staan er niet bij')
+
+  // Een afgezegde shift blijft staan, gedempt en doorgestreept: "er stond
+  // iemand en die is afgezegd" is informatie, een lege plek niet.
+  zouden(
+    (await page.locator('.je-shiftblok[data-gedempt]').count()) >= 1,
+    'de geannuleerde shift is verdwenen in plaats van gedempt'
+  )
+  // En wat nergens bij hoort krijgt een waarschuwing.
+  zouden(
+    (await page.locator('.je-shiftblok svg').count()) >= 1,
+    'er staat geen waarschuwing bij de ongekoppelde shift'
+  )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een shift opent met zijn ruwe AAPI-gegevens en koppelacties', async () => {
+  const page = await tabblad('/events/t-trouw')
+  await page.waitForTimeout(1200)
+  await page.getByRole('button', { name: /planning van die dag/i }).click()
+  await page.waitForTimeout(1200)
+  await page.locator('.je-shiftblok').first().click()
+  await page.waitForTimeout(700)
+
+  const tekst = await inhoud(page)
+  // De vestiging staat erbij mét de reden waarom we er niet op matchen.
+  zouden(bevat(tekst, 'Meer-Bistro Het Vinne'), 'de vestiging staat niet in het detail')
+  zouden(bevat(tekst, 'koppelen we op tijd'), 'de uitleg over de vestiging ontbreekt')
+  zouden(bevat(tekst, 'pauze'), 'de pauze staat niet in het detail')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('op een event staat wie er komt werken', async () => {
+  const page = await tabblad('/events/t-trouw')
+  await page.waitForTimeout(1200)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Personeel'), `het personeelsblok staat er niet: ${tekst.slice(0, 400)}`)
+
+  /*
+    Drie mensen komen werken en één is afgezegd; de uren tellen alleen de drie,
+    met de pauze eraf. Dat is 7u30 + 13u30 + 8u = 29u.
+  */
+  zouden(bevat(tekst, '3 ingepland'), `de telling klopt niet: ${tekst.slice(0, 600)}`)
+  zouden(bevat(tekst, '1 afgezegd'), 'de afgezegde shift wordt niet geteld')
+  zouden(bevat(tekst, '29u'), `het urentotaal klopt niet: ${tekst.slice(0, 600)}`)
+
+  // De uitsplitsing per statuut, en de shift die nergens bij hoort als kandidaat.
+  zouden(bevat(tekst, 'Mogelijk voor dit event'), 'de kandidaten staan er niet bij')
+  zouden(bevat(tekst, 'Koppel aan dit event'), 'er is geen knop om te koppelen')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de tool schakelt over naar het Engels en onthoudt dat', async () => {
   const page = await tabblad('/')
   const zijbalk = page.locator('aside').first()
@@ -1705,7 +1778,7 @@ const ROLROUTES = [
   '/', '/kalender', '/tasks', '/werklast', '/dashboard', '/meer', '/social',
   '/klanten', '/openen-sluiten', '/registraties', '/overleg', '/uren',
   '/rooster', '/logboek', '/goals', '/instellingen',
-  '/medewerkers', '/mijn-events', '/profiel',
+  '/medewerkers', '/mijn-events', '/profiel', '/planning',
 ]
 
 /** Wat de demo weigerde sinds de vorige keer vragen, en de lijst leegmaken. */
