@@ -231,8 +231,10 @@ await test('de zijbalk herhaalt de tabs van de Events-pagina niet', async () => 
   for (const dubbel of ['Bord', 'Archief']) {
     zouden(!bevat(zijbalk, dubbel), `"${dubbel}" staat zowel in het menu als op de tabs: ${zijbalk}`)
   }
-  zouden(bevat(zijbalk, 'Klanten'), `Klanten is uit het menu verdwenen: ${zijbalk}`)
   zouden(bevat(zijbalk, 'Aanvragen'), `Aanvragen is uit het menu verdwenen: ${zijbalk}`)
+  // Klanten staat op het eerste niveau: een klant is geen weergave van de
+  // eventlijst, en je komt er even vaak vanuit een offerte als vanuit een event.
+  zouden(bevat(zijbalk, 'Klanten'), `Klanten is uit het menu verdwenen: ${zijbalk}`)
 
   // De tabs doen het werk nog wel, en /kalender blijft een geldig adres.
   await page.getByRole('tab', { name: 'Kalender' }).click()
@@ -1200,6 +1202,74 @@ await test('de lopende timer staat in de zijbalk', async () => {
   const balk = await page.locator('aside').first().innerText()
   zouden(/\d+:\d\d:\d\d/.test(balk), `geen loper in de zijbalk: ${balk.replace(/\n/g, ' ')}`)
   zouden(balk.includes('Drankenlijst finaliseren'), 'de taak van de timer staat er niet')
+  await page.close()
+})
+
+await test('de timer start vanaf elke pagina, maar nooit zonder event of taak', async () => {
+  /*
+    De klok stond er alleen als ze liep; daarvoor in de plaats stond een zin die
+    je naar een taak stuurde. Nu staat de klok er altijd op 00:00:00 met een
+    startknop, en kiezen waaraan blijft verplicht.
+  */
+  const page = await tabblad('/goals')
+
+  // Eerst de lopende demotimer wegwerken: pas dan staat de klok op nul.
+  await page.getByRole('button', { name: /stop en boek/i }).first().click()
+  await page.waitForTimeout(900)
+
+  const zijbalk = page.locator('aside').first()
+  zouden(bevat(await zijbalk.innerText(), '00:00:00'), `de klok staat er niet op nul: ${await zijbalk.innerText()}`)
+
+  await zijbalk.getByRole('button', { name: 'Timer starten' }).click()
+  await page.waitForTimeout(600)
+
+  // Zonder keuze gaat de timer niet lopen.
+  const startknop = page.getByRole('button', { name: /^Start$/ })
+  zouden(await startknop.isDisabled(), 'de timer kan starten zonder event of taak')
+
+  // Events én taken staan in dezelfde lijst, elk met waar ze onder hangen.
+  const kiezer = page.getByLabel('Waaraan werk je')
+  const opties = await kiezer.locator('option').allInnerTexts()
+  zouden(opties.some((o) => o.includes('Trouw Niels en Inez')), `geen events om op te boeken: ${opties.join(' | ')}`)
+  zouden(
+    opties.some((o) => o.includes('Drankenlijst finaliseren')),
+    `geen taken om op te boeken: ${opties.join(' | ')}`
+  )
+
+  await kiezer.selectOption({ label: opties.find((o) => o.includes('Drankenlijst finaliseren')) })
+  await startknop.click()
+  await page.waitForTimeout(1000)
+
+  const na = await zijbalk.innerText()
+  zouden(bevat(na, 'Drankenlijst finaliseren'), `de timer loopt niet op de gekozen taak: ${na}`)
+  zouden(bevat(na, 'Stop en boek'), 'er staat geen stopknop na het starten')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('op je eigen profiel pas je je naam en je foto aan', async () => {
+  const page = await tabblad('/profiel')
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Mijn profiel'), 'de profielpagina opent niet')
+
+  // Wat vastligt staat erop, met de reden erbij — niet als grijs vakje.
+  for (const vast of ['jasper@jeconcept.be', 'Eigenaar']) {
+    zouden(bevat(tekst, vast), `"${vast}" staat niet bij de vaste gegevens: ${tekst.slice(0, 400)}`)
+  }
+
+  const naam = page.getByLabel('Naam')
+  await naam.fill('Jasper H.')
+  await page.getByRole('button', { name: 'Bewaren' }).click()
+  await page.waitForTimeout(900)
+
+  // De naam verandert overal mee, want de zijbalk leest hetzelfde profiel.
+  const zijbalk = await page.locator('aside').first().innerText()
+  zouden(bevat(zijbalk, 'Jasper H.'), `de nieuwe naam komt niet door: ${zijbalk}`)
+
+  // En de foto uit de handtekening staat erbij zolang er geen eigen foto is.
+  const bronnen = await page.locator('img.je-avatar').evaluateAll((els) => els.map((e) => e.getAttribute('src')))
+  zouden(bronnen.some((b) => (b ?? '').includes('/team/jasper.jpg')), `geen portret op het profiel: ${bronnen.join(', ')}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
 

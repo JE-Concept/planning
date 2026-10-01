@@ -11,7 +11,13 @@ export const connectStorageEmulator = () => {}
  * uit gaat.
  */
 export const ref = (_storage, path) => ({ path })
-export const uploadBytes = async (bestand, blob) => ({ ref: bestand, blob })
+// De blob blijft aan de verwijzing hangen, want `getDownloadURL` krijgt die
+// verwijzing mee en niet het antwoord van `uploadBytes` — zonder dit leverde de
+// demo een '#' op en bleef elk geüpload bestand een gebroken plaatje.
+export const uploadBytes = async (bestand, blob) => {
+  bestand.blob = blob
+  return { ref: bestand, blob }
+}
 export const getDownloadURL = async (bestand) =>
   bestand.blob ? URL.createObjectURL(bestand.blob) : '#'
 export const deleteObject = async () => {}

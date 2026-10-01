@@ -19,7 +19,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { addManualEntry, deleteEntry, updateEntry, useTimeEntries } from '@data/time'
-import { useTasks } from '@data/tasks'
+import WerkKiezer, { useWerk } from '@components/time/WerkKiezer'
 
 const monthKey = (date) => dayKey(date).slice(0, 7)
 
@@ -400,35 +400,25 @@ function exportCsv(entries, profileById, month, t) {
 function EntryModal({ entry, uid, onClose }) {
   const { t } = useTaal()
   const toast = useToast()
-  const { tasks } = useTasks()
   const [startedAt, setStartedAt] = useState(
     toLocalInput(entry?.startedAt ?? new Date(Date.now() - 3600000))
   )
   const [endedAt, setEndedAt] = useState(toLocalInput(entry?.endedAt ?? new Date()))
   const [description, setDescription] = useState(entry?.description ?? '')
   const [taskId, setTaskId] = useState(entry?.taskId ?? '')
-  const [zoek, setZoek] = useState('')
   const [saving, setSaving] = useState(false)
 
   /*
-    Wat je kan kiezen: alles wat openstaat, plus de taak waar deze boeking al
-    op stond — ook als die intussen afgevinkt is. Zonder dat laatste zou het
-    aanpassen van een oude registratie haar taak stilletjes wissen.
+    De keuzelijst staat in `WerkKiezer`, samen met die van de timer in de
+    zijbalk. Hier stond een eigen lijst die `useTasks()` zonder lijst-id
+    aanriep: dat abonnement geeft dan niets terug, dus was de lijst altijd leeg
+    en kon je een boeking nooit opslaan. Eén component voor dezelfde vraag
+    betekent dat zoiets maar op één plek kan verrotten.
   */
-  const keuzes = useMemo(() => {
-    const open = (tasks ?? []).filter((taak) => taak.open !== false || taak.id === entry?.taskId)
-    const naald = zoek.trim().toLowerCase()
-    const gevonden = naald
-      ? open.filter((taak) => `${taak.title} ${taak.listName ?? ''}`.toLowerCase().includes(naald))
-      : open
-    // Vijftig is ruim genoeg om te kiezen en kort genoeg om door te scrollen;
-    // wie meer nodig heeft, typt een letter in het zoekveld erboven.
-    return gevonden.slice(0, 50)
-  }, [tasks, zoek, entry?.taskId])
+  const taak = useWerk(taskId)
 
   const submit = async (e) => {
     e.preventDefault()
-    const taak = (tasks ?? []).find((x) => x.id === taskId) ?? null
     if (!taak) {
       toast.error(t('uren.kies_taak'))
       return
@@ -487,19 +477,9 @@ function EntryModal({ entry, uid, onClose }) {
           <Input type="datetime-local" value={endedAt} onChange={(e) => setEndedAt(e.target.value)} />
         </Field>
 
-        <Field label={t('uren.zoek_taak')} className="sm:col-span-2">
-          <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder={t('uren.zoek_taak_hint')} />
-        </Field>
-        <Field label={t('uren.waarop')} hint={t('uren.waarop_hint')} className="sm:col-span-2">
-          <Select value={taskId} onChange={(e) => setTaskId(e.target.value)}>
-            <option value="">{t('uren.kies_taak')}</option>
-            {keuzes.map((taak) => (
-              <option key={taak.id} value={taak.id}>
-                {taak.listName ? `${taak.listName} · ${taak.title}` : taak.title}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <div className="sm:col-span-2 grid gap-4">
+          <WerkKiezer value={taskId} onChange={setTaskId} behoud={entry?.taskId ?? null} />
+        </div>
 
         <Field label={t('uren.omschrijving')} className="sm:col-span-2">
           <Input

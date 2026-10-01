@@ -477,6 +477,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .je-avatar--sm{width:26px;height:26px;font-size:11px}
 .je-avatar--md{width:34px;height:34px;font-size:13px}
 .je-avatar--lg{width:44px;height:44px;font-size:15px}
+.je-avatar--xl{width:96px;height:96px;font-size:30px}
 .je-avatar--ring{box-shadow:0 0 0 2px var(--surface-1)}
 
 .je-avatars{display:inline-flex}

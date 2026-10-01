@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { NavLink, useLocation, useSearchParams } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@lib/cn'
 import { formatDuration } from '@lib/format'
+import { portretVan } from '@lib/portret'
 import { periodKeys } from '@lib/time-math'
 import { Button, Hex, Icon, IconButton, Logotype, initialsOf } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
@@ -9,6 +10,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useEvents, useWeekEntries } from '@data/events'
 import { stopTimer, useRunningTimer } from '@data/time'
+import TimerStarten from '@components/time/TimerStarten'
 import { AgendaMenuItem, InstallMenuItem, MeldingsVoorkeurenMenuItem, PushMenuItem, TaalMenuItem } from './AppMenuItems'
 import MeldingsVoorkeuren from '@components/notifications/MeldingsVoorkeuren'
 import AgendaAbonnement from '@components/kalenderfeed/AgendaAbonnement'
@@ -56,8 +58,7 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       icon: 'kanban',
       sleutel: 'nav.events',
       end: true,
-      match: (p) =>
-        p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten' || p === '/aanvragen',
+      match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/aanvragen',
       kinderen: [
         /*
           Bord en Kalender stonden hier ook, en dat was dubbel: de Events-pagina
@@ -69,12 +70,21 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
           /kalender blijft wel een route: oude links en de telefoonnavigatie
           komen daar binnen en landen op de kalenderweergave.
         */
-        { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
         // Het postvak hangt onder Events en niet apart: wat erin staat wordt
         // een event, of het hoort bij een event dat er al is.
         { to: '/aanvragen', icon: 'mail', sleutel: 'nav.aanvragen' },
       ],
     },
+    /*
+      Klanten staat op zichzelf en niet onder Events.
+
+      Een klant is geen weergave van de eventlijst: hij heeft zijn eigen
+      dossier, zijn eigen adressen en zijn eigen geschiedenis, en je komt er
+      net zo vaak vanuit een offerte of een factuur als vanuit een event.
+      Weggestopt onder Events moest je eerst naar het eventbord om bij een
+      klant te raken.
+    */
+    { to: '/klanten', icon: 'building', sleutel: 'nav.klanten', kinderen: [] },
     /*
       Socials staat op zichzelf en niet meer onder Events.
 
@@ -242,24 +252,45 @@ export default function Sidebar({ counts = {} }) {
   )
 }
 
-/** De timer onderaan de zijbalk: altijd zichtbaar, want een timer die je moet gaan zoeken vergeet je. */
+/**
+ * De timer onderaan de zijbalk.
+ *
+ * De klok staat er altijd, ook op 00:00:00, met een startknop ernaast. Eerst
+ * stond er een zin — "start een timer vanaf een taak" — en dat betekende dat je
+ * eerst de juiste taak moest gaan opzoeken voor je kon beginnen. Nu begin je
+ * waar je staat: klikken, kiezen waaraan, lopen.
+ *
+ * Kiezen waaraan blijft verplicht. Tijd zonder event of taak is tijd die
+ * nergens op een kostenplaats terechtkomt, en dat is precies waarom de losse
+ * boeking eruit ging.
+ */
 function SideTimer() {
   const { uid } = useAuth()
   const { t } = useTaal()
   const toast = useToast()
   const { timer, elapsed } = useRunningTimer(uid)
-  const { tasks, eventById } = useEvents()
+  const { events, tasks, eventById } = useEvents()
   const week = periodKeys(new Date()).week
   // Alleen de eigen uren opvragen. Er stond hier al een filter op `profileId`,
   // maar pas ná het ophalen — en de socialrol mag de rijen van de ploeg niet
   // lezen, dus faalde de vraag in zijn geheel. Zie `useWeekEntries`.
   const entries = useWeekEntries(week, { profileId: uid })
   const [busy, setBusy] = useState(false)
+  const [kiezen, setKiezen] = useState(false)
 
   const booked = useMemo(
     () => entries.reduce((a, e) => a + (e.durationSeconds ?? 0), 0),
     [entries]
   )
+
+  /*
+    De startknop verschijnt alleen als er iets te kiezen valt.
+
+    De socialrol leest de events en hun taken niet — die staan vol bedragen —
+    dus zou de kiezer voor haar leeg openen. Zij start haar timer op de post
+    zelf, en een knop die naar een lege lijst leidt is erger dan geen knop.
+  */
+  const kanStarten = (events?.length ?? 0) + (tasks?.length ?? 0) > 0
 
   const task = timer?.taskId ? tasks.find((t) => t.id === timer.taskId) : null
   const eventName = task ? eventById[task.parentId]?.name : eventById[timer?.taskId]?.name ?? timer?.listName
@@ -281,9 +312,31 @@ function SideTimer() {
       <span className="je-eyebrow" style={{ color: 'var(--navy-300)' }}>
         {t('timer.titel')}
       </span>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+        <div className="je-side__clock">{formatDuration(timer ? elapsed : 0, { withSeconds: true })}</div>
+        {timer ? (
+          <IconButton
+            icon="square"
+            label={t('timer.stoppen')}
+            size="sm"
+            onClick={stop}
+            disabled={busy}
+            style={{ color: 'var(--white)' }}
+          />
+        ) : kanStarten ? (
+          <IconButton
+            icon="play"
+            label={t('timer.starten')}
+            size="sm"
+            onClick={() => setKiezen(true)}
+            style={{ color: 'var(--white)' }}
+          />
+        ) : null}
+      </div>
+
       {timer ? (
         <>
-          <div className="je-side__clock">{formatDuration(elapsed, { withSeconds: true })}</div>
           <div style={{ font: 'var(--type-body-sm)', color: 'var(--navy-200)' }}>
             {timer.taskTitle || timer.description || t('timer.losse_tijd')}
           </div>
@@ -304,22 +357,22 @@ function SideTimer() {
           </div>
         </>
       ) : (
-        <>
-          <div style={{ font: 'var(--type-body-sm)', color: 'var(--navy-300)' }}>
-            {t('timer.leeg')}
-          </div>
-          <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
-            {t('timer.week_geboekt', { tijd: formatDuration(booked) })}
-          </div>
-        </>
+        <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
+          {t('timer.week_geboekt', { tijd: formatDuration(booked) })}
+        </div>
       )}
+
+      {kiezen ? <TimerStarten uid={uid} onClose={() => setKiezen(false)} /> : null}
     </div>
   )
 }
 
+const portretBron = (profile) => profile?.avatarUrl || portretVan(profile?.email)
+
 function Me() {
   const { profile, logOut } = useAuth()
   const { t } = useTaal()
+  const navigeer = useNavigate()
   const [menu, setMenu] = useState(false)
   // Buiten het menu, want het menu klapt dicht bij de klik erop.
   const [voorkeuren, setVoorkeuren] = useState(false)
@@ -327,7 +380,16 @@ function Me() {
 
   return (
     <div className="je-side__me">
-      <Hex size={34} tone="ink">{initialsOf(profile)}</Hex>
+      {/*
+        Je eigen gezicht als je er een hebt staan. Zonder foto blijft het de
+        hexagon met je initialen: dat is de vorm van het huis en niet een
+        tijdelijke invulling.
+      */}
+      {portretBron(profile) ? (
+        <img src={portretBron(profile)} alt="" className="je-avatar je-avatar--md" />
+      ) : (
+        <Hex size={34} tone="ink">{initialsOf(profile)}</Hex>
+      )}
       <button
         type="button"
         className="je-plainbtn"
@@ -348,6 +410,9 @@ function Me() {
       </span>
       {menu ? (
         <div className="je-menu" role="menu" onClick={() => setMenu(false)}>
+          <button type="button" role="menuitem" onClick={() => navigeer('/profiel')}>
+            {t('profiel.titel')}
+          </button>
           <TaalMenuItem />
           <InstallMenuItem />
           <PushMenuItem />

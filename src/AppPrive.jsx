@@ -42,6 +42,7 @@ const Logboek        = lazy(() => import('@pages/Logboek'))
 const Goals          = lazy(() => import('@pages/Goals'))
 const Customers      = lazy(() => import('@pages/Customers'))
 const Settings       = lazy(() => import('@pages/Settings'))
+const Profiel        = lazy(() => import('@pages/Profiel'))
 const NotFound       = lazy(() => import('@pages/NotFound'))
 
 function Loading() {
@@ -85,6 +86,8 @@ function Authenticated() {
           <Pages>
             <Routes>
               <Route path="/openen-sluiten" element={<Checklists />} />
+              {/* Ook wie maar één scherm mag zien, heeft een naam en een foto. */}
+              <Route path="/profiel" element={<Profiel />} />
               <Route path="*" element={<Navigate to="/openen-sluiten" replace />} />
             </Routes>
           </Pages>
@@ -107,6 +110,7 @@ function Authenticated() {
           <Pages>
             <Routes>
               <Route path="/social" element={<SocialCalendar />} />
+              <Route path="/profiel" element={<Profiel />} />
               <Route path="*" element={<Navigate to="/social" replace />} />
             </Routes>
           </Pages>
@@ -145,6 +149,7 @@ function Authenticated() {
             <Route path="/logboek" element={<Logboek />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/instellingen" element={<Settings />} />
+            <Route path="/profiel" element={<Profiel />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -93,10 +93,6 @@ export default {
   'timer.stoppen': { nl: 'Timer stoppen', en: 'Stop timer' },
   'timer.stop_en_boek': { nl: 'Stop en boek', en: 'Stop and log' },
   'timer.losse_tijd': { nl: 'Losse tijd', en: 'Loose time' },
-  'timer.leeg': {
-    nl: 'Start een timer vanaf een taak, of boek tijd op een kostenplaats.',
-    en: 'Start a timer from a task, or log time against a cost centre.',
-  },
   'timer.week_geboekt': { nl: 'Deze week geboekt: {tijd}', en: 'Logged this week: {tijd}' },
   'timer.gestopt': { nl: 'Gestopt — {tijd} geboekt.', en: 'Stopped — {tijd} logged.' },
   'timer.te_kort': { nl: 'Te kort, niets geboekt.', en: 'Too short, nothing logged.' },
