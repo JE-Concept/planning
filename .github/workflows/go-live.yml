@@ -147,23 +147,28 @@ jobs:
           # geheim hangen. Ze worden apart uitgerold en mogen falen: zonder de
           # Claude-sleutel werkt het samenvatten niet, maar inloggen wel — en
           # dat is precies de volgorde die eerder omgekeerd lag.
-          if gcloud secrets describe ANTHROPIC_API_KEY --project "$PROJECT" >/dev/null 2>&1; then
+          if scripts/ci/geheim.sh ANTHROPIC_API_KEY "$PROJECT"; then
             ( cd functions-meetings && npm install --no-audit --no-fund )
             scripts/ci/deploy.sh "$PROJECT" --only functions:meetings \
               || echo "::warning::De overlegfuncties zijn niet uitgerold; de rest staat wel live."
           else
-            echo "::warning::Geheim ANTHROPIC_API_KEY bestaat niet — overlegfuncties overgeslagen."
+            echo "::warning::Geheim ANTHROPIC_API_KEY bestaat niet in dit project — overlegfuncties overgeslagen."
           fi
 
           # Hetzelfde verhaal voor de mailverzender: eigen codebase, eigen
           # geheim. Zonder SMTP_URL blijven de meldingen in `mailQueue` staan
           # in plaats van te vertrekken — de rest van de tool merkt er niets van.
-          if gcloud secrets describe SMTP_URL --project "$PROJECT" >/dev/null 2>&1; then
+          #
+          # `geheim.sh` en niet `gcloud secrets describe`: dat laatste faalt ook
+          # wanneer het geheim bestaat maar deze sleutel er niet in mag kijken,
+          # en dan werd de mailverzender maanden overgeslagen met de melding dat
+          # het geheim niet bestond. Zie het script.
+          if scripts/ci/geheim.sh SMTP_URL "$PROJECT"; then
             ( cd functions-mail && npm install --no-audit --no-fund )
             scripts/ci/deploy.sh "$PROJECT" --only functions:mail \
               || echo "::warning::De mailverzender is niet uitgerold; de rest staat wel live."
           else
-            echo "::warning::Geheim SMTP_URL bestaat niet — er wordt niet gemaild, alleen gepusht."
+            echo "::warning::Geheim SMTP_URL bestaat niet in dit project — er wordt niet gemaild, alleen gepusht."
           fi
 
 

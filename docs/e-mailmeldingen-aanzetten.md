@@ -81,12 +81,36 @@ omgevingsvariabele `MAIL_FROM` op de functie (bijvoorbeeld
 ## Stap 3 — opnieuw uitrollen
 
 De uitrol kijkt of het geheim bestaat. Bestaat het, dan wordt `functions:mail`
-meegenomen; bestaat het niet, dan slaat hij het over met een waarschuwing en
-gaat de rest gewoon live.
+meegenomen; bestaat het aantoonbaar niet, dan slaat hij het over met een
+waarschuwing en gaat de rest gewoon live.
+
+*Aantoonbaar* is hier het sleutelwoord, en het is één keer misgegaan. De
+servicesleutel van de uitrol mag Secret Manager niet lezen — dat recht zit niet
+in de rollen die een Firebase-beheersleutel standaard krijgt. Het nakijken
+faalde dus óók toen het geheim er wél stond, en maandenlang zei de log
+"bestaat niet" terwijl de echte reden "ik mag niet kijken" was. Sindsdien slaat
+`scripts/ci/geheim.sh` alleen over bij een echte `NOT_FOUND`; kan hij het niet
+nakijken, dan rolt hij uit en laat hij de uitrol zelf oordelen — die mag er wél
+bij.
+
+Wil je dat de log weer het exacte antwoord geeft, geef het account
+`firebase-adminsdk-…@je-planning.iam.gserviceaccount.com` dan de rol
+**Secret Manager Viewer** in [IAM](https://console.cloud.google.com/iam-admin/iam).
+Nodig is het niet.
 
 Draai de go-live workflow of push naar `main`. In het logboek staat daarna
 ofwel de uitrol van `functions:mail`, ofwel de regel *"Geheim SMTP_URL bestaat
-niet — er wordt niet gemaild, alleen gepusht."*
+niet in dit project — er wordt niet gemaild, alleen gepusht."*
+
+## Stap 4 — nakijken of er echt post vertrekt
+
+**Actions → Onderhoud → `meldingen-nakijken`** leest de live gegevens en zegt
+hoeveel rijen er in `mailQueue` staan, met welke stand, en wanneer er voor het
+laatst iets verstuurd is. Dat script schrijft niets.
+
+Blijft alles op `wachtend` staan terwijl `functions:mail` wél uitgerold is, dan
+is het geheim er maar klopt de inhoud niet — meestal de ontbrekende `%40` of
+een app-wachtwoord dat ingetrokken is. De mislukte rijen dragen dan de reden.
 
 ## Nakijken of het werkt
 
