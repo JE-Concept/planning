@@ -39,6 +39,15 @@ export const COL = {
   activity: 'activity',
   templates: 'templates',
   shifts: 'shifts',
+  /*
+    De planning uit AAPI staat naast `shifts` en niet erin. Dat rooster is met
+    de hand gemaakt en hangt aan profielen van JE Plan; dit komt uit een ander
+    systeem en hangt aan mensen die hier meestal geen account hebben. Eén
+    collectie van maken zou betekenen dat een import het handwerk overschrijft.
+  */
+  aapiShifts: 'aapiShifts',
+  aapiEmployees: 'aapiEmployees',
+  aapiImportRuns: 'aapiImportRuns',
   formules: 'formules',
   offertes: 'offertes',
   socialEvents: 'socialEvents',

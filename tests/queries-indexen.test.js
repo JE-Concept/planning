@@ -267,6 +267,17 @@ const VRAGEN = [
     eq: [['status', EQ]],
     sorteer: [['createdAt', DESC]],
   },
+
+  // ── aapiShifts ──────────────────────────────────────────────────────────
+  // Het personeelsblok op een event: wie staat er gepland, op volgorde van
+  // beginuur. De kalender zelf vraagt alleen een bereik op `start` en heeft
+  // daar geen samengestelde index voor nodig.
+  {
+    naam: 'useShiftsVanEvent — wie er op dit event staat (src/data/aapi.js)',
+    col: 'aapiShifts',
+    eq: [['eventRef', EQ]],
+    sorteer: [['start', ASC]],
+  },
 ]
 
 /**
@@ -327,11 +338,11 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  // 65 sinds de medewerkers: één vraag op `socialEvents`, op wie erin staat —
-  // de events die een medewerker van zichzelf mag lezen.
+  // 69 sinds de AAPI-planning: vier vragen in `src/data/aapi.js` — de kalender,
+  // de shifts van één event, de medewerkers en de importhistoriek.
   // Die heeft geen samengestelde index nodig — één veld, één richting — en
   // staat daarom wel hier en niet in de tabel hierboven.
-  const QUERIES_IN_DE_APP = 65
+  const QUERIES_IN_DE_APP = 69
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

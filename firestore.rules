@@ -284,6 +284,37 @@ service cloud.firestore {
       sowieso niet langs. Dat niemand anders mag schrijven staat er toch, want
       een kopie die een browser kan bewerken is geen kopie meer.
     */
+    /*
+      De planning uit AAPI.
+
+      Lezen doet het team; personeel en de socialrol niet — in `aapiEmployees`
+      staan de statuten van de hele ploeg, en dat is personeelsinformatie.
+
+      Schrijven doet niemand vanuit een browser. Wat uit AAPI komt, komt uit
+      AAPI: een tabblad dat een starttijd kan veranderen maakt van de import een
+      bron die met zichzelf in de knoop ligt, en bij de volgende import is niet
+      meer te zeggen wie gelijk had. De import loopt dus server-side (zie
+      `functions/aapi-import.js`).
+
+      De koppeling naar een event is wél een menselijke beslissing — maar ook
+      die gaat via een functie en niet via deze regels. Zo staat op één plek
+      wat een geldige koppeling is, en kan `linkedBy` niet gelogen worden.
+    */
+    match /aapiShifts/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
+    match /aapiEmployees/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
+    match /aapiImportRuns/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
     match /socialEvents/{id} {
       /*
         Een medewerker leest alleen de events waarop hij zelf staat.

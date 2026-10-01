@@ -1,43 +1,147 @@
 /**
- * De koppeling met Aapi, de planningstool waar het personeel in staat.
+ * De planning uit AAPI, zoals de schermen ze lezen.
  *
- * Dit bestand is met opzet leeg gelaten. Er is geen documentatie, geen adres en
- * geen sleutel van Aapi bekend, en een koppeling die op gokwerk gebouwd is, is
- * erger dan geen koppeling: ze lijkt te werken tot het moment dat er een dienst
- * verdwijnt en niemand weet aan welke kant.
+ * Schrijven gebeurt hier niet: `aapiShifts` en `aapiEmployees` staan in de
+ * regels dicht voor de browser, want wat uit AAPI komt hoort niet in een
+ * tabblad aangepast te kunnen worden. Wat een mens wél beslist — bij welk event
+ * een shift hoort — loopt via een Cloud Function, zodat er één plek is waar
+ * vastligt wat een geldige koppeling is.
  *
- * Het rooster in JE Plan werkt volledig op zichzelf. Zodra de documentatie er is,
- * hoeft alleen dit bestand ingevuld te worden — de rest van de app praat
- * uitsluitend via deze twee functies met Aapi en kent er verder niets van.
- *
- * Wat er dan nog beslist moet worden, en wat niet uit code volgt:
- *
- *   Wie is de baas. Staat het rooster in Aapi en leest JE Plan mee, of andersom?
- *   Zolang dat niet vastligt, overschrijven twee systemen elkaars wijzigingen en
- *   is de laatste die schreef toevallig de winnaar.
- *
- *   Wie is wie. Een persoon in Aapi en een profiel hier moeten aan elkaar
- *   geknoopt worden. Op naam is dat vragen om fouten zodra er twee Sams zijn;
- *   een id uit Aapi op het profiel bewaren is de veilige weg.
- *
- *   Wat met een dienst die aan één kant weg is. Verwijderen of markeren — en dat
- *   is een vraag voor wie met het rooster werkt, niet voor de code.
+ * Dit bestand verving de lege stub die hier stond te wachten op documentatie
+ * van AAPI. Die documentatie is er nog altijd niet; wat er wél is, is een
+ * export. Zie `functions/aapi/` voor hoe die gelezen wordt.
  */
+import { useEffect, useMemo, useState } from 'react'
+import { onSnapshot, orderBy, query, where } from 'firebase/firestore'
+import { getFunctions, httpsCallable } from 'firebase/functions'
+import { COL, col, fromQuery } from '@lib/collections'
+import { app } from '@lib/firebase'
 
-/** Of de koppeling ingesteld is. Zolang dit onwaar is, toont de app niets erover. */
-export const aapiIngesteld = () => false
+// Dezelfde regio als de functies zelf; zie `src/data/meetings.js`.
+const functions = getFunctions(app, 'europe-west1')
 
-/**
- * Haalt de diensten van een week op bij Aapi.
- *
- * Verwachte vorm, zodat de rest van de app nu al klopt: een lijst van
- * `{ externId, profileId, date: 'JJJJ-MM-DD', start: 'HH:MM', end: 'HH:MM', note }`.
- */
-export async function haalShiftsOp() {
-  throw new Error('De koppeling met Aapi is nog niet ingesteld.')
+/** Alle shifts met een start binnen dit bereik, op tijd. */
+export function useAapiShifts({ van, tot } = {}) {
+  const [shifts, setShifts] = useState([])
+  const [laadt, setLaadt] = useState(Boolean(van && tot))
+  const [fout, setFout] = useState(null)
+
+  const vanTijd = van?.getTime()
+  const totTijd = tot?.getTime()
+
+  useEffect(() => {
+    if (!vanTijd || !totTijd) {
+      setShifts([])
+      setLaadt(false)
+      return undefined
+    }
+    setLaadt(true)
+    return onSnapshot(
+      query(col(COL.aapiShifts), where('start', '>=', new Date(vanTijd)), where('start', '<=', new Date(totTijd))),
+      (snap) => {
+        setShifts(fromQuery(snap).sort((a, b) => new Date(a.start) - new Date(b.start)))
+        setLaadt(false)
+        setFout(null)
+      },
+      (err) => {
+        setFout(err)
+        setLaadt(false)
+      }
+    )
+  }, [vanTijd, totTijd])
+
+  return { shifts, laadt, fout }
 }
 
-/** Stuurt de diensten van een week naar Aapi. Zelfde vorm als hierboven. */
-export async function stuurShifts() {
-  throw new Error('De koppeling met Aapi is nog niet ingesteld.')
+/** De shifts die aan één event hangen. */
+export function useShiftsVanEvent(eventId) {
+  const [shifts, setShifts] = useState([])
+  const [laadt, setLaadt] = useState(Boolean(eventId))
+
+  useEffect(() => {
+    if (!eventId) {
+      setShifts([])
+      setLaadt(false)
+      return undefined
+    }
+    setLaadt(true)
+    return onSnapshot(
+      query(col(COL.aapiShifts), where('eventRef', '==', eventId), orderBy('start')),
+      (snap) => {
+        setShifts(fromQuery(snap))
+        setLaadt(false)
+      },
+      () => setLaadt(false)
+    )
+  }, [eventId])
+
+  return { shifts, laadt }
+}
+
+/** De medewerkers uit AAPI, op id. */
+export function useAapiMedewerkers() {
+  const [medewerkers, setMedewerkers] = useState([])
+
+  useEffect(
+    () =>
+      onSnapshot(query(col(COL.aapiEmployees)), (snap) => setMedewerkers(fromQuery(snap)), () => setMedewerkers([])),
+    []
+  )
+
+  const opId = useMemo(
+    () => Object.fromEntries(medewerkers.map((m) => [m.aapiEmployeeId ?? m.id, m])),
+    [medewerkers]
+  )
+
+  return { medewerkers, opId }
+}
+
+/** De vorige importbeurten, nieuwste eerst. */
+export function useImportRuns(max = 10) {
+  const [runs, setRuns] = useState([])
+
+  useEffect(
+    () =>
+      onSnapshot(
+        query(col(COL.aapiImportRuns), orderBy('startedAt', 'desc')),
+        (snap) => setRuns(fromQuery(snap).slice(0, max)),
+        () => setRuns([])
+      ),
+    [max]
+  )
+
+  return { runs }
+}
+
+/**
+ * Een bestand importeren.
+ *
+ * `dryRun` leest alles en rekent alles uit, maar raakt geen document aan — dat
+ * is wat de uploadpagina toont vóór er iets gebeurt. Dezelfde som, dezelfde
+ * uitkomst, alleen zonder de schrijfbeurt.
+ */
+export async function importeerPlanning(bestand, { dryRun = false } = {}) {
+  const buffer = await bestand.arrayBuffer()
+  let binair = ''
+  const bytes = new Uint8Array(buffer)
+  // In stukken, want `String.fromCharCode(...)` met een hele megabyte aan
+  // argumenten blaast de stapel op.
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binair += String.fromCharCode(...bytes.subarray(i, i + 8192))
+  }
+
+  const aanroep = httpsCallable(functions, 'aapiImport')
+  const { data } = await aanroep({
+    bestandBase64: btoa(binair),
+    bestandsnaam: bestand.name,
+    dryRun,
+  })
+  return data
+}
+
+/** Een shift aan een event hangen, of er juist niet. */
+export async function koppelShift({ planningId, eventId = null, status }) {
+  const aanroep = httpsCallable(functions, 'aapiKoppel')
+  const { data } = await aanroep({ planningId, eventId, status })
+  return data
 }

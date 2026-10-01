@@ -26,6 +26,7 @@ import {
 } from './mail.js'
 import { taalVan, zeg } from './teksten.js'
 import { hoortInSpiegel, kopieVan, moetBijwerken } from './social-projectie.js'
+import { maakAapiFuncties } from './aapi-import.js'
 import { AUDIT, regelVan, teOud } from './audit.js'
 import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
@@ -759,6 +760,13 @@ export const portaal = maakPortaal({ db, region: REGION })
 /* Werk dat vanzelf terugkomt; zie `herhalingen.js` voor waarom het 's nachts
    gebeurt en niet zodra iemand de tool opent. */
 export const herhalingen = maakHerhalingen({ db, region: REGION })
+
+/*
+  De planning uit AAPI: importeren en koppelen. Het rekenwerk staat in `aapi/`,
+  los van Firebase, zodat een test een hele import kan naspelen met het echte
+  exportbestand — twee keer, om te bewijzen dat er de tweede keer niets gebeurt.
+*/
+export const { aapiImport, aapiKoppel } = maakAapiFuncties({ db, region: REGION })
 
 /**
  * Een binnengekomen mail aan het juiste event hangen.

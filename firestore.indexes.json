@@ -593,6 +593,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "aapiShifts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "eventRef",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "start",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

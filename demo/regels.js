@@ -72,6 +72,11 @@ export const REGELS = {
     kan alleen als de vraag zelf zo beperkt is — net als in `firestore.rules`,
     waar een `list` die méér zou kunnen opleveren geweigerd wordt.
   */
+  // De planning uit AAPI: het team leest, niemand schrijft vanuit de browser.
+  aapiShifts:     { lezen: isTeam, schrijven: () => false },
+  aapiEmployees:  { lezen: isTeam, schrijven: () => false },
+  aapiImportRuns: { lezen: isTeam, schrijven: () => false },
+
   socialEvents: {
     lezen: (rol, ctx) =>
       isTeam(rol) ||
