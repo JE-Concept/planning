@@ -24,6 +24,7 @@ import EventFiche from '@components/events/EventFiche'
 import OfferteTab from '@components/events/OfferteTab'
 import MailDraad from '@components/events/MailDraad'
 import EventOmschrijving from '@components/events/EventOmschrijving'
+import EventOverzicht from '@components/events/EventOverzicht'
 import TaskRow from '@components/events/TaskRow'
 import { PlanningBadge, StatusBadge, dayLabel, eventTijd, hours } from '@components/events/parts'
 import { useAuth } from '@context/AuthProvider'
@@ -55,7 +56,7 @@ export default function EventDetail() {
   // tabblad Bijlagen leest dezelfde lijst nog eens, en dat is één abonnement
   // waard boven een vraag die liegt over wat ze weggooit.
   const { documents: documenten } = useDocuments({ taskId: id })
-  const tab = params.get('tab') || 'taken'
+  const tab = params.get('tab') || 'overzicht'
   const setTab = (v) => {
     const next = new URLSearchParams(params)
     next.set('tab', v)
@@ -89,6 +90,10 @@ export default function EventDetail() {
 
   const si = indexOf(ev.statusName)
   const next = si >= 0 && si < PIPELINE.length - 1 ? PIPELINE[si + 1].key : null
+  // Een stap terugzetten moest tot nu via het bord of via de fiche. Dat is
+  // een omweg voor iets wat even vaak gebeurt als vooruitgaan: een offerte
+  // die herzien wordt, een akkoord dat toch niet rond is.
+  const vorige = si > 0 ? PIPELINE[si - 1].key : null
   const days = ev.eventDate ? Math.round((startOfDay(ev.eventDate) - startOfDay()) / 864e5) : null
 
   const move = async (key) => {
@@ -125,8 +130,24 @@ export default function EventDetail() {
           <>
             <StatusBadge statusName={ev.statusName} statuses={eventStatuses} />
             <PlanningBadge event={ev} />
+            {vorige ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                iconLeft="arrow-left"
+                title={t('events.detail.terug_stap', { stap: labelOf(vorige, eventStatuses).toLowerCase() })}
+                onClick={() => move(vorige)}
+              >
+                {t('alg.vorige')}
+              </Button>
+            ) : null}
             {next ? (
-              <Button size="sm" iconRight="arrow-right" onClick={() => move(next)}>
+              <Button
+                size="sm"
+                iconRight="arrow-right"
+                title={t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}
+                onClick={() => move(next)}
+              >
                 {t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}
               </Button>
             ) : null}
@@ -136,10 +157,18 @@ export default function EventDetail() {
               een test hoort niet in de geschiedenis, en zolang die alleen te
               archiveren zijn, vervuilen ze elk overzicht.
             */}
+            {/*
+              Alleen het pictogram. Het woord "Verwijderen" naast twee
+              stapknoppen trok de aandacht naar de enige knop in deze rij die
+              iets onherstelbaars doet — en de vraag die erop volgt, zegt toch
+              al precies wat er weggaat.
+            */}
             <ConfirmButton
               variant="ghost"
               size="sm"
               iconLeft="trash-2"
+              aria-label={t('alg.verwijderen')}
+              title={t('alg.verwijderen')}
               question={verwijderVraag({ task: ev, subtaken: tasks.length, bijlagen: documenten.length, soort: 'event' })}
               onConfirm={() =>
                 deleteEvent(ev.id)
@@ -149,9 +178,7 @@ export default function EventDetail() {
                   })
                   .catch((err) => toast.error(err.message))
               }
-            >
-              {t('alg.verwijderen')}
-            </ConfirmButton>
+            />
           </>
         }
       />
@@ -167,41 +194,21 @@ export default function EventDetail() {
       <div className="je-pagebody">
         <div className={narrow ? undefined : 'je-event-met-notities'} style={{ maxWidth: 1480 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 1120 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, minmax(0, 1fr))', gap: 3 }}>
-            {PIPELINE.map((step, i) => (
-              <button
-                key={step.key}
-                type="button"
-                title={labelOf(step.key, eventStatuses)}
-                onClick={() => move(step.key)}
-                className="je-plainbtn"
-                style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}
-              >
-                <span style={{ display: 'block', height: 3, background: i <= si ? 'var(--navy-700)' : 'var(--navy-100)' }} />
-                {narrow ? null : (
-                  <span
-                    style={{
-                      font: 'var(--type-caption)',
-                      fontWeight: i === si ? 700 : 400,
-                      color: i === si ? 'var(--text-1)' : i < si ? 'var(--text-2)' : 'var(--text-3)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {labelOf(step.key, eventStatuses)}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          {/*
+            De tabs staan bovenaan en de fiche eronder, in het overzicht.
 
-          <EventFiche ev={ev} />
-
-          <EventOmschrijving ev={ev} />
-
+            Daarvoor stond er eerst een balk met alle negen pijplijnstappen,
+            dan de fiche, dan de omschrijving, en pas daaronder de tabs. Wie
+            naar de offerte wilde, scrolde eerst langs drie blokken die hij
+            niet kwam halen. De stappenbalk is helemaal weg: hij was een
+            navigatie die er als voortgang uitzag — negen knoppen die elk een
+            status verzetten, met één verkeerde klik als prijs. De voortgang
+            staat nu als tijdlijn in het overzicht, en verzetten doe je met de
+            twee stapknoppen in de kop.
+          */}
           <Tabs
             items={[
+              { value: 'overzicht', label: t('events.tab.overzicht') },
               { value: 'taken', label: t('events.tab.taken', { aantal: openCount }) },
               // Alleen events die uit een formule komen (of waar iemand zelf een
               // lijst begon) hebben hier iets te tonen; bij de rest zou het een
@@ -224,7 +231,19 @@ export default function EventDetail() {
             onChange={setTab}
           />
 
-          {tab === 'taken' ? (
+          {tab === 'overzicht' ? (
+            <>
+              <EventOverzicht
+                ev={ev}
+                tasks={tasks}
+                documenten={documenten}
+                totalSeconden={totalS}
+                onTab={setTab}
+              />
+              <EventFiche ev={ev} />
+              <EventOmschrijving ev={ev} />
+            </>
+          ) : tab === 'taken' ? (
             <TasksTab ev={ev} tasks={tasks} focus={params.get('taak')} onOpen={setDrawer} runningId={timer?.taskId} />
           ) : tab === 'bestellijst' ? (
             <Bestellijst ev={ev} />

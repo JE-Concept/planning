@@ -1235,8 +1235,13 @@ await test('een nieuw event uit een template krijgt zijn taken met deadlines', a
   await page.getByRole('button', { name: /Huwelijk/ }).click()
   await page.getByRole('button', { name: 'Event aanmaken' }).click()
   await page.waitForTimeout(1200)
+  zouden((await inhoud(page)).includes('Trouw Tom en Sara'), 'het event opende niet')
+
+  // Een nieuw event opent op het overzicht; de taken staan op hun eigen
+  // tabblad sinds de tabs bovenaan de pagina staan.
+  await page.getByRole('tab', { name: /Taken/ }).click()
+  await page.waitForTimeout(600)
   const tekst = await inhoud(page)
-  zouden(tekst.includes('Trouw Tom en Sara'), 'het event opende niet')
   zouden(tekst.includes('Voorschot 40% ontvangen'), 'de taken uit het template staan er niet')
   zouden(bevat(tekst, 'Taken · 8'), `niet alle acht taken: ${tekst.match(/Taken · \d+/i)?.[0]}`)
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
@@ -1262,7 +1267,12 @@ await test('een event uit een formule krijgt prijs, taken en een berekende beste
   // 29,90 + 19,00 drank = 48,90 per persoon × 37 = 1.809,30 excl. btw.
   const bedrag = await veldwaarde(page, 'Offerte')
   zouden(Math.abs(Number(bedrag) - 1809.3) < 0.01, `het offertebedrag klopt niet: ${bedrag}`)
-  zouden(bevat(fiche, 'Offerte opmaken en versturen'), 'de standaardtaken van het template staan er niet')
+  await page.getByRole('tab', { name: /Taken/ }).click()
+  await page.waitForTimeout(600)
+  zouden(
+    bevat(await inhoud(page), 'Offerte opmaken en versturen'),
+    'de standaardtaken van het template staan er niet'
+  )
 
   await page.getByRole('tab', { name: /Bestellijst/ }).click()
   await page.waitForTimeout(700)
@@ -1278,7 +1288,7 @@ await test('een event uit een formule krijgt prijs, taken en een berekende beste
 })
 
 await test('een taak afvinken telt mee in de voortgang', async () => {
-  const page = await tabblad('/events/t-trouw')
+  const page = await tabblad('/events/t-trouw?tab=taken')
   const voor = (await inhoud(page)).match(/Taken · (\d+)/i)?.[1]
   // Niet zomaar het eerste vinkje van de pagina: de fiche heeft er zelf een
   // rij, één per teamlid. De takenlijst staat in een paneel.
@@ -1545,6 +1555,71 @@ await test('het logboek toont wie wat veranderde, en filtert', async () => {
   const alleen = await inhoud(page)
   zouden(bevat(alleen, 'prijs per persoon'), 'de formuleregel staat er niet meer')
   zouden(!bevat(alleen, 'offertebedrag'), 'er staat nog een taakregel bij')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('het overzicht zegt in één blik hoe een event ervoor staat', async () => {
+  const page = await tabblad('/events/t-trouw')
+
+  // Het overzicht is het eerste tabblad: wie een event opent, wil weten of
+  // het dossier in orde is voor hij naar de taken kijkt.
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'dagen te gaan'), `het aftellen staat er niet: ${tekst.slice(0, 200)}`)
+  zouden(bevat(tekst, 'Gasten'), 'de kaarten staan er niet')
+  zouden(bevat(tekst, 'Waar staat het'), 'de pijplijn staat er niet als tijdlijn')
+
+  // De stappenbalk met negen knoppen is weg; voor- en achteruit staat in de
+  // kop. Beide knoppen moeten er zijn, want terugzetten kon tot nu niet.
+  zouden(bevat(tekst, 'Vorige'), 'de knop om een stap terug te gaan ontbreekt')
+
+  // Een kaart brengt je naar het tabblad waar je er iets aan kunt doen.
+  await page.getByRole('button', { name: /Taken/ }).first().click()
+  await page.waitForTimeout(700)
+  zouden(bevat(await inhoud(page), 'Drankenlijst'), 'de kaart opent het takentabblad niet')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de offerte is een conceptvoorstel met pagina\'s', async () => {
+  const page = await tabblad('/events/t-trouw?tab=offerte')
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Voorstel op maat'), `de cover staat er niet: ${tekst.slice(0, 200)}`)
+  zouden(bevat(tekst, 'Wie zijn'), 'de pagina over JE Concept staat er niet')
+  zouden(bevat(tekst, 'Dit voorstel in één oogopslag'), 'het overzicht van de onderdelen ontbreekt')
+  zouden(bevat(tekst, 'Walking'), 'het onderdeel uit de offerte staat niet op het blad')
+
+  // De prijs van de ontvangst staat op het onderdeel zelf (€ 6,00); die van
+  // het walking dinner komt uit de offerteregels (€ 82,00). Allebei moeten ze
+  // op het blad staan, anders klopt de koppeling met de tabel niet.
+  zouden(bevat(tekst, '6,00'), 'de eigen prijs van de ontvangst staat er niet')
+  zouden(bevat(tekst, '82,00'), 'de prijs uit de offerteregels staat er niet')
+
+  // En de tabel met de btw staat er nog altijd achteraan.
+  zouden(bevat(tekst, '12%') && bevat(tekst, '21%'), 'de btw-tabel ontbreekt')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('werk dat vanzelf terugkomt staat in de instellingen', async () => {
+  const page = await tabblad('/instellingen?tab=herhalingen')
+
+  // De titels staan in invoervelden en dus niet in de tekst van de pagina;
+  // net als op de eventfiche lees je ze uit het veld zelf.
+  const titels = await page.locator('.je-herhaling').getByLabel('Titel').evaluateAll((velden) =>
+    velden.map((v) => v.value)
+  )
+  zouden(titels.some((t) => t.includes('eBox')), `de wekelijkse herhaling staat er niet: ${titels.join(' | ')}`)
+  zouden(titels.some((t) => t.includes('JE Nieuwsbrief')), 'de maandelijkse herhaling staat er niet')
+
+  const tekst = await inhoud(page)
+  // Zonder "volgende keer" kan niemand nakijken of hij het goed ingesteld
+  // heeft; dat is waar het scherm voor bestaat.
+  zouden(bevat(tekst, 'volgende keer'), 'er staat niet bij wanneer ze de volgende keer valt')
 
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()

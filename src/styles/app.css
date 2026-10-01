@@ -2509,3 +2509,265 @@ select.je-compact { padding-right: 24px; }
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ── Het conceptvoorstel bewerken ──────────────────────────────────────── */
+
+/*
+ * Eén onderdeel per blok, met de korte velden op één regel en de twee
+ * tekstvakken eronder. De verhouding is met opzet scheef: de titel is drie
+ * woorden en de tekst is drie zinnen, dus de tekst krijgt de ruimte.
+ */
+.je-voorstelrij {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.je-voorstelrij__kop {
+  display: grid;
+  grid-template-columns: 9rem 1fr 9rem 7rem auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .je-voorstelrij__kop {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Een link die nog nergens heen gaat, hoort er ook zo uit te zien. */
+.je-offertewerk__link[data-nogniet] {
+  opacity: 0.72;
+}
+
+/* ── Het overzicht van een event ───────────────────────────────────────── */
+
+.je-overzicht {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.je-overzicht__kop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5);
+}
+
+.je-overzicht__standen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.je-overzicht__teller {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.je-overzicht__teller strong {
+  font: var(--type-h2);
+  line-height: 1;
+}
+
+/*
+ * Het aandachtsblok draagt zijn kleur links als een rand en niet als vlak.
+ * Een heel paneel in oranje leest als een fout; een streep leest als een
+ * aantekening, en dat is wat het is.
+ */
+.je-overzicht__aandacht {
+  padding: var(--space-5);
+  border-left: 3px solid var(--border-hairline);
+}
+
+.je-overzicht__aandacht[data-stand='aandacht'] {
+  border-left-color: var(--amber-500, #d08700);
+}
+
+.je-overzicht__aandacht[data-stand='dringend'] {
+  border-left-color: var(--red-500, #c0392b);
+}
+
+.je-overzicht__aandacht[data-stand='rond'] {
+  border-left-color: var(--green-500, #2e7d4f);
+}
+
+.je-overzicht__aandacht h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.je-overzicht__aandacht ul {
+  margin: 0;
+  padding-left: var(--space-5);
+  font: var(--type-body-sm);
+}
+
+.je-overzicht__aandacht li + li {
+  margin-top: var(--space-2);
+}
+
+.je-overzicht__kaarten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  gap: var(--space-3);
+}
+
+.je-paneel-kaart {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-panel, 10px);
+  text-align: left;
+}
+
+button.je-paneel-kaart {
+  cursor: pointer;
+  transition: border-color 0.14s ease;
+}
+
+button.je-paneel-kaart:hover {
+  border-color: var(--border-accent, var(--navy-300));
+}
+
+.je-paneel-kaart[data-toon='waarschuwing'] {
+  border-color: var(--amber-500, #d08700);
+}
+
+.je-overzicht__kaarttitel {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.je-overzicht__kaartgroot {
+  font: var(--type-h3);
+  line-height: 1.15;
+}
+
+.je-overzicht__kaartonder {
+  font: var(--type-body-sm);
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.je-overzicht__balk {
+  display: block;
+  height: 3px;
+  margin-top: var(--space-2);
+  background: var(--navy-100);
+}
+
+.je-overzicht__balk span {
+  display: block;
+  height: 100%;
+  background: var(--navy-700);
+}
+
+/*
+ * De pijplijn als tijdlijn: lezen, niet klikken. Verzetten gebeurt met de
+ * twee stapknoppen in de kop, waar één klik niet per ongeluk drie stappen
+ * verderop belandt.
+ */
+.je-overzicht__pijplijn {
+  padding: var(--space-5);
+}
+
+.je-overzicht__pijplijn h2 {
+  margin: 0 0 var(--space-4);
+}
+
+.je-overzicht__pijplijn ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.je-overzicht__pijplijn li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-body-sm);
+  color: var(--text-3);
+}
+
+.je-overzicht__pijplijn li[data-stand='gehad'] {
+  color: var(--text-2);
+}
+
+.je-overzicht__pijplijn li[data-stand='nu'] {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.je-overzicht__bol {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--navy-100);
+}
+
+.je-overzicht__pijplijn li[data-stand='gehad'] .je-overzicht__bol,
+.je-overzicht__pijplijn li[data-stand='nu'] .je-overzicht__bol {
+  background: var(--navy-700);
+}
+
+/* ── Herhalingen ───────────────────────────────────────────────────────── */
+
+.je-herhaling {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+/* Een herhaling die uitstaat blijft leesbaar maar duidelijk stil. Weghalen
+   zou betekenen dat je ze opnieuw moet instellen om ze een maand te pauzeren. */
+.je-herhaling[data-uit] {
+  opacity: 0.55;
+}
+
+.je-herhaling__kop {
+  display: grid;
+  grid-template-columns: 1fr 11rem 13rem auto;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.je-herhaling__ritme {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.je-herhaling__dagen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (max-width: 860px) {
+  .je-herhaling__kop {
+    grid-template-columns: 1fr auto;
+  }
+}

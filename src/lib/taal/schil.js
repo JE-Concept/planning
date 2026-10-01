@@ -17,6 +17,7 @@ export default {
   'alg.annuleren': { nl: 'Annuleren', en: 'Cancel' },
   'alg.sluiten': { nl: 'Sluiten', en: 'Close' },
   'alg.verwijderen': { nl: 'Verwijderen', en: 'Delete' },
+  'alg.vorige': { nl: 'Vorige', en: 'Previous' },
   'alg.archiveren': { nl: 'Archiveren', en: 'Archive' },
   'alg.toevoegen': { nl: 'Toevoegen', en: 'Add' },
   'alg.aanmaken': { nl: 'Aanmaken', en: 'Create' },
