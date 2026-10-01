@@ -24,7 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "offerte:voorbeeld": "npm run build:demo && node scripts/offerte-voorbeeld.mjs",
-    "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/rules.test.js\""
+    "test:rules": "npx --yes firebase-tools@13 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules.test.js\""
   },
   "dependencies": {
     "firebase": "^11.0.2",
