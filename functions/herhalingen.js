@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { logger } from 'firebase-functions'
+import { isVervaldag, sleutelVan, vandaagInBrussel } from './herhaling-datum.js'
 
 /**
  * Werk dat vanzelf terugkomt, één keer per nacht neergezet.
@@ -17,56 +18,14 @@ import { logger } from 'firebase-functions'
  * niet `set()`: bestaat het al, dan is dat geen fout maar het bewijs dat het
  * werk al gedaan is.
  *
- * ── Waarom de datumlogica hier staat én in `src/lib/herhaling.js` ─────────
+ * ── Waarom de datumlogica dubbel staat ───────────────────────────────────
  * De functies worden apart uitgerold, uit hun eigen map, met hun eigen
- * `package.json`; ze kunnen niet uit `src/` importeren. Twee kopieën van
- * dezelfde regel is een risico, en daarom staat er in
- * `tests/herhalingen.test.js` een test die beide kanten een jaar lang naast
- * elkaar legt. Loopt er één uit de pas, dan valt die test om — niet de
- * planning van iemands week.
+ * `package.json`; ze kunnen niet uit `src/` importeren. Dezelfde regel staat
+ * dus twee keer: hier in `herhaling-datum.js` en in `src/lib/herhaling.js`.
+ * `tests/herhalingen.test.js` legt die twee een jaar lang naast elkaar, zodat
+ * een verschil omvalt in een test en niet in iemands weekplanning. Dat
+ * buurbestand draagt met opzet geen enkele import — zie daar waarom.
  */
-
-/* Maandag is 1, zondag is 7 — ISO, net als in het rooster en het poetsplan. */
-const isoDag = (datum) => ((new Date(datum).getDay() + 6) % 7) + 1
-
-export function isVervaldag(herhaling, datum) {
-  if (!herhaling || herhaling.actief === false) return false
-  const d = new Date(datum)
-  if (Number.isNaN(d.getTime())) return false
-
-  if (herhaling.soort === 'dagelijks') return true
-  if (herhaling.soort === 'wekelijks') return (herhaling.dagen ?? []).includes(isoDag(d))
-  if (herhaling.soort === 'maandelijks') return d.getDate() === (herhaling.dagVanMaand ?? 1)
-  return false
-}
-
-export const dagSleutel = (datum) => {
-  const d = new Date(datum)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-export const sleutelVan = (herhalingId, datum) => `h-${herhalingId}-${dagSleutel(datum)}`
-
-/**
- * De dag zoals Borgloon hem telt.
- *
- * De functie draait in UTC. Om 05:40 Brussel is het in de winter 04:40 UTC en
- * in de zomer 03:40 — dezelfde dag. Maar een maandelijkse herhaling op de 1e
- * zou bij een herstart rond middernacht op de 31e kunnen landen. Daarom wordt
- * de datum hier expliciet in de Belgische tijdzone bepaald en niet uit
- * `new Date()` gelezen.
- */
-export function vandaagInBrussel(nu = new Date()) {
-  const delen = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Brussels',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(nu)
-  const [jaar, maand, dag] = delen.split('-').map(Number)
-  // Middag, zodat omzetten naar lokale tijd nergens een dag verschuift.
-  return new Date(jaar, maand - 1, dag, 12, 0, 0, 0)
-}
 
 export function maakHerhalingen({ db, region }) {
   return onSchedule(

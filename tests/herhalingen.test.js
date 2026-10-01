@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { dagSleutel, isVervaldag, maakHerhaling, omschrijf, sleutelVan, volgendeKeer } from '../src/lib/herhaling'
+/*
+  Uit `herhaling-datum.js` en niet uit `herhalingen.js`: dat tweede bestand
+  importeert `firebase-functions`, en dat staat alleen in
+  `functions/node_modules` — dat CI niet installeert. Deze test draaide
+  daardoor lokaal wel en in CI niet.
+*/
 import {
   isVervaldag as isVervaldagServer,
   sleutelVan as sleutelVanServer,
   vandaagInBrussel,
-} from '../functions/herhalingen.js'
+} from '../functions/herhaling-datum.js'
 
 /**
  * Werk dat vanzelf terugkomt.
