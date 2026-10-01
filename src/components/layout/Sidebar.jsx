@@ -59,8 +59,16 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       match: (p) =>
         p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/klanten' || p === '/aanvragen',
       kinderen: [
-        { to: '/', icon: 'kanban', sleutel: 'nav.bord', end: true, match: (p) => p === '/' || p.startsWith('/events') },
-        { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
+        /*
+          Bord en Kalender stonden hier ook, en dat was dubbel: de Events-pagina
+          heeft zelf tabs voor Lijst, Bord, Kalender en Archief. Twee bedieningen
+          voor dezelfde keuze betekent dat de ene de andere niet bijhoudt — je
+          klikt in het menu op Kalender en de tab bovenaan zegt nog Bord.
+          De weergave kies je op de pagina; het menu brengt je naar de pagina.
+
+          /kalender blijft wel een route: oude links en de telefoonnavigatie
+          komen daar binnen en landen op de kalenderweergave.
+        */
         { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
         // Het postvak hangt onder Events en niet apart: wat erin staat wordt
         // een event, of het hoort bij een event dat er al is.

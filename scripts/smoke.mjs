@@ -217,6 +217,30 @@ await test('het socialbord toont de events vanaf ready to invoice', async () => 
   await page.close()
 })
 
+await test('de zijbalk herhaalt de tabs van de Events-pagina niet', async () => {
+  /*
+    Bord en Kalender stonden zowel in het menu onder Events als als tab op de
+    pagina zelf. Twee bedieningen voor dezelfde keuze lopen uit elkaar: je klikt
+    in het menu op Kalender en de tab bovenaan zegt nog Bord.
+
+    Klanten en Aanvragen blijven er wél staan: dat zijn eigen pagina's en geen
+    weergave van de eventlijst.
+  */
+  const page = await tabblad('/')
+  const zijbalk = await page.getByLabel('Hoofdnavigatie').innerText()
+  for (const dubbel of ['Bord', 'Archief']) {
+    zouden(!bevat(zijbalk, dubbel), `"${dubbel}" staat zowel in het menu als op de tabs: ${zijbalk}`)
+  }
+  zouden(bevat(zijbalk, 'Klanten'), `Klanten is uit het menu verdwenen: ${zijbalk}`)
+  zouden(bevat(zijbalk, 'Aanvragen'), `Aanvragen is uit het menu verdwenen: ${zijbalk}`)
+
+  // De tabs doen het werk nog wel, en /kalender blijft een geldig adres.
+  await page.getByRole('tab', { name: 'Kalender' }).click()
+  await page.waitForTimeout(900)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de kalender en de posts blijven bestaan naast het eventbord', async () => {
   const page = await tabblad('/social')
   await page.getByRole('tab', { name: 'Kalender' }).click()

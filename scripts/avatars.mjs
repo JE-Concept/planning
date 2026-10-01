@@ -2,13 +2,13 @@
 /**
  * De portretten uit de e-mailhandtekeningen naar avatars.
  *
- *   node scripts/avatars.mjs <map-met-uitgepakte-afbeeldingen>
+ *   node scripts/avatars.mjs <map-met-handtekening-svgs>
  *
  * De handtekeningen zijn SVG's met het portret erin als base64. Daar komen
  * foto's uit van een halve megabyte en in staand formaat; een avatar is 34px
- * en vierkant. Dit knipt ze bij, centreert op het gezicht en schrijft ze als
- * JPEG van 256px — groot genoeg voor een scherm met dubbele puntdichtheid,
- * klein genoeg om naast elke taak te staan.
+ * en vierkant. Dit haalt het portret eruit, knipt het bij, centreert op het
+ * gezicht en schrijft het als JPEG van 256px — groot genoeg voor een scherm met
+ * dubbele puntdichtheid, klein genoeg om naast elke taak te staan.
  *
  * Chromium doet het bijknippen, net als bij de iconen: die staat er al voor de
  * browsertest.
@@ -21,6 +21,12 @@ const MAAT = 256
 /*
   Per persoon de bron en waar het gezicht zit.
 
+  LET OP: de bestandsnamen in de ZIP kloppen niet met de inhoud. De handtekening
+  in `Maxine Vanbrabant (2).svg` draagt de naam, functie en het adres van *Elke
+  Motmans*; `Maxine Vanbrabant.svg` is Maxine. Daarom staat hier per persoon
+  welk bestand het is en niet alleen een id dat op de naam lijkt — wie dit later
+  opnieuw draait met een nieuwe ZIP moet eerst kijken wie er in staat.
+
   `focus` is het midden van het gezicht als breukdeel van de foto, en `dekking`
   hoeveel van de breedte het vierkant beslaat — kleiner is dichterbij. Met die
   twee getallen is elke uitsnede na te rekenen in plaats van te proberen.
@@ -30,21 +36,36 @@ const MAAT = 256
   herkenbaar gezicht. Liever haar initialen dan een onherkenbare foto.
 */
 const MENSEN = [
-  { id: 'jasper', bestand: 'Jasper Hansen-1.png', focus: [0.5, 0.42], dekking: 0.92 },
-  { id: 'maxine', bestand: 'Maxine Vanbrabant-1.jpeg', focus: [0.4, 0.43], dekking: 0.58 },
+  { id: 'jasper', svg: 'Jasper Hansen.svg', focus: [0.5, 0.42], dekking: 0.92 },
+  { id: 'elke', svg: 'Maxine Vanbrabant (2).svg', focus: [0.4, 0.43], dekking: 0.58 },
+  { id: 'maxine', svg: 'Maxine Vanbrabant.svg', focus: [0.5, 0.4], dekking: 0.78 },
 ]
+
+/*
+  Het portret is de grootste afbeelding in de SVG: de andere twee zijn het
+  logo en de hexagonrand, en die blijven ruim onder de honderd kilobyte.
+*/
+function portretUit(pad) {
+  const svg = readFileSync(pad, 'utf8')
+  let grootste = null
+  for (const m of svg.matchAll(/data:image\/(png|jpeg|jpg);base64,([A-Za-z0-9+/=\s]+)/g)) {
+    const rauw = m[2].replace(/\s+/g, '')
+    if (!grootste || rauw.length > grootste.rauw.length) grootste = { soort: m[1], rauw }
+  }
+  if (!grootste) throw new Error(`Geen afbeelding gevonden in ${pad}`)
+  return `data:image/${grootste.soort};base64,${grootste.rauw}`
+}
 
 const map = process.argv[2]
 if (!map) {
-  console.error('Geef de map met de uitgepakte afbeeldingen mee.')
+  console.error('Geef de map met de handtekening-SVGs mee.')
   process.exit(1)
 }
 
 const browser = await chromium.launch()
 
-for (const { id, bestand, focus, dekking } of MENSEN) {
-  const soort = bestand.endsWith('.jpeg') ? 'jpeg' : 'png'
-  const data = `data:image/${soort};base64,${readFileSync(`${map}/${bestand}`).toString('base64')}`
+for (const { id, svg, focus, dekking } of MENSEN) {
+  const data = portretUit(`${map}/${svg}`)
 
   const page = await browser.newPage({ viewport: { width: MAAT, height: MAAT }, deviceScaleFactor: 1 })
 
@@ -65,7 +86,7 @@ for (const { id, bestand, focus, dekking } of MENSEN) {
   </body>`)
   await page.waitForLoadState('networkidle')
   writeFileSync(`public/team/${id}.jpg`, await page.screenshot({ type: 'jpeg', quality: 86 }))
-  console.log(`public/team/${id}.jpg`)
+  console.log(`public/team/${id}.jpg  ←  ${svg}`)
   await page.close()
 }
 

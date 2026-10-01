@@ -43,7 +43,6 @@ export default {
   'nav.hoofdnavigatie': { nl: 'Hoofdnavigatie', en: 'Main navigation' },
   'nav.dashboard': { nl: 'Dashboard', en: 'Dashboard' },
   'nav.events': { nl: 'Events', en: 'Events' },
-  'nav.bord': { nl: 'Bord', en: 'Board' },
   'nav.kalender': { nl: 'Kalender', en: 'Calendar' },
   'nav.klanten': { nl: 'Klanten', en: 'Customers' },
   'nav.socials': { nl: 'Socials', en: 'Socials' },

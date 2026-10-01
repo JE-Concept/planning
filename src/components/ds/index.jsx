@@ -7,6 +7,7 @@ import {
   ShieldCheck, Sparkles, Square, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
 } from 'lucide-react'
 import { cn } from '@lib/cn'
+import { portretVan } from '@lib/portret'
 
 /**
  * De componenten uit het JE Concept Design System, als React.
@@ -578,10 +579,13 @@ export function Avatar({ profile, size = 'sm', ring = false, className, ...rest 
   const label = profile?.fullName || profile?.email || 'Niet toegewezen'
   const klassen = cn('je-avatar', `je-avatar--${size}`, ring && 'je-avatar--ring', className)
 
-  if (profile?.avatarUrl) {
+  // Het profiel wint; staat er niets, dan het portret uit de handtekening.
+  const bron = profile?.avatarUrl || portretVan(profile?.email)
+
+  if (bron) {
     return (
       <img
-        src={profile.avatarUrl}
+        src={bron}
         alt={label}
         title={label}
         referrerPolicy="no-referrer"
