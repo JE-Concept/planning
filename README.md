@@ -365,6 +365,38 @@ De favicon blijft de drie balken alleen: op 16 pixels valt een schreefletter uit
 
 ---
 
+## Onderhoud op de live gegevens
+
+Soms moet er iets rechtgezet worden dat niet via een scherm kan: een veld dat
+op honderd events tegelijk moet wijzigen, een business rule die met
+terugwerkende kracht geldt. Dat vraagt de servicesleutel, en die hoort nergens
+anders te bestaan dan in de uitrol.
+
+Daarom is er een aparte actie: **Actions → Onderhoud → Run workflow**. Je kiest
+een script uit de lijst en of het echt mag schrijven.
+
+Drie dingen houden het veilig, en ze hangen samen:
+
+1. **Er draait alleen wat in de repo staat.** Een script moet geschreven,
+   gelezen en gecommit zijn voor het in die keuzelijst verschijnt. Er is geen
+   manier om vanaf de knop een opdracht mee te geven.
+2. **Standaard schrijft het niets.** Een droogloop leest alles, rekent alles
+   uit en zegt regel per regel wat hij zou doen — maar raakt geen enkel
+   document aan. Pas met *schrijven: ja* gaat het echt. Draai altijd eerst
+   droog: de enige manier om zeker te weten dat een filter klopt, is hem laten
+   opsommen wat hij gevonden heeft.
+3. **Het staat in de log.** Wie het startte, wanneer, met welke keuze, en wat
+   eruit kwam.
+
+De scripts staan in `scripts/onderhoud/`. Wat ze gemeen hebben — verbinden,
+een profiel opzoeken, het verslag — staat in `_hulp.mjs`.
+
+| Script | Wat het doet |
+|---|---|
+| `te-factureren-verantwoordelijke` | Zet elk event in *ready to invoice* op één verantwoordelijke (standaard Elke). De business rule doet dat bij een statuswijziging; dit past hem toe op wat er al stond toen die regel gemaakt werd. Raakt alleen `assignees`; de ploeg in `medewerkers` blijft staan. |
+
+---
+
 ## Back-ups
 
 **Die draaien**, elke maandagochtend, via `.github/workflows/back-up.yml`: point-in-time

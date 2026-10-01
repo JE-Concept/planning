@@ -1,0 +1,83 @@
+# Onderhoud op de live gegevens, met de hand gestart.
+#
+# ── Waarom dit bestaat ──────────────────────────────────────────────────────
+# De tool draait live en af en toe moet er iets rechtgezet worden dat niet via
+# een scherm kan: een veld dat op honderd events tegelijk moet wijzigen, een
+# business rule die met terugwerkende kracht geldt. Dat vraagt de
+# servicesleutel, en die hoort nergens anders te bestaan dan hier.
+#
+# ── Hoe het veilig blijft ───────────────────────────────────────────────────
+# Drie dingen, en ze hangen samen.
+#
+# 1. Er draait alleen wat in de repo staat. Een script moet geschreven,
+#    gelezen en gecommit zijn voor het hier in de keuzelijst verschijnt; er is
+#    geen manier om vanaf de knop een opdracht mee te geven.
+# 2. Standaard schrijft het niets. Een droogloop leest alles, rekent alles uit
+#    en zegt wat hij zou doen — maar raakt geen document aan. Pas wanneer
+#    `schrijven` op "ja" staat, gaat het echt.
+# 3. Het staat in de log. Wie het startte, wanneer, met welke keuze en wat
+#    eruit kwam — regel per regel.
+name: Onderhoud
+
+on:
+  workflow_dispatch:
+    inputs:
+      taak:
+        description: Welk script
+        required: true
+        type: choice
+        options:
+          - te-factureren-verantwoordelijke
+      schrijven:
+        description: Echt schrijven (anders alleen tonen wat het zou doen)
+        required: true
+        default: 'nee'
+        type: choice
+        options:
+          - 'nee'
+          - 'ja'
+
+# Twee onderhoudsbeurten tegelijk op dezelfde gegevens is vragen om een
+# halve wijziging; ze wachten op elkaar.
+concurrency:
+  group: onderhoud
+  cancel-in-progress: false
+
+jobs:
+  draaien:
+    name: ${{ inputs.taak }}${{ inputs.schrijven == 'ja' && ' · SCHRIJFT' || ' · droogloop' }}
+    runs-on: ubuntu-latest
+    env:
+      HAS_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      - name: Zonder sleutel gaat er niets
+        if: env.HAS_CREDENTIALS != 'true'
+        run: |
+          echo "::error::Het geheim FIREBASE_SERVICE_ACCOUNT bestaat niet; zonder sleutel kan dit script niets lezen of schrijven."
+          exit 1
+
+      - name: Draaien
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+          INVOICING_EMAIL: ${{ secrets.INVOICING_EMAIL }}
+        run: |
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+          echo "Script : ${{ inputs.taak }}"
+          echo "Modus  : ${{ inputs.schrijven == 'ja' && 'SCHRIJFT ECHT' || 'droogloop' }}"
+          echo "Gestart door: ${{ github.actor }}"
+          echo ""
+          node "scripts/onderhoud/${{ inputs.taak }}.mjs" ${{ inputs.schrijven == 'ja' && '--schrijf' || '' }}
+
+      # De sleutel staat op de schijf van een machine die zo verdwijnt, maar
+      # zolang de baan loopt staat hij er wel. Weg ermee zodra hij niet meer
+      # nodig is, ook als het script hierboven omviel.
+      - name: Sleutel opruimen
+        if: always()
+        run: rm -f "${{ github.workspace }}/service-account.json"
