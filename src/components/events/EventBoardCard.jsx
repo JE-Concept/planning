@@ -1,7 +1,6 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
-import { useTaal } from '@context/TaalProvider'
-import { PlanningBadge, TeamHexes, paxLabel, shortDate } from './parts'
+import { PlanningBadge, TeamHexes, eventOndertitel, paxLabel } from './parts'
 
 /**
  * Eén event als kaart op het bord.
@@ -11,8 +10,6 @@ import { PlanningBadge, TeamHexes, paxLabel, shortDate } from './parts'
  * kolom, en zonder dit tekent elke kaart van elke kolom zich dan opnieuw.
  */
 function EventBoardCard({ event, progress, profileById, dragging, onOpen, onDragStart, onDragEnd }) {
-  const { t } = useTaal()
-
   return (
     <button
       type="button"
@@ -23,12 +20,16 @@ function EventBoardCard({ event, progress, profileById, dragging, onOpen, onDrag
       className="je-plainbtn je-boardcard"
       style={{ opacity: dragging ? 0.4 : 1 }}
     >
-      <span className="je-eyebrow" style={{ letterSpacing: '.14em' }}>
-        {[event.concept?.split(' — ')[0] ?? t('events.los_event'), shortDate(event.eventDate)]
-          .filter(Boolean)
-          .join(' · ')}
-      </span>
+      {/*
+        De naam eerst, en eronder wanneer het is.
+
+        Hierboven stond een regel met het concept en de datum, en "Los event"
+        wanneer er geen concept was — op de helft van alle kaarten dus. Dat is
+        de afwezigheid van een merk en geen eigenschap van het feest, en het
+        stond de naam in de weg op precies de plek waar je hem zoekt.
+      */}
       <span style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>{event.name}</span>
+      <span className="je-muted-caption">{eventOndertitel(event, { kort: true })}</span>
       {/* Alleen wanneer er een stand gekozen is; anders staat op elke kaart
           dezelfde badge en zegt ze niets meer. */}
       <PlanningBadge event={event} compact />

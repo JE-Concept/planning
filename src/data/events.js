@@ -4,6 +4,7 @@ import { COL, col, fromQuery, newRef } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
 import { bestellijstVoorEvent, prijsVan } from '@lib/formules'
+import { isDone } from '@lib/taak'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask, deleteTask, setTaskStatus, statusFields, updateTask, useTasks } from './tasks'
@@ -29,9 +30,12 @@ export function quoteOf(task) {
   return task?.quoteAmount ?? task?.budget ?? null
 }
 
-export function isDone(task) {
-  return task?.open === false
-}
+/*
+  `isDone` staat in `@lib/taak` en wordt hier doorgegeven. Zo kan een scherm
+  dat alleen wil weten of een taak af is, dat vragen zonder de Firebase-SDK
+  in te laden — zie daar waarom dat uitmaakt.
+*/
+export { isDone }
 
 /** Een event zoals de schermen het lezen. */
 export function toEvent(task, { brandById = {} } = {}) {

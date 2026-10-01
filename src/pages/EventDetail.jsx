@@ -25,7 +25,7 @@ import OfferteTab from '@components/events/OfferteTab'
 import MailDraad from '@components/events/MailDraad'
 import EventOmschrijving from '@components/events/EventOmschrijving'
 import TaskRow from '@components/events/TaskRow'
-import { PlanningBadge, StatusBadge, dayLabel, hours } from '@components/events/parts'
+import { PlanningBadge, StatusBadge, dayLabel, eventTijd, hours } from '@components/events/parts'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -111,8 +111,11 @@ export default function EventDetail() {
       <PageHeader
         back={{ to: '/', label: t('events.detail.alle_events') }}
         eyebrow={[
-          ev.concept?.split(' — ')[0] ?? t('events.los_event'),
           dayLabel(ev.eventDate),
+          eventTijd(ev),
+          // Het concept alleen wanneer er een is; "Los event" zei niets over
+          // dit dossier en stond op de helft van de pagina's.
+          ev.concept?.split(' — ')[0],
           days != null && days >= 0 ? t('events.over_dagen', { aantal: days }) : null,
         ]
           .filter(Boolean)

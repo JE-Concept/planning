@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
-import { PlanningBadge, StatusBadge, TeamHexes, monthShort, paxLabel } from './parts'
+import { PlanningBadge, StatusBadge, TeamHexes, eventTijd, monthShort, paxLabel } from './parts'
 
 /**
  * Eén event in de lijst.
@@ -18,9 +18,15 @@ import { PlanningBadge, StatusBadge, TeamHexes, monthShort, paxLabel } from './p
  */
 function EventRow({ event, progress, statuses, profileById, columns, narrow, first, onOpen }) {
   const { t } = useTaal()
+  /*
+    Het concept staat er alleen wanneer er een is. "Los event" was de
+    afwezigheid van een merk, niet iets over dit feest, en het stond op de
+    helft van de rijen.
+  */
   const meta = [
     event.customerName || t('events.klant_onbekend'),
-    event.concept?.split(' — ')[0] ?? t('events.los_event'),
+    eventTijd(event),
+    event.concept?.split(' — ')[0],
     event.eventType,
   ]
     .filter(Boolean)

@@ -2,7 +2,7 @@ import { Badge, Bar, Hex, initialsOf } from '@components/ds'
 import { asDate, huidigeLocaleVan } from '@lib/dates'
 import { labelOf, toneOf } from '@lib/pipeline'
 import { planningVan } from '@lib/planning'
-import { isDone } from '@data/events'
+import { isDone } from '@lib/taak'
 
 /**
  * Kleine stukken die op meer dan één scherm terugkomen: de statusbadge, het
@@ -25,6 +25,7 @@ import { isDone } from '@data/events'
 const TZ = 'Europe/Brussels'
 const VORMEN = {
   dagmaand: { day: 'numeric', month: 'short' },
+  tijd: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
   dagkort: { weekday: 'short', day: 'numeric', month: 'short' },
   daglang: { weekday: 'long', day: 'numeric', month: 'long' },
   maand: { month: 'long' },
@@ -56,6 +57,50 @@ export const longDate = opmaak('daglang')
 export const monthShort = (d) => opmaak('maandkort')(d) ?? ''
 export const maandNaam = (d) => opmaak('maand')(d) ?? ''
 export const weekdagKort = (d) => opmaak('weekdag')(d) ?? ''
+
+/*
+  ── De tijd van een event, als die iets zegt ───────────────────────────────
+
+  Een event dat in de tool aangemaakt wordt, krijgt zijn datum op twaalf uur
+  's middags. Dat is geen aanvangsuur maar een plaatshouder: de dag telt, het
+  uur is nooit ingevuld. Hetzelfde geldt voor middernacht, dat uit een
+  datumveld zonder tijd komt — "het feest begint om 00:00" is wat een kaart
+  dan zou zeggen, en dat klopt zelden.
+
+  Dus: een tijd verschijnt alleen wanneer iemand er echt een gezet heeft. Dat
+  is wat "eventueel" betekent — niet "we tonen hem als het veld bestaat", maar
+  "we tonen hem als hij iets toevoegt".
+*/
+const PLAATSHOUDERS = ['12:00', '00:00']
+
+export function eventTijd(event) {
+  // `startDate` gaat voor: dat is het veld waar een aanvangsuur in hoort. Pas
+  // als dat leeg is, kan de datum zelf er nog een dragen — zo kwamen de
+  // gemigreerde ClickUp-events binnen.
+  for (const waarde of [event?.startDate, event?.eventDate]) {
+    const datum = asDate(waarde)
+    if (!datum) continue
+    const tijd = opmaak('tijd')(datum)
+    if (tijd && !PLAATSHOUDERS.includes(tijd)) return tijd
+  }
+  return null
+}
+
+/**
+ * De ondertitel van een eventkaart: wanneer het is.
+ *
+ * Dit stond vroeger bóven de naam, met het concept ervoor en "Los event"
+ * wanneer er geen concept was. Dat laatste is wat een kaart níét hoort te
+ * zeggen: het is de afwezigheid van een merk, geen eigenschap van het feest,
+ * en het stond op de helft van alle kaarten de naam in de weg.
+ *
+ * Nu komt de naam eerst en staat hieronder wanneer het is — en het merk
+ * alleen wanneer er een is.
+ */
+export function eventOndertitel(event, { kort = false } = {}) {
+  const datum = kort ? shortDate(event?.eventDate) : dayLabel(event?.eventDate)
+  return [datum, eventTijd(event), event?.concept?.split(' — ')[0]].filter(Boolean).join(' · ')
+}
 
 export const euro = (n) => (n == null || n === '' ? null : `€ ${Number(n).toLocaleString('nl-BE')}`)
 
