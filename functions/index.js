@@ -29,6 +29,7 @@ import { heeftSocial, kopieVan, moetBijwerken } from './social-projectie.js'
 import { AUDIT, regelVan, teOud } from './audit.js'
 import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
+import { maakHerhalingen } from './herhalingen.js'
 
 initializeApp()
 const db = getFirestore()
@@ -750,6 +751,10 @@ export const agenda = maakAgendaFeed({ db, region: REGION })
  * marges en interne notities.
  */
 export const portaal = maakPortaal({ db, region: REGION })
+
+/* Werk dat vanzelf terugkomt; zie `herhalingen.js` voor waarom het 's nachts
+   gebeurt en niet zodra iemand de tool opent. */
+export const herhalingen = maakHerhalingen({ db, region: REGION })
 
 /**
  * Een binnengekomen mail aan het juiste event hangen.

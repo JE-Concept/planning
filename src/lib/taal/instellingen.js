@@ -32,6 +32,7 @@ export default {
   'inst.tab.dagelijks': { nl: 'Dagelijkse lijsten', en: 'Daily lists' },
   'inst.tab.systeem': { nl: 'Systeem', en: 'System' },
   'inst.tab.regels': { nl: 'Business rules', en: 'Business rules' },
+  'inst.tab.herhalingen': { nl: 'Herhalingen', en: 'Recurring' },
 
   'inst.kop.beheer': {
     nl: 'Beheer · alleen zichtbaar voor beheerders',

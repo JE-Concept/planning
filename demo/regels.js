@@ -106,6 +106,9 @@ export const REGELS = {
     schrijven: (rol, ctx) => ctx.id === ctx.uid,
   },
 
+  // Werk dat vanzelf terugkomt: het team leest, een beheerder beheert. De
+  // taken zelf zet een geplande functie neer, en die gaat hier niet langs.
+  herhalingen:    { lezen: isTeam, schrijven: isAdmin },
   offertes:       { lezen: isTeam, schrijven: isTeam },
   auditLog:       { lezen: isTeam, schrijven: () => false },
   // De post: lezen mag het team, schrijven doet alleen de ophaler (met

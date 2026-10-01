@@ -52,6 +52,7 @@ Firestore kent geen joins, dus een document draagt zelf mee wat een lijstweergav
 | `pushTokens/{token}` | Eén rij per toestel dat meldingen wil, gesleuteld op het token. Je beheert en leest alleen je eigen rijen; versturen doet een Cloud Function. |
 | `mailQueue/{id}` | De postbak van de meldingen: één rij per e-mail die nog moet vertrekken, met zijn status (`wachtend`, `verstuurd`, `mislukt`). Dicht voor de app — er staan adressen en volledige teksten in. Schrijven doen de triggers in `functions/`, versturen doet `functions-mail/`, dat alleen uitgerold wordt als het geheim `SMTP_URL` bestaat. Zie `docs/e-mailmeldingen-aanzetten.md`. |
 | `formules/{id}` | Vaste formules (winter bbq aan 29,90) met hun vragen (`opties`), de antwoorden erbij (`keuzes`) en de `bestelregels` die eruit volgen. Lezen: team, schrijven: beheerders. `src/lib/formule-templates.js` is de bron voor de seed en de demo; het rekenwerk staat in `src/lib/formules.js`. |
+| `herhalingen/{id}` | Werk dat vanzelf terugkomt: titel, wie, welk bord, en het ritme (dagelijks, wekelijks met weekdagen, maandelijks met een dag van de maand — hoogstens de 28e). Lezen: team, beheren: beheerders. De taken zelf zet de geplande functie `herhalingen` elke nacht om 05:40 neer, met een vaste document-id per dag, zodat een tweede beurt niets verdubbelt. |
 | `automations/{id}` | De business rules: op welke entiteit ze staan, wanneer ze vuren, onder welke voorwaarden en wat ze doen — een losse regel of een beslissingstabel. Beheerders bewerken ze in Instellingen; uitvoeren doet een Cloud Function. |
 | `automationRuns/{id}` | Het logboek van de regels: welke regel vuurde, op welk document, en bij een tabel op welke rij. Alleen de server schrijft erin. |
 | `postReviews/{id}` | Het logboek van de reviewbeslissingen: wie, wanneer, welke ronde en met welke opmerking. Wordt aangevuld, nooit gewijzigd. |
@@ -236,7 +237,31 @@ Het blijft een draft: elke lijn is aan te passen — omschrijving, rubriek, aant
 
 **Eén layout, geen tweede waarheid.** `src/styles/offerte.css` is het blad: de app rendert het, de afdruk gebruikt het, en straks doet de publieke goedkeuringspagina dat ook. Het hangt met opzet niet aan de tokens van de rest van de app maar draagt zijn eigen, zodat het ook buiten de app klopt. `npm run offerte:voorbeeld` tekent niets zelf: het opent de app, laat haar een offerte renderen en knipt het blad eruit zoals het daar staat. Verandert het blad, dan verandert het voorbeeld mee — of het klopt niet meer en dat merk je meteen.
 
+### Het conceptvoorstel
+
+Een offertetabel beantwoordt één vraag: wat kost het. De vraag die de klant eerst stelt, is een andere — wat krijg ik dan. Daar wint of verliest JE Concept, want prijzen liggen bij elke cateraar in dezelfde buurt en het verhaal eromheen niet.
+
+Elke offerte draagt daarom een **voorstel**: cover, *Wie zijn wij* met het voorstel in één oogopslag, de onderdelen twee per pagina, en achteraan de tabel met de btw. Dat is de opbouw van het Canva-sjabloon waar ze al jaren mee werken, dus elke klant die eerder iets kreeg, herkent ze.
+
+Het is geen tweede document naast de offerte maar een andere lezing van dezelfde regels: een onderdeel zonder eigen prijs haalt zijn bedrag uit de offerteregels van dezelfde rubriek. Verander je een lijn in de tabel, dan verandert de pagina mee. Wie voor één onderdeel toch een eigen bedrag wil — een ontvangst en een hoofdgerecht die allebei onder catering vallen — vult dat veld in en dat gaat voor. De onderdelen staan in `onderdelen` op de offerte en worden bewerkt op hetzelfde tabblad; `src/lib/voorstel.js` doet het rekenwerk en de pagina-indeling.
+
+> De klantenpagina opent pas **nadat de offerte verstuurd is**. Een concept weigert `functions/portaal.js` met opzet: een link die per ongeluk vertrekt, hoort geen bedragen te tonen waar nog aan gerekend wordt. De knoppen *Link kopiëren* en *Openen* staan daarom uit zolang de offerte een concept is, met de reden erbij.
+
 > Let op bij het rekenwerk: `centen()` uit `formules.js` geeft **euro's** terug, afgerond op de cent — geen centen. De naam is verraderlijk. Wie daar nog eens door honderd deelt, zet €163,99 waar €16.399 hoort te staan.
+
+---
+
+## Werk dat vanzelf terugkomt
+
+De tool kende twee soorten herhaling: de punten van een dagelijkse lijst (het poetsplan — die hangen aan een rol, niet aan een persoon) en de taken van een eventtemplate (die hangen aan de datum van een event). Wat ertussen viel, bestond niet: administratie die elke week of elke maand terugkomt en aan één persoon hangt. Dat werd onthouden, en wat onthouden wordt, wordt vergeten.
+
+**Instellingen → Herhalingen.** Een herhaling is een recept, geen taak: titel, voor wie, op welk bord (of op de socials), en het ritme. Er staat telkens bij wanneer ze de volgende keer valt — "elke maandag" kan iedereen typen, of het ook maandag 6 oktober wordt is wat je wil weten voor je het scherm sluit. Uitzetten kan zonder weggooien, zodat een maand pauzeren niet betekent dat je ze opnieuw moet instellen.
+
+De taken worden **'s nachts** neergezet door een geplande functie, en niet door de browser: een herhaling die pas verschijnt zodra iemand inlogt, komt te laat op precies de dag dat ze nodig was. Elk document krijgt een vast adres (`h-<herhaling>-<datum>`), dus een herstart of een tweede beurt schrijft hetzelfde document in plaats van een tweede taak.
+
+De datumlogica staat twee keer — in `src/lib/herhaling.js` voor het scherm en in `functions/herhalingen.js` voor de planner, want de functies worden apart uitgerold en kunnen niet uit `src/` importeren. `tests/herhalingen.test.js` legt die twee een heel jaar lang naast elkaar; loopt er één uit de pas, dan valt die test om in plaats van iemands weekplanning.
+
+Een dag van de maand gaat nooit boven de 28. Een herhaling op de 31e slaat februari over en vier maanden per jaar, en dan is het geen maandelijkse herhaling meer maar een herhaling die soms komt.
 
 ---
 

@@ -213,6 +213,8 @@ async function main() {
 
   await seedFacturatieRegel()
 
+  await seedHerhalingen()
+
   console.log(
     aangemaakt.length ? `Aangemaakt: ${aangemaakt.join(', ')}.` : 'Niets nieuws aan te maken.'
   )
@@ -400,6 +402,90 @@ async function seedFacturatieRegel() {
 
   await marker.set({ automationReadyToInvoice: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
   console.log(`Business rule gezet: ready to invoice → ${email}.`)
+}
+
+/**
+ * De vaste herhalingen van het huis.
+ *
+ * Deze drie zijn door Jasper gevraagd en horen bij de zaak, niet bij een
+ * event: de administratieve postbussen die wekelijks nagekeken worden, de
+ * nieuwsbrief die maandelijks buiten moet, en het ontwerp dat daarbij hoort.
+ *
+ * Ze worden hier aangemaakt en niet met de hand, om dezelfde reden als de
+ * business rule hierboven: de tool draait live en niemand hoort drie
+ * instellingen over te typen die in de repo kunnen staan. Elk met een vast
+ * document-id, zodat een tweede uitrol ze niet verdubbelt, en elk alleen
+ * wanneer het nog niet bestaat — wie het ritme achteraf in de app aanpast,
+ * houdt die aanpassing.
+ *
+ * Staat de persoon er nog niet, dan wordt de herhaling overgeslagen met een
+ * regel in de log in plaats van aangemaakt zonder eigenaar. Een taak die elke
+ * maandag bij niemand terechtkomt, is erger dan geen taak.
+ */
+const HERHALINGEN = [
+  {
+    id: 'ebox-controle',
+    email: process.env.ADMIN_EMAIL ?? 'elke@kenjeklanten.be',
+    titel: 'eBox / Doccle / burgerprofiel / e-Box enterprise controleren',
+    omschrijving:
+      'Nakijken of er nieuwe officiële post binnenkwam in eBox burger, eBox enterprise, '
+      + 'Doccle en Mijn Burgerprofiel. Wat actie vraagt, komt als aparte taak op het bord.',
+    doel: 'taak',
+    listId: TASKS_LIJST_ID,
+    soort: 'wekelijks',
+    dagen: [1],
+    dagVanMaand: 1,
+  },
+  {
+    id: 'je-nieuwsbrief',
+    email: process.env.NEWSLETTER_EMAIL ?? 'maxine@jeconcept.be',
+    titel: 'JE Nieuwsbrief',
+    omschrijving: 'De maandelijkse nieuwsbrief van JE Concept opstellen en versturen.',
+    doel: 'taak',
+    listId: TASKS_LIJST_ID,
+    soort: 'maandelijks',
+    dagen: [],
+    dagVanMaand: 1,
+  },
+  {
+    id: 'nieuwsbrief-design-kit',
+    email: process.env.SOCIAL_OWNER_EMAIL ?? 'charish.talento@gmail.com',
+    titel: 'Creëer nieuwsbrief design in KIT',
+    omschrijving: 'Het ontwerp van de maandelijkse JE-nieuwsbrief in KIT, klaar voor Maxine.',
+    doel: 'social',
+    brandId: 'je-concept',
+    soort: 'maandelijks',
+    dagen: [],
+    // Een paar dagen voor de nieuwsbrief zelf: het ontwerp hoort er te zijn
+    // voor er tekst in moet.
+    dagVanMaand: 24,
+  },
+]
+
+async function seedHerhalingen() {
+  for (const herhaling of HERHALINGEN) {
+    const { id, email, ...velden } = herhaling
+    const ref = db.collection('herhalingen').doc(id)
+    if ((await ref.get()).exists) continue
+
+    const profiel = await db.collection('profiles').where('email', '==', email.toLowerCase()).limit(1).get()
+    if (profiel.empty) {
+      console.log(`Herhaling overgeslagen: ${email} heeft nog geen profiel (${velden.titel}).`)
+      continue
+    }
+
+    await ref.set({
+      ...velden,
+      listId: velden.listId ?? null,
+      brandId: velden.brandId ?? null,
+      prioriteit: '',
+      profileId: profiel.docs[0].id,
+      actief: true,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+    aangemaakt.push(`herhaling ${velden.titel}`)
+  }
 }
 
 main().catch((err) => {

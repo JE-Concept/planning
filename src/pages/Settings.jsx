@@ -25,6 +25,7 @@ import PageHeader from '@components/layout/PageHeader'
 // zie `@lib/instellingen-teksten`.
 import '@lib/instellingen-teksten'
 import BusinessRules from '@components/settings/BusinessRules'
+import HerhalingenPaneel from '@components/settings/HerhalingenPaneel'
 import SysteemPaneel from '@components/settings/SysteemPaneel'
 import ChecklistEditor from '@components/settings/ChecklistEditor'
 import FormuleSettings from '@components/settings/FormuleSettings'
@@ -67,6 +68,7 @@ const TABS = [
   { value: 'merken', sleutel: 'inst.tab.merken' },
   { value: 'dagelijks', sleutel: 'inst.tab.dagelijks' },
   { value: 'regels', sleutel: 'inst.tab.regels' },
+  { value: 'herhalingen', sleutel: 'inst.tab.herhalingen' },
   { value: 'systeem', sleutel: 'inst.tab.systeem' },
 ]
 
@@ -143,6 +145,7 @@ export default function Settings() {
             {tab === 'merken' ? <BrandSettings /> : null}
             {tab === 'dagelijks' ? <ChecklistEditor isAdmin /> : null}
             {tab === 'regels' ? <BusinessRules isAdmin /> : null}
+            {tab === 'herhalingen' ? <HerhalingenPaneel /> : null}
             {tab === 'systeem' ? <SysteemPaneel /> : null}
           </div>
         )}

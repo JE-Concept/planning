@@ -327,9 +327,10 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  // 63 sinds het systeemscherm de mails opvraagt die niet vertrokken. De
-  // stand van de ophaler telt niet mee: dat is één document en geen query.
-  const QUERIES_IN_DE_APP = 63
+  // 64 sinds de herhalingen: één query op `herhalingen`, gesorteerd op titel.
+  // Die heeft geen samengestelde index nodig — één veld, één richting — en
+  // staat daarom wel hier en niet in de tabel hierboven.
+  const QUERIES_IN_DE_APP = 64
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [
