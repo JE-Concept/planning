@@ -3,7 +3,8 @@ import { dayKey, fromDateInput } from '@lib/dates'
 import { planningKeuzes } from '@lib/planning'
 import { missingForOffer } from '@lib/pipeline'
 import { verantwoordelijkeVan, zetVerantwoordelijke } from '@lib/eventteam'
-import { Icon, Input, Select } from '@components/ds'
+import { aantalDagen, eindeVan, isMeerdaags, zetEinddatum, zetMeerdaags } from '@lib/eventdagen'
+import { Checkbox, Icon, Input, Select } from '@components/ds'
 import { euro, longDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -80,6 +81,50 @@ export default function EventFiche({ ev }) {
           />
           <span className="je-muted-caption">{ev.eventDate ? longDate(ev.eventDate) : t('events.fiche.geen_datum')}</span>
         </Cel>
+
+        {/*
+          Meerdaags: een vinkje, en pas daarna een tweede datum.
+
+          Twee datumvelden naast elkaar zou eenvoudiger zijn om te bouwen, maar
+          het meeste wat hier staat duurt één dag, en dan staat er op elke fiche
+          een leeg veld dat uitleg vraagt. Het vinkje stelt de vraag die mensen
+          zich stellen — duurt dit langer dan één dag — en het veld komt pas
+          wanneer het antwoord ja is.
+
+          Het vinkje zelf wordt niet bewaard; dat het aanstaat lees je af aan de
+          einddatum. Zie `@lib/eventdagen` voor waarom.
+        */}
+        <div className="je-fiche__cel" data-breed="">
+          <div className="je-meerdaags">
+            <Checkbox
+              label={t('events.fiche.meerdaags')}
+              checked={isMeerdaags(ev)}
+              disabled={!ev.eventDate}
+              onChange={(e) => bewaar(zetMeerdaags(ev, e.target.checked))}
+            />
+            {isMeerdaags(ev) ? (
+              <div className="je-meerdaags__tot">
+                <span className="je-caps">{t('events.fiche.tot_en_met')}</span>
+                <Input
+                  type="date"
+                  // De einddatum kan niet voor de begindag liggen. De browser
+                  // houdt dat tegen; `zetEinddatum` houdt het nog eens tegen,
+                  // want een `min` is geen waarborg.
+                  min={ev.eventDate ? dayKey(ev.eventDate) : undefined}
+                  defaultValue={dayKey(eindeVan(ev))}
+                  key={`einddatum-${dayKey(eindeVan(ev))}`}
+                  aria-label={t('events.fiche.tot_en_met')}
+                  onChange={(e) => bewaar(zetEinddatum(ev, fromDateInput(e.target.value)))}
+                />
+                <span className="je-muted-caption">
+                  {t('events.fiche.duurt_dagen', { aantal: aantalDagen(ev) })}
+                </span>
+              </div>
+            ) : (
+              <span className="je-muted-caption">{t('events.fiche.meerdaags_hint')}</span>
+            )}
+          </div>
+        </div>
 
         <Getal
           label={t('events.fiche.gasten')}

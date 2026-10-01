@@ -3,6 +3,7 @@ import { asDate, huidigeLocaleVan } from '@lib/dates'
 import { labelOf, toneOf } from '@lib/pipeline'
 import { planningVan } from '@lib/planning'
 import { isDone } from '@lib/taak'
+import { beginVan, eindeVan, isMeerdaags } from '@lib/eventdagen'
 
 /**
  * Kleine stukken die op meer dan één scherm terugkomen: de statusbadge, het
@@ -58,6 +59,29 @@ export const monthShort = (d) => opmaak('maandkort')(d) ?? ''
 export const maandNaam = (d) => opmaak('maand')(d) ?? ''
 export const weekdagKort = (d) => opmaak('weekdag')(d) ?? ''
 
+/**
+ * Wanneer een event is, in één stuk tekst.
+ *
+ * Eén dag geeft één datum, meerdere dagen een reeks met een echt
+ * gedachtestreepje: "12 – 14 oktober". Niet twee volledige datums achter
+ * elkaar — "12 oktober – 14 oktober" is tweemaal dezelfde maand op een kaart
+ * waar de ruimte op is.
+ *
+ * Loopt de reeks over een maand- of jaargrens, dan staat er links wél een
+ * volledige datum, want "30 – 2 januari" leest niemand.
+ */
+export function eventDatumTekst(event, { kort = false } = {}) {
+  const vorm = kort ? shortDate : dayLabel
+  const begin = beginVan(event)
+  if (!begin) return null
+  if (!isMeerdaags(event)) return vorm(begin)
+
+  const einde = eindeVan(event)
+  const zelfdeMaand = begin.getMonth() === einde.getMonth() && begin.getFullYear() === einde.getFullYear()
+  const links = zelfdeMaand ? String(begin.getDate()) : vorm(begin)
+  return `${links} – ${vorm(einde)}`
+}
+
 /*
   ── De tijd van een event, als die iets zegt ───────────────────────────────
 
@@ -97,9 +121,31 @@ export function eventTijd(event) {
  * Nu komt de naam eerst en staat hieronder wanneer het is — en het merk
  * alleen wanneer er een is.
  */
+/**
+ * Het grote dagcijfer in een datumblokje, "12" of "12–14".
+ *
+ * Alleen binnen dezelfde maand, want onder dat cijfer staat één maandnaam. Bij
+ * een event dat over een maandgrens loopt, staat hier de begindag en draagt de
+ * ondertitel de volledige reeks — anders staat er "30–2" boven "dec".
+ */
+export function eventDagCijfer(event) {
+  const begin = beginVan(event)
+  if (!begin) return null
+  const einde = eindeVan(event)
+  const zelfdeMaand = begin.getMonth() === einde.getMonth() && begin.getFullYear() === einde.getFullYear()
+  if (!isMeerdaags(event) || !zelfdeMaand) return String(begin.getDate())
+  return `${begin.getDate()}–${einde.getDate()}`
+}
+
 export function eventOndertitel(event, { kort = false } = {}) {
-  const datum = kort ? shortDate(event?.eventDate) : dayLabel(event?.eventDate)
-  return [datum, eventTijd(event), event?.concept?.split(' — ')[0]].filter(Boolean).join(' · ')
+  const datum = eventDatumTekst(event, { kort })
+  /*
+    Bij een meerdaags event staat er geen beginuur meer bij. Een uur hoort bij
+    één dag; "12 – 14 oktober · 18:00" leest alsof het drie dagen om zes uur
+    begint, en dat is precies wat het niet zegt.
+  */
+  const tijd = isMeerdaags(event) ? null : eventTijd(event)
+  return [datum, tijd, event?.concept?.split(' — ')[0]].filter(Boolean).join(' · ')
 }
 
 export const euro = (n) => (n == null || n === '' ? null : `€ ${Number(n).toLocaleString('nl-BE')}`)

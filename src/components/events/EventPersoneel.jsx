@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { formatTime } from '@lib/dates'
+import { dayKey, formatTime } from '@lib/dates'
 import {
   STAND_TEKST,
   STAND_TOON,
@@ -14,6 +14,7 @@ import {
   standVan,
   urenTekst,
 } from '@lib/aapi-weergave'
+import { dagenVan } from '@lib/eventdagen'
 import { medewerkersVan, wisselMedewerker } from '@lib/eventteam'
 import { Badge, Button, Checkbox } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
@@ -75,20 +76,24 @@ export default function EventPersoneel({ event }) {
   const { shifts } = useShiftsVanEvent(event?.id)
   const { opId: medewerkerOpId } = useAapiMedewerkers()
 
-  // De dagen die dit event raakt. Een event duurt één dag in JE Plan, maar de
-  // opbouw kan daags ervoor beginnen — vandaar ook de dag ervoor.
+  /*
+    De dagen die dit event raakt: elke dag van het event, en de dag ervoor.
+
+    Die dag ervoor staat er omdat de opbouw daags voordien begint — een shift
+    van donderdagavond hoort bij het feest van vrijdag. Sinds een event
+    meerdaags kan zijn, zijn het er niet twee maar zoveel als het duurt.
+  */
   const dagen = useMemo(() => {
-    if (!event?.eventDate) return []
-    const d = new Date(event.eventDate)
-    const sleutel = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
-    const dagEerder = new Date(d)
-    dagEerder.setDate(d.getDate() - 1)
-    return [sleutel(dagEerder), sleutel(d)]
-  }, [event?.eventDate])
+    const eigen = dagenVan(event)
+    if (!eigen.length) return []
+    const eerste = new Date(`${eigen[0]}T12:00:00`)
+    eerste.setDate(eerste.getDate() - 1)
+    return [dayKey(eerste), ...eigen]
+  }, [event])
 
   const { van, tot } = useMemo(() => {
     if (!dagen.length) return {}
-    return { van: new Date(`${dagen[0]}T00:00:00`), tot: new Date(`${dagen[1]}T23:59:59`) }
+    return { van: new Date(`${dagen[0]}T00:00:00`), tot: new Date(`${dagen[dagen.length - 1]}T23:59:59`) }
   }, [dagen])
 
   const { shifts: vanDieDagen } = useAapiShifts({ van, tot })

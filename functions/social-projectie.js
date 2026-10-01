@@ -38,6 +38,7 @@ export const VELDEN = [
   'socialWanted',
   'dueDate',
   'eventDate',
+  'eventEndDate',
   'startDate',
   'date',
   // Voor de ploeg: wie er komt werken, en met hoeveel gasten. Een aantal is

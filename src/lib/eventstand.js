@@ -1,3 +1,4 @@
+import { eindeVan } from './eventdagen'
 import { indexOf } from './pipeline'
 import { isVerlopen, totalenVan } from './offerte'
 import { planningVan } from './planning'
@@ -62,7 +63,16 @@ export function standVan({
   secondenGeboekt = 0,
   nu = new Date(),
 } = {}) {
+  /*
+    Twee tellingen, want een meerdaags event heeft twee kantelpunten. `dagen`
+    telt af naar de eerste dag: daar hangen de voorbereidingsdrempels aan, en
+    die zijn op de begindag gericht — bestellingen moeten er zijn als het
+    begint, niet als het eindigt. `dagenNa` telt vanaf de laatste dag, want
+    factureren en taken afwerken kan pas als het achter de rug is. Bij een
+    event van één dag zijn beide hetzelfde getal.
+  */
   const dagen = dagenTot(event?.eventDate, nu)
+  const dagenNa = dagenTot(eindeVan(event), nu)
   const stap = indexOf(event?.statusName)
   const planning = planningVan(event)
 
@@ -107,9 +117,9 @@ export function standVan({
   }
 
   // ── Na afloop ──────────────────────────────────────────────────────────
-  if (dagen != null && dagen < 0) {
+  if (dagenNa != null && dagenNa < 0) {
     if (taken.open) aandacht.push('overzicht.let.taken_na_afloop')
-    if (-dagen >= DREMPELS.facturatie && stap >= 0 && stap < indexOf('invoiced')) {
+    if (-dagenNa >= DREMPELS.facturatie && stap >= 0 && stap < indexOf('invoiced')) {
       aandacht.push('overzicht.let.niet_gefactureerd')
     }
   }

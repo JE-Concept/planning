@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
-import { PlanningBadge, StatusBadge, TeamHexes, eventTijd, monthShort, paxLabel } from './parts'
+import { PlanningBadge, StatusBadge, TeamHexes, eventDagCijfer, eventTijd, monthShort, paxLabel } from './parts'
 
 /**
  * Eén event in de lijst.
@@ -51,7 +51,7 @@ function EventRow({ event, progress, statuses, profileById, columns, narrow, fir
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
         <span style={{ font: 'var(--fw-medium) 24px/1 var(--font-display)', color: 'var(--text-1)' }}>
-          {datum ? datum.getDate() : '—'}
+          {eventDagCijfer(event) ?? '—'}
         </span>
         <span className="je-eyebrow" style={{ letterSpacing: '.14em', color: 'var(--text-2)', marginTop: 3 }}>
           {datum ? monthShort(datum) : ''}

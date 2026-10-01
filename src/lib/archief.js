@@ -1,4 +1,5 @@
 import { asDate } from './dates'
+import { eindeVan } from './eventdagen'
 
 /**
  * Wanneer een event van het bord af mag.
@@ -32,9 +33,15 @@ export const ARCHIEF_NA_DAGEN = 60
 
 const DAG = 86400000
 
-/** De datum waarop dit event "voorbij" is: de eventdag, anders de deadline. */
+/**
+ * De datum waarop dit event "voorbij" is: de laatste eventdag, anders de
+ * deadline.
+ *
+ * De láátste dag, want een festival van drie dagen is niet voorbij omdat het
+ * begonnen is. Bij een event van één dag is dat dezelfde datum als vroeger.
+ */
 export function afsluitDatum(event) {
-  return asDate(event?.eventDate) ?? asDate(event?.completedAt) ?? asDate(event?.dueDate) ?? null
+  return eindeVan(event) ?? asDate(event?.completedAt) ?? asDate(event?.dueDate) ?? null
 }
 
 export function isGearchiveerd(event, { nu = new Date(), naDagen = ARCHIEF_NA_DAGEN } = {}) {

@@ -235,6 +235,7 @@ export const ENTITIES = [
       { key: 'dueDate', label: 'Vervaldag', type: 'date' },
       { key: 'startDate', label: 'Startdag', type: 'date' },
       { key: 'eventDate', label: 'Dag van het event', type: 'date' },
+      { key: 'eventEndDate', label: 'Laatste dag van het event', type: 'date' },
       { key: 'budget', label: 'Budget', type: 'number' },
       { key: 'quoteAmount', label: 'Offertebedrag', type: 'number' },
       { key: 'pax', label: 'Aantal gasten', type: 'number' },

@@ -11,6 +11,7 @@ import {
   NIET_BEVESTIGD,
   VOORSPRONG,
   beslis,
+  dagenVanEvent,
   eventVenster,
   kandidatenVoor,
   komtInAanmerking,
@@ -238,5 +239,81 @@ describe('de shifts uit het echte bestand', () => {
     const die = evenementen.find((s) => brusselseDag(s.start) === '2026-10-04')
     const kandidaten = kandidatenVoor(die, [event('e-okt4', '2026-10-04'), event('e-okt5', '2026-10-05')])
     expect(kandidaten.map((k) => k.eventId)).toEqual(['e-okt4'])
+  })
+})
+
+/*
+  Een festival of een beurs loopt meer dan één dag. De shifts van de zaterdag
+  horen bij hetzelfde event als die van de vrijdag — zonder dit kwamen ze
+  nergens terecht en stonden ze als "niet gekoppeld" op het importscherm.
+*/
+describe('een meerdaags event', () => {
+  const meerdaags = (id, van, tot, over = {}) => ({
+    id,
+    statusName: 'planning ready',
+    archived: false,
+    eventDate: brusselNaarInstant(`${van} 12:00:00`),
+    eventEndDate: brusselNaarInstant(`${tot} 12:00:00`),
+    ...over,
+  })
+
+  it('beslaat elke dag van begin tot einde', () => {
+    expect(dagenVanEvent(meerdaags('e1', '2026-10-23', '2026-10-26')))
+      .toEqual(['2026-10-23', '2026-10-24', '2026-10-25', '2026-10-26'])
+  })
+
+  it('beslaat één dag zonder einddatum', () => {
+    expect(dagenVanEvent(event('e1', '2026-10-25'))).toEqual(['2026-10-25'])
+  })
+
+  it('negeert een einddatum die voor de begindag ligt', () => {
+    expect(dagenVanEvent(meerdaags('e1', '2026-10-25', '2026-10-20'))).toEqual(['2026-10-25'])
+  })
+
+  it('vangt een shift op de tweede dag op', () => {
+    const fest = meerdaags('e1', '2026-10-23', '2026-10-25')
+    const uit = matchShift(shift('2026-10-24', '18:00', '23:00'), [fest])
+    expect(uit.linkStatus).toBe('auto')
+    expect(uit.eventId).toBe('e1')
+  })
+
+  it('en op de laatste dag', () => {
+    const fest = meerdaags('e1', '2026-10-23', '2026-10-25')
+    expect(matchShift(shift('2026-10-25', '10:00', '16:00'), [fest]).eventId).toBe('e1')
+  })
+
+  it('maar niet de dag erna', () => {
+    const fest = meerdaags('e1', '2026-10-23', '2026-10-25')
+    expect(matchShift(shift('2026-10-27', '10:00', '16:00'), [fest]).linkStatus).toBe('unlinked')
+  })
+
+  /*
+    Het beginuur van de eerste dag zegt niets over dag twee. Zou het venster
+    van dag één op dag twee gelegd worden, dan is de overlap nul en valt de
+    shift weg — terwijl ze juist bij dat event hoort.
+  */
+  it('rekt het beginuur van de eerste dag niet uit over de rest', () => {
+    const fest = meerdaags('e1', '2026-10-23', '2026-10-25', {
+      startDate: brusselNaarInstant('2026-10-23 09:00:00'),
+    })
+    expect(eventVenster(fest, '2026-10-23')?.bron).toBe('beginuur')
+    expect(eventVenster(fest, '2026-10-24')).toBe(null)
+    expect(matchShift(shift('2026-10-24', '20:00', '23:30'), [fest]).eventId).toBe('e1')
+  })
+
+  it('en het draaiboek evenmin', () => {
+    const fest = meerdaags('e1', '2026-10-23', '2026-10-25', {
+      draaiboek: [{ tijd: '09:00' }, { tijd: '17:00' }],
+    })
+    expect(eventVenster(fest, '2026-10-23')?.bron).toBe('draaiboek')
+    expect(eventVenster(fest, '2026-10-25')).toBe(null)
+  })
+
+  it('bij twee meerdaagse events op dezelfde dag blijft het een vraag', () => {
+    const a = meerdaags('e1', '2026-10-23', '2026-10-25')
+    const b = meerdaags('e2', '2026-10-24', '2026-10-26')
+    const uit = matchShift(shift('2026-10-25', '12:00', '18:00'), [a, b])
+    expect(uit.linkStatus).toBe('ambiguous')
+    expect(uit.linkCandidates.map((k) => k.eventId).sort()).toEqual(['e1', 'e2'])
   })
 })

@@ -100,6 +100,13 @@ export default {
   'events.fiche.geen_datum': { nl: 'nog geen datum', en: 'no date yet' },
   'events.fiche.verantwoordelijk': { nl: 'Verantwoordelijk', en: 'Owner' },
   'events.fiche.niemand': { nl: 'Nog niemand', en: 'Nobody yet' },
+  'events.fiche.meerdaags': { nl: 'Meerdaags', en: 'Multi-day' },
+  'events.fiche.meerdaags_hint': {
+    nl: 'Duurt dit event meer dan één dag, vink dit aan.',
+    en: 'Tick this if the event runs for more than one day.',
+  },
+  'events.fiche.tot_en_met': { nl: 'Tot en met', en: 'Until' },
+  'events.fiche.duurt_dagen': { nl: '{aantal} dagen', en: '{aantal} days' },
   'events.fiche.medewerkers': { nl: 'Medewerkers', en: 'Crew' },
   'events.fiche.medewerkers_hint': {
     nl: 'Wie er die dag komt werken. Zij zien het event en de lijsten, geen prijzen.',

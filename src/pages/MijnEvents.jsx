@@ -5,6 +5,8 @@ import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useMijnEvents } from '@data/social-events'
+import { eindeVan } from '@lib/eventdagen'
+import { eventDagCijfer } from '@components/events/parts'
 
 /**
  * Wat een medewerker van de planning ziet: de events waarop hij staat.
@@ -31,15 +33,17 @@ export default function MijnEvents() {
 
   // Wat geweest is zakt naar onderen; wie zaterdag werkt wil zaterdag zien.
   const vandaag = new Date().setHours(0, 0, 0, 0)
-  const komt = events.filter((e) => !e.eventDate || new Date(e.eventDate).getTime() >= vandaag)
-  const geweest = events.filter((e) => e.eventDate && new Date(e.eventDate).getTime() < vandaag).reverse()
+  // Op de laatste dag: een event dat nog loopt, is niet geweest.
+  const loopt = (e) => new Date(eindeVan(e)).getTime() >= vandaag
+  const komt = events.filter((e) => !e.eventDate || loopt(e))
+  const geweest = events.filter((e) => e.eventDate && !loopt(e)).reverse()
 
   const kaart = (e) => (
     <article key={e.id} className="je-mijnevent">
       <div className="je-mijnevent__datum">
         {e.eventDate ? (
           <>
-            <span className="je-mijnevent__dag">{new Date(e.eventDate).getDate()}</span>
+            <span className="je-mijnevent__dag">{eventDagCijfer(e)}</span>
             <span className="je-caps">{formatDate(e.eventDate, { month: 'short' })}</span>
           </>
         ) : (

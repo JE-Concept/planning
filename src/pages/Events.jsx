@@ -25,6 +25,7 @@ import { useWorkspace } from '@context/WorkspaceProvider'
 import { byEventDate, moveEvent, useEvents } from '@data/events'
 import { useLosseMails } from '@data/mails'
 import { Spinner } from '@ui/index'
+import { dagenVan, raaktPeriode } from '@lib/eventdagen'
 
 const VIEWS = [
   { value: 'lijst', sleutel: 'events.weergave.lijst' },
@@ -234,7 +235,8 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
   // De maand die er nu toe doet: deze, tot de laatste tien dagen — dan de volgende.
   const focus = today.getDate() > 20 ? addMonths(startOfMonth(today), 1) : startOfMonth(today)
   const focusKey = dayKey(focus).slice(0, 7)
-  const inMonth = all.filter((e) => e.eventDate && dayKey(e.eventDate).slice(0, 7) === focusKey).sort(byEventDate)
+  // Ook een event dat in de vorige maand begon en in deze doorloopt telt mee.
+  const inMonth = all.filter((e) => raaktPeriode(e, `${focusKey}-01`, `${focusKey}-31`)).sort(byEventDate)
   const toInvoice = all.filter((e) => e.statusName === 'ready to invoice')
 
   const stats = [
@@ -511,13 +513,20 @@ function CalendarView({ events, narrow }) {
   const daysIn = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
   const nCells = Math.ceil((lead + daysIn) / 7) * 7
 
+  /*
+    Een meerdaags event staat op elk van zijn dagen, en niet alleen op de
+    eerste. Anders is een festival van vrijdag tot zondag op zaterdag
+    onzichtbaar, en net dan wil je weten wat er loopt.
+
+    Het telt in de maandteller wel één keer: "twaalf events deze maand" gaat
+    over dossiers, niet over dagen.
+  */
   const byDay = {}
   for (const e of events) {
-    if (!e.eventDate) continue
-    ;(byDay[dayKey(e.eventDate)] ??= []).push(e)
+    for (const sleutel of dagenVan(e)) (byDay[sleutel] ??= []).push(e)
   }
   const monthKey = dayKey(first).slice(0, 7)
-  const count = events.filter((e) => e.eventDate && dayKey(e.eventDate).slice(0, 7) === monthKey).length
+  const count = events.filter((e) => raaktPeriode(e, `${monthKey}-01`, `${monthKey}-31`)).length
 
   const cells = Array.from({ length: nCells }, (_, i) => {
     const d = new Date(start)

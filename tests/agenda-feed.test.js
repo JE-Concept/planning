@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { eventsVoorFeed, isEventLijst } from '../functions/events-bron.js'
 import { isPipelineList } from '../src/lib/pipeline'
-import { agendaVan } from '../src/lib/ical'
+import { agendaVan, eventRegels } from '../src/lib/ical'
 
 /**
  * De agendafeed haalde zijn events uit `db.collection('events')`.
@@ -150,5 +150,36 @@ describe('de kopie van de eventlijst-herkenning', () => {
     for (const lijst of gevallen) {
       expect(isEventLijst(lijst)).toBe(isPipelineList(lijst))
     }
+  })
+})
+
+/*
+  Een meerdaags event is één agenda-item dat doorloopt, en geen reeks losse
+  items. `DTEND` is bij een dagvullend item exclusief — daarom staat er de dag
+  ná de laatste dag.
+*/
+describe('een meerdaags event in de agenda', () => {
+  const regels = (event) => eventRegels(event, { nu: new Date('2026-10-01T08:00:00Z') })
+
+  it('loopt van de eerste tot en met de laatste dag', () => {
+    const uit = regels({ id: 'e1', name: 'Festival', date: '2026-10-12', endDate: '2026-10-14' })
+    expect(uit).toContain('DTSTART;VALUE=DATE:20261012')
+    expect(uit).toContain('DTEND;VALUE=DATE:20261015')
+  })
+
+  it('blijft één dag wanneer er geen einddatum staat', () => {
+    const uit = regels({ id: 'e2', name: 'Trouw', date: '2026-10-12' })
+    expect(uit).toContain('DTSTART;VALUE=DATE:20261012')
+    expect(uit).toContain('DTEND;VALUE=DATE:20261013')
+  })
+
+  it('negeert een einddatum die voor de begindag ligt', () => {
+    const uit = regels({ id: 'e3', name: 'Tikfout', date: '2026-10-12', endDate: '2026-10-09' })
+    expect(uit).toContain('DTEND;VALUE=DATE:20261013')
+  })
+
+  it('en blijft één item, ook over drie dagen', () => {
+    const uit = regels({ id: 'e4', name: 'Beurs', date: '2026-10-12', endDate: '2026-10-14' })
+    expect(uit.filter((r) => r === 'BEGIN:VEVENT')).toHaveLength(1)
   })
 })

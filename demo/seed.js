@@ -202,6 +202,8 @@ function taak(id, listId, statuses, statusName, o = {}) {
     planning: o.planning ?? null,
     // Wat de fiche uit het design toont: gasten, formule, type, offerte, dag.
     eventDate: o.eventDate ?? (o.parentId ? null : o.dueDate ?? null),
+    // Leeg bij een event van één dag; alleen een meerdaagse draagt een einde.
+    eventEndDate: o.eventEndDate ?? null,
     pax: o.pax ?? null, kids: o.kids ?? null, formule: o.formule ?? null,
     eventType: o.eventType ?? null, quoteAmount: o.budget ?? null,
     draaiboek: o.draaiboek ?? null, checklist: o.checklist ?? [], repeat: o.repeat ?? null,
@@ -225,6 +227,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
     socialWanted: o.socialWanted ?? null,
     dueDate: o.dueDate ?? null,
     eventDate: o.eventDate ?? (o.parentId ? null : o.dueDate ?? null),
+    eventEndDate: o.eventEndDate ?? null,
     startDate: o.startDate ?? null,
     pax: o.pax ?? null,
     kids: o.kids ?? null,
@@ -333,7 +336,9 @@ taak('t-canon', 'l-overview', OVERVIEW, 'ready to invoice', { pax: 15, formule: 
   socialWanted: false,
 })
 taak('t-loonse', 'l-overview', OVERVIEW, 'ready to invoice', { pax: 2400, formule: 'Drie dagen bar, 8 tappunten', eventType: 'Stadsevent',
-  title: 'Loonse Feesten 2026', assignees: ['u-jasper', 'u-elke'], dueDate: dag(-30),
+  title: 'Loonse Feesten 2026', assignees: ['u-jasper', 'u-elke'], dueDate: dag(-32),
+  // "Drie dagen bar" stond al in de formule; nu staat het ook in de datums.
+  eventDate: dag(-32), eventEndDate: dag(-30),
   budget: 21500, priority: 1, tracked: 138600, comments: 1, customerId: 'k-borgloon',
   socialStage: 'ready',
 })
@@ -354,6 +359,14 @@ taak('t-magirus', 'l-overview', OVERVIEW, 'invoiced', { pax: 90, eventType: 'Bed
 })
 taak('t-winterbar', 'l-overview', OVERVIEW, 'planning ongoing', { pax: 600, formule: 'Chalets + après-ski bar', eventType: 'Eigen event', budget: 18000,
   title: 'Winterbar', assignees: ['u-anneleen'], tags: ['wintermoods'], brandId: 'wintermoods', dueDate: dag(55),
+})
+taak('t-beurs', 'l-overview', OVERVIEW, 'planning ongoing', { pax: 450, formule: 'Standenbar + koffiecorner', eventType: 'Beurs',
+  title: 'Horecabeurs Limburg — standenbar', assignees: ['u-jasper'], medewerkers: ['u-lotte'],
+  budget: 16800, planning: 'bezig',
+  // Drie dagen, en de enige meerdaagse die nog moet komen: hierop toont de
+  // kalender dat één event op drie dagen staat.
+  eventDate: dag(9), eventEndDate: dag(11),
+  location: 'Trixxo Arena, Hasselt',
 })
 taak('t-menukaart', 'l-overview', OVERVIEW, 'request', { eventType: 'Intern',
   title: 'Menukaart drukken + prijzen ingeven', assignees: ['u-elke'], brandId: 'meer',

@@ -93,6 +93,16 @@ export function eventRegels(event, { nu = new Date(), basis = '' } = {}) {
   const dag = dagVan(event?.date ?? event?.eventDate ?? null)
   if (!dag) return null
 
+  /*
+    Een meerdaags event is één item dat meerdere dagen beslaat, en niet drie
+    items. `DTEND` van een dagvullend item is exclusief: een feest van 12 tot
+    en met 14 oktober eindigt in iCalendar op de vijftiende. Een einddatum die
+    voor de begindag ligt — en die staat er, want mensen typen — wordt
+    genegeerd, anders tekent de agenda een item van min één dag.
+  */
+  const opgegeven = dagVan(event?.endDate ?? event?.eventEndDate ?? null)
+  const laatste = opgegeven && opgegeven > dag ? opgegeven : dag
+
   const naam = (event?.name ?? '').trim() || 'Event zonder naam'
   const omschrijving = [
     event?.customerName ? `Klant: ${event.customerName}` : null,
@@ -108,7 +118,7 @@ export function eventRegels(event, { nu = new Date(), basis = '' } = {}) {
     `UID:${event.id}@jeplan.jeconcept.be`,
     `DTSTAMP:${stempel(nu)}`,
     `DTSTART;VALUE=DATE:${zonderStreepjes(dag)}`,
-    `DTEND;VALUE=DATE:${zonderStreepjes(dagErna(dag))}`,
+    `DTEND;VALUE=DATE:${zonderStreepjes(dagErna(laatste))}`,
     `SUMMARY:${ontsnap(naam)}`,
     event?.location ? `LOCATION:${ontsnap(event.location)}` : null,
     omschrijving ? `DESCRIPTION:${ontsnap(omschrijving)}` : null,

@@ -17,6 +17,8 @@ import { useMyTasks } from '@data/tasks'
 import { useReviewQueue, useSocialPosts, statusMeta } from '@data/social'
 import { useTimeEntries } from '@data/time'
 import { useGoals, goalProgress } from '@data/goals'
+import { eindeVan, raaktPeriode } from '@lib/eventdagen'
+import { eventDagCijfer } from '@components/events/parts'
 
 /**
  * Het scherm waarop iemand 's morgens begint.
@@ -79,7 +81,9 @@ export default function Dashboard() {
   const komende = useMemo(
     () =>
       events
-        .filter((e) => !isDone(e) && e.eventDate && daysUntil(e.eventDate) >= 0)
+        // Op de laatste dag en niet op de eerste: een festival dat gisteren
+        // begon en morgen eindigt, is nog altijd "komend werk".
+        .filter((e) => !isDone(e) && e.eventDate && daysUntil(eindeVan(e)) >= 0)
         .sort(byEventDate)
         .slice(0, 6)
         .map((e) => {
@@ -92,7 +96,7 @@ export default function Dashboard() {
 
   const dezeMaand = useMemo(() => {
     const maand = today.slice(0, 7)
-    return events.filter((e) => e.eventDate && dayKey(e.eventDate).startsWith(maand)).length
+    return events.filter((e) => raaktPeriode(e, `${maand}-01`, `${maand}-31`)).length
   }, [events, today])
 
   /*
@@ -212,7 +216,7 @@ export default function Dashboard() {
                     <li key={event.id}>
                       <Link to={`/events/${event.id}`} className="je-plainbtn je-taskline">
                         <span className="je-dash__dag">
-                          <b>{new Date(event.eventDate).getDate()}</b>
+                          <b>{eventDagCijfer(event)}</b>
                           <span>
                             {maandKort.format(new Date(event.eventDate))}
                           </span>

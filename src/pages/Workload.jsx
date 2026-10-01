@@ -8,6 +8,7 @@ import { hours, shortDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { isDone, useEvents, useWeekEntries } from '@data/events'
+import { valtOpDag } from '@lib/eventdagen'
 
 // Op de volgorde van `Date.getDay()`, dus zondag eerst.
 const WD = ['tasks.wd.zo', 'tasks.wd.ma', 'tasks.wd.di', 'tasks.wd.wo', 'tasks.wd.do', 'tasks.wd.vr', 'tasks.wd.za']
@@ -89,7 +90,8 @@ export default function Workload() {
               {days.map((d, i) => {
                 const k = keys[i]
                 const isT = k === todayKey
-                const dayEvents = events.filter((e) => e.eventDate && dayKey(e.eventDate) === k)
+                // Een meerdaags event staat op elk van zijn dagen in het rooster.
+                const dayEvents = events.filter((e) => valtOpDag(e, k))
                 return (
                   <div
                     key={k}

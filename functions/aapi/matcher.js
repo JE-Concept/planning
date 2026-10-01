@@ -30,7 +30,7 @@
  *
  * Geen imports uit `src/`: deze codebase wordt apart verpakt en uitgerold.
  */
-import { brusselNaarInstant, dagenTussen } from './tijd.js'
+import { brusselNaarInstant, brusselseDag, dagenTussen } from './tijd.js'
 import { EVENEMENTEN } from './normaliseer.js'
 
 /** De marge voor opbouw vooraf en afbraak achteraf. */
@@ -68,6 +68,26 @@ const alsDatum = (v) => {
 }
 
 /** Doet dit event mee aan het koppelen? */
+/**
+ * De dagen die dit event beslaat, als Brusselse dagsleutels.
+ *
+ * Meestal één. Een meerdaags event — een festival, een beurs, een weekend —
+ * draagt een `eventEndDate` en beslaat dan elke dag ertussen. Een shift op de
+ * zaterdag van een driedaagse hoort bij dat event, en zonder dit zou ze
+ * nergens bij horen.
+ *
+ * Een einddatum die vóór de begindag ligt wordt genegeerd: zulke rijen
+ * bestaan, want data wordt met de hand ingevuld, en een leeg venster zou elke
+ * shift van dat event laten vallen.
+ */
+export function dagenVanEvent(event) {
+  const begin = alsDatum(event?.eventDate ?? event?.startDate)
+  if (!begin) return []
+  const einde = alsDatum(event?.eventEndDate)
+  if (!einde || einde.getTime() < begin.getTime()) return [brusselseDag(begin)]
+  return dagenTussen(begin, einde)
+}
+
 export function komtInAanmerking(event) {
   if (!event || event.archived) return false
   if (!alsDatum(event.eventDate ?? event.startDate)) return false
@@ -81,6 +101,16 @@ export function komtInAanmerking(event) {
  * dit event, en de score hieronder gaat er anders mee om.
  */
 export function eventVenster(event, dag) {
+  /*
+    Bij een meerdaags event gelden het draaiboek en het beginuur voor de eerste
+    dag. Wat er op dag twee gebeurt, zegt geen van beide velden — en dan is
+    "alleen de dag" het eerlijke antwoord. Een draaiboek van de openingsdag
+    uitsmeren over het hele festival zou een venster opleveren dat scherp
+    lijkt en het niet is, en dan koppelt de machine stil iets verkeerds.
+  */
+  const dagen = dagenVanEvent(event)
+  if (dag && dagen.length > 1 && dag !== dagen[0]) return null
+
   /*
     De klokstanden uit het draaiboek, als tekst en niet als minuten sinds
     middernacht. Dat laatste stond hier eerst en was fout op precies één dag per
@@ -146,9 +176,12 @@ export function kandidatenVoor(shift, events) {
 
   for (const event of events) {
     if (!komtInAanmerking(event)) continue
-    const eventDag = event.dag ?? null
-    if (!eventDag || !dagen.has(eventDag)) continue
-    uit.push({ eventId: event.id, score: Number(scoreVan(shift, event, eventDag).toFixed(4)) })
+    // `dag` blijft werken voor wie één dag meegeeft; `dagenVanEvent` leest het
+    // event zelf en kent ook de einddatum.
+    const eventDagen = event.dag ? [event.dag] : dagenVanEvent(event)
+    const raakt = eventDagen.find((d) => dagen.has(d))
+    if (!raakt) continue
+    uit.push({ eventId: event.id, score: Number(scoreVan(shift, event, raakt).toFixed(4)) })
   }
 
   return uit.sort((a, b) => b.score - a.score || String(a.eventId).localeCompare(String(b.eventId)))

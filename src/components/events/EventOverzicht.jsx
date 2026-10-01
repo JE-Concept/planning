@@ -5,7 +5,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useOfferte } from '@data/offertes'
 import { useEventMails } from '@data/mails'
-import { PlanningBadge, StatusBadge, dayLabel, eventTijd, hours } from './parts'
+import { PlanningBadge, StatusBadge, eventDatumTekst, eventTijd, hours } from './parts'
 
 /**
  * Het overzicht: hoe staat dit event ervoor.
@@ -54,7 +54,7 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
           <StatusBadge statusName={ev.statusName} statuses={eventStatuses} />
           <PlanningBadge event={ev} />
           <span className="je-muted-caption">
-            {[dayLabel(ev.eventDate), eventTijd(ev), ev.location].filter(Boolean).join(' · ') || t('overzicht.geen_datum')}
+            {[eventDatumTekst(ev), eventTijd(ev), ev.location].filter(Boolean).join(' · ') || t('overzicht.geen_datum')}
           </span>
         </div>
         <div className="je-overzicht__teller">

@@ -54,7 +54,7 @@ const OFFERTE_VELDEN = [
 ]
 
 /** En van een event, voor het portaal. Geen bedragen die niet op een offerte staan. */
-const EVENT_VELDEN = ['title', 'eventDate', 'location', 'pax', 'statusName']
+const EVENT_VELDEN = ['title', 'eventDate', 'eventEndDate', 'location', 'pax', 'statusName']
 
 const kies = (bron, velden) =>
   Object.fromEntries(velden.filter((v) => bron?.[v] !== undefined).map((v) => [v, bron[v]]))
@@ -222,7 +222,7 @@ async function toonKlant({ db, token, antwoord, weiger }) {
     events: events.map((e) => {
       const offerte = offertes.get(e.id) ?? null
       return {
-        ...metDatums(kies(e, EVENT_VELDEN), ['eventDate']),
+        ...metDatums(kies(e, EVENT_VELDEN), ['eventDate', 'eventEndDate']),
         stand: standVoorKlant(e.statusName),
         offerte: offerte
           ? { token: offerte.token, nummer: offerte.nummer, status: offerte.status }

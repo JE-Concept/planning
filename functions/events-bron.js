@@ -58,6 +58,8 @@ export async function eventsVoorFeed(db) {
       id: taak.id,
       name: taak.title ?? null,
       date: taak.eventDate ?? taak.startDate ?? taak.dueDate ?? null,
+      // Leeg bij een event van één dag; dan valt `eventRegels` terug op de begindag.
+      endDate: taak.eventEndDate ?? null,
       location: taak.location ?? null,
       customerName: taak.customerName ?? null,
       statusName: taak.statusName ?? null,

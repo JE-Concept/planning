@@ -46,11 +46,19 @@ negen statussen (`request` … `complete`). De taken van een event zijn zijn sub
 Zo blijven de gemigreerde ClickUp-gegevens, de klanten, het socialbord en de
 automatisaties werken zoals voorheen.
 
-Nieuwe velden op een event: `eventDate`, `pax`, `kids`, `formule`, `eventType`,
+Nieuwe velden op een event: `eventDate`, `eventEndDate`, `pax`, `kids`, `formule`, `eventType`,
 `quoteAmount`, `draaiboek` (`[{tijd, wat, wie}]`), en — komt het uit een vaste
 formule — `formuleId`, `formuleKeuzes`, `formulePrijsPerPersoon` en `bestellijst`. Op een taak: `checklist`
 (`[{text, done}]`) en `repeat`. Waar een oud veld bestond, valt de app erop terug
 (`budget` voor de offerte, `startDate`/`dueDate` voor de eventdatum).
+
+- **Meerdaags:** `eventEndDate` staat er alleen wanneer een event langer dan één
+  dag duurt; leeg betekent eendaags. Er is géén apart vinkje in de database — het
+  vinkje op de fiche leest het bestaan van dit veld, want twee velden voor één
+  waarheid lopen uit elkaar. Wie wil weten welke dagen een event beslaat, vraagt
+  het aan `src/lib/eventdagen.js` (en server-side aan `dagenVanEvent` in
+  `functions/aapi/matcher.js`) en rekent het niet zelf uit: die vraag wordt op
+  acht schermen gesteld.
 
 - **Statuslabels:** de namen in de database blijven de ClickUp-namen; het Nederlandse
   label ("Offerte maken") staat als `label` op de status en is te hernoemen in

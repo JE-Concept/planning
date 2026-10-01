@@ -125,7 +125,7 @@ function Dossier({ event }) {
       </div>
       <p className="je-publiek__meta">
         {[
-          event.eventDate ? langeDatum(event.eventDate) : 'datum nog te bepalen',
+          event.eventDate ? periode(event) : 'datum nog te bepalen',
           event.location,
           event.pax ? `${event.pax} personen` : null,
         ]
@@ -141,6 +141,19 @@ function Dossier({ event }) {
       ) : null}
     </article>
   )
+}
+
+/**
+ * De datum zoals een klant ze leest: één dag, of "van ... tot en met ...".
+ *
+ * Een klant die een weekend boekt, hoort op zijn eigen pagina te zien dat het
+ * een weekend is. Twee volledige datums met "tot en met" ertussen, want dit is
+ * de pagina waar hij op afgaat — hier is kort zijn niet de bedoeling.
+ */
+const periode = (event) => {
+  const einde = event?.eventEndDate
+  if (!einde || String(einde) <= String(event.eventDate)) return langeDatum(event.eventDate)
+  return `van ${langeDatum(event.eventDate)} tot en met ${langeDatum(einde)}`
 }
 
 const langeDatum = (waarde) =>

@@ -271,6 +271,9 @@ export async function createEventFromTemplate({
       title: name.trim(),
       description: omschrijving ?? '',
       eventDate: date,
+      // Leeg: een nieuw event duurt één dag tot iemand "meerdaags" aanvinkt.
+      // Het veld staat er wél, zodat elk eventdocument dezelfde vorm heeft.
+      eventEndDate: null,
       dueDate: date,
       // De klant staat op het event en niet op zijn taken: anders telt de
       // historiek op de klantfiche elk dossier zo vaak als het taken heeft.

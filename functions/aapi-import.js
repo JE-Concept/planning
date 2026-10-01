@@ -31,13 +31,23 @@ import { planImport } from './aapi/import.js'
 import { herkenBlad, planPersoneel } from './aapi/personeel.js'
 import { ImportFout } from './aapi/parser.js'
 import { brusselseDag } from './aapi/tijd.js'
-import { komtInAanmerking } from './aapi/matcher.js'
+import { dagenVanEvent, komtInAanmerking } from './aapi/matcher.js'
 
 /** Hoe groot een exportbestand hoogstens mag zijn. Oktober was 15 kB. */
 const MAX_BYTES = 8 * 1024 * 1024
 
 /** Firestore schrijft hoogstens 500 bewerkingen per batch. */
 const PER_BATCH = 450
+
+/**
+ * Hoe ver een import terugkijkt om meerdaagse events te vinden.
+ *
+ * De query kan alleen op `eventDate` zoeken, en dat is de bégindag. Een event
+ * dat langer loopt dan dit, valt buiten beeld voor de dagen daarna — en een
+ * ruimere grens betekent elke import de halve eventlijst ophalen. Eenendertig
+ * dagen dekt alles wat JE Concept doet; een festival duurt geen maand.
+ */
+const MAX_EVENTDAGEN = 31
 
 export function maakAapiFuncties({ db, region, meld = null }) {
   async function profielVan(uid, toegestaan) {
@@ -59,7 +69,18 @@ export function maakAapiFuncties({ db, region, meld = null }) {
    */
   async function eventsIn(venster) {
     if (!venster) return []
-    const van = new Date(venster.van.getTime() - 24 * 3600 * 1000)
+    /*
+      Een dag speling aan beide kanten — een shift die om 23:00 begint raakt de
+      dag erna.
+
+      Aan de voorkant veel meer dan één dag, en dat is nodig sinds een event
+      meerdaags kan zijn: een festival dat op 1 oktober begon en tot de vierde
+      loopt, heeft een `eventDate` die vóór dit venster ligt terwijl zijn
+      shifts er middenin vallen. De query kan alleen op de begindag zoeken, dus
+      kijkt ze zo ver terug als een event hier lang kan duren, en daarna valt
+      `komtInAanmerking` samen met de dagvergelijking in de matcher de rest weg.
+    */
+    const van = new Date(venster.van.getTime() - MAX_EVENTDAGEN * 24 * 3600 * 1000)
     const tot = new Date(venster.tot.getTime() + 24 * 3600 * 1000)
 
     const snap = await db.collection('tasks')
@@ -67,10 +88,15 @@ export function maakAapiFuncties({ db, region, meld = null }) {
       .where('eventDate', '<=', tot)
       .get()
 
+    const vanDag = brusselseDag(new Date(venster.van.getTime() - 24 * 3600 * 1000))
+    const totDag = brusselseDag(tot)
+
     return snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
       .filter((t) => !t.parentId)
-      .map((t) => ({ ...t, dag: t.eventDate?.toDate ? brusselseDag(t.eventDate.toDate()) : null }))
+      .map((t) => ({ ...t, dagen: dagenVanEvent(t) }))
+      // Wat er ver voor het venster begon en er ook voor eindigde, valt hier weg.
+      .filter((t) => t.dagen.length && t.dagen[t.dagen.length - 1] >= vanDag && t.dagen[0] <= totDag)
       .filter(komtInAanmerking)
   }
 

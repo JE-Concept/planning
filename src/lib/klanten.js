@@ -147,6 +147,16 @@ export function dateOf(task) {
 }
 
 /**
+ * De laatste dag van het event.
+ *
+ * De historiek van een klant sorteert op de begindag — daar staat het in zijn
+ * agenda — maar "is het al geweest" hangt aan het einde.
+ */
+export function endDateOf(task) {
+  return tijd(task?.eventEndDate) ?? dateOf(task)
+}
+
+/**
  * De historiek van een klant uit zijn taken.
  *
  * Wat binnenkomt is alles wat op deze klant staat — de events én hun subtaken,

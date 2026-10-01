@@ -54,6 +54,7 @@ export async function haalPortaal(pad) {
           id: e.id,
           title: e.title,
           eventDate: alsTekst(e.eventDate ?? e.dueDate),
+          eventEndDate: alsTekst(e.eventEndDate),
           location: e.location,
           pax: e.pax,
           stand: standVoorKlant(e.statusName),
