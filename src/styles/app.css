@@ -271,7 +271,7 @@
   background: var(--surface-1);
   border-bottom: 1px solid var(--border-hairline);
   position: relative;
-  z-index: 30;
+  z-index: var(--z-plakkend);
 }
 
 .je-search {
@@ -374,7 +374,7 @@
   width: 380px;
   flex: 0 0 380px;
   height: 100%;
-  z-index: 40;
+  z-index: var(--z-schil);
   background: var(--surface-1);
   border-left: 1px solid var(--border-hairline);
   display: flex;
@@ -392,7 +392,7 @@
   border-radius: 4px;
   box-shadow: var(--shadow-2);
   padding: var(--space-2) 0;
-  z-index: 50;
+  z-index: var(--z-zwevend);
 }
 .je-menu button {
   width: 100%;
@@ -496,7 +496,7 @@
 .je-fiche__cel[data-breed] {
   grid-column: span 2;
 }
-@media (max-width: 720px) {
+@media (max-width: 859px) {
   .je-fiche__cel[data-breed] {
     grid-column: span 1;
   }
@@ -943,7 +943,7 @@
 .je-locatielijst {
   top: calc(100% + 4px);
   max-height: 260px;
-  z-index: 40;
+  z-index: var(--z-schil);
 }
 .je-locatieoptie {
   width: 100%;
@@ -1085,7 +1085,7 @@ select.je-compact { padding-right: 24px; }
 .je-taskline__due {
   width: 104px;
 }
-@media (max-width: 720px) {
+@media (max-width: 859px) {
   .je-taskline__list,
   .je-taskline__time {
     display: none;
@@ -1206,7 +1206,7 @@ select.je-compact { padding-right: 24px; }
   margin-top: var(--space-5);
   align-items: start;
 }
-@media (max-width: 1080px) {
+@media (max-width: 999px) {
   .je-dash__kolommen { grid-template-columns: minmax(0, 1fr); }
 }
 .je-dash__kolom {
@@ -1319,7 +1319,7 @@ select.je-compact { padding-right: 24px; }
 /* Op een telefoon is de naam van het event belangrijker dan het aantal open
    taken erachter; anders blijft er van "Vrijwilligersfeest — 140 krukken" niet
    veel over. */
-@media (max-width: 560px) {
+@media (max-width: 559px) {
   .je-dash__kolom .je-taskline__due { display: none; }
 }
 
@@ -1595,7 +1595,7 @@ select.je-compact { padding-right: 24px; }
 
 .je-weekboard__dagkop {
   padding: 6px 8px;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -1664,7 +1664,7 @@ select.je-compact { padding-right: 24px; }
 
 .je-weekboard__teller {
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--text-2);
   background: var(--surface-2);
   border-radius: var(--radius-sm);
@@ -1742,7 +1742,7 @@ select.je-compact { padding-right: 24px; }
 
 .je-postprev__kanaal {
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -1809,7 +1809,7 @@ select.je-compact { padding-right: 24px; }
 
 .je-postprev__leeg,
 .je-postprev__wanneer {
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--text-2);
 }
 
@@ -1817,13 +1817,13 @@ select.je-compact { padding-right: 24px; }
 
 .je-postprev__regels {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--text-2);
 }
 
 .je-postprev__waarschuwing {
   margin-top: 2px;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--danger);
 }
 
@@ -1920,7 +1920,7 @@ select.je-compact { padding-right: 24px; }
 /* Smal scherm: de rasters vallen weg. Een bestelregel van acht kolommen op een
    telefoon persen levert velden van twee centimeter op — onder elkaar is lelijk
    maar bruikbaar, en dit scherm wordt op de baan gebruikt. */
-@media (max-width: 860px) {
+@media (max-width: 859px) {
   .je-formule-keuze,
   .je-formule-regel {
     grid-template-columns: minmax(0, 1fr);
@@ -2145,7 +2145,7 @@ select.je-compact { padding-right: 24px; }
   color: var(--text-2);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 559px) {
   .je-meldpref__rij {
     flex-direction: column;
     gap: var(--space-2);
@@ -2190,7 +2190,7 @@ select.je-compact { padding-right: 24px; }
 /* Op een telefoon past de uitleg er niet naast; onder elkaar en allebei
    leesbaar is beter dan één zin die halverwege afgekapt wordt — dit is het
    toestel waar het bericht juist toe doet. */
-@media (max-width: 640px) {
+@media (max-width: 559px) {
   .je-offlinebar {
     flex-wrap: wrap;
     row-gap: 2px;
@@ -2504,7 +2504,7 @@ select.je-compact { padding-right: 24px; }
   align-items: start;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 999px) {
   .je-event-met-notities {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2532,7 +2532,7 @@ select.je-compact { padding-right: 24px; }
   align-items: center;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 859px) {
   .je-voorstelrij__kop {
     grid-template-columns: 1fr 1fr;
   }
@@ -2766,7 +2766,7 @@ button.je-paneel-kaart:hover {
   gap: var(--space-3);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 859px) {
   .je-herhaling__kop {
     grid-template-columns: 1fr auto;
   }

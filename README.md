@@ -379,6 +379,56 @@ wekelijkse export naar Cloud Storage voor wat langer terug moet kunnen.
 
 ---
 
+## Het design system
+
+Alle kleuren, letters, maten en componentstijlen staan in `src/styles/je-ds.css`.
+Buiten de `:root`-blokken daarin hoort geen enkele letterlijke kleur of maat te
+staan — niet in dat bestand, en zo weinig mogelijk in `app.css`.
+
+**Componenten lezen alleen de semantische laag** (`canvas`, `surface-1`,
+`text-1`, `accent`, `border-hairline`). De schaal eronder (`navy-700`,
+`slate-500`) stelt die laag samen. Een component die `navy-700` rechtstreeks
+leest, kantelt niet mee in de nachtschil.
+
+### Contrast is uitgerekend, niet geschat
+
+`src/lib/kleur.js` doet het rekenwerk, met tests erop. Dat is nodig omdat het
+team zelf kleuren kiest — voor een bordkolom, een merk, een label — en die
+kleuren daarna als badge terugkomen. Vroeger stond daar altijd wit op, wat de
+kolomnaam op het oude oranje (`#f59e0b`) op 2,15 bracht waar 4,5 nodig is.
+`badgeKleuren()` neemt nu de inkt die wél leest, en verdiept de vulling als
+geen van beide inkten de drempel haalt.
+
+Daarom hoeft geen enkele kleur die al in de database staat aangepast te worden.
+Het palet dat je bij een nieuwe kolom te kiezen krijgt (`PALET`) is wel
+vervangen: negen kleuren uit de huisstijl, elk nagerekend.
+
+Twee tokens zijn bijgesteld omdat ze hun drempel niet haalden: `--amber-600`
+van `#B4761B` naar `#946115` (3,59 → 5,01 op papier) en `--border-strong` van
+42% naar 52% dekking (2,41 → 3,14, en dat is de rand van elk vinkje).
+`tests/kleur.test.js` houdt die twee vast.
+
+### De breekpunten staan op één plek
+
+Vier: 560, 860, 1000 en 1240. Ze staan als `--bp-*` in `je-ds.css` en als
+`BREEKPUNTEN` in `src/lib/schermmaat.js`, want een media query leest geen
+CSS-variabele. Er stonden er acht, en `useNarrow` stond op weer een andere —
+daardoor sprong de zijkolom op een andere breedte weg dan het rooster. De test
+vergelijkt beide lijsten en de stylesheets.
+
+Hetzelfde geldt voor `--z-*`: zes lagen met een naam, in plaats van de getallen
+1 tot 70 verspreid over drie stylesheets.
+
+### Het beeldmerk
+
+`public/favicon.svg` en de vier PNG's in `public/icons/` komen uit dezelfde
+zeshoek; `node scripts/iconen.mjs` tekent ze opnieuw. **Het echte logo zit niet
+in de repo.** `Logotype` toont zonder `VITE_LOGO_URL` het getekende zeshoekje
+met JE erin, en doet geen aanvraag. Zet die variabele zodra het echte bestand
+er is.
+
+---
+
 ## Nederlands en Engels
 
 De tool staat in het Nederlands en in het Engels. De keuze staat in het

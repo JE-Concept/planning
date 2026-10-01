@@ -38,7 +38,7 @@
 
   /* --- Semantic hues (kept close to the navy family) --- */
   --green-600:#1F7A54;
-  --amber-600:#B4761B;
+  --amber-600:#946115; /* verdiept: #B4761B haalde 3,59 op papier waar 4,5 nodig is */
   --red-600:#B3352F;
 
   /* --- Semantic aliases: components use only these --- */
@@ -59,7 +59,7 @@
 
   --border-hairline:rgba(0,48,96,.14);
   --border-subtle:rgba(0,48,96,.22);
-  --border-strong:rgba(0,48,96,.42);
+  --border-strong:rgba(0,48,96,.52); /* 3,14 op canvas; op .42 was het 2,41 en dat is onder de 3:1 die een vinkjesrand nodig heeft */
   --border-accent:var(--navy-700);
 
   --accent:var(--navy-700);
@@ -127,6 +127,9 @@
   --fs-body:16px;  --lh-body:1.65; /* @kind font */
   --fs-body-sm:14px; --lh-body-sm:1.6; /* @kind font */
   --fs-caption:12px; --lh-caption:1.45; /* @kind font */
+  /* Onder caption. Bestond al zes keer met de hand in dichte roosters —
+     de weekkalender en het postvoorbeeld — en hoort dus in de schaal. */
+  --fs-micro:11px; --lh-micro:1.35; /* @kind font */
 
   /* Eyebrow / label — Oswald caps, wide */
   --fs-eyebrow:12px; --ls-eyebrow:0.24em; /* @kind font */ --lh-eyebrow:1.2; /* @kind font */
@@ -146,6 +149,7 @@
   --type-body:var(--fw-regular) var(--fs-body)/var(--lh-body) var(--font-ui);
   --type-body-sm:var(--fw-regular) var(--fs-body-sm)/var(--lh-body-sm) var(--font-ui);
   --type-caption:var(--fw-semibold) var(--fs-caption)/var(--lh-caption) var(--font-ui);
+  --type-micro:var(--fw-semibold) var(--fs-micro)/var(--lh-micro) var(--font-ui);
   --type-eyebrow:var(--fw-medium) var(--fs-eyebrow)/var(--lh-eyebrow) var(--font-display);
   --type-script:var(--fw-regular) 32px/1.2 var(--font-script);
 }
@@ -178,6 +182,42 @@
   --measure:64ch; /* @kind spacing */
   --container:1240px; /* @kind spacing */
   --container-narrow:820px; /* @kind spacing */
+}
+
+/*
+  De lagen boven de pagina.
+
+  Stonden als 1, 30, 40, 50, 60 en 70 verspreid in de stylesheets, zonder dat
+  iemand kon zien waarom een dialoog boven een zijpaneel hoort. Nu staat de
+  volgorde hier, met de naam erbij.
+*/
+:root{
+  --z-basis:1;        /* iets dat binnen zijn eigen kaart naar voren komt */
+  --z-plakkend:30;    /* een kop die meescrollt */
+  --z-schil:40;       /* de zijbalk en de balk onderaan */
+  --z-zwevend:50;     /* een keuzelijst die openklapt */
+  --z-overlay:60;     /* een dialoog of een zijpaneel: neemt de pagina over */
+  --z-tooltip:70;     /* hoort boven alles, ook boven een dialoog */
+  --z-melding:80;     /* een toast: hoort boven de tooltip, want ze blijft staan */
+}
+
+/*
+  De breekpunten.
+
+  Er stonden er acht in de stylesheets — 560, 640, 720, 860, 900, 1080, 1100 —
+  terwijl `useNarrow` op 999 stond. Dat zijn geen zeven beslissingen maar drie,
+  vier keer net anders opgeschreven. Deze vier zijn de echte, en `useNarrow`
+  leest dezelfde waarde als de CSS.
+
+  CSS-variabelen werken niet in een media query; daarom staan de getallen daar
+  nog letterlijk. Ze staan hier zodat er één plek is waar je ze opzoekt, en
+  `src/lib/schermmaat.js` draagt dezelfde vier voor JavaScript.
+*/
+:root{
+  --bp-telefoon:560px;   /* één kolom, alles onder elkaar */
+  --bp-tablet:860px;     /* twee kolommen, de zijkolom valt weg */
+  --bp-schil:1000px;     /* onder deze maat wordt de schil een app */
+  --bp-breed:1240px;     /* de brede kolom past volledig */
 }
 
 :root{
@@ -379,7 +419,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .je-tabs--pills .je-tab--active::after{display:none}
 
 /* ---------- Dialog ---------- */
-.je-dialog{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:var(--space-7)}
+.je-dialog{position:fixed;inset:0;z-index:var(--z-overlay);display:flex;align-items:center;justify-content:center;padding:var(--space-7)}
 .je-dialog__scrim{position:absolute;inset:0;background:rgba(0,23,46,.42);backdrop-filter:blur(6px);animation:je-fade var(--dur-base) var(--ease-brand)}
 .je-dialog__panel{position:relative;width:100%;max-width:560px;background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-modal);box-shadow:var(--shadow-3);padding:var(--space-8);animation:je-rise var(--dur-base) var(--ease-out)}
 .je-dialog__title{font:var(--type-h2);margin-bottom:var(--space-4)}
@@ -391,7 +431,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---------- Tooltip ---------- */
 .je-tooltip-wrap{position:relative;display:inline-flex}
-.je-tooltip{position:absolute;z-index:70;pointer-events:none;font:var(--type-caption);font-weight:var(--fw-regular);color:var(--white);background:var(--navy-900);padding:6px 10px;border-radius:var(--radius-sm);white-space:nowrap;box-shadow:var(--shadow-2);animation:je-fade var(--dur-fast) var(--ease-brand)}
+.je-tooltip{position:absolute;z-index:var(--z-tooltip);pointer-events:none;font:var(--type-caption);font-weight:var(--fw-regular);color:var(--white);background:var(--navy-900);padding:6px 10px;border-radius:var(--radius-sm);white-space:nowrap;box-shadow:var(--shadow-2);animation:je-fade var(--dur-fast) var(--ease-brand)}
 .je-tooltip--top{bottom:calc(100% + 8px);left:50%;transform:translateX(-50%)}
 .je-tooltip--bottom{top:calc(100% + 8px);left:50%;transform:translateX(-50%)}
 .je-tooltip--left{right:calc(100% + 8px);top:50%;transform:translateY(-50%)}
@@ -461,7 +501,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .je-progress__fill{display:block;height:100%;border-radius:var(--radius-pill);background:var(--accent);transition:width var(--dur-base) var(--ease-brand)}
 
 /* ---------- Zijpaneel ---------- */
-.je-drawer{position:fixed;inset:0;z-index:60;display:flex;justify-content:flex-end}
+.je-drawer{position:fixed;inset:0;z-index:var(--z-overlay);display:flex;justify-content:flex-end}
 .je-drawer__scrim{position:absolute;inset:0;background:rgba(0,23,46,.34)}
 .je-drawer__panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:min(42rem,100vw);height:100%;background:var(--surface-1);box-shadow:var(--shadow-3);animation:je-drawer-in var(--dur-base) var(--ease-brand)}
 .je-drawer__head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--border-hairline)}

@@ -438,20 +438,35 @@ export function initialsOf(profile) {
   return letters.toUpperCase()
 }
 
-const LOGO_SRC = `${import.meta.env.BASE_URL}brand/je-concept-logo.png`
+/*
+  Het beeldmerk, als er een is.
+
+  Het stond hier als een vast pad naar `public/brand/je-concept-logo.png`, en
+  dat bestand heeft nooit in de repo gestaan. Elke pagina vroeg het dus op,
+  kreeg een 404, en viel daarna terug op het getekende zeshoekje — zichtbaar
+  niets aan de hand, maar een mislukte aanvraag bij elke keer dat de zijbalk
+  tekent, en niemand die merkte dat het echte logo ontbrak.
+
+  Nu is het omgekeerd: zonder `VITE_LOGO_URL` tekent de app meteen het
+  zeshoekje, en er gaat geen aanvraag de deur uit. Zet die variabele zodra het
+  echte bestand er is, en het verschijnt overal tegelijk.
+
+  Nagetekend wordt het niet. Een merk dat benaderd is, is geen merk.
+*/
+const LOGO_SRC = import.meta.env.VITE_LOGO_URL || null
 
 /**
- * Het JE Concept-woordmerk: het zeshoekige logo met "JE" en "Concept" ernaast.
+ * Het JE Concept-woordmerk: het beeldmerk met "JE" en "Concept" ernaast.
  *
- * Het logobestand hoort in public/brand/je-concept-logo.png. Ontbreekt het,
- * dan valt de app terug op een getekend zeshoekje met JE, zodat er nooit een
- * gebroken afbeelding in de zijbalk staat.
+ * Zonder beeldmerk staat er een zeshoek met JE erin, in de kleuren van het
+ * huis. Dat is geen plaatshouder maar een volwaardige variant: hij staat in de
+ * zijbalk, op het aanmeldscherm en op de favicon.
  */
 export function Logotype({ size = 40, invert = false, word = true, className, style }) {
   const [failed, setFailed] = useState(false)
   return (
     <span className={cn('je-logotype', className)} style={{ fontSize: Math.round(size * 0.62), ...style }}>
-      {failed ? (
+      {failed || !LOGO_SRC ? (
         <span
           className="je-hexchip"
           aria-label="JE Concept"

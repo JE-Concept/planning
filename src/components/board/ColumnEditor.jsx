@@ -3,6 +3,7 @@ import { Badge, Button, Input, Modal, Select, Spinner } from '@ui/index'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { saveStatuses } from '@data/workspace'
+import { PALET } from '@lib/kleur'
 
 // `kind` staat in de database; de naam ervan hoort bij de taal.
 const KINDS = [
@@ -12,7 +13,13 @@ const KINDS = [
   { key: 'closed', sleutel: 'bord.soort.closed' },
 ]
 
-const PALETTE = ['#8593a9', '#3377ff', '#7c3aed', '#b660e0', '#1090e0', '#f59e0b', '#3db88b', '#008844', '#dc2626']
+/*
+  Het palet staat in `@lib/kleur`, samen met de berekening die bewijst dat elke
+  kleur erin leesbaar is. Wat hier stond kwam uit ClickUp, had geen enkele
+  kleur uit de huisstijl, en vijf van de negen waren als kolomnaam niet te
+  lezen. Kolommen die al een oude kleur dragen, houden die — de badge toont ze
+  nu wel leesbaar.
+*/
 
 /**
  * De kolommen van een bord, in één lijst bewerkt.
@@ -48,7 +55,7 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
   const add = () =>
     setRows((all) => [
       ...all,
-      { id: crypto.randomUUID(), name: '', color: PALETTE[all.length % PALETTE.length], kind: 'active' },
+      { id: crypto.randomUUID(), name: '', color: PALET[all.length % PALET.length], kind: 'active' },
     ])
 
   /** Kolommen die weg zouden gaan en nog taken hebben staan. */

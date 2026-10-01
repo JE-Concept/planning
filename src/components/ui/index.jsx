@@ -31,6 +31,7 @@ import {
   Spinner as DsSpinner,
   Textarea as DsTextarea,
 } from '@components/ds'
+import { badgeKleuren } from '@lib/kleur'
 
 /** De oude standaard was "secondary"; die van het systeem is "primary". */
 export const Button = forwardRef(function Button({ variant = 'secondary', size = 'md', ...rest }, ref) {
@@ -64,12 +65,25 @@ export function Field({ label, hint, children, className }) {
  * en zijn geen systeemtoon — maar zonder kleur valt ze terug op het systeem in
  * plaats van op een willekeurig grijs.
  */
+/**
+ * Een badge met een zelfgekozen kleur.
+ *
+ * De kleur komt uit de database — het team kiest ze voor een bordkolom, een
+ * merk of een label — en kan dus alles zijn. Daarom wordt de inkt hier
+ * uitgerekend en niet aangenomen: `badgeKleuren` neemt de inkt die op deze
+ * kleur leest, en verdiept de stille variant tot ze 4,5:1 haalt.
+ *
+ * Wat er stond was `var(--text-on-accent)` — altijd wit — op welke kleur dan
+ * ook. Op het oranje uit het oude palet gaf dat 2,15 en op het mintgroen 2,49:
+ * kolomnamen die je op het bord niet kon lezen. De stille variant was net zo
+ * erg, want die zette de kleur als tekst op 12% van zichzelf.
+ *
+ * Geen enkele kleur die al in de database staat hoeft hiervoor aangepast te
+ * worden; ze wordt alleen leesbaar getoond.
+ */
 export function Badge({ color, children, className, subtle = false, ...rest }) {
-  const style = color
-    ? subtle
-      ? { background: `${color}1f`, color, borderColor: 'transparent' }
-      : { background: color, color: 'var(--text-on-accent)', borderColor: 'transparent' }
-    : undefined
+  const kleuren = color ? badgeKleuren(color) : null
+  const style = kleuren ? (subtle ? kleuren.stil : kleuren.vol) : undefined
 
   return (
     <DsBadge className={className} style={style} {...rest}>
