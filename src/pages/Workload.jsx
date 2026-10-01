@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addDays, dayKey, startOfWeek } from '@lib/dates'
 import { periodKeys } from '@lib/time-math'
-import { Bar, EmptyState, Hex, IconButton, initialsOf } from '@components/ds'
+import { Avatar, Bar, EmptyState, IconButton } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { hours, shortDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
@@ -184,9 +184,7 @@ function Row({ r, todayKey, eventById }) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-hairline)' }}>
-        <Hex size={30} tone="ink">
-          {initialsOf(r.p)}
-        </Hex>
+        <Avatar profile={r.p} size={30} tone="ink" />
         <div style={{ minWidth: 0 }}>
           <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {r.p.fullName || r.p.email}

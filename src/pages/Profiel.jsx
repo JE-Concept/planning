@@ -97,7 +97,7 @@ export default function Profiel() {
         <section className="je-card" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-6)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
-              <Avatar profile={profile} size="xl" ring />
+              <Avatar profile={profile} size="xl" />
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                 <Button
                   size="sm"

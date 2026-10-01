@@ -471,19 +471,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
    staan ze nu hier — op dezelfde tokens.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ---------- Avatar ---------- */
-.je-avatar{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;border-radius:var(--radius-pill);background:var(--surface-3);color:var(--text-accent);font-family:var(--font-ui);font-weight:var(--fw-semibold);letter-spacing:.02em;overflow:hidden;object-fit:cover}
-.je-avatar--xs{width:20px;height:20px;font-size:9px}
-.je-avatar--sm{width:26px;height:26px;font-size:11px}
-.je-avatar--md{width:34px;height:34px;font-size:13px}
-.je-avatar--lg{width:44px;height:44px;font-size:15px}
-.je-avatar--xl{width:96px;height:96px;font-size:30px}
-.je-avatar--ring{box-shadow:0 0 0 2px var(--surface-1)}
+/* ---------- Avatar ----------
+   De zeshoek uit het logo, met de foto erin of de initialen. De maat komt van
+   het component (ook een los getal mag), hier staat alleen de vorm.
+
+   Twee geneste zeshoeken en geen box-shadow: een schaduw valt binnen een
+   clip-path weg, en bij een stapel overlappende avatars is dat randje het
+   enige dat ze scheidt. De buitenste is dus het randje, de binnenste het vlak.
+   ---------------------------------------------------------------------- */
+.je-avatar{display:inline-flex;flex:0 0 auto;clip-path:var(--clip-hex);box-sizing:border-box;background:var(--surface-1)}
+.je-avatar--ring{padding:2px}
+.je-avatar__vlak{display:flex;align-items:center;justify-content:center;width:100%;height:100%;clip-path:var(--clip-hex);font-family:var(--font-ui);font-weight:var(--fw-semibold);letter-spacing:.02em;line-height:1}
+.je-avatar__foto{width:100%;height:100%;object-fit:cover;display:block}
 
 .je-avatars{display:inline-flex}
-.je-avatars > *{margin-left:-6px}
+.je-avatars > *{margin-left:-5px}
 .je-avatars > *:first-child{margin-left:0}
-.je-avatars__rest{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);background:var(--surface-2);color:var(--text-2);font:var(--type-caption);font-size:9px;width:20px;height:20px;box-shadow:0 0 0 2px var(--surface-1)}
+.je-avatars__rest{display:inline-flex;align-items:center;justify-content:center;clip-path:var(--clip-hex);background:var(--surface-2);color:var(--text-2);font:var(--type-caption);font-size:9px;width:20px;height:20px}
 
 /* ---------- Spinner ---------- */
 .je-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border-subtle);border-top-color:var(--accent);border-radius:var(--radius-pill);animation:je-spin .7s linear infinite}

@@ -6,20 +6,7 @@ import { fromQuery } from '@lib/collections'
 import { AFDELINGEN } from '@lib/checklist-templates'
 import { PIPELINE, STEP_RULES, labelOf, toneOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
-import {
-  Badge,
-  Button,
-  Field,
-  Hex,
-  Icon,
-  IconButton,
-  Input,
-  Select,
-  Switch,
-  Tabs,
-  Tag,
-  initialsOf,
-} from '@components/ds'
+import { Avatar, Badge, Button, Field, Hex, Icon, IconButton, Input, Select, Switch, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 // De teksten van dit scherm komen met dit scherm mee en niet met de app;
 // zie `@lib/instellingen-teksten`.
@@ -286,9 +273,7 @@ function TeamTab() {
               borderTop: i ? '1px solid var(--border-hairline)' : 'none',
             }}
           >
-            <Hex size={34} tone="ink">
-              {initialsOf(m)}
-            </Hex>
+            <Avatar profile={m} size={34} tone="ink" />
             <div style={{ flex: 1, minWidth: 180 }}>
               <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{m.fullName || m.email}</div>
               <div className="je-muted-caption">{[m.email, ...(m.aliases ?? [])].join(' · ')}</div>
@@ -401,9 +386,7 @@ function TeamTab() {
               key={m.id}
               style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4) var(--space-6)', borderTop: i ? '1px solid var(--border-hairline)' : 'none' }}
             >
-              <Hex size={28} tone="muted">
-                {initialsOf(m)}
-              </Hex>
+              <Avatar profile={m} size={28} tone="muted" />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>{m.fullName || m.email}</div>
                 <div className="je-muted-caption" style={{ color: 'var(--text-3)' }}>

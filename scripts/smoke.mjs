@@ -1267,8 +1267,33 @@ await test('op je eigen profiel pas je je naam en je foto aan', async () => {
   zouden(bevat(zijbalk, 'Jasper H.'), `de nieuwe naam komt niet door: ${zijbalk}`)
 
   // En de foto uit de handtekening staat erbij zolang er geen eigen foto is.
-  const bronnen = await page.locator('img.je-avatar').evaluateAll((els) => els.map((e) => e.getAttribute('src')))
+  const bronnen = await page.locator('img.je-avatar__foto').evaluateAll((els) => els.map((e) => e.getAttribute('src')))
   zouden(bronnen.some((b) => (b ?? '').includes('/team/jasper.jpg')), `geen portret op het profiel: ${bronnen.join(', ')}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('iedereen staat in dezelfde zeshoek, met foto of met initialen', async () => {
+  /*
+    Er liepen twee vormen naast elkaar: de zeshoek uit het logo met initialen,
+    en een ronde avatar die een foto kon dragen. Dezelfde persoon had dus een
+    andere vorm naargelang het scherm. Nu is er één vorm, en de foto zit erin.
+  */
+  const page = await tabblad('/werklast')
+  const vlakken = await page.locator('.je-avatar').first().evaluate((el) => ({
+    buiten: getComputedStyle(el).clipPath,
+    binnen: getComputedStyle(el.querySelector('.je-avatar__vlak')).clipPath,
+  }))
+  for (const [waar, waarde] of Object.entries(vlakken)) {
+    zouden(/polygon/.test(waarde), `de avatar is ${waar} geen zeshoek: ${waarde}`)
+  }
+
+  // Wie een foto heeft toont hem; wie er geen heeft houdt zijn initialen, in
+  // precies dezelfde vorm.
+  const metFoto = await page.locator('.je-avatar img.je-avatar__foto').count()
+  const metLetters = await page.locator('.je-avatar .je-avatar__vlak:not(:has(img))').count()
+  zouden(metFoto > 0, 'nergens staat een foto in een avatar')
+  zouden(metLetters > 0, 'niemand valt meer terug op initialen; dan test dit niets')
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })

@@ -1,4 +1,4 @@
-import { Badge, Bar, Hex, initialsOf } from '@components/ds'
+import { Avatar, Badge, Bar } from '@components/ds'
 import { asDate, huidigeLocaleVan } from '@lib/dates'
 import { labelOf, toneOf } from '@lib/pipeline'
 import { planningVan } from '@lib/planning'
@@ -138,14 +138,9 @@ export function PlanningBadge({ event, compact = false }) {
 export function TeamHexes({ ids = [], profileById, size = 26 }) {
   return (
     <span style={{ display: 'flex', gap: 2 }}>
-      {ids.slice(0, 4).map((id) => {
-        const p = profileById[id]
-        return (
-          <Hex key={id} size={size} title={p?.fullName ?? p?.email}>
-            {initialsOf(p)}
-          </Hex>
-        )
-      })}
+      {ids.slice(0, 4).map((id) => (
+        <Avatar key={id} profile={profileById[id]} size={size} />
+      ))}
     </span>
   )
 }

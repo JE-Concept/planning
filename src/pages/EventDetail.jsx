@@ -4,18 +4,7 @@ import { startOfDay } from '@lib/dates'
 import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import { verwijderVraag } from '@lib/verwijdervraag'
-import {
-  Button,
-  Checkbox,
-  ConfirmButton,
-  Hex,
-  Icon,
-  IconButton,
-  Input,
-  Tabs,
-  Textarea,
-  initialsOf,
-} from '@components/ds'
+import { Avatar, Button, Checkbox, ConfirmButton, Icon, IconButton, Input, Tabs, Textarea } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
@@ -572,9 +561,7 @@ function TimeTab({ entries, totalS, days, profileById, eventTasks, ev }) {
               }}
             >
               <span className="je-muted-caption">{dayLabel(r.startedAt)}</span>
-              <Hex size={24} title={p?.fullName}>
-                {initialsOf(p)}
-              </Hex>
+              <Avatar profile={p} size={24} />
               <span style={{ font: 'var(--type-body-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.description || titleOf(r.taskId) || r.taskTitle || t('events.tijd.losse')}
               </span>

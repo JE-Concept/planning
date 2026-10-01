@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { daysUntil } from '@lib/dates'
 import { isTeLaat } from '@lib/laat'
-import { Badge, Checkbox, Hex, Icon, IconButton, initialsOf } from '@components/ds'
+import { Avatar, Badge, Checkbox, Icon, IconButton } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -138,9 +138,7 @@ export default function TaskRow({ task, event, first, open, onExpand, onDetails,
         {variant === 'mine' ? (
           <span style={{ font: 'var(--type-caption)', color: due.color, whiteSpace: 'nowrap' }}>{due.label}</span>
         ) : (
-          <Hex size={26} title={who?.fullName}>
-            {who ? initialsOf(who) : '—'}
-          </Hex>
+          <Avatar profile={who} size={26} />
         )}
         <IconButton
           icon={running ? 'square' : 'play'}

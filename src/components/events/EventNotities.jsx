@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDateTime } from '@lib/dates'
 import { kandidaten, zetVermelding, zoekopdrachtVan } from '@lib/vermelding'
-import { Button, Hex, IconButton, Textarea, initialsOf } from '@components/ds'
+import { Avatar, Button, IconButton, Textarea } from '@components/ds'
 import Notitietekst from '@components/common/Notitietekst'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -159,7 +159,7 @@ export default function EventNotities({ ev, compact = false }) {
             const magWeg = n.authorId === profile?.id || profile?.role === 'owner' || profile?.role === 'admin'
             return (
               <article key={n.id} className="je-notitie">
-                <Hex size={22}>{initialsOf(auteur ?? { fullName: n.authorName })}</Hex>
+                <Avatar profile={auteur ?? { fullName: n.authorName }} size={22} />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div className="je-notitie__kop">
                     <span className="je-notitie__wie">{auteur?.fullName ?? n.authorName}</span>
@@ -203,7 +203,7 @@ export default function EventNotities({ ev, compact = false }) {
                   kies(p)
                 }}
               >
-                <Hex size={20}>{initialsOf(p)}</Hex>
+                <Avatar profile={p} size={20} />
                 <span className="je-vermeldoptie__naam">{p.fullName || p.email}</span>
               </button>
             ))}

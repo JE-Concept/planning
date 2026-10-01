@@ -575,29 +575,57 @@ export function initials(fullName, email) {
   return (email ?? '?').slice(0, 2).toUpperCase()
 }
 
-export function Avatar({ profile, size = 'sm', ring = false, className, ...rest }) {
-  const label = profile?.fullName || profile?.email || 'Niet toegewezen'
-  const klassen = cn('je-avatar', `je-avatar--${size}`, ring && 'je-avatar--ring', className)
+/** De vaste maten. Een getal mag ook: dan is dat de zijde in pixels. */
+export const AVATAR_PX = { xs: 20, sm: 26, md: 34, lg: 44, xl: 96 }
+
+const AVATAR_TONEN = {
+  pale: { background: 'var(--navy-100)', color: 'var(--navy-800)' },
+  ink: { background: 'var(--navy-800)', color: 'var(--white)' },
+  muted: { background: 'var(--slate-100)', color: 'var(--slate-500)' },
+  quiet: { background: 'var(--navy-50)', color: 'var(--text-accent)' },
+}
+
+/**
+ * Een persoon, als zeshoek.
+ *
+ * Er liepen hier twee dingen naast elkaar: `Hex` met initialen — de vorm uit
+ * het logo — en een ronde `Avatar` die een foto kon dragen. Dus had dezelfde
+ * persoon een andere vorm naargelang het scherm, en wie een foto had zag die
+ * maar op de helft van de plekken.
+ *
+ * Nu is er één antwoord op "toon deze persoon": de zeshoek, met de foto erin
+ * als die er is en anders de initialen. De vorm blijft dus overal hetzelfde,
+ * ook voor wie nog geen foto heeft — dat is het verschil tussen een huisstijl
+ * en een plaatje.
+ *
+ * `ring` is een tweede zeshoek eromheen in de kleur van het vlak erachter. Een
+ * `box-shadow` kan hier niet: die valt binnen de `clip-path` weg, en juist bij
+ * een stapel overlappende avatars is dat randje het enige dat ze scheidt.
+ */
+export function Avatar({ profile, size = 'sm', ring = false, tone = 'pale', title, className, style, ...rest }) {
+  const label = title ?? (profile?.fullName || profile?.email || 'Niet toegewezen')
+  const px = typeof size === 'number' ? size : (AVATAR_PX[size] ?? AVATAR_PX.sm)
 
   // Het profiel wint; staat er niets, dan het portret uit de handtekening.
   const bron = profile?.avatarUrl || portretVan(profile?.email)
 
-  if (bron) {
-    return (
-      <img
-        src={bron}
-        alt={label}
-        title={label}
-        referrerPolicy="no-referrer"
-        className={klassen}
-        {...rest}
-      />
-    )
-  }
-
   return (
-    <span title={label} className={klassen} {...rest}>
-      {initials(profile?.fullName, profile?.email)}
+    <span
+      title={label}
+      className={cn('je-avatar', ring && 'je-avatar--ring', className)}
+      style={{ width: px, height: px, flex: `0 0 ${px}px`, ...style }}
+      {...rest}
+    >
+      <span
+        className="je-avatar__vlak"
+        style={{ fontSize: px >= 44 ? Math.round(px / 3) : px >= 34 ? 12 : px >= 26 ? 10 : 9, ...AVATAR_TONEN[tone] }}
+      >
+        {bron ? (
+          <img src={bron} alt={label} referrerPolicy="no-referrer" className="je-avatar__foto" />
+        ) : (
+          initials(profile?.fullName, profile?.email)
+        )}
+      </span>
     </span>
   )
 }

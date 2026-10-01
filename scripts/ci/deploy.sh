@@ -39,7 +39,31 @@ for poging in $(seq 1 "$POGINGEN"); do
   break
 done
 
-if grep -q 'serviceusage.googleapis.com.*403\|Permission denied to get service' "$log"; then
+# Een codebase die aan geheimen hangt (functions-mail, functions-meetings)
+# wordt door de CLI voorafgegaan door "ensuring … access to secret …": ze zet
+# zelf de leesrechten voor het runtime-account. Mag de uitrolsleutel dat niet,
+# dan breekt ze af vóór er één functie geüpload is — en dan staat er niets van
+# die codebase live terwijl het geheim gewoon bestaat. Dat is precies hoe de
+# mailverzender maanden niet gedraaid heeft.
+if grep -qi 'secretmanager.secrets.setIamPolicy\|access to secret' "$log" && grep -qi '403\|denied' "$log"; then
+  cat <<MSG >&2
+::error::Het geheim bestaat, maar de uitrolsleutel mag er geen leesrecht op uitdelen.
+::error::De Firebase CLI probeert het runtime-account toegang te geven tot de
+::error::geheimen van deze codebase, en dat vraagt secretmanager.secrets.setIamPolicy.
+::error::Geef de servicesleutel de rol "Secret Manager Admin":
+::error::
+::error::  gcloud projects add-iam-policy-binding $PROJECT \\
+::error::    --member serviceAccount:<firebase-adminsdk-…@$PROJECT.iam.gserviceaccount.com> \\
+::error::    --role roles/secretmanager.admin
+::error::
+::error::Of, enger: geef het runtime-account zelf alvast leesrecht op elk geheim,
+::error::dan is de stap hierboven een formaliteit:
+::error::
+::error::  gcloud secrets add-iam-policy-binding SMTP_URL --project $PROJECT \\
+::error::    --member serviceAccount:<nummer>-compute@developer.gserviceaccount.com \\
+::error::    --role roles/secretmanager.secretAccessor
+MSG
+elif grep -q 'serviceusage.googleapis.com.*403\|Permission denied to get service' "$log"; then
   cat <<'MSG' >&2
 ::error::De servicesleutel mag de Google-API's van dit project niet uitlezen.
 ::error::Ga naar Google Cloud → IAM, zoek de service account uit de sleutel

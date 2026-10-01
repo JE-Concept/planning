@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react'
 import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@lib/cn'
 import { formatDuration } from '@lib/format'
-import { portretVan } from '@lib/portret'
 import { periodKeys } from '@lib/time-math'
-import { Button, Hex, Icon, IconButton, Logotype, initialsOf } from '@components/ds'
+import { Avatar, Button, Icon, IconButton, Logotype } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -367,8 +366,6 @@ function SideTimer() {
   )
 }
 
-const portretBron = (profile) => profile?.avatarUrl || portretVan(profile?.email)
-
 function Me() {
   const { profile, logOut } = useAuth()
   const { t } = useTaal()
@@ -380,16 +377,8 @@ function Me() {
 
   return (
     <div className="je-side__me">
-      {/*
-        Je eigen gezicht als je er een hebt staan. Zonder foto blijft het de
-        hexagon met je initialen: dat is de vorm van het huis en niet een
-        tijdelijke invulling.
-      */}
-      {portretBron(profile) ? (
-        <img src={portretBron(profile)} alt="" className="je-avatar je-avatar--md" />
-      ) : (
-        <Hex size={34} tone="ink">{initialsOf(profile)}</Hex>
-      )}
+      {/* Je eigen gezicht; zonder foto dezelfde zeshoek met je initialen. */}
+      <Avatar profile={profile} size={34} tone="ink" />
       <button
         type="button"
         className="je-plainbtn"

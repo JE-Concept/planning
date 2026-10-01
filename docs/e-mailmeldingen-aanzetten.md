@@ -93,10 +93,48 @@ faalde dus óók toen het geheim er wél stond, en maandenlang zei de log
 nakijken, dan rolt hij uit en laat hij de uitrol zelf oordelen — die mag er wél
 bij.
 
-Wil je dat de log weer het exacte antwoord geeft, geef het account
-`firebase-adminsdk-…@je-planning.iam.gserviceaccount.com` dan de rol
-**Secret Manager Viewer** in [IAM](https://console.cloud.google.com/iam-admin/iam).
-Nodig is het niet.
+## Stap 3b — de uitrolsleutel mag het geheim ook uitdelen
+
+Dit is de stap die het langst over het hoofd gezien is, en de reden dat er
+maandenlang geen post vertrok terwijl `SMTP_URL` er al stond.
+
+De Firebase CLI doet vóór elke uitrol van een codebase met geheimen dit:
+
+```
+i  functions: ensuring …-compute@developer.gserviceaccount.com access to secret SMTP_URL.
+```
+
+Ze geeft het runtime-account dus zelf leesrecht op het geheim. Mag de
+uitrolsleutel dat niet, dan breekt ze af vóór er één functie geüpload is:
+
+```
+Error: Request to …/secrets/SMTP_URL:setIamPolicy had HTTP Error: 403,
+Permission 'secretmanager.secrets.setIamPolicy' denied
+```
+
+Eén van beide lost het op. In Google Cloud → IAM, of met de CLI:
+
+```
+# A — de uitrol mag het voortaan zelf
+gcloud projects add-iam-policy-binding je-planning \
+  --member serviceAccount:firebase-adminsdk-XXXXX@je-planning.iam.gserviceaccount.com \
+  --role roles/secretmanager.admin
+
+# B — of geef het runtime-account alvast leesrecht, dan is A niet nodig
+gcloud secrets add-iam-policy-binding SMTP_URL --project je-planning \
+  --member serviceAccount:NUMMER-compute@developer.gserviceaccount.com \
+  --role roles/secretmanager.secretAccessor
+gcloud secrets add-iam-policy-binding IMAP_URL --project je-planning \
+  --member serviceAccount:NUMMER-compute@developer.gserviceaccount.com \
+  --role roles/secretmanager.secretAccessor
+```
+
+`NUMMER` is het projectnummer; het staat in de foutmelding in de uitrollog.
+`scripts/ci/deploy.sh` herkent deze 403 en zet beide commando's in de log, met
+de echte namen ingevuld.
+
+Wil je bovendien dat de log het exacte antwoord geeft op "bestaat het geheim",
+geef dezelfde sleutel dan ook **Secret Manager Viewer**. Nodig is dat niet.
 
 Draai de go-live workflow of push naar `main`. In het logboek staat daarna
 ofwel de uitrol van `functions:mail`, ofwel de regel *"Geheim SMTP_URL bestaat
