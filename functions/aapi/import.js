@@ -29,7 +29,7 @@ import { brusselseDag, dagenTussen } from './tijd.js'
 
 /** De velden die uit de bron komen; verschilt er één, dan is de shift gewijzigd. */
 const BRONVELDEN = [
-  'aapiEmployeeId', 'establishmentName', 'locationName', 'rawLocationName',
+  'aapiEmployeeId', 'naam', 'establishmentName', 'locationName', 'rawLocationName',
   'statuut', 'dimonaType', 'planningType',
   'start', 'end', 'pauseMinutes',
   'defaultStart', 'defaultEnd', 'defaultPauseMinutes',
@@ -54,6 +54,18 @@ export function shiftUitBron(rij) {
   return {
     aapiPlanningId: rij.aapiPlanningId,
     aapiEmployeeId: rij.aapiEmployeeId,
+    /*
+      De naam staat ook op de shift en niet alleen op het medewerkerskaartje.
+      Firestore kan niet joinen, en een kalender van veertig blokjes wil geen
+      veertig losse opzoekingen — dezelfde reden waarom een taak de naam van
+      haar lijst meedraagt.
+
+      Het scherm leest hem toch via het kaartje wanneer die er is: shifts die
+      vóór deze regel geïmporteerd zijn dragen hem niet, en een ongewijzigde
+      rij wordt bij een herimport niet opnieuw geschreven. Zonder die omweg
+      zouden die voor altijd een GUID blijven tonen.
+    */
+    naam: rij.naam,
     establishmentName: rij.establishmentName,
     locationName: rij.afdeling,
     rawLocationName: rij.ruweAfdeling,

@@ -28,7 +28,7 @@ import { koppelShift } from '@data/aapi'
  * antwoord op "stond dat er altijd al zo in", en die vraag komt elke keer dat
  * iemand zegt dat hij iets anders afgesproken had.
  */
-export default function ShiftDetail({ shift, events = [], eventById = {}, onClose, onNaarDag }) {
+export default function ShiftDetail({ shift, naam, events = [], eventById = {}, onClose, onNaarDag }) {
   const { t } = useTaal()
   const toast = useToast()
   const [bezig, setBezig] = useState(false)
@@ -67,7 +67,7 @@ export default function ShiftDetail({ shift, events = [], eventById = {}, onClos
     <Drawer
       open
       onClose={onClose}
-      title={shift.naam || shift.aapiEmployeeId}
+      title={naam}
       subtitle={`${formatDate(shift.start)} · ${formatTime(shift.start)}–${formatTime(shift.end)}`}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>

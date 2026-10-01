@@ -14,10 +14,11 @@ import { useTaal } from '@context/TaalProvider'
  * weggelaten. "Er stond iemand en die is afgezegd" is informatie; een lege plek
  * is dat niet.
  */
-export default function ShiftBlok({ shift, eventNaam, onClick, compact = false }) {
+export default function ShiftBlok({ shift, naam, eventNaam, onClick, compact = false }) {
   const { t } = useTaal()
   const gedempt = !teltMee(shift)
   const aandacht = vraagtAandacht(shift)
+  const uren = `${formatTime(shift.start)}–${formatTime(shift.end)}`
 
   return (
     <button
@@ -26,12 +27,15 @@ export default function ShiftBlok({ shift, eventNaam, onClick, compact = false }
       className="je-shiftblok"
       data-gedempt={gedempt ? '' : undefined}
       style={{ '--afdeling': kleurVan(shift.locationName) }}
-      title={`${shift.naam ?? ''} · ${t(KOPPELING_TEKST[shift.linkStatus] ?? 'aapi.koppeling.nvt')}`}
+      title={`${naam} · ${uren} · ${t(KOPPELING_TEKST[shift.linkStatus] ?? 'aapi.koppeling.nvt')}`}
     >
-      <span className="je-shiftblok__uren">
-        {formatTime(shift.start)}–{formatTime(shift.end)}
-      </span>
-      <span className="je-shiftblok__naam">{shift.naam || shift.aapiEmployeeId}</span>
+      {/*
+        De naam bovenaan en de uren eronder. Andersom stond het eerst, en dat
+        leest verkeerd: je zoekt in deze kalender iemand, niet een uur. Pas als
+        je de naam gevonden hebt, wil je weten wanneer hij staat.
+      */}
+      <span className="je-shiftblok__naam">{naam}</span>
+      <span className="je-shiftblok__uren">{uren}</span>
       {compact ? null : (
         <span className="je-shiftblok__onder">
           <span>{t(STATUUT_TEKST[shift.statuut] ?? 'aapi.statuut.onbekend')}</span>

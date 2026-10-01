@@ -1184,11 +1184,18 @@ const uurOp = (datum, uur, minuut = 0) => {
   // En de gewone bistro, die niets met events te maken heeft.
   ['s-6', 'a-roeland', 'Roeland Kempeneers', 'vast', 'keuken', 11, 15, 15, false, { linkStatus: 'notApplicable', eventRef: null, linkScore: null }],
   ['s-7', 'a-jumana', 'Jumana Mhanawi', 'flexi', 'bar', 17, 23, 0, false, { linkStatus: 'notApplicable', eventRef: null, linkScore: null }],
-].forEach(([id, employeeId, naam, statuut, afdeling, van, tot, pauze, geannuleerd, koppeling]) =>
+].forEach(([id, employeeId, , statuut, afdeling, van, tot, pauze, geannuleerd, koppeling]) =>
   seedDoc('aapiShifts', id, {
     aapiPlanningId: id,
     aapiEmployeeId: employeeId,
-    naam,
+    /*
+      De naam staat hier met opzet níét op, hoewel de import hem er sinds kort
+      wel op schrijft. Live staan er shifts van vóór die regel, en een
+      ongewijzigde rij wordt bij een herimport niet opnieuw geschreven — dus
+      moet het scherm hem bij het medewerkerskaartje kunnen ophalen. Zette de
+      demo hem er wél op, dan toonde de demo namen waar live een GUID stond,
+      en precies dat is één keer gebeurd.
+    */
     statuut,
     establishmentName: 'Meer-Bistro Het Vinne',
     locationName: afdeling,

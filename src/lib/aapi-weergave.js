@@ -37,6 +37,21 @@ export const kleurVan = (afdeling) => AFDELINGSKLEUR[afdeling] ?? '#55637a'
  * geeft dan de sleutel terug — en "aapi.afdeling.terras" op een kalender is
  * erger dan gewoon "terras". Vandaar deze omweg.
  */
+/**
+ * De naam die bij een shift hoort.
+ *
+ * Eerst het medewerkerskaartje, dan wat er op de shift zelf staat, en pas als
+ * allerlei misgaat de GUID. Die volgorde is er met reden: de shifts die vóór
+ * het bestaan van het veld `naam` geïmporteerd zijn dragen er geen, en een
+ * herimport schrijft een ongewijzigde rij niet opnieuw — dus zouden die voor
+ * altijd een GUID tonen. Het kaartje is er wél, want dat wordt elke import
+ * aangeraakt.
+ */
+export function naamVan(shift, medewerkerOpId = {}) {
+  const kaartje = medewerkerOpId[shift?.aapiEmployeeId]?.displayName
+  return kaartje || shift?.naam || shift?.aapiEmployeeId || '—'
+}
+
 export function afdelingLabel(t, afdeling) {
   if (!afdeling) return '—'
   return AFDELINGEN.includes(afdeling) ? t(`aapi.afdeling.${afdeling}`) : afdeling

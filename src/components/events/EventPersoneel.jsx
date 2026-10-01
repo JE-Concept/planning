@@ -9,6 +9,7 @@ import {
   kleurVan,
   minutenVan,
   mogelijkVoor,
+  naamVan,
   samenvatting,
   standVan,
   urenTekst,
@@ -16,7 +17,7 @@ import {
 import { Badge, Button, Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
-import { koppelShift, useAapiShifts, useShiftsVanEvent } from '@data/aapi'
+import { koppelShift, useAapiMedewerkers, useAapiShifts, useShiftsVanEvent } from '@data/aapi'
 
 /**
  * Wie er op dit event staat, volgens AAPI.
@@ -45,6 +46,7 @@ export default function EventPersoneel({ event }) {
   const [bezig, setBezig] = useState(null)
 
   const { shifts } = useShiftsVanEvent(event?.id)
+  const { opId: medewerkerOpId } = useAapiMedewerkers()
 
   // De dagen die dit event raakt. Een event duurt één dag in JE Plan, maar de
   // opbouw kan daags ervoor beginnen — vandaar ook de dag ervoor.
@@ -119,6 +121,7 @@ export default function EventPersoneel({ event }) {
           <PersoneelRij
             key={s.aapiPlanningId}
             shift={s}
+            naam={naamVan(s, medewerkerOpId)}
             bezig={bezig === s.aapiPlanningId}
             actie={
               <Button
@@ -143,6 +146,7 @@ export default function EventPersoneel({ event }) {
             <PersoneelRij
               key={s.aapiPlanningId}
               shift={s}
+              naam={naamVan(s, medewerkerOpId)}
               bezig={bezig === s.aapiPlanningId}
               actie={
                 <Button
@@ -180,7 +184,7 @@ export default function EventPersoneel({ event }) {
  * als in de lijst met kandidaten past — en zodat er later een handmatig
  * toegevoegde kracht naast kan staan met zijn eigen knop.
  */
-function PersoneelRij({ shift, actie }) {
+function PersoneelRij({ shift, naam, actie }) {
   const { t } = useTaal()
   const stand = standVan(shift)
 
@@ -188,7 +192,7 @@ function PersoneelRij({ shift, actie }) {
     <div className="je-personeelrij" style={{ '--afdeling': kleurVan(shift.locationName) }}>
       <span className="je-personeelrij__streep" aria-hidden="true" />
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{shift.naam || shift.aapiEmployeeId}</div>
+        <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{naam}</div>
         <div className="je-muted-caption">
           {afdelingLabel(t, shift.locationName)}
           {' · '}

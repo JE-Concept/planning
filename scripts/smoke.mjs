@@ -1345,9 +1345,20 @@ await test('de planning uit AAPI staat in een kalender', async () => {
 
   const tekst = await inhoud(page)
   zouden(bevat(tekst, 'Planning'), 'de planningspagina opent niet')
+
+  /*
+    Namen en geen GUID's. Dat stond er live wél: de import schreef de naam
+    alleen op het medewerkerskaartje en het scherm las hem van de shift. De
+    demo zette hem met de hand op de shift en dekte de fout dus toe — nu doet
+    de demo het net als de import, en bewijst dit dat de opzoeking werkt.
+  */
   for (const wie of ['Jumana Mhanawi', 'Roeland Kempeneers']) {
     zouden(bevat(tekst, wie), `${wie} staat niet in de kalender: ${tekst.slice(0, 500)}`)
   }
+  zouden(
+    !/\b[0-9a-f]{8}-[0-9a-f]{4}-/.test(tekst),
+    `er staat een GUID op een kaartje in plaats van een naam: ${tekst.slice(0, 400)}`
+  )
   zouden(bevat(tekst, 'Flexi') && bevat(tekst, 'Zelfstandig'), 'de statuten staan er niet bij')
 
   // Een afgezegde shift blijft staan, gedempt en doorgestreept: "er stond

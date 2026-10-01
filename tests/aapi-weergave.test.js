@@ -5,6 +5,7 @@ import {
   kleurVan,
   minutenVan,
   mogelijkVoor,
+  naamVan,
   perDag,
   samenvatting,
   standVan,
@@ -36,6 +37,36 @@ const shift = (over = {}) => ({
   linkScore: 1,
   dag: '2026-10-25',
   ...over,
+})
+
+describe('de naam bij een shift', () => {
+  const kaartjes = { 'e-1': { aapiEmployeeId: 'e-1', displayName: 'Jumana Mhanawi' } }
+
+  it('komt van het medewerkerskaartje', () => {
+    expect(naamVan({ aapiEmployeeId: 'e-1' }, kaartjes)).toBe('Jumana Mhanawi')
+  })
+
+  /*
+    De shifts die vóór het veld `naam` geïmporteerd zijn, dragen er geen — en
+    een herimport schrijft een ongewijzigde rij niet opnieuw. Zonder het
+    kaartje erbij zouden die voor altijd een GUID tonen, en dat is precies wat
+    er live stond.
+  */
+  it('valt terug op wat er op de shift staat, en pas dan op de GUID', () => {
+    expect(naamVan({ aapiEmployeeId: 'onbekend', naam: 'Lore Lelièvre' }, kaartjes)).toBe('Lore Lelièvre')
+    expect(naamVan({ aapiEmployeeId: '84d70eee-d821-4331' }, kaartjes)).toBe('84d70eee-d821-4331')
+  })
+
+  // Het kaartje wint van wat er op de shift staat: wordt een naam rechtgezet,
+  // dan is dat daar gebeurd en niet op elke shift apart.
+  it('laat het kaartje voorgaan op de shift', () => {
+    expect(naamVan({ aapiEmployeeId: 'e-1', naam: 'JUMANA  MHANAWI' }, kaartjes)).toBe('Jumana Mhanawi')
+  })
+
+  it('valt nooit stil', () => {
+    expect(naamVan({}, {})).toBe('—')
+    expect(naamVan(null)).toBe('—')
+  })
 })
 
 describe('de stand van een shift', () => {

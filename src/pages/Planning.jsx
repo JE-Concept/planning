@@ -6,6 +6,7 @@ import {
   AFDELINGEN,
   afdelingLabel,
   kleurVan,
+  naamVan,
   perDag,
   teltMee,
   urenTekst,
@@ -19,7 +20,7 @@ import ShiftDetail from '@components/aapi/ShiftDetail'
 import PlanningImport from '@components/aapi/PlanningImport'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
-import { useAapiShifts } from '@data/aapi'
+import { useAapiMedewerkers, useAapiShifts } from '@data/aapi'
 import { useEvents } from '@data/events'
 
 /**
@@ -73,6 +74,8 @@ export default function Planning() {
   }, [anker, weergave])
 
   const { shifts, laadt } = useAapiShifts({ van, tot })
+  // De namen staan op het medewerkerskaartje; zie `naamVan`.
+  const { opId: medewerkerOpId } = useAapiMedewerkers()
   const { events, eventById } = useEvents()
 
   const eventsMetDag = useMemo(
@@ -82,9 +85,9 @@ export default function Planning() {
 
   const mensen = useMemo(() => {
     const op = new Map()
-    for (const s of shifts) if (s.aapiEmployeeId) op.set(s.aapiEmployeeId, s.naam || s.aapiEmployeeId)
+    for (const s of shifts) if (s.aapiEmployeeId) op.set(s.aapiEmployeeId, naamVan(s, medewerkerOpId))
     return [...op].sort((a, b) => a[1].localeCompare(b[1]))
-  }, [shifts])
+  }, [shifts, medewerkerOpId])
 
   const zichtbaar = useMemo(
     () =>
@@ -238,6 +241,7 @@ export default function Planning() {
                           <ShiftBlok
                             key={s.aapiPlanningId}
                             shift={s}
+                            naam={naamVan(s, medewerkerOpId)}
                             eventNaam={s.eventRef ? eventById[s.eventRef]?.name : null}
                             onClick={() => setOpen(s)}
                             compact={weergave === 'maand' && !narrow}
@@ -266,6 +270,7 @@ export default function Planning() {
       {open ? (
         <ShiftDetail
           shift={open}
+          naam={naamVan(open, medewerkerOpId)}
           events={eventsMetDag}
           eventById={eventById}
           onClose={() => setOpen(null)}
