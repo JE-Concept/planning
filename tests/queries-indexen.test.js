@@ -338,11 +338,12 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  // 69 sinds de AAPI-planning: vier vragen in `src/data/aapi.js` — de kalender,
-  // de shifts van één event, de medewerkers en de importhistoriek.
+  // 70 sinds de AAPI-planning: vijf vragen in `src/data/aapi.js` — de kalender,
+  // de shifts van één event, de medewerkers, de importhistoriek en de wachtrij
+  // van wat er per mail binnenkwam.
   // Die heeft geen samengestelde index nodig — één veld, één richting — en
   // staat daarom wel hier en niet in de tabel hierboven.
-  const QUERIES_IN_DE_APP = 69
+  const QUERIES_IN_DE_APP = 70
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

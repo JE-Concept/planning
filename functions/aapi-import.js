@@ -22,7 +22,9 @@
  * Het rekenwerk zelf staat in `aapi/` en weet van niets van dit alles.
  */
 import { FieldValue } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
+import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { logger } from 'firebase-functions'
 import { XlsxBron } from './aapi/bron.js'
 import { planImport } from './aapi/import.js'
@@ -36,7 +38,7 @@ const MAX_BYTES = 8 * 1024 * 1024
 /** Firestore schrijft hoogstens 500 bewerkingen per batch. */
 const PER_BATCH = 450
 
-export function maakAapiFuncties({ db, region }) {
+export function maakAapiFuncties({ db, region, meld = null }) {
   async function profielVan(uid, toegestaan) {
     if (!uid) throw new HttpsError('unauthenticated', 'Meld je eerst aan.')
     const snap = await db.collection('profiles').doc(uid).get()
@@ -88,6 +90,75 @@ export function maakAapiFuncties({ db, region }) {
     }
   }
 
+  /**
+   * Eén bestand erin, en alles wat daaruit volgt.
+   *
+   * Dit is wat de knop en de mail delen. Zonder deze functie zou de mailweg
+   * een tweede, bijna-gelijke import worden — en dan is het een kwestie van
+   * tijd tot er één van de twee een regel mist.
+   */
+  async function voerUit({ buffer, bron, bestandsnaam, dryRun = false, door = null }) {
+    let rijen
+    try {
+      rijen = await new XlsxBron(buffer, { naam: bron, bestandsnaam }).rijen()
+    } catch (err) {
+      throw new ImportFout(err.message)
+    }
+
+    const nu = new Date()
+    const loopId = db.collection('aapiImportRuns').doc().id
+
+    // Eerst het venster leren kennen, dan pas ophalen wat erbinnen valt.
+    const verkenning = planImport({ rijen, nu, importRunId: loopId, bron, bestandsnaam })
+    const [bestaandeShifts, events, medewerkers] = await Promise.all([
+      bestaandeShiftsIn(verkenning.venster),
+      eventsIn(verkenning.venster),
+      db.collection('aapiEmployees').get(),
+    ])
+
+    const plan = planImport({
+      rijen,
+      bestaandeShifts,
+      bestaandeMedewerkers: medewerkers.docs.map((d) => ({ id: d.id, ...d.data() })),
+      events,
+      nu,
+      importRunId: loopId,
+      bron,
+      bestandsnaam,
+    })
+
+    if (dryRun) return { dryRun: true, rapport: { ...plan.rapport, status: 'voorbeeld' } }
+
+    const bewerkingen = []
+    for (const m of plan.medewerkers) {
+      const ref = db.collection('aapiEmployees').doc(m.aapiEmployeeId)
+      bewerkingen.push((batch) => batch.set(ref, { ...m.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true }))
+    }
+    for (const s of [...plan.shifts, ...plan.verdwenen]) {
+      const ref = db.collection('aapiShifts').doc(s.aapiPlanningId)
+      bewerkingen.push((batch) => batch.set(ref, { ...s.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true }))
+    }
+    await schrijfInBatches(bewerkingen)
+
+    await db.collection('aapiImportRuns').doc(loopId).set({
+      ...plan.rapport,
+      startedAt: nu,
+      finishedAt: FieldValue.serverTimestamp(),
+      byId: door?.id ?? null,
+      byName: door?.naam ?? null,
+    })
+
+    logger.info('AAPI-planning geïmporteerd', {
+      loopId,
+      bron,
+      aangemaakt: plan.rapport.shiftsCreated,
+      bijgewerkt: plan.rapport.shiftsUpdated,
+      ongewijzigd: plan.rapport.shiftsUnchanged,
+    })
+
+    return { dryRun: false, importRunId: loopId, rapport: plan.rapport }
+  }
+
   const aapiImport = onCall(
     { region, memory: '512MiB', timeoutSeconds: 300 },
     async (request) => {
@@ -103,70 +174,18 @@ export function maakAapiFuncties({ db, region }) {
         throw new HttpsError('invalid-argument', 'Dit bestand is groter dan 8 MB; dat is geen planningsexport.')
       }
 
-      let rijen
       try {
-        rijen = await new XlsxBron(buffer, { naam: bron, bestandsnaam }).rijen()
-      } catch (err) {
-        throw new HttpsError('invalid-argument', err.message)
-      }
-
-      const nu = new Date()
-      const loopId = db.collection('aapiImportRuns').doc().id
-
-      let plan
-      try {
-        // Eerst het venster leren kennen, dan pas ophalen wat erbinnen valt.
-        const verkenning = planImport({ rijen, nu, importRunId: loopId, bron, bestandsnaam })
-        const [bestaandeShifts, events, medewerkers] = await Promise.all([
-          bestaandeShiftsIn(verkenning.venster),
-          eventsIn(verkenning.venster),
-          db.collection('aapiEmployees').get(),
-        ])
-
-        plan = planImport({
-          rijen,
-          bestaandeShifts,
-          bestaandeMedewerkers: medewerkers.docs.map((d) => ({ id: d.id, ...d.data() })),
-          events,
-          nu,
-          importRunId: loopId,
+        return await voerUit({
+          buffer,
           bron,
           bestandsnaam,
+          dryRun,
+          door: { id: request.auth.uid, naam: profiel.fullName ?? profiel.email ?? null },
         })
       } catch (err) {
         if (err instanceof ImportFout) throw new HttpsError('invalid-argument', err.message)
         throw err
       }
-
-      if (dryRun) return { dryRun: true, rapport: { ...plan.rapport, status: 'voorbeeld' } }
-
-      const bewerkingen = []
-      for (const m of plan.medewerkers) {
-        const ref = db.collection('aapiEmployees').doc(m.aapiEmployeeId)
-        bewerkingen.push((batch) => batch.set(ref, { ...m.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true }))
-      }
-      for (const s of [...plan.shifts, ...plan.verdwenen]) {
-        const ref = db.collection('aapiShifts').doc(s.aapiPlanningId)
-        bewerkingen.push((batch) => batch.set(ref, { ...s.patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true }))
-      }
-      await schrijfInBatches(bewerkingen)
-
-      await db.collection('aapiImportRuns').doc(loopId).set({
-        ...plan.rapport,
-        startedAt: nu,
-        finishedAt: FieldValue.serverTimestamp(),
-        byId: request.auth.uid,
-        byName: profiel.fullName ?? profiel.email ?? null,
-      })
-
-      logger.info('AAPI-planning geïmporteerd', {
-        loopId,
-        aangemaakt: plan.rapport.shiftsCreated,
-        bijgewerkt: plan.rapport.shiftsUpdated,
-        ongewijzigd: plan.rapport.shiftsUnchanged,
-      })
-
-      return { dryRun: false, importRunId: loopId, rapport: plan.rapport }
     }
   )
 
@@ -204,5 +223,70 @@ export function maakAapiFuncties({ db, region }) {
     return { ok: true }
   })
 
-  return { aapiImport, aapiKoppel }
+  /**
+   * De wachtrij die de mailophaler vult.
+   *
+   * ── Waarom via een wachtrij en niet rechtstreeks ──────────────────────
+   * `functions-mail` kan niets uit deze codebase importeren — aparte
+   * verpakking, aparte uitrol. Daar weten ze dus niet wat een planningsexport
+   * is; ze zien een xlsx en zetten hem neer. Hier staat de lezer, dus hier
+   * wordt pas beslist of het er een is.
+   *
+   * ── Waarom een afwijzing geen fout is ─────────────────────────────────
+   * Er komt van alles binnen op info@. Een xlsx die geen planning blijkt,
+   * krijgt `afgewezen` met de reden erbij en verder niets: geen melding, geen
+   * rood. De mail zelf staat gewoon in het postvak, zoals elke andere.
+   *
+   * Een planning die wél herkend wordt maar stukloopt, is wél een melding —
+   * dan was er iets te importeren en is het niet gebeurd.
+   */
+  const aapiMailImport = onDocumentCreated(
+    { region, document: 'aapiImportQueue/{id}', memory: '512MiB', timeoutSeconds: 300 },
+    async (event) => {
+      const rij = event.data?.data()
+      const ref = event.data?.ref
+      if (!rij || rij.status !== 'wachtend' || !rij.storagePath) return
+
+      let buffer
+      try {
+        ;[buffer] = await getStorage().bucket().file(rij.storagePath).download()
+      } catch (err) {
+        await ref.set({ status: 'mislukt', fout: `Bestand niet gevonden: ${err.message}` }, { merge: true })
+        return
+      }
+
+      try {
+        const { importRunId, rapport } = await voerUit({
+          buffer,
+          bron: 'xlsx-mail',
+          bestandsnaam: rij.fileName ?? null,
+          door: { id: null, naam: rij.van || 'mail' },
+        })
+        await ref.set({ status: 'klaar', importRunId, rapport, verwerktOp: FieldValue.serverTimestamp() }, { merge: true })
+
+        // Alleen melden wanneer er iets te melden valt. Een dagelijkse mail die
+        // niets veranderde, hoeft niemands telefoon te laten trillen.
+        const iets = rapport.shiftsCreated + rapport.shiftsUpdated + rapport.shiftsRemoved
+        if (meld && (iets > 0 || rapport.linksAmbiguous > 0)) {
+          await meld({ gelukt: true, rapport, bestandsnaam: rij.fileName ?? '' })
+        }
+      } catch (err) {
+        const herkend = !(err instanceof ImportFout)
+        await ref.set(
+          {
+            // Niet herkend als planning is geen storing maar een gewone mail
+            // met een bijlage. Een echte fout tijdens het importeren wél.
+            status: herkend ? 'mislukt' : 'afgewezen',
+            fout: err.message,
+            verwerktOp: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+        logger.warn('Planningsbijlage niet geïmporteerd', { pad: rij.storagePath, reden: err.message })
+        if (meld && herkend) await meld({ gelukt: false, fout: err.message, bestandsnaam: rij.fileName ?? '' })
+      }
+    }
+  )
+
+  return { aapiImport, aapiKoppel, aapiMailImport }
 }

@@ -48,6 +48,7 @@ export const COL = {
   aapiShifts: 'aapiShifts',
   aapiEmployees: 'aapiEmployees',
   aapiImportRuns: 'aapiImportRuns',
+  aapiImportQueue: 'aapiImportQueue',
   formules: 'formules',
   offertes: 'offertes',
   socialEvents: 'socialEvents',

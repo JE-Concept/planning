@@ -4,7 +4,7 @@ import { Badge, Button, Icon, Stat } from '@components/ds'
 import { EmptyState } from '@ui/index'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
-import { importeerPlanning, useImportRuns } from '@data/aapi'
+import { importeerPlanning, useImportRuns, useImportWachtrij } from '@data/aapi'
 
 /**
  * Een exportbestand uit AAPI inlezen.
@@ -19,6 +19,14 @@ import { importeerPlanning, useImportRuns } from '@data/aapi'
  * Dat die twee keer hetzelfde uitrekenen kan, is precies waarom het rekenwerk
  * een pure functie is (zie `functions/aapi/import.js`).
  */
+/** De kleur van een regel in de wachtrij. Afgewezen is grijs en niet rood. */
+const WACHTRIJ_TOON = {
+  wachtend: 'neutral',
+  klaar: 'success',
+  afgewezen: 'neutral',
+  mislukt: 'warning',
+}
+
 export default function PlanningImport({ onNaarDag }) {
   const { t } = useTaal()
   const toast = useToast()
@@ -31,6 +39,7 @@ export default function PlanningImport({ onNaarDag }) {
   const [sleept, setSleept] = useState(false)
 
   const { runs } = useImportRuns()
+  const { rijen: wachtrij } = useImportWachtrij()
 
   const kies = async (file) => {
     if (!file) return
@@ -129,6 +138,35 @@ export default function PlanningImport({ onNaarDag }) {
       </section>
 
       {rapport ? <Rapport rapport={rapport} definitief={Boolean(uitkomst)} onNaarDag={onNaarDag} /> : null}
+
+      {/*
+        Wat er per mail binnenkwam. Staat boven de historiek omdat het de vraag
+        beantwoordt die ernaartoe leidt: "ik heb het doorgestuurd, waar is het".
+        Een afgewezen bijlage staat er met de reden erbij — dat is geen storing,
+        maar wel het antwoord.
+      */}
+      {wachtrij.length ? (
+        <section className="je-panel">
+          <div className="je-panel__head">
+            <span className="je-eyebrow">{t('aapi.import.per_mail')}</span>
+          </div>
+          {wachtrij.map((rij) => (
+            <div key={rij.id} className="je-importrij">
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{rij.fileName}</div>
+                <div className="je-muted-caption">
+                  {rij.van}
+                  {rij.ontvangenOp ? ` · ${formatDateTime(rij.ontvangenOp)}` : ''}
+                  {rij.fout ? ` · ${rij.fout}` : ''}
+                </div>
+              </div>
+              <Badge tone={WACHTRIJ_TOON[rij.status] ?? 'neutral'}>
+                {t(`aapi.wachtrij.${rij.status}`)}
+              </Badge>
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       <section className="je-panel">
         <div className="je-panel__head">

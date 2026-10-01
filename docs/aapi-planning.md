@@ -1,0 +1,103 @@
+# De planning uit AAPI in JE Plan
+
+De personeelsplanning staat in AAPI (socsec.aapi.be). JE Plan leest ze mee: wie
+wanneer werkt, en bij Evenementen ook bij welk event dat hoort. JE Plan schrijft
+niets terug — AAPI blijft de baas over de planning.
+
+## Wat je ziet
+
+**Team → Planning** toont per dag wie er werkt, met de afdeling als kleur en het
+statuut (student, flexi, vast, zelfstandig, extern) erbij. Week of maand,
+filters op afdeling en persoon, en een filter voor "enkel wat aandacht vraagt".
+
+**Op een event** staat een blok *Personeel*: wie er komt, hoeveel uren samen (met
+de pauze eraf), de uitsplitsing per statuut, en daaronder wat er mogelijk nog bij
+hoort — shifts van die dag die nergens aan hangen of waar de koppeling twijfelde.
+
+Geannuleerde shifts blijven staan, doorgestreept. Shifts die uit AAPI verdwenen
+zijn ook, met het label *Niet meer in AAPI*. Ze verdwijnen nooit uit JE Plan:
+"er stond iemand en die is afgezegd" is informatie, een lege plek is dat niet.
+
+## Hoe de planning binnenkomt
+
+### Met de hand
+
+Exporteer in AAPI de **Planning Overview** als xlsx en zet hem neer op
+**Team → Planning → Import**. Je ziet eerst wat erin zit — aantal rijen, periode,
+aantal mensen, hoeveel shifts bij Evenementen — en pas als je op *Importeren*
+klikt, gebeurt er iets.
+
+Alleen beheerders kunnen importeren.
+
+### Per mail
+
+Stuur het bestand naar **info@jeconcept.be**. Elke xlsx-bijlage die daar
+binnenkomt wordt opgepakt; blijkt het geen planning te zijn, dan staat dat als
+*Geen planning* in de lijst en gebeurt er verder niets. Lukt het wel, dan krijgen
+de beheerders een melding — maar alleen wanneer er echt iets veranderde.
+
+Dit werkt pas wanneer `functions-mail` uitgerold is; zie
+`docs/e-mailmeldingen-aanzetten.md`.
+
+### Later: rechtstreeks uit AAPI
+
+De plek staat klaar (`functions/aapi/bron.js`): er hoeft alleen een `ApiBron`
+naast de `XlsxBron` te komen die dezelfde rijen levert. Al de rest — valideren,
+normaliseren, upserten, matchen, rapporteren — verandert dan niet.
+
+## Hetzelfde bestand twee keer importeren
+
+Dat mag, en er gebeurt niets. De shifts worden bijgehouden op de GUID die AAPI
+zelf meegeeft, dus een herimport herkent elke rij en laat ongewijzigde rijen met
+rust. Het rapport zegt dan netjes "43 ongewijzigd".
+
+Dat is ook wat je correcties beschermt: een koppeling die jij met de hand
+gelegd hebt, of waarvan je gezegd hebt dat ze bij geen event hoort, wordt **nooit**
+door een import overschreven.
+
+## Hoe een shift aan een event komt
+
+Alleen shifts in de afdeling **Evenementen**. Er wordt gekeken naar tijd, niet
+naar plaats: in AAPI staat alles onder *Meer-Bistro Het Vinne*, ook een event in
+Kortessem.
+
+Hoe scherp er gekeken kan worden, hangt van het event af:
+
+1. **Staat het draaiboek ingevuld**, dan is dat het venster — van de eerste regel
+   tot de laatste, dus van opbouw tot afbraak.
+2. **Anders een echt beginuur** op het event, plus zes uur.
+3. **Anders alleen de dag.** Dan telt alleen nog hoeveel events er die dag zijn.
+
+Rond elk venster komt drie uur speling voor en na. Scoort één event hoog genoeg
+en duidelijk hoger dan het volgende, dan wordt het gekoppeld. Anders komt de
+shift op *Welk event?* te staan, met de kandidaten en hun score, zodat jij er met
+één klik een kiest.
+
+Events in de verkoopfase (aanvraag, offerte maken, offerte verstuurd) doen niet
+mee: zolang er geen offerte aanvaard is, is er geen event maar een kans.
+
+**Staat het event er nog niet** op het moment van importeren, dan blijven die
+shifts ongekoppeld — en pakt de vólgende import ze alsnog op. Er wordt bijgehouden
+wanneer er voor het laatst naar gekeken is.
+
+## Als er iets misgaat
+
+- **"Dit bestand mist de kolom …"** — de export is niet compleet. Exporteer
+  opnieuw als *Planning Overview* met alle kolommen.
+- **Een rij overgeslagen** — het rapport zegt welke rij en waarom. De rest is wel
+  geïmporteerd.
+- **"Nieuwe kolommen in de export"** — AAPI heeft er iets bij gezet. Geen
+  probleem, het is genegeerd; laat het weten als het iets is wat we moeten lezen.
+- **Shifts die niemand koppelde** — filter de kalender op *enkel wat aandacht
+  vraagt*.
+
+## Wat hier bewust niet gebeurt
+
+- **JE Plan schrijft niets naar AAPI.** Twee systemen die allebei de waarheid
+  mogen schrijven, is hoe je niet meer weet welke klopt.
+- **De tijden, namen en statuten zijn hier niet aan te passen.** Die horen in
+  AAPI gewijzigd te worden; de volgende import neemt het over.
+- **Het weekrooster in JE Plan (`/rooster`) blijft bestaan.** Dat is met de hand
+  gemaakt en hangt aan profielen van deze tool; dit komt uit AAPI en hangt aan
+  mensen die hier meestal geen account hebben. Dat die twee op termijn dubbel
+  werk zijn, klopt — welke blijft, is een beslissing van wie ermee plant.

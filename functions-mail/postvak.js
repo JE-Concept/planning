@@ -4,6 +4,7 @@ import { defineSecret } from 'firebase-functions/params'
 import { logger } from 'firebase-functions'
 import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
+import { zetPlanningInDeWachtrij } from './planningbijlage.js'
 
 /**
  * De post van info@jeconcept.be ophalen, uit de postbus die lid is van die groep.
@@ -111,7 +112,19 @@ export const haalPostOp = onSchedule(
 
         for (const rauw of berichten) {
           const post = await simpleParser(rauw.source)
-          await bewaar(db, post, rauw.uid)
+          const naam = await bewaar(db, post, rauw.uid)
+          /*
+            Een xlsx-bijlage kan de planningsexport uit AAPI zijn. Die gaat naar
+            de opslag en in een wachtrij; of het er echt een is, bekijkt de
+            trigger in `functions/` — die heeft de lezer, deze codebase niet.
+
+            Mislukt dat, dan is dat geen reden om het ophalen van de post te
+            laten stranden: de mail zelf staat er al, en de wachtrij is te
+            herstellen door het bericht opnieuw te sturen.
+          */
+          await zetPlanningInDeWachtrij(db, post, naam).catch((err) =>
+            logger.error('Planningsbijlage kon niet weggeschreven worden', { naam, fout: err.message })
+          )
           hoogste = Math.max(hoogste, rauw.uid)
           gelezen += 1
         }
@@ -177,4 +190,8 @@ async function bewaar(db, post, uid) {
       },
       { merge: true }
     )
+
+  // De naam gaat terug: de wachtrij voor een planningsbijlage hangt eraan, en
+  // zo draait die niet opnieuw wanneer hetzelfde bericht nog eens langskomt.
+  return naam
 }

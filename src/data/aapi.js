@@ -145,3 +145,27 @@ export async function koppelShift({ planningId, eventId = null, status }) {
   const { data } = await aanroep({ planningId, eventId, status })
   return data
 }
+
+/**
+ * Wat er per mail binnenkwam, en wat ermee gebeurd is.
+ *
+ * Ook de afgewezen bijlagen staan erbij. Een xlsx die geen planning blijkt, is
+ * geen storing — maar wie zich afvraagt waarom de planning van gisteren er niet
+ * staat, hoort hier te kunnen zien dat het bestand wél aankwam en waarom er
+ * niets mee gebeurde.
+ */
+export function useImportWachtrij(max = 8) {
+  const [rijen, setRijen] = useState([])
+
+  useEffect(
+    () =>
+      onSnapshot(
+        query(col(COL.aapiImportQueue), orderBy('createdAt', 'desc')),
+        (snap) => setRijen(fromQuery(snap).slice(0, max)),
+        () => setRijen([])
+      ),
+    [max]
+  )
+
+  return { rijen }
+}

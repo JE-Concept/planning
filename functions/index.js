@@ -766,7 +766,56 @@ export const herhalingen = maakHerhalingen({ db, region: REGION })
   los van Firebase, zodat een test een hele import kan naspelen met het echte
   exportbestand — twee keer, om te bewijzen dat er de tweede keer niets gebeurt.
 */
-export const { aapiImport, aapiKoppel } = maakAapiFuncties({ db, region: REGION })
+export const { aapiImport, aapiKoppel, aapiMailImport } = maakAapiFuncties({
+  db,
+  region: REGION,
+  /*
+    Wat de import per mail oplevert, gaat naar de beheerders. Niet naar
+    iedereen: dit is een systeembericht over een koppeling, en wie de bar doet
+    heeft er niets aan.
+
+    Alleen wanneer er iets veranderde of iets een keuze vraagt — dat beslist de
+    trigger. Een dagelijkse mail die niets wijzigde, hoeft niemands telefoon te
+    laten trillen.
+  */
+  meld: async ({ gelukt, rapport, fout, bestandsnaam }) => {
+    const profielen = await alleProfielen()
+    const beheerders = profielen
+      .filter((p) => p.active !== false && (p.role === 'owner' || p.role === 'admin'))
+      .map((p) => p.id)
+    if (beheerders.length === 0) return
+
+    const regels = (taal) =>
+      gelukt
+        ? [
+            zeg(taal, 'push.planning_klaar', {
+              nieuw: rapport.shiftsCreated,
+              bij: rapport.shiftsUpdated,
+              weg: rapport.shiftsRemoved,
+            }),
+            ...(rapport.linksAmbiguous
+              ? [zeg(taal, 'push.planning_twijfel', { aantal: rapport.linksAmbiguous })]
+              : []),
+          ]
+        : [fout]
+
+    await verstuur({
+      soort: 'systeem',
+      kandidaten: beheerders,
+      profielen,
+      push: (taal) => ({
+        title: zeg(taal, gelukt ? 'push.planning' : 'push.planning_mislukt'),
+        body: regels(taal).join(' '),
+        url: '/planning?tab=import',
+        tag: 'aapi-planning',
+      }),
+      mail: (taal) => ({
+        onderwerp: zeg(taal, 'mail.planning.onderwerp'),
+        tekst: [bestandsnaam, '', ...regels(taal), '', `${APP}/#/planning?tab=import`].join('\n'),
+      }),
+    })
+  },
+})
 
 /**
  * Een binnengekomen mail aan het juiste event hangen.

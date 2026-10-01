@@ -315,6 +315,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    /*
+      De wachtrij van bijlagen die per mail binnenkwamen.
+
+      Lezen mag het team, zodat op het importscherm te zien is wat er is
+      binnengekomen en wat ermee gebeurd is — ook wanneer het niets werd.
+      Schrijven doet alleen de mailophaler, met beheerdersrechten.
+    */
+    match /aapiImportQueue/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
     match /socialEvents/{id} {
       /*
         Een medewerker leest alleen de events waarop hij zelf staat.

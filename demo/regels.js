@@ -76,6 +76,7 @@ export const REGELS = {
   aapiShifts:     { lezen: isTeam, schrijven: () => false },
   aapiEmployees:  { lezen: isTeam, schrijven: () => false },
   aapiImportRuns: { lezen: isTeam, schrijven: () => false },
+  aapiImportQueue: { lezen: isTeam, schrijven: () => false },
 
   socialEvents: {
     lezen: (rol, ctx) =>

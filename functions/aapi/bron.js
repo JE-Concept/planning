@@ -41,9 +41,11 @@ export class XlsxBron {
   }
 }
 
-/** Herkent of een bijlage voor ons bedoeld is; zie fase 2 (de mailophaler). */
-export function lijktOpPlanning(bestandsnaam, contentType) {
-  const naam = String(bestandsnaam ?? '').toLowerCase()
-  const type = String(contentType ?? '').toLowerCase()
-  return naam.endsWith('.xlsx') || type.includes('spreadsheetml')
-}
+/*
+  Of een mailbijlage voor ons bedoeld is, wordt níét hier beslist maar in
+  `functions-mail/planning-herkennen.js`. Die codebase ziet de bijlage als
+  eerste en kan deze niet importeren; één herkenner op twee plaatsen zou
+  betekenen dat ze uit elkaar lopen. Wat hier gebeurt is het échte antwoord:
+  staat het blad "Data" erin met de kolommen die nodig zijn? Zo niet, dan geeft
+  de parser een fout en heet de bijlage "geen planning".
+*/

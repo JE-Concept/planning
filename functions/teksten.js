@@ -33,6 +33,23 @@ const TEKSTEN = {
     en: 'No mail fetched for {uren} hours.',
   },
   'push.systeem_mail_een': { nl: '{aantal} mail is niet vertrokken.', en: '{aantal} message did not go out.' },
+
+  // ── De planning die per mail binnenkwam ───────────────────────────────
+  'push.planning': { nl: 'De planning is binnen', en: 'The planning is in' },
+  'push.planning_klaar': {
+    nl: '{nieuw} nieuw, {bij} bijgewerkt, {weg} weg uit AAPI.',
+    en: '{nieuw} new, {bij} updated, {weg} gone from AAPI.',
+  },
+  'push.planning_twijfel_een': {
+    nl: 'Eén shift bij Evenementen vraagt nog welk event het is.',
+    en: 'One shift in Events still needs to know which event it is.',
+  },
+  'push.planning_twijfel_meer': {
+    nl: '{aantal} shifts bij Evenementen vragen nog welk event het is.',
+    en: '{aantal} shifts in Events still need to know which event they are.',
+  },
+  'push.planning_mislukt': { nl: 'De planning uit de mail is niet gelukt', en: 'The planning from the mail failed' },
+  'mail.planning.onderwerp': { nl: 'JE Plan — de planning uit AAPI', en: 'JE Plan — the planning from AAPI' },
   'push.systeem_mail_meer': { nl: '{aantal} mails zijn niet vertrokken.', en: '{aantal} messages did not go out.' },
   'mail.systeem.onderwerp': {
     nl: 'JE Plan: er is iets blijven hangen',

@@ -1235,3 +1235,35 @@ seedDoc('aapiImportRuns', 'ir-1', {
   byId: 'u-jasper',
   byName: 'Jasper Hansen',
 })
+
+/*
+  Wat er per mail binnenkwam. Twee regels, want beide uitkomsten horen zichtbaar
+  te zijn: een export die gelezen is, en een xlsx die geen planning bleek. Dat
+  tweede is geen storing maar wél het antwoord op "ik heb het doorgestuurd, waar
+  is het".
+*/
+seedDoc('aapiImportQueue', 'q-1', {
+  status: 'klaar',
+  storagePath: 'aapi-import/q-1.xlsx',
+  fileName: 'Planning Overview.xlsx',
+  bytes: 15205,
+  van: 'Jasper Hansen <jasper@kenjeklanten.be>',
+  onderwerp: 'Planning oktober',
+  ontvangenOp: dag(-1),
+  createdAt: dag(-1),
+  importRunId: 'ir-1',
+  verwerktOp: dag(-1),
+})
+
+seedDoc('aapiImportQueue', 'q-2', {
+  status: 'afgewezen',
+  storagePath: 'aapi-import/q-2.xlsx',
+  fileName: 'Omzet september.xlsx',
+  bytes: 8800,
+  van: 'boekhouding@example.be',
+  onderwerp: 'Cijfers september',
+  ontvangenOp: dag(-3),
+  createdAt: dag(-3),
+  fout: 'Dit bestand heeft geen blad "Data". Gevonden: Blad1.',
+  verwerktOp: dag(-3),
+})

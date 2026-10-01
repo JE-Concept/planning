@@ -1382,6 +1382,27 @@ await test('een shift opent met zijn ruwe AAPI-gegevens en koppelacties', async 
   await page.close()
 })
 
+await test('het importscherm zegt wat er per mail binnenkwam', async () => {
+  /*
+    Een xlsx die geen planning blijkt, is geen storing — maar wie zich afvraagt
+    waarom de planning van gisteren er niet staat, hoort te zien dat het bestand
+    wél aankwam en waarom er niets mee gebeurde.
+  */
+  const page = await tabblad('/planning?tab=import')
+  await page.waitForTimeout(1200)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Per mail binnengekomen'), `de wachtrij staat er niet: ${tekst.slice(0, 400)}`)
+  zouden(bevat(tekst, 'Planning Overview.xlsx'), 'de gelezen export staat er niet bij')
+  zouden(bevat(tekst, 'Geen planning'), 'een afgewezen bijlage wordt niet als zodanig getoond')
+  zouden(bevat(tekst, 'geen blad "Data"'), 'de reden van de afwijzing staat er niet bij')
+
+  // En de historiek van wat er echt geïmporteerd is.
+  zouden(bevat(tekst, 'Vorige keren'), 'de importhistoriek staat er niet')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('op een event staat wie er komt werken', async () => {
   const page = await tabblad('/events/t-trouw')
   await page.waitForTimeout(1200)
