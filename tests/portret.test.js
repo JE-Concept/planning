@@ -16,10 +16,13 @@ describe('het portret bij een adres', () => {
     expect(portretVan('maxine@jeconcept.be')).toBe('/team/maxine.jpg')
   })
 
-  // Elke werkt onder twee domeinen; haar profiel staat op het ene en haar
-  // handtekening op het andere.
-  it('kent Elke ook op kenjeklanten.be', () => {
+  // De ploeg werkt onder twee domeinen door elkaar: Elkes handtekening staat op
+  // jeconcept.be en haar profiel op kenjeklanten.be, en Maxine zit helemaal op
+  // kenjeklanten.be. Beide tellen.
+  it('kent beide huisdomeinen', () => {
     expect(portretVan('elke@kenjeklanten.be')).toBe('/team/elke.jpg')
+    expect(portretVan('maxine@kenjeklanten.be')).toBe('/team/maxine.jpg')
+    expect(portretVan('jasper@kenjeklanten.be')).toBe('/team/jasper.jpg')
   })
 
   it('trekt zich niets aan van hoofdletters of spaties', () => {

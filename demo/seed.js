@@ -21,7 +21,7 @@ const MENSEN = [
   ['u-lotte',    'lotte@barvue.be',           'Lotte Vrijsen',     'staff',  true, 'zaal'],
   ['u-sam',      'sam@barvue.be',             'Sam Deckers',       'staff',  true, 'keuken'],
   // Vertrokken, maar hun werk staat er nog — dus gearchiveerd, niet verwijderd.
-  ['u-maxine',   'maxine@jeconcept.be',       'Maxine Vanbrabant', 'member', false],
+  ['u-maxine',   'maxine@kenjeklanten.be',    'Maxine Vanbrabant', 'member', false],
   ['u-aicha',    'aicha@jeconcept.be',        'Aïcha Van Roy',     'member', false],
 ]
 MENSEN.forEach(([id, email, fullName, role, active, afdeling], i) =>

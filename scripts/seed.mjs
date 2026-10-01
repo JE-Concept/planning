@@ -107,7 +107,7 @@ async function main() {
       meetingViewers: [
         'jasper@kenjeklanten.be',
         'anneleen@kenjeklanten.be',
-        'maxine@jeconcept.be',
+        'maxine@kenjeklanten.be',
         'elke@kenjeklanten.be',
       ],
       updatedAt: FieldValue.serverTimestamp(),
@@ -438,7 +438,7 @@ const HERHALINGEN = [
   },
   {
     id: 'je-nieuwsbrief',
-    email: process.env.NEWSLETTER_EMAIL ?? 'maxine@jeconcept.be',
+    email: process.env.NEWSLETTER_EMAIL ?? 'maxine@kenjeklanten.be',
     titel: 'JE Nieuwsbrief',
     omschrijving: 'De maandelijkse nieuwsbrief van JE Concept opstellen en versturen.',
     doel: 'taak',
@@ -462,6 +462,37 @@ const HERHALINGEN = [
   },
 ]
 
+/**
+ * Een uitnodiging voor wie er nog niet is.
+ *
+ * Een herhaling hangt aan een persoon, en een persoon bestaat pas nadat hij
+ * zich één keer aangemeld heeft. Dat liep stil op elkaar te wachten: de seed
+ * meldde elke uitrol "overgeslagen, heeft nog geen profiel", en er stond
+ * nergens wat iemand daaraan moest doen.
+ *
+ * Nu zet de seed meteen de uitnodiging klaar. Die is wat van een Google-login
+ * een profiel maakt (zie `ensureProfile`), dus zodra zij zich aanmeldt bestaat
+ * ze, en de volgende uitrol hangt haar herhaling eraan. `create` en geen `set`:
+ * een bestaande uitnodiging met een andere rol erin mag dit niet overschrijven.
+ */
+async function nodigUit(email, rol = 'member') {
+  const sleutel = email.trim().toLowerCase()
+  try {
+    await db.collection('invites').doc(sleutel).create({
+      email: sleutel,
+      role: rol,
+      department: null,
+      invitedBy: null,
+      createdAt: FieldValue.serverTimestamp(),
+    })
+    aangemaakt.push(`uitnodiging ${sleutel}`)
+    return true
+  } catch {
+    // Bestaat al — dan staat ze er dus, en hoeft er niets te gebeuren.
+    return false
+  }
+}
+
 async function seedHerhalingen() {
   for (const herhaling of HERHALINGEN) {
     const { id, email, ...velden } = herhaling
@@ -470,7 +501,13 @@ async function seedHerhalingen() {
 
     const profiel = await db.collection('profiles').where('email', '==', email.toLowerCase()).limit(1).get()
     if (profiel.empty) {
-      console.log(`Herhaling overgeslagen: ${email} heeft nog geen profiel (${velden.titel}).`)
+      const nieuw = await nodigUit(email)
+      console.log(
+        `Herhaling overgeslagen: ${email} heeft nog geen profiel (${velden.titel}). `
+        + (nieuw
+          ? 'De uitnodiging staat klaar — zodra zij zich aanmeldt, komt de herhaling erbij.'
+          : 'De uitnodiging stond er al; zij moet zich nog één keer aanmelden.')
+      )
       continue
     }
 
