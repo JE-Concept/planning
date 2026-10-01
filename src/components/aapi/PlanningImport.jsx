@@ -184,13 +184,17 @@ export default function PlanningImport({ onNaarDag }) {
                   {run.startedAt ? formatDateTime(run.startedAt) : '—'}
                 </div>
                 <div className="je-muted-caption">
+                  {t(run.soort === 'personeel' ? 'aapi.import.soort.personeel' : 'aapi.import.soort.planning')}
+                  {' · '}
                   {t(`aapi.import.bron.${run.source}`)}
                   {run.fileName ? ` · ${run.fileName}` : ''}
                   {run.byName ? ` · ${t('aapi.import.door', { wie: run.byName })}` : ''}
                 </div>
               </div>
               <span className="je-muted-caption">
-                {run.shiftsCreated}+ / {run.shiftsUpdated}~ / {run.shiftsUnchanged}=
+                {run.soort === 'personeel'
+                  ? `${run.employeesCreated}+ / ${run.employeesUpdated}~ / ${run.employeesUnchanged}=`
+                  : `${run.shiftsCreated}+ / ${run.shiftsUpdated}~ / ${run.shiftsUnchanged}=`}
               </span>
               <Badge tone={run.status === 'ok' ? 'success' : 'warning'}>{run.status}</Badge>
             </div>
@@ -216,6 +220,31 @@ function Rapport({ rapport, definitief, onNaarDag }) {
         <span className="je-eyebrow">{definitief ? t('aapi.import.klaar') : t('aapi.import.voorbeeld')}</span>
       </div>
 
+      {/*
+        De personeelslijst telt mensen, de planning telt shifts. Eén rij cijfers
+        die voor allebei moet dienen, zegt voor allebei de helft.
+      */}
+      {rapport.soort === 'personeel' ? (
+        <>
+          <div className="je-importcijfers">
+            <Stat label={t('aapi.import.rijen')} value={String(rapport.rowsRead)} />
+            <Stat label={t('aapi.import.nieuw')} value={String(rapport.employeesCreated)} />
+            <Stat label={t('aapi.import.bijgewerkt')} value={String(rapport.employeesUpdated)} />
+            <Stat label={t('aapi.import.ongewijzigd')} value={String(rapport.employeesUnchanged)} />
+            <Stat label={t('aapi.import.herkend')} value={String(rapport.employeesMatched)} />
+          </div>
+          {/*
+            Wat er in het bestand stond en met opzet niet overgenomen is. Dit
+            hoort in het rapport en niet alleen in de code: wie het uploadt mag
+            weten wat ermee gebeurd is — zeker bij dít bestand.
+          */}
+          {rapport.weggelaten?.length ? (
+            <p className="je-muted-caption" style={{ marginTop: 'var(--space-4)' }}>
+              <Icon name="lock" size={14} /> {t('aapi.import.weggelaten', { velden: rapport.weggelaten.join(', ') })}
+            </p>
+          ) : null}
+        </>
+      ) : (
       <div className="je-importcijfers">
         <Stat label={t('aapi.import.rijen')} value={String(rapport.rowsRead)} />
         <Stat label={t('aapi.import.periode')} value={periode} />
@@ -228,6 +257,7 @@ function Rapport({ rapport, definitief, onNaarDag }) {
         <Stat label={t('aapi.import.gekoppeld')} value={String(rapport.linksAuto)} />
         <Stat label={t('aapi.import.twijfel')} value={String(rapport.linksAmbiguous)} />
       </div>
+      )}
 
       {/*
         Een kolom die erbij gekomen is, is geen fout maar wel iets wat iemand

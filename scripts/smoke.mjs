@@ -1693,6 +1693,27 @@ await test('op een eventkaart staat één gezicht: dat van de verantwoordelijke'
   await page.close()
 })
 
+await test('de ploeg uit AAPI staat erbij, zonder wat er niet hoort', async () => {
+  /*
+    De personeelslijst van AAPI draagt van iedereen het rijksregisternummer,
+    het rekeningnummer en het thuisadres. Daarvan komt niets mee: het heeft in
+    een planningstool geen functie, en elke kopie is er een die ooit ergens
+    belandt waar niemand hem gezocht heeft. Wat wél meekomt is waarmee je
+    iemand inplant en bereikt.
+  */
+  const page = await tabblad('/medewerkers')
+  await page.waitForTimeout(1200)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'In dienst volgens AAPI'), `de ploeg uit AAPI staat er niet: ${tekst.slice(0, 400)}`)
+  zouden(bevat(tekst, 'Jumana Mhanawi'), 'de namen uit AAPI staan er niet bij')
+  // Waarmee je iemand bereikt als hij niet komt opdagen.
+  zouden(bevat(tekst, '+32 477'), 'het telefoonnummer staat er niet bij')
+  zouden(bevat(tekst, '@example.be'), 'het e-mailadres staat er niet bij')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de medewerkers staan onder Team, met waar ze staan', async () => {
   const page = await tabblad('/medewerkers')
   const tekst = await inhoud(page)

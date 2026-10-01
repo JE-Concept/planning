@@ -28,6 +28,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { logger } from 'firebase-functions'
 import { XlsxBron } from './aapi/bron.js'
 import { planImport } from './aapi/import.js'
+import { herkenBlad, planPersoneel } from './aapi/personeel.js'
 import { ImportFout } from './aapi/parser.js'
 import { brusselseDag } from './aapi/tijd.js'
 import { komtInAanmerking } from './aapi/matcher.js'
@@ -105,6 +106,20 @@ export function maakAapiFuncties({ db, region, meld = null }) {
       throw new ImportFout(err.message)
     }
 
+    /*
+      Eén uploadvak en één mailadres voor beide bestanden: de tool kijkt zelf
+      wat ze gekregen heeft. Dat scheelt een keuzelijst waarin iemand zich
+      vergist, en het maakt de mailweg vanzelf geschikt voor allebei.
+    */
+    const soort = herkenBlad(rijen)
+    if (!soort) {
+      throw new ImportFout(
+        'Dit blad is geen planningsexport en geen personeelslijst. '
+        + 'Een planning heeft de kolommen Planning Id en Start Datetime; een personeelslijst Naam en Dimona type.'
+      )
+    }
+    if (soort === 'personeel') return voerPersoneelUit({ rijen, bron, bestandsnaam, dryRun, door })
+
     const nu = new Date()
     const loopId = db.collection('aapiImportRuns').doc().id
 
@@ -157,6 +172,59 @@ export function maakAapiFuncties({ db, region, meld = null }) {
     })
 
     return { dryRun: false, importRunId: loopId, rapport: plan.rapport }
+  }
+
+  /**
+   * De personeelslijst: wie er werkt, niet wanneer.
+   *
+   * Dezelfde vorm als hierboven — een pure som en daaromheen het wegschrijven —
+   * maar met een eigen rekenkern, want het is een ander bestand met een andere
+   * sleutel. Wat er wél en níét uit overgenomen wordt, en waarom, staat in
+   * `aapi/personeel.js`.
+   */
+  async function voerPersoneelUit({ rijen, bron, bestandsnaam, dryRun, door }) {
+    const nu = new Date()
+    const loopId = db.collection('aapiImportRuns').doc().id
+    const bestaand = await db.collection('aapiEmployees').get()
+
+    const plan = planPersoneel({
+      rijen,
+      bestaandeMedewerkers: bestaand.docs.map((d) => ({ id: d.id, ...d.data() })),
+      nu,
+      importRunId: loopId,
+      bron,
+      bestandsnaam,
+    })
+
+    if (dryRun) return { dryRun: true, soort: 'personeel', rapport: { ...plan.rapport, status: 'voorbeeld' } }
+
+    await schrijfInBatches(
+      plan.mutaties.map((m) => (batch) =>
+        batch.set(
+          db.collection('aapiEmployees').doc(m.id),
+          { ...m.patch, updatedAt: FieldValue.serverTimestamp() },
+          { merge: true }
+        )
+      )
+    )
+
+    await db.collection('aapiImportRuns').doc(loopId).set({
+      ...plan.rapport,
+      startedAt: nu,
+      finishedAt: FieldValue.serverTimestamp(),
+      byId: door?.id ?? null,
+      byName: door?.naam ?? null,
+    })
+
+    logger.info('AAPI-personeelslijst geïmporteerd', {
+      loopId,
+      bron,
+      aangemaakt: plan.rapport.employeesCreated,
+      bijgewerkt: plan.rapport.employeesUpdated,
+      ongewijzigd: plan.rapport.employeesUnchanged,
+    })
+
+    return { dryRun: false, soort: 'personeel', importRunId: loopId, rapport: plan.rapport }
   }
 
   const aapiImport = onCall(
@@ -266,8 +334,8 @@ export function maakAapiFuncties({ db, region, meld = null }) {
 
         // Alleen melden wanneer er iets te melden valt. Een dagelijkse mail die
         // niets veranderde, hoeft niemands telefoon te laten trillen.
-        const iets = rapport.shiftsCreated + rapport.shiftsUpdated + rapport.shiftsRemoved
-        if (meld && (iets > 0 || rapport.linksAmbiguous > 0)) {
+        const iets = (rapport.shiftsCreated ?? 0) + (rapport.shiftsUpdated ?? 0) + (rapport.shiftsRemoved ?? 0)
+        if (meld && rapport.soort !== 'personeel' && (iets > 0 || rapport.linksAmbiguous > 0)) {
           await meld({ gelukt: true, rapport, bestandsnaam: rij.fileName ?? '' })
         }
       } catch (err) {

@@ -59,6 +59,16 @@ export function koppenVan(rij) {
 
 const lees = (rij, koppen, naam) => inEenAdem(rij[koppen[naam.toLowerCase()]])
 
+/*
+  De cel zoals ze er staat, zonder de spaties op te ruimen.
+
+  `rawName` bestaat om te kunnen nakijken wat AAPI écht schreef — "Herman  Van
+  Ormelingen" met twee spaties, "ANNELEEN COENEN" in hoofdletters. Wie dat veld
+  langs `inEenAdem` haalt, bewaart een half opgeruimde waarde die geen van beide
+  is, en dan is de vraag "stond dat er altijd al zo" niet meer te beantwoorden.
+*/
+const leesRuw = (rij, koppen, naam) => String(rij[koppen[naam.toLowerCase()]] ?? '')
+
 /**
  * Het blad tot shifts.
  *
@@ -113,7 +123,7 @@ export function parseBlad(rijen) {
       continue
     }
 
-    const ruweNaam = lees(rij, koppen, 'Employee Name')
+    const ruweNaam = leesRuw(rij, koppen, 'Employee Name')
     const ruweAfdeling = lees(rij, koppen, 'Location Name')
     const planningType = lees(rij, koppen, 'Planning Type')
     const dimonaType = lees(rij, koppen, 'Dimona Type')

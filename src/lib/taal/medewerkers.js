@@ -43,6 +43,13 @@ export default {
   'medewerkers.nergens': { nl: 'Staat nergens ingepland', en: 'Not scheduled anywhere' },
   'medewerkers.en_meer': { nl: 'en nog {aantal}', en: 'and {aantal} more' },
 
+  'medewerkers.uit_aapi': { nl: 'In dienst volgens AAPI', en: 'Employed according to AAPI' },
+  'medewerkers.uit_aapi_uitleg': {
+    nl: 'Uit de personeelslijst van AAPI. Alleen om te lezen — wijzigen doe je daar. Hier staat wat je nodig hebt om iemand in te plannen en te bereiken; adressen, rijksregisternummers en rekeningnummers blijven in AAPI.',
+    en: 'From the AAPI staff list. Read-only — change it there. This holds what you need to schedule and reach someone; addresses, national numbers and bank details stay in AAPI.',
+  },
+  'medewerkers.sinds': { nl: 'sinds {datum}', en: 'since {datum}' },
+
   'medewerkers.weg': { nl: 'Uit dienst', en: 'Archive' },
   'medewerkers.terug': { nl: 'Terug in dienst', en: 'Reinstate' },
 

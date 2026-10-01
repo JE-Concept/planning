@@ -106,8 +106,8 @@ export default {
   // ── De import ───────────────────────────────────────────────────────────
   'aapi.import.titel': { nl: 'Planning importeren', en: 'Import planning' },
   'aapi.import.uitleg': {
-    nl: 'Exporteer in AAPI de "Planning Overview" als xlsx en zet hem hier neer. Je ziet eerst wat erin zit.',
-    en: 'Export the "Planning Overview" as xlsx in AAPI and drop it here. You see what is in it first.',
+    nl: 'Zet hier de "Planning Overview" of de personeelslijst uit AAPI neer. De tool ziet zelf welk van de twee het is, en toont eerst wat erin zit.',
+    en: 'Drop the "Planning Overview" or the staff list from AAPI here. The tool sees which of the two it is, and shows what is in it first.',
   },
   'aapi.import.kies': { nl: 'Kies een bestand', en: 'Choose a file' },
   'aapi.import.sleep': { nl: 'of sleep het hierheen', en: 'or drag it here' },
@@ -145,6 +145,14 @@ export default {
     nl: 'Deze shifts bij Evenementen hangen aan geen event. Kies er een, of zeg dat ze er geen hebben.',
     en: 'These shifts in Events have no event. Pick one, or say they have none.',
   },
+  'aapi.import.herkend': { nl: 'Al bekend', en: 'Already known' },
+  'aapi.import.soort.planning': { nl: 'Planning', en: 'Planning' },
+  'aapi.import.soort.personeel': { nl: 'Personeelslijst', en: 'Staff list' },
+  'aapi.import.weggelaten': {
+    nl: 'Niet overgenomen uit dit bestand: {velden}. Die horen in AAPI en niet in een planningstool.',
+    en: 'Not taken from this file: {velden}. Those belong in AAPI, not in a planning tool.',
+  },
+
   'aapi.import.per_mail': { nl: 'Per mail binnengekomen', en: 'Arrived by mail' },
   'aapi.wachtrij.wachtend': { nl: 'Wordt gelezen', en: 'Being read' },
   'aapi.wachtrij.klaar': { nl: 'Geïmporteerd', en: 'Imported' },

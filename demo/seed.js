@@ -1158,7 +1158,7 @@ const uurOp = (datum, uur, minuut = 0) => {
   ['a-roeland', 'Roeland Kempeneers', 'vast', 'OTH'],
   ['a-faycal', 'Faycal El Amraoui', 'student', 'STU_COT'],
   ['a-herman', 'Herman Van Ormelingen', 'zelfstandig', 'INDEPENDENT'],
-].forEach(([id, naam, , dimona]) =>
+].forEach(([id, naam, statuut, dimona]) =>
   seedDoc('aapiEmployees', id, {
     aapiEmployeeId: id,
     displayName: naam,
@@ -1168,6 +1168,18 @@ const uurOp = (datum, uur, minuut = 0) => {
     active: true,
     firstSeenAt: dag(-20),
     lastSeenAt: dag(-1),
+    /*
+      Wat de personeelslijst erbij zet. Met opzet niet meer dan dit: wie
+      wil weten wat er níét meekomt — adres, rijksregisternummer,
+      rekeningnummer — leest `functions/aapi/personeel.js`.
+    */
+    statuut,
+    email: `${naam.split(' ')[0].toLowerCase()}@example.be`,
+    gsm: '+32 477 00 00 00',
+    afdeling: id === 'a-jumana' ? 'bar' : id === 'a-roeland' ? 'keuken' : 'evenementen',
+    vestiging: 'Meer-Bistro Het Vinne',
+    inDienstSinds: dag(-400),
+    uitPersoneelslijst: dag(-1),
   }))
 
 ;[

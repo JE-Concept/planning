@@ -39,6 +39,37 @@ de beheerders een melding — maar alleen wanneer er echt iets veranderde.
 Dit werkt pas wanneer `functions-mail` uitgerold is; zie
 `docs/e-mailmeldingen-aanzetten.md`.
 
+### De personeelslijst
+
+Naast de planning kun je de **personeelslijst** uit AAPI neerzetten, op hetzelfde
+vak en hetzelfde mailadres. De tool kijkt zelf welk van de twee ze gekregen
+heeft: een planning heeft de kolommen *Planning Id* en *Start Datetime*, een
+personeelslijst *Naam* en *Dimona type*.
+
+Daarmee krijgt iedereen zijn afdeling, zijn statuut, zijn e-mailadres en zijn
+gsm-nummer in JE Plan — ook wie nog nooit ingepland stond. Je vindt ze terug op
+**Team → Medewerkers**, onder *In dienst volgens AAPI*.
+
+**Wat er met opzet níét uit overgenomen wordt:** het rijksregisternummer, het
+rekeningnummer en de betalingswijze, het thuisadres, de geboortedatum en
+-plaats, de leeftijd, het geslacht, de nationaliteit, de burgerlijke staat, het
+aantal kinderen ten laste en de verplaatsingsvergoeding.
+
+Dat is geen onvermogen maar een keuze. JE Plan is een planningstool waarin het
+hele kantoor meeleest; een rijksregisternummer heeft daar geen enkele functie,
+en elke kopie ervan is er een die ooit ergens belandt waar niemand hem gezocht
+heeft. Wat de personeelsadministratie nodig heeft, staat in AAPI, en dat blijft
+de plek. Het importrapport somt na afloop op wat het heeft laten liggen.
+
+Heb je iets daarvan tóch nodig in JE Plan, zeg dan wélk veld en waarvoor — dan
+komt dat er gericht bij, en niet alles tegelijk.
+
+**Eén beperking om te kennen:** de personeelslijst bevat geen `Employee Id`, de
+planningsexport wel. Iemand uit de twee bestanden aan elkaar knopen gebeurt dus
+op e-mailadres en anders op naam. Dat werkte op de lijst van oktober voor alle
+veertien mensen die in beide bestanden stonden. Kan AAPI de personeelslijst ooit
+mét die id exporteren, dan wordt het exact.
+
 ### Later: rechtstreeks uit AAPI
 
 De plek staat klaar (`functions/aapi/bron.js`): er hoeft alleen een `ApiBron`

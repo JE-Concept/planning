@@ -10,6 +10,15 @@ import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useEvents } from '@data/events'
 import { inviteMember, setMemberActive, setMemberDepartment } from '@data/workspace'
+import { useAapiMedewerkers } from '@data/aapi'
+/*
+  Twee soorten afdeling met dezelfde naam, en ze zijn niet hetzelfde. Die van de
+  afvinklijsten zijn keuken, zaal, verantwoordelijke en iedereen — ze bepalen
+  welke punten je ziet. Die van AAPI zijn bar, zaal, keuken en evenementen — ze
+  zeggen waar iemand staat. Ze overlappen half, en juist daarom staan ze hier
+  met twee namen in plaats van door elkaar.
+*/
+import { STATUUT_TEKST, afdelingLabel as aapiAfdeling, kleurVan } from '@lib/aapi-weergave'
 
 /**
  * De medewerkers: studenten, flexi's, iedereen die komt werken.
@@ -31,6 +40,7 @@ export default function Medewerkers() {
   const { uid, isAdmin } = useAuth()
   const { profiles } = useWorkspace()
   const { events } = useEvents()
+  const { medewerkers: uitAapi } = useAapiMedewerkers()
   const toast = useToast()
 
   const [adres, setAdres] = useState('')
@@ -199,6 +209,53 @@ export default function Medewerkers() {
             actief.map(regel)
           )}
         </section>
+
+        {/*
+          De ploeg zoals AAPI haar kent.
+
+          Een andere lijst dan die hierboven, en met opzet gescheiden. Die gaat
+          over accounts in JE Plan — wie mag inloggen en wat ziet hij. Deze gaat
+          over wie er in dienst is, en komt uit het systeem waar de
+          personeelsadministratie echt staat. De meesten hiervan hebben hier
+          geen account en hoeven dat ook niet.
+
+          Alleen lezen: wat uit AAPI komt, wijzig je in AAPI.
+        */}
+        {uitAapi.length > 0 ? (
+          <section className="je-panel">
+            <div className="je-panel__head">
+              <span className="je-eyebrow">{t('medewerkers.uit_aapi')}</span>
+              <span className="je-panel__right">{uitAapi.length}</span>
+            </div>
+            <p className="je-muted-caption" style={{ padding: 'var(--space-3) var(--space-6) 0' }}>
+              {t('medewerkers.uit_aapi_uitleg')}
+            </p>
+            {[...uitAapi]
+              .sort((a, b) => String(a.displayName ?? '').localeCompare(String(b.displayName ?? '')))
+              .map((m) => (
+                <div key={m.id} className="je-medewerker">
+                  <span
+                    className="je-personeelrij__streep"
+                    aria-hidden="true"
+                    style={{ '--afdeling': kleurVan(m.afdeling) }}
+                  />
+                  <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                    <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{m.displayName}</div>
+                    <div className="je-muted-caption">
+                      {[m.email, m.gsm].filter(Boolean).join(' · ') || '—'}
+                    </div>
+                  </div>
+                  <Badge tone="neutral">{aapiAfdeling(t, m.afdeling)}</Badge>
+                  <Badge tone="neutral">{t(STATUUT_TEKST[m.statuut] ?? 'aapi.statuut.onbekend')}</Badge>
+                  {m.inDienstSinds ? (
+                    <span className="je-muted-caption">
+                      {t('medewerkers.sinds', { datum: formatDate(m.inDienstSinds) })}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+          </section>
+        ) : null}
 
         {weg.length > 0 ? (
           <section className="je-panel">
