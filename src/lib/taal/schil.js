@@ -50,7 +50,13 @@ export default {
   'nav.tasks': { nl: 'Tasks', en: 'Tasks' },
   'nav.werklast': { nl: 'Werklast', en: 'Workload' },
   'nav.goals': { nl: 'Goals', en: 'Goals' },
-  'nav.bistro': { nl: 'Bistro', en: 'Bistro' },
+  /*
+    Heette "Bistro". Dat was de plek waar deze lijsten vandaan kwamen, maar
+    niet wat eronder staat: het zijn de dagelijkse lijsten en de
+    FAVV-registraties, en die gelden voor elke zaak van het huis. De naam
+    noemt nu wat het is in plaats van waar het begon.
+  */
+  'nav.checklists': { nl: 'Checklists', en: 'Checklists' },
   'nav.openensluiten': { nl: 'Openen & sluiten', en: 'Opening & closing' },
   'nav.registraties': { nl: 'Registraties', en: 'Records' },
   'nav.team': { nl: 'Team', en: 'Team' },

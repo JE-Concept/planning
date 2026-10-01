@@ -88,7 +88,7 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
     {
       to: '/openen-sluiten',
       icon: 'clipboard-check',
-      sleutel: 'nav.bistro',
+      sleutel: 'nav.checklists',
       match: (p) => p.startsWith('/openen-sluiten') || p.startsWith('/registraties'),
       kinderen: [
         { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },

@@ -51,9 +51,9 @@ export default {
   'dashboard.deze_week': { nl: 'Deze week', en: 'This week' },
   'dashboard.geen_prioriteit': { nl: 'Geen prioriteit', en: 'No priority' },
 
-  'dashboard.bistro': { nl: 'Bistro vandaag', en: 'Bistro today' },
-  'dashboard.bistro_naar': { nl: 'Naar de lijsten', en: 'To the lists' },
-  'dashboard.bistro_leeg': {
+  'dashboard.checklists': { nl: 'Checklists vandaag', en: 'Checklists today' },
+  'dashboard.checklists_naar': { nl: 'Naar de lijsten', en: 'To the lists' },
+  'dashboard.checklists_leeg': {
     nl: 'Er staan nog geen dagelijkse lijsten klaar.',
     en: 'No daily lists have been set up yet.',
   },

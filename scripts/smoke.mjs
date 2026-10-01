@@ -529,7 +529,7 @@ await test('een punt toevoegen aan een dagelijkse lijst werkt', async () => {
   await page.waitForTimeout(600)
 
   // En het komt ook echt op de lijst van vandaag terecht.
-  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Bistro/ }).first().click()
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Checklists/ }).first().click()
   await page.getByRole('link', { name: 'Openen & sluiten' }).first().click()
   await page.waitForTimeout(1000)
   zouden(
@@ -549,7 +549,7 @@ await test('het dashboard geeft een overzicht over de hele applicatie', async ()
     'Events deze maand',
     'Wat er aankomt',
     'Wat bij jou ligt',
-    'Bistro vandaag',
+    'Checklists vandaag',
     'Socials deze week',
   ]) {
     zouden(bevat(tekst, naald), `"${naald}" staat niet op het dashboard`)

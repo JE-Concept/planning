@@ -269,10 +269,10 @@ export default function Dashboard() {
 
           <div className="je-dash__kolom">
             <Paneel
-              titel={t('dashboard.bistro')}
+              titel={t('dashboard.checklists')}
               naar="/openen-sluiten"
-              naarLabel={t('dashboard.bistro_naar')}
-              leeg={t('dashboard.bistro_leeg')}
+              naarLabel={t('dashboard.checklists_naar')}
+              leeg={t('dashboard.checklists_leeg')}
               leegAls={lijsten.length === 0}
             >
               <ul className="je-dash__lijsten">
