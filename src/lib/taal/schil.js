@@ -107,7 +107,6 @@ export default {
     nl: 'Zonder omschrijving is een boeking achteraf niet te plaatsen.',
     en: 'Without a description an entry cannot be placed afterwards.',
   },
-  'timer.factureerbaar': { nl: 'Factureerbaar', en: 'Billable' },
   'timer.naar_de_klant': { nl: 'Naar de klant', en: 'Bill to the client' },
   'timer.intern_standaard': {
     nl: 'Losse tijd staat standaard op intern.',

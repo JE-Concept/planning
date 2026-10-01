@@ -49,7 +49,6 @@ export default function PostTimer({ post }) {
           description: post.title,
           // Content voor een klant is factureerbaar zodra ze aan een event hangt;
           // een losse post is dat niet vanzelf.
-          billable: Boolean(post.taskId),
         })
         toast.success(t('timer.loopt'))
       }

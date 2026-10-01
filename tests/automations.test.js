@@ -545,7 +545,17 @@ describe('regels op de andere entiteiten', () => {
     expect(patch).toEqual({ flagNote: 'Niet alles afgevinkt', flagged: true, followUpIds: [JASPER] })
   })
 
-  it('zet uren op een lijst als niet-factureerbaar', () => {
+  /*
+    Dit was een regel die uren op een lijst als niet-factureerbaar zette. Die
+    actie bestaat niet meer: JE Concept werkt met een vaste prijs per event,
+    dus "mag dit doorgerekend worden" was een vraag die nooit gesteld werd en
+    het vinkje stond bij elke boeking.
+
+    Wat de regels op uren nog wél kunnen — een label zetten — staat hieronder,
+    zodat de entiteit `timeEntry` getest blijft in plaats van ongedekt achter
+    te blijven nu haar enige andere actie weg is.
+  */
+  it('hangt een label aan uren op een bepaalde lijst', () => {
     const { patch } = planFor({
       rules: [
         {
@@ -554,14 +564,14 @@ describe('regels op de andere entiteiten', () => {
           enabled: true,
           trigger: { kind: 'created' },
           when: cond('listId', 'is', 'l-socials'),
-          actions: [{ kind: 'billable', value: false }],
+          actions: [{ kind: 'tag', value: 'socials' }],
         },
       ],
       entity: 'timeEntry',
-      doc: { id: 'te-1', listId: 'l-socials', billable: true },
+      doc: { id: 'te-1', listId: 'l-socials', tags: [] },
       before: null,
     })
-    expect(patch).toEqual({ billable: false })
+    expect(patch).toEqual({ tags: ['socials'] })
   })
 
   it('zet een afdeling op een profiel', () => {
@@ -720,7 +730,6 @@ describe('de interface en de motor spreken dezelfde taal', () => {
     postStatus: { value: 'approved' },
     review: { value: JASPER },
     flag: { value: 'kijk hier eens naar' },
-    billable: { value: false },
     department: { value: 'zaal' },
     dueDate: {},
     startDate: {},

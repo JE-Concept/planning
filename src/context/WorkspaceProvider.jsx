@@ -9,11 +9,18 @@ import { useAuth } from './AuthProvider'
 
 const WorkspaceContext = createContext(null)
 
-/** Tijd boeken zonder event (briefing §7: "Internal work" is een kostenplaats). */
+/*
+  De kostenplaatsen voor werk dat niet aan een event hangt.
+
+  Ze droegen een vlag `billable`, en die is weg: JE Concept werkt met een vaste
+  prijs per event, dus "mag dit doorgerekend worden" was een vraag die nooit
+  gesteld werd. Wat de kostenplaats nog doet is groeperen — hoeveel uur ging
+  er naar administratie, hoeveel naar socials.
+*/
 export const DEFAULT_COST_CENTERS = [
-  { name: 'Intern werk', billable: false },
-  { name: 'Administratie & facturatie', billable: false },
-  { name: 'Socials algemeen', billable: true },
+  { name: 'Intern werk' },
+  { name: 'Administratie & facturatie' },
+  { name: 'Socials algemeen' },
 ]
 
 /**

@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { cn } from '@lib/cn'
 import { dayKey, formatDate, formatDateTime, formatTime, startOfMonth, toLocalInput } from '@lib/dates'
 import { formatCurrency, formatDuration, toDecimalHours } from '@lib/format'
 import {
@@ -19,7 +18,8 @@ import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { addManualEntry, deleteEntry, setEntryBillable, updateEntry, useTimeEntries } from '@data/time'
+import { addManualEntry, deleteEntry, updateEntry, useTimeEntries } from '@data/time'
+import { useTasks } from '@data/tasks'
 
 const monthKey = (date) => dayKey(date).slice(0, 7)
 
@@ -49,10 +49,6 @@ export default function TimeTracking() {
     () => entries.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0),
     [entries]
   )
-  const billable = useMemo(
-    () => entries.filter((e) => e.billable).reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0),
-    [entries]
-  )
 
   const byDay = useMemo(() => {
     const map = new Map()
@@ -77,10 +73,7 @@ export default function TimeTracking() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t('nav.uren')}
-        subtitle={t('uren.samenvatting', {
-          totaal: formatDuration(total),
-          factureerbaar: formatDuration(billable),
-        })}
+        subtitle={t('uren.samenvatting', { totaal: formatDuration(total) })}
         actions={
           <>
             <Select value={month} onChange={(e) => setMonth(e.target.value)} className="w-auto" aria-label={t('uren.maand')}>
@@ -209,16 +202,6 @@ export default function TimeTracking() {
                         <span className="hidden text-xs tabular-nums text-ink-500 sm:block">
                           {formatTime(entry.startedAt)}–{formatTime(entry.endedAt)}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => setEntryBillable(entry, !entry.billable)}
-                          className={cn(
-                            'rounded px-1.5 py-0.5 text-[11px] font-medium',
-                            entry.billable ? 'bg-emerald-50 text-emerald-700' : 'bg-ink-100 text-ink-500'
-                          )}
-                        >
-                          {entry.billable ? t('uren.factureerbaar_klein') : t('uren.intern')}
-                        </button>
                         <span className="w-16 text-right text-sm font-medium tabular-nums text-ink-900">
                           {formatDuration(entry.durationSeconds)}
                         </span>
@@ -291,9 +274,8 @@ function groupBy(entries, keyOf) {
   const map = new Map()
   for (const entry of entries) {
     const key = keyOf(entry)
-    const current = map.get(key) ?? { seconds: 0, billable: 0, count: 0 }
+    const current = map.get(key) ?? { seconds: 0, count: 0 }
     current.seconds += entry.durationSeconds ?? 0
-    if (entry.billable) current.billable += entry.durationSeconds ?? 0
     current.count += 1
     map.set(key, current)
   }
@@ -319,7 +301,7 @@ function ReportTable({ title, rows, label, rate }) {
               </td>
               {rate ? (
                 <td className="px-2 py-1.5 text-right text-xs tabular-nums text-ink-500">
-                  {rate(key) ? formatCurrency(toDecimalHours(value.billable) * rate(key)) : '—'}
+                  {rate(key) ? formatCurrency(toDecimalHours(value.seconds) * rate(key)) : '—'}
                 </td>
               ) : null}
               <td className="px-3 py-1.5 text-right font-medium tabular-nums text-ink-900">
@@ -368,7 +350,6 @@ function exportCsv(entries, profileById, month, t) {
       t('uren.csv_van'),
       t('uren.csv_tot'),
       t('uren.csv_uren'),
-      t('uren.csv_factureerbaar'),
     ],
     ...entries.map((e) => [
       e.day ?? dayKey(e.startedAt),
@@ -379,7 +360,6 @@ function exportCsv(entries, profileById, month, t) {
       formatDateTime(e.startedAt),
       formatDateTime(e.endedAt),
       String(toDecimalHours(e.durationSeconds)).replace('.', ','),
-      e.billable ? t('uren.csv_ja') : t('uren.csv_nee'),
     ]),
   ]
 
@@ -397,42 +377,82 @@ function exportCsv(entries, profileById, month, t) {
 
 // ─── Add / edit ─────────────────────────────────────────────────────────────
 
+/**
+ * Tijd toevoegen of aanpassen.
+ *
+ * ── Waarom er een taak gekozen moet worden ────────────────────────────────
+ * Hier stond een keuzelijst van bórden: je boekte een uur op "Events" en
+ * daarmee was het weg. Dat leverde urenstaten op waarin de helft van de tijd
+ * op een bord stond en niet op iets wat je kan terugvinden — en het hele punt
+ * van uren bijhouden is dat je achteraf kan zien waar ze heen zijn.
+ *
+ * Nu kies je het event of de taak zelf. Het bord, het merk en de naam komen
+ * daaruit mee, dus de rapportage per bord blijft werken zonder dat iemand ze
+ * apart moet invullen.
+ *
+ * ── Waarom er geen vinkje "factureerbaar" meer staat ──────────────────────
+ * JE Concept werkt met een vaste prijs per event. "Welk deel van deze uren
+ * mogen we doorrekenen" was dus een vraag die nooit gesteld werd, terwijl het
+ * vinkje wel bij elke boeking stond en standaard aan. Wat ze wél willen zien
+ * is de loonkost in uren, en die staat in het verslag — over alle uren, want
+ * ze kosten allemaal evenveel.
+ */
 function EntryModal({ entry, uid, onClose }) {
   const { t } = useTaal()
   const toast = useToast()
-  const { activeLists } = useWorkspace()
+  const { tasks } = useTasks()
   const [startedAt, setStartedAt] = useState(
     toLocalInput(entry?.startedAt ?? new Date(Date.now() - 3600000))
   )
   const [endedAt, setEndedAt] = useState(toLocalInput(entry?.endedAt ?? new Date()))
   const [description, setDescription] = useState(entry?.description ?? '')
-  const [listId, setListId] = useState(entry?.listId ?? '')
-  const [billable, setBillable] = useState(entry?.billable ?? true)
+  const [taskId, setTaskId] = useState(entry?.taskId ?? '')
+  const [zoek, setZoek] = useState('')
   const [saving, setSaving] = useState(false)
+
+  /*
+    Wat je kan kiezen: alles wat openstaat, plus de taak waar deze boeking al
+    op stond — ook als die intussen afgevinkt is. Zonder dat laatste zou het
+    aanpassen van een oude registratie haar taak stilletjes wissen.
+  */
+  const keuzes = useMemo(() => {
+    const open = (tasks ?? []).filter((taak) => taak.open !== false || taak.id === entry?.taskId)
+    const naald = zoek.trim().toLowerCase()
+    const gevonden = naald
+      ? open.filter((taak) => `${taak.title} ${taak.listName ?? ''}`.toLowerCase().includes(naald))
+      : open
+    // Vijftig is ruim genoeg om te kiezen en kort genoeg om door te scrollen;
+    // wie meer nodig heeft, typt een letter in het zoekveld erboven.
+    return gevonden.slice(0, 50)
+  }, [tasks, zoek, entry?.taskId])
 
   const submit = async (e) => {
     e.preventDefault()
+    const taak = (tasks ?? []).find((x) => x.id === taskId) ?? null
+    if (!taak) {
+      toast.error(t('uren.kies_taak'))
+      return
+    }
     setSaving(true)
     try {
-      const list = activeLists.find((l) => l.id === listId) ?? null
       if (entry) {
         await updateEntry(entry, {
           description,
-          billable,
-          listId: list?.id ?? null,
-          listName: list?.name ?? null,
-          brandId: list?.brandId ?? null,
+          taskId: taak.id,
+          taskTitle: taak.title,
+          listId: taak.listId ?? null,
+          listName: taak.listName ?? null,
+          brandId: taak.brandId ?? null,
           startedAt: new Date(startedAt),
           endedAt: new Date(endedAt),
         })
       } else {
         await addManualEntry({
           uid,
-          list,
+          task: taak,
           startedAt: new Date(startedAt),
           endedAt: new Date(endedAt),
           description,
-          billable,
         })
       }
       toast.success(t('uren.opgeslagen'))
@@ -453,7 +473,7 @@ function EntryModal({ entry, uid, onClose }) {
           <Button variant="ghost" onClick={onClose}>
             {t('alg.annuleren')}
           </Button>
-          <Button variant="primary" onClick={submit} disabled={saving}>
+          <Button variant="primary" onClick={submit} disabled={saving || !taskId}>
             {saving ? <Spinner className="h-3 w-3" /> : null} {t('alg.opslaan')}
           </Button>
         </>
@@ -466,16 +486,21 @@ function EntryModal({ entry, uid, onClose }) {
         <Field label={t('uren.tot')}>
           <Input type="datetime-local" value={endedAt} onChange={(e) => setEndedAt(e.target.value)} />
         </Field>
-        <Field label={t('uren.lijst')} className="sm:col-span-2">
-          <Select value={listId} onChange={(e) => setListId(e.target.value)}>
-            <option value="">{t('uren.geen_lijst')}</option>
-            {activeLists.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
+
+        <Field label={t('uren.zoek_taak')} className="sm:col-span-2">
+          <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder={t('uren.zoek_taak_hint')} />
+        </Field>
+        <Field label={t('uren.waarop')} hint={t('uren.waarop_hint')} className="sm:col-span-2">
+          <Select value={taskId} onChange={(e) => setTaskId(e.target.value)}>
+            <option value="">{t('uren.kies_taak')}</option>
+            {keuzes.map((taak) => (
+              <option key={taak.id} value={taak.id}>
+                {taak.listName ? `${taak.listName} · ${taak.title}` : taak.title}
               </option>
             ))}
           </Select>
         </Field>
+
         <Field label={t('uren.omschrijving')} className="sm:col-span-2">
           <Input
             value={description}
@@ -483,15 +508,6 @@ function EntryModal({ entry, uid, onClose }) {
             placeholder={t('uren.omschrijving_hint')}
           />
         </Field>
-        <label className="flex items-center gap-2 text-sm text-ink-700 sm:col-span-2">
-          <input
-            type="checkbox"
-            checked={billable}
-            onChange={(e) => setBillable(e.target.checked)}
-            className="h-4 w-4 rounded border-ink-300 text-accent-600"
-          />
-          {t('uren.factureerbaar')}
-        </label>
       </form>
     </Modal>
   )

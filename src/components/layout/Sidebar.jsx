@@ -280,7 +280,7 @@ function SideTimer() {
             {timer.taskTitle || timer.description || t('timer.losse_tijd')}
           </div>
           <div style={{ font: 'var(--type-caption)', fontWeight: 400, color: 'var(--navy-400)' }}>
-            {[eventName, timer.billable === false ? 'intern' : 'billable'].filter(Boolean).join(' · ')}
+            {eventName}
           </div>
           <div style={{ marginTop: 'var(--space-3)' }}>
             <Button

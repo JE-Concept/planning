@@ -291,7 +291,6 @@ async function importTimeEntries(userMap) {
       listName: null,
       brandId: null,
       description: entry.description ?? '',
-      billable: Boolean(entry.billable),
       startedAt,
       endedAt,
       durationSeconds,

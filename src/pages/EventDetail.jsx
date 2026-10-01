@@ -5,7 +5,6 @@ import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import { verwijderVraag } from '@lib/verwijdervraag'
 import {
-  Badge,
   Button,
   Checkbox,
   ConfirmButton,
@@ -107,7 +106,6 @@ export default function EventDetail() {
   const liveSeconds =
     timer && taskIds.includes(timer.taskId) ? durationOf(timer) : 0
   const totalS = time.reduce((a, e) => a + (e.durationSeconds ?? 0), 0) + liveSeconds
-  const billS = time.filter((e) => e.billable !== false).reduce((a, e) => a + (e.durationSeconds ?? 0), 0)
   const openCount = tasks.filter((taak) => !isDone(taak)).length
   const bestelRegels = ev.bestellijst ?? []
 
@@ -258,7 +256,7 @@ export default function EventDetail() {
           ) : tab === 'notities' ? (
             <EventNotities ev={ev} compact />
           ) : (
-            <TimeTab entries={time} totalS={totalS} billS={billS} days={days} profileById={profileById} eventTasks={tasks} ev={ev} />
+            <TimeTab entries={time} totalS={totalS} days={days} profileById={profileById} eventTasks={tasks} ev={ev} />
           )}
         </div>
 
@@ -530,17 +528,20 @@ function Attachments({ taskId }) {
 
 // ─── Tijd ──────────────────────────────────────────────────────────────────
 
-function TimeTab({ entries, totalS, billS, days, profileById, eventTasks, ev }) {
+function TimeTab({ entries, totalS, days, profileById, eventTasks, ev }) {
   const { t } = useTaal()
   const titleOf = (id) => (id === ev.id ? ev.name : eventTasks.find((taak) => taak.id === id)?.title)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-4)' }}>
         {[
-          // "Billable" staat er niet per ongeluk in het Engels: zo heet het op
-          // de urenstaat en zo zegt het team het.
+          /*
+            Factureerbaar stond hier als tweede getal. Dat is weg: JE Concept
+            werkt met een vaste prijs per event, dus "welk deel van deze uren
+            mogen we doorrekenen" was een vraag die nooit gesteld werd. Wat
+            overblijft is wat wél telt — hoeveel uur dit dossier gekost heeft.
+          */
           [t('events.tijd.totaal'), hours(totalS)],
-          ['Billable', hours(billS)],
           [
             t('events.tijd.tot_event'),
             days == null ? '—' : days >= 0 ? t('alg.dag', { aantal: days }) : t('events.tijd.voorbij'),
@@ -576,11 +577,6 @@ function TimeTab({ entries, totalS, billS, days, profileById, eventTasks, ev }) 
               </Hex>
               <span style={{ font: 'var(--type-body-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.description || titleOf(r.taskId) || r.taskTitle || t('events.tijd.losse')}
-              </span>
-              <span>
-                <Badge tone={r.billable === false ? 'neutral' : 'accent'}>
-                  {r.billable === false ? t('events.tijd.intern') : 'Billable'}
-                </Badge>
               </span>
               <span style={{ font: 'var(--fw-medium) 16px/1 var(--font-display)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                 {hours(r.durationSeconds)}

@@ -165,12 +165,6 @@ export default {
   'inst.concept.actief': { nl: '{naam} actief', en: '{naam} active' },
   'inst.kosten.kop': { nl: 'Kostenplaatsen', en: 'Cost centres' },
   'inst.kosten.uitleg': { nl: 'Tijd boeken zonder event.', en: 'Logging time without an event.' },
-  'inst.kosten.wisselen': {
-    nl: 'Wisselen tussen billable en intern',
-    en: 'Switch between billable and internal',
-  },
-  'inst.kosten.billable': { nl: 'Billable', en: 'Billable' },
-  'inst.kosten.intern': { nl: 'Intern', en: 'Internal' },
   'inst.kosten.plaatshouder': { nl: '+ kostenplaats en Enter', en: '+ cost centre and Enter' },
   'inst.kosten.label': { nl: 'Kostenplaats toevoegen', en: 'Add a cost centre' },
 
@@ -601,7 +595,6 @@ export default {
   'regels.veld.timeEntry.listId': { nl: 'Lijst', en: 'List' },
   'regels.veld.timeEntry.taskTitle': { nl: 'Taak', en: 'Task' },
   'regels.veld.timeEntry.description': { nl: 'Omschrijving', en: 'Description' },
-  'regels.veld.timeEntry.billable': { nl: 'Factureerbaar', en: 'Billable' },
   'regels.veld.timeEntry.durationSeconds': { nl: 'Duur in seconden', en: 'Duration in seconds' },
   'regels.veld.timeEntry.day': { nl: 'Dag', en: 'Day' },
   'regels.veld.timeEntry.month': { nl: 'Maand', en: 'Month' },
@@ -628,7 +621,6 @@ export default {
   'regels.actie.socialPost.publishAt': { nl: 'Publicatiemoment zetten', en: 'Set the publication moment' },
   'regels.actie.checklistRun.flag': { nl: 'Markeren met opmerking', en: 'Flag with a note' },
   'regels.actie.checklistRun.followUp': { nl: 'Laten opvolgen door', en: 'Have it followed up by' },
-  'regels.actie.timeEntry.billable': { nl: 'Factureerbaar zetten', en: 'Set billable' },
   'regels.actie.timeEntry.tag': { nl: 'Label toevoegen', en: 'Add a label' },
   'regels.actie.profile.department': { nl: 'Afdeling zetten', en: 'Set the department' },
   'regels.noun.toegewezene': { nl: 'toegewezene', en: 'assignee' },

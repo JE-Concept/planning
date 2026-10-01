@@ -230,12 +230,12 @@ export default {
   },
 
   // ── Uren ───────────────────────────────────────────────────────────────
-  // "billable" is het woord dat het team zelf gebruikt en dat op de boekingen
-  // staat; in het Nederlands staat er "factureerbaar", in het Engels blijft het
-  // "billable".
+  // Factureerbaar stond hier als tweede getal. Dat is weg: JE Concept werkt
+  // met een vaste prijs per event, dus welk deel van de uren doorgerekend mag
+  // worden was een vraag die nooit gesteld werd.
   'uren.samenvatting': {
-    nl: '{totaal} geboekt · {factureerbaar} factureerbaar',
-    en: '{totaal} logged · {factureerbaar} billable',
+    nl: '{totaal} geboekt',
+    en: '{totaal} logged',
   },
   'uren.maand': { nl: 'Maand', en: 'Month' },
   'uren.persoon': { nl: 'Persoon', en: 'Person' },
@@ -254,7 +254,6 @@ export default {
     en: 'Start the timer in the top bar, or add time by hand.',
   },
   'uren.tijd_toevoegen': { nl: 'Tijd toevoegen', en: 'Add time' },
-  'uren.factureerbaar_klein': { nl: 'factureerbaar', en: 'billable' },
   'uren.intern': { nl: 'intern', en: 'internal' },
   'uren.registratie_verwijderen': { nl: 'Registratie verwijderen?', en: 'Delete this entry?' },
 
@@ -277,7 +276,6 @@ export default {
   'uren.csv_van': { nl: 'Van', en: 'From' },
   'uren.csv_tot': { nl: 'Tot', en: 'To' },
   'uren.csv_uren': { nl: 'Uren', en: 'Hours' },
-  'uren.csv_factureerbaar': { nl: 'Factureerbaar', en: 'Billable' },
   'uren.csv_ja': { nl: 'ja', en: 'yes' },
   'uren.csv_nee': { nl: 'nee', en: 'no' },
 
@@ -285,11 +283,25 @@ export default {
   'uren.toevoegen_titel': { nl: 'Tijd toevoegen', en: 'Add time' },
   'uren.van': { nl: 'Van', en: 'From' },
   'uren.tot': { nl: 'Tot', en: 'To' },
+  /*
+    De keuzelijst van bórden is een keuze van taken geworden: je boekte een uur
+    op "Events" en daarmee was het weg. `uren.lijst` blijft bestaan omdat het
+    verslag nog per bord groepeert — dat komt nu uit de gekozen taak mee.
+  */
   'uren.lijst': { nl: 'Lijst', en: 'List' },
-  'uren.geen_lijst': { nl: 'Geen lijst', en: 'No list' },
+  'uren.waarop': { nl: 'Waarop geboekt', en: 'Booked on' },
+  'uren.waarop_hint': {
+    nl: 'Het event of de taak. Het bord en het merk komen daaruit mee.',
+    en: 'The event or task. The board and brand follow from it.',
+  },
+  'uren.kies_taak': { nl: 'Kies een event of taak', en: 'Choose an event or task' },
+  'uren.zoek_taak': { nl: 'Zoeken', en: 'Search' },
+  'uren.zoek_taak_hint': {
+    nl: 'Typ een deel van de naam om de lijst korter te maken.',
+    en: 'Type part of the name to narrow the list.',
+  },
   'uren.omschrijving': { nl: 'Omschrijving', en: 'Description' },
   'uren.omschrijving_hint': { nl: 'Waaraan gewerkt?', en: 'Worked on what?' },
-  'uren.factureerbaar': { nl: 'Factureerbaar', en: 'Billable' },
   'uren.opgeslagen': { nl: 'Opgeslagen.', en: 'Saved.' },
 
   // ── Rooster ────────────────────────────────────────────────────────────

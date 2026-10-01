@@ -36,7 +36,7 @@ function entryContext(task, list, brandId) {
  * start simply overwrites the first — "one timer per person" is a property of
  * the data, not a rule the UI has to remember.
  */
-export async function startTimer({ uid, task, list, description = '', billable, brandId }) {
+export async function startTimer({ uid, task, list, description = '', brandId }) {
   const running = await getDoc(doc(db, COL.runningTimers, uid))
   if (running.exists()) await stopTimer(uid)
 
@@ -44,10 +44,6 @@ export async function startTimer({ uid, task, list, description = '', billable, 
     profileId: uid,
     description,
     startedAt: new Date(),
-    // Tijd op een taak is werk voor een klant; losse tijd zonder taak is dat
-    // niet vanzelf. Die aanname stond hier op "wel", en dat leverde
-    // factureerbare boekingen op die niemand bedoeld had.
-    billable: billable ?? Boolean(task),
     ...entryContext(task, list, brandId),
   })
 }
@@ -78,7 +74,6 @@ export async function stopTimer(uid) {
     listId: timer.listId ?? null,
     listName: timer.listName ?? null,
     brandId: timer.brandId ?? null,
-    billable: timer.billable ?? true,
     startedAt: timer.startedAt,
     endedAt,
     durationSeconds,
@@ -115,7 +110,18 @@ export async function stopTimer(uid) {
   return entryRef.id
 }
 
-export async function addManualEntry({ uid, task, list, startedAt, endedAt, description, billable = true }) {
+export async function addManualEntry({ uid, task, list, startedAt, endedAt, description }) {
+  /*
+    Tijd hangt aan een event of een taak, en aan niets anders.
+
+    Dit stond alleen in het scherm: daar kon je een bórd kiezen, en dan stond
+    er een uur op "Events" dat je achteraf nergens meer terugvond. Het hele
+    punt van uren bijhouden is dat je kan zien waar ze heen zijn, dus staat de
+    regel hier — één plek, waar elke weg naar een boeking langskomt. De
+    timerknoppen gaven altijd al een taak mee.
+  */
+  if (!task?.id) throw new Error('Tijd boek je op een event of een taak.')
+
   const durationSeconds = durationOf({ startedAt, endedAt })
   if (durationSeconds <= 0) throw new Error('De eindtijd moet na de starttijd liggen.')
 
@@ -125,7 +131,6 @@ export async function addManualEntry({ uid, task, list, startedAt, endedAt, desc
   batch.set(entryRef, {
     profileId: uid,
     description: description ?? '',
-    billable,
     startedAt: new Date(startedAt),
     endedAt: new Date(endedAt),
     durationSeconds,
@@ -259,6 +264,3 @@ export function useTaskTimeEntries(taskId) {
   return entries
 }
 
-export function setEntryBillable(entry, billable) {
-  return updateDoc(ref(COL.timeEntries, entry.id), { billable })
-}

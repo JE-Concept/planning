@@ -58,7 +58,7 @@ export default function SocialEventPaneel({ taskId, onClose }) {
         const id = await stopTimer(uid)
         toast.success(id ? t('timer.gestopt', { tijd: elapsed }) : t('timer.te_kort'))
       } else {
-        await startTimer({ uid, task: { id: taskId, title: kaart?.title, listId: kaart?.listId }, billable: false })
+        await startTimer({ uid, task: { id: taskId, title: kaart?.title, listId: kaart?.listId } })
         toast.success(t('timer.loopt'))
       }
     } catch (err) {

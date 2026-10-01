@@ -824,16 +824,6 @@ function ConceptsTab() {
             style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-3) var(--space-6)', borderTop: i ? '1px solid var(--border-hairline)' : 'none' }}
           >
             <span style={{ flex: 1, font: 'var(--type-body-sm)' }}>{k.name}</span>
-            <button
-              type="button"
-              className="je-plainbtn"
-              title={t('inst.kosten.wisselen')}
-              onClick={() => saveCenters(costCenters.map((x, j) => (j === i ? { ...x, billable: !x.billable } : x)))}
-            >
-              <Badge tone={k.billable ? 'accent' : 'neutral'}>
-                {k.billable ? t('inst.kosten.billable') : t('inst.kosten.intern')}
-              </Badge>
-            </button>
             <IconButton icon="x" label={t('alg.verwijderen')} size="sm" onClick={() => saveCenters(costCenters.filter((_, j) => j !== i))} />
           </div>
         ))}
@@ -843,7 +833,7 @@ function ConceptsTab() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && name.trim()) {
-                saveCenters([...costCenters, { name: name.trim(), billable: false }])
+                saveCenters([...costCenters, { name: name.trim() }])
                 setName('')
               }
             }}

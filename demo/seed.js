@@ -437,13 +437,13 @@ taak('t-soc-5', 'l-socials', SOCIALS, 'done', { title: 'Terugblik Loonse Feesten
 // ─── Tijdregistratie ────────────────────────────────────────────────────────
 const maand = '2026-09'
 let te = 0
-function tijd(profileId, taskId, taskTitle, uren, omschrijving, dagenTerug, billable = true) {
+function tijd(profileId, taskId, taskTitle, uren, omschrijving, dagenTerug) {
   const start = new Date(dag(-dagenTerug)); start.setHours(9, 0, 0, 0)
   const eind = new Date(start.getTime() + uren * 3600000)
   const d = start.toISOString().slice(0, 10)
   seedDoc('timeEntries', `te-${te += 1}`, {
     profileId, taskId, taskTitle, listId: 'l-overview', listName: 'Events',
-    brandId: null, description: omschrijving, billable,
+    brandId: null, description: omschrijving,
     startedAt: start, endedAt: eind, durationSeconds: Math.round(uren * 3600),
     day: d, month: maand, week: '2026-W40', createdAt: start,
   })
@@ -453,8 +453,8 @@ tijd('u-elke', 't-trouw', 'Trouw Niels en Inez', 2.25, 'Offerte opmaken', 1)
 tijd('u-jasper', 't-haspengouw', 'Haspengouw Culinair — Grote Markt', 8, 'Opbouw en coördinatie', 7)
 tijd('u-anneleen', 't-haspengouw', 'Haspengouw Culinair — Grote Markt', 6.5, 'Standenplan en communicatie', 7)
 tijd('u-elke', 't-blum', 'Blum België — 20-jarig bestaan', 2.5, 'Leveranciers vergelijken', 2)
-tijd('u-charish', null, null, 6.5, 'Contentkalender oktober uitwerken', 3, false)
-tijd('u-charish', null, null, 4, 'Reels monteren Haspengouw Culinair', 2, false)
+tijd('u-charish', null, null, 6.5, 'Contentkalender oktober uitwerken', 3)
+tijd('u-charish', null, null, 4, 'Reels monteren Haspengouw Culinair', 2)
 tijd('u-elke', 't-loonse', 'Loonse Feesten 2026', 1.75, 'Eindafrekening', 4)
 tijd('u-jasper', 't-optimum', '20 m Pipe & Drape — Optimum Sorting — Opbouw', 2, 'Plaatsbezoek', 5)
 
@@ -464,8 +464,7 @@ const loopt = new Date(Date.now() - (23 * 60 + 12) * 1000)
 seedDoc('runningTimers', 'u-jasper', {
   profileId: 'u-jasper', taskId: 't-trouw-5', taskTitle: 'Drankenlijst finaliseren',
   listId: 'l-overview', listName: 'Events', brandId: null,
-  description: '', startedAt: loopt, billable: true,
-})
+  description: '', startedAt: loopt,})
 
 // ─── Social posts ───────────────────────────────────────────────────────────
 //

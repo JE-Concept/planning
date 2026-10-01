@@ -119,7 +119,6 @@ const VELD_SLEUTELS = {
     listId: 'regels.veld.timeEntry.listId',
     taskTitle: 'regels.veld.timeEntry.taskTitle',
     description: 'regels.veld.timeEntry.description',
-    billable: 'regels.veld.timeEntry.billable',
     durationSeconds: 'regels.veld.timeEntry.durationSeconds',
     day: 'regels.veld.timeEntry.day',
     month: 'regels.veld.timeEntry.month',
@@ -158,7 +157,7 @@ const ACTIE_SLEUTELS = {
     flag: 'regels.actie.checklistRun.flag',
     followUp: 'regels.actie.checklistRun.followUp',
   },
-  timeEntry: { billable: 'regels.actie.timeEntry.billable', tag: 'regels.actie.timeEntry.tag' },
+  timeEntry: { tag: 'regels.actie.timeEntry.tag' },
   profile: { department: 'regels.actie.profile.department' },
 }
 
