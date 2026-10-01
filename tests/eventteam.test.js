@@ -3,8 +3,6 @@ import {
   kaartMensen,
   medewerkersVan,
   verantwoordelijkeVan,
-  wisselMedewerker,
-  zetMedewerkers,
   zetVerantwoordelijke,
 } from '../src/lib/eventteam'
 
@@ -34,21 +32,15 @@ describe('wie het dossier draagt', () => {
   })
 })
 
-describe('wie er komt werken', () => {
+/*
+  Dit veld wordt niet meer geschreven: wie er komt werken staat in AAPI. De
+  lezer blijft wel, want de rijen van vóór die beslissing staan er nog en het
+  scherm "mijn events" van een medewerker hangt eraan.
+*/
+describe('wie er komt werken (oude gegevens)', () => {
   it('staat in een eigen veld', () => {
     expect(medewerkersVan({ medewerkers: ['u-lotte', 'u-sam'] })).toEqual(['u-lotte', 'u-sam'])
     expect(medewerkersVan({ assignees: ['u-elke'] })).toEqual([])
-  })
-
-  it('bewaart geen dubbels of gaten', () => {
-    expect(zetMedewerkers(['u-lotte', 'u-lotte', null, 'u-sam'])).toEqual({ medewerkers: ['u-lotte', 'u-sam'] })
-    expect(zetMedewerkers(undefined)).toEqual({ medewerkers: [] })
-  })
-
-  it('zet iemand erbij en er weer af', () => {
-    const ev = { medewerkers: ['u-lotte'] }
-    expect(wisselMedewerker(ev, 'u-sam')).toEqual({ medewerkers: ['u-lotte', 'u-sam'] })
-    expect(wisselMedewerker(ev, 'u-lotte')).toEqual({ medewerkers: [] })
   })
 
   // De verantwoordelijke kan zelf ook meewerken; dat is geen tegenspraak.

@@ -3017,19 +3017,6 @@ button.je-paneel-kaart:hover {
 .je-panel__head + .je-importrij { border-top: none; }
 
 /* Het personeelsblok op een event. */
-/* De ploeg die je met de hand aanduidt, boven wat uit AAPI komt. */
-.je-ploeg {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-6);
-  border-top: 1px solid var(--border-hairline);
-}
-.je-ploeg__mensen {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3) var(--space-6);
-}
 .je-personeelstatuten {
   display: flex;
   gap: var(--space-2);

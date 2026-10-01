@@ -15,25 +15,25 @@ import {
   urenTekst,
 } from '@lib/aapi-weergave'
 import { dagenVan } from '@lib/eventdagen'
-import { medewerkersVan, wisselMedewerker } from '@lib/eventteam'
-import { Badge, Button, Checkbox } from '@components/ds'
+import { Badge, Button } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
-import { useWorkspace } from '@context/WorkspaceProvider'
 import { koppelShift, useAapiMedewerkers, useAapiShifts, useShiftsVanEvent } from '@data/aapi'
-import { updateEvent } from '@data/events'
 
 /**
  * Wie er op dit event staat.
  *
- * ── Waarom de ploeg hier staat en niet op de fiche ────────────────────────
- * "Medewerkers" was een rijtje vinkjes op de fiche, naast Verantwoordelijk.
- * Dat zette twee verschillende vragen onder elkaar: wie het dossier draagt
- * (één iemand van het bureau) en wie er die dag komt werken (een ploeg). De
- * tweede vraag wordt ondertussen grotendeels door AAPI beantwoord, en dan is
- * het rijtje vinkjes het derde antwoord op een vraag die al twee keer ergens
- * anders staat. Alles wat over de ploeg gaat staat nu bij elkaar: de mensen
- * die je met de hand aanduidt bovenaan, de shifts uit AAPI eronder.
+ * ── Waarom er hier niemand met de hand bijkomt ────────────────────────────
+ * "Medewerkers" was een rijtje vinkjes op de fiche: duid aan wie er komt
+ * werken. Dat is dezelfde vraag die AAPI beantwoordt, en twee antwoorden op
+ * één vraag gaan uit elkaar lopen — iemand vinkt hier aan, de planning in AAPI
+ * zegt iets anders, en dan is er geen manier meer om te weten welke van de twee
+ * klopt. Zeker niet wanneer er loon aan hangt.
+ *
+ * Dus één bron: AAPI. Wie hier staat, staat daar ingepland; klopt het niet,
+ * dan klopt de planning niet en hoort die rechtgezet te worden waar ze gemaakt
+ * is. Wat hier wél een menselijke beslissing blijft, is bij wélk event een
+ * shift hoort — en ook die loopt via een functie, zodat ze één keer bestaat.
  *
  * ── De vraag die dit beantwoordt ──────────────────────────────────────────
  * "Staat er zaterdag genoeg volk, en van welk soort." Vandaar de samenvatting
@@ -56,22 +56,8 @@ export default function EventPersoneel({ event }) {
   const { t } = useTaal()
   const toast = useToast()
   const navigate = useNavigate()
-  const { profiles } = useWorkspace()
   const [bezig, setBezig] = useState(null)
 
-  /*
-    Wie je met de hand op een event kan zetten. Personeel staat bovenaan: dat
-    is wie deze lijst het vaakst vult. De socialrol staat er niet tussen, die
-    komt niet werken.
-  */
-  const teKiezen = useMemo(
-    () =>
-      profiles
-        .filter((p) => p.active !== false && p.role !== 'social')
-        .sort((a, b) => (a.role === 'staff' ? 0 : 1) - (b.role === 'staff' ? 0 : 1)),
-    [profiles]
-  )
-  const gekozen = medewerkersVan(event)
 
   const { shifts } = useShiftsVanEvent(event?.id)
   const { opId: medewerkerOpId } = useAapiMedewerkers()
@@ -117,34 +103,15 @@ export default function EventPersoneel({ event }) {
     }
   }
 
-  const zetPloeg = (id) =>
-    updateEvent(event.id, wisselMedewerker(event, id)).catch((err) => toast.error(err.message))
-
-  // Het AAPI-deel tekent zichzelf niet wanneer er niets te melden valt: op
-  // events waar AAPI niet aan te pas komt, is een lege kop alleen maar ruis.
-  // De ploeg die je met de hand aanduidt staat er wél altijd — anders is er
-  // geen plek meer om iemand aan te duiden.
+  // Niets te melden en niets te kiezen: dan hoort dit blok er ook niet te
+  // staan. Een lege kop op elk event is ruis op de events waar AAPI niet aan
+  // te pas komt.
   const heeftAapi = shifts.length > 0 || kandidaten.length > 0
 
   return (
     <section className="je-panel">
       <div className="je-panel__head">
         <span className="je-eyebrow">{t('aapi.event.titel')}</span>
-      </div>
-
-      <div className="je-ploeg">
-        <span className="je-caps">{t('events.fiche.medewerkers')}</span>
-        <div className="je-ploeg__mensen">
-          {teKiezen.map((p) => (
-            <Checkbox
-              key={p.id}
-              label={p.fullName || p.email}
-              checked={gekozen.includes(p.id)}
-              onChange={() => zetPloeg(p.id)}
-            />
-          ))}
-        </div>
-        <span className="je-muted-caption">{t('events.fiche.medewerkers_hint')}</span>
       </div>
 
       {!heeftAapi ? null : (

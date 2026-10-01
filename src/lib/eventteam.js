@@ -16,6 +16,12 @@
  *   andere vraag: zij krijgen geen meldingen over de offerte en tellen niet mee
  *   in de werklast, ze staan op het rooster.
  *
+ * Dat tweede veld wordt sinds de AAPI-koppeling niet meer geschreven. Wie er
+ * komt werken staat in AAPI, en twee antwoorden op die vraag lopen uit elkaar
+ * zodra iemand er maar één bijwerkt — met loon eraan is dat geen detail. De
+ * lezer blijft, want de rijen van vóór die beslissing staan er nog, en het
+ * scherm "mijn events" van een medewerker hangt eraan.
+ *
  * Dit staat los van de schermen zodat "één verantwoordelijke" een eigenschap
  * van de gegevens is en niet van een keuzelijstje.
  */
@@ -39,17 +45,6 @@ export function medewerkersVan(ev) {
  */
 export function zetVerantwoordelijke(id) {
   return { assignees: id ? [id] : [] }
-}
-
-/** De patch die de ploeg zet, zonder dubbels en zonder gaten. */
-export function zetMedewerkers(ids) {
-  return { medewerkers: [...new Set((ids ?? []).filter(Boolean))] }
-}
-
-/** Iemand erbij of eraf in de ploeg. */
-export function wisselMedewerker(ev, id) {
-  const nu = medewerkersVan(ev)
-  return zetMedewerkers(nu.includes(id) ? nu.filter((m) => m !== id) : [...nu, id])
 }
 
 /**

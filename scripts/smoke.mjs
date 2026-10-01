@@ -1664,18 +1664,15 @@ await test('een event heeft één verantwoordelijke en een aparte ploeg', async 
   )
 
   /*
-    De ploeg staat niet meer op de fiche maar in het personeelsblok, naast de
-    shifts die uit AAPI komen. Het is één vraag — wie komt er die dag werken —
-    en die hoorde niet op twee plaatsen te staan.
+    Er is geen rijtje vinkjes meer om een ploeg aan te duiden — niet op de
+    fiche en niet in het personeelsblok. Wie er komt werken staat in AAPI, en
+    twee antwoorden op die vraag lopen uit elkaar zodra er maar één bijgewerkt
+    wordt.
   */
   const fiche = await page.locator('.je-fiche').innerText()
   zouden(!fiche.includes('Medewerkers'), `de ploeg staat nog op de fiche: ${fiche.slice(0, 300)}`)
-  const ploeg = page.locator('.je-panel').filter({ hasText: 'Personeel' }).locator('.je-ploeg')
-  zouden((await ploeg.count()) === 1, 'de ploeg staat niet in het personeelsblok')
-  zouden(
-    (await ploeg.innerText()).includes('Lotte'),
-    `zaalpersoneel staat niet bij de ploeg: ${await ploeg.innerText()}`
-  )
+  const hele = await inhoud(page)
+  zouden(!bevat(hele, 'Medewerkers'), `er is nog een plek om een ploeg aan te duiden: ${hele.slice(0, 600)}`)
 
   // Zaalpersoneel staat alleen bij de ploeg en nooit bij de verantwoordelijke:
   // zij lezen de bedragen niet eens.
@@ -1726,15 +1723,23 @@ await test('de ploeg uit AAPI staat erbij, zonder wat er niet hoort', async () =
   await page.close()
 })
 
-await test('de medewerkers staan onder Team, met waar ze staan', async () => {
+await test('op de medewerkerspagina komt er niemand met de hand bij', async () => {
+  /*
+    De ploeg komt uit AAPI en nergens anders. Er stond hier ook een lijst met
+    wie er in JE Plan een account had, met een uitnodigingsknop erboven — twee
+    waarheden over dezelfde vraag, waarvan de bovenste bijna altijd leeg was.
+    Wie in dienst is, staat in AAPI; daar hangt de Dimona aan.
+  */
   const page = await tabblad('/medewerkers')
+  await page.waitForTimeout(1000)
   const tekst = await inhoud(page)
   zouden(bevat(tekst, 'Medewerkers'), 'de medewerkerspagina opent niet')
-  for (const wie of ['Lotte Vrijsen', 'Sam Deckers']) {
-    zouden(bevat(tekst, wie), `${wie} staat niet in de lijst: ${tekst.slice(0, 400)}`)
+
+  for (const weg of ['Iemand erbij', 'Uitnodigen', 'In dienst\n', 'Gestopt']) {
+    zouden(!bevat(tekst, weg), `"${weg.trim()}" staat er nog: ${tekst.slice(0, 500)}`)
   }
-  // Dit is waarvoor de pagina bestaat: niet wie er is, maar wie er zaterdag staat.
-  zouden(bevat(tekst, 'Trouw Niels en Inez'), `er staat niet bij waar ze werken: ${tekst.slice(0, 600)}`)
+  zouden((await page.getByRole('button', { name: 'Uitnodigen' }).count()) === 0, 'de uitnodigingsknop staat er nog')
+
   // En geen uurtarieven: dit scherm staat open op een telefoon achter de bar.
   zouden(!/€\s?\d/.test(tekst), `er staan bedragen op de medewerkerspagina: ${tekst.slice(0, 400)}`)
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)

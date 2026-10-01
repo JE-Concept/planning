@@ -9,39 +9,17 @@ export default {
 
   'medewerkers.titel': { nl: 'Medewerkers', en: 'Crew' },
   'medewerkers.uitleg': {
-    nl: 'Studenten en flexi’s die komen werken. Zij vullen de openings- en sluitingslijsten in en zien alleen de events waarop ze staan.',
-    en: 'Students and flexi staff. They fill in the opening and closing lists and only see the events they are on.',
+    nl: 'Studenten en flexi’s die komen werken, zoals AAPI ze kent. Wijzigen doe je daar; hier lees je wie er is.',
+    en: 'Students and flexi staff, as AAPI knows them. Change them there; here you read who is on the books.',
   },
 
-  'medewerkers.actief': { nl: 'In dienst', en: 'Active' },
-  'medewerkers.gestopt': { nl: 'Gestopt', en: 'Left' },
+  'medewerkers.laden': { nl: 'Even geduld…', en: 'One moment…' },
   'medewerkers.leeg': { nl: 'Nog geen medewerkers', en: 'No crew yet' },
   'medewerkers.leeg_uitleg': {
-    nl: 'Nodig iemand uit met zijn e-mailadres. Hij krijgt een profiel zodra hij zich met dat adres aanmeldt.',
-    en: 'Invite someone by email. They get a profile the moment they sign in with that address.',
+    nl: 'De ploeg komt uit de personeelslijst van AAPI. Stuur die export door of laad hem op, en iedereen staat hier.',
+    en: 'The crew comes from the AAPI staff list. Forward or upload that export and everyone appears here.',
   },
-
-  'medewerkers.erbij': { nl: 'Iemand erbij', en: 'Add someone' },
-  'medewerkers.erbij_hint': {
-    nl: 'Het adres waarmee hij zich aanmeldt bij Google.',
-    en: 'The address they sign in with at Google.',
-  },
-  'medewerkers.uitnodigen': { nl: 'Uitnodigen', en: 'Invite' },
-  'medewerkers.uitgenodigd': {
-    nl: '{wie} is uitgenodigd. Zijn profiel komt er bij zijn eerste aanmelding.',
-    en: '{wie} has been invited. Their profile appears on their first sign-in.',
-  },
-  'medewerkers.na_uitnodiging': {
-    nl: 'De afdeling gaat mee met de uitnodiging, zodat hij meteen de juiste lijst ziet.',
-    en: 'The department travels with the invite, so they see the right list straight away.',
-  },
-
-  'medewerkers.afdeling': { nl: 'Afdeling', en: 'Department' },
-  'medewerkers.afdeling_van': { nl: 'Afdeling van {wie}', en: 'Department of {wie}' },
-  'medewerkers.geen_afdeling': { nl: 'Geen afdeling', en: 'No department' },
-
-  'medewerkers.nergens': { nl: 'Staat nergens ingepland', en: 'Not scheduled anywhere' },
-  'medewerkers.en_meer': { nl: 'en nog {aantal}', en: 'and {aantal} more' },
+  'medewerkers.naar_import': { nl: 'Naar de import', en: 'To the import' },
 
   'medewerkers.uit_aapi': { nl: 'In dienst volgens AAPI', en: 'Employed according to AAPI' },
   'medewerkers.uit_aapi_uitleg': {
@@ -49,9 +27,6 @@ export default {
     en: 'From the AAPI staff list. Read-only — change it there. This holds what you need to schedule and reach someone; addresses, national numbers and bank details stay in AAPI.',
   },
   'medewerkers.sinds': { nl: 'sinds {datum}', en: 'since {datum}' },
-
-  'medewerkers.weg': { nl: 'Uit dienst', en: 'Archive' },
-  'medewerkers.terug': { nl: 'Terug in dienst', en: 'Reinstate' },
 
   // ── Wat een medewerker zelf ziet ───────────────────────────────────────
   'nav.mijnevents': { nl: 'Mijn events', en: 'My events' },
