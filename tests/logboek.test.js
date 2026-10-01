@@ -113,7 +113,10 @@ describe('het logboek voorlezen', () => {
 
   it('noemt een veld bij zijn naam uit de tool, niet uit de database', () => {
     expect(veldNaam('quoteAmount')).toBe('het offertebedrag')
-    expect(veldNaam('assignees')).toBe('de uitvoerders')
+    // `assignees` heet in de databank nog zo, maar draagt sinds de splitsing
+    // één naam: wie verantwoordelijk is. De ploeg staat in `medewerkers`.
+    expect(veldNaam('assignees')).toBe('de verantwoordelijke')
+    expect(veldNaam('medewerkers')).toBe('de medewerkers')
     // Een veld dat nog geen naam heeft, blijft zichzelf — geen lege plek.
     expect(veldNaam('ietsNieuws')).toBe('ietsNieuws')
   })

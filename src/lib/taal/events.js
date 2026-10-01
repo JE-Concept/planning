@@ -98,7 +98,13 @@ export default {
   'events.fiche.voorschot_van': { nl: 'voorschot {bedrag}', en: 'deposit {bedrag}' },
   'events.fiche.titel': { nl: 'Fiche', en: 'Details' },
   'events.fiche.geen_datum': { nl: 'nog geen datum', en: 'no date yet' },
-  'events.fiche.team': { nl: 'Team', en: 'Team' },
+  'events.fiche.verantwoordelijk': { nl: 'Verantwoordelijk', en: 'Owner' },
+  'events.fiche.niemand': { nl: 'Nog niemand', en: 'Nobody yet' },
+  'events.fiche.medewerkers': { nl: 'Medewerkers', en: 'Crew' },
+  'events.fiche.medewerkers_hint': {
+    nl: 'Wie er die dag komt werken. Zij zien het event en de lijsten, geen prijzen.',
+    en: 'Who is working that day. They see the event and the lists, not the prices.',
+  },
 
   // ── Eén event ──────────────────────────────────────────────────────────
   'events.detail.laden': { nl: 'Event laden…', en: 'Loading event…' },
@@ -244,6 +250,10 @@ export default {
   'events.ontbreekt.offertebedrag': { nl: 'offertebedrag', en: 'quote amount' },
 
   // ── Een nieuw event ────────────────────────────────────────────────────
+  'events.postvak_aantal': {
+    nl: 'Postvak — {aantal} stuk(s) post die nergens bij hoort',
+    en: 'Inbox — {aantal} message(s) that belong nowhere yet',
+  },
   'events.nieuw': { nl: 'Nieuw event', en: 'New event' },
   'events.nieuw.custom': { nl: 'Custom event', en: 'Custom event' },
   'events.nieuw.uit_formule': { nl: 'Bestaande formule', en: 'Existing formule' },

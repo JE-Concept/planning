@@ -74,7 +74,16 @@ describe('demo/regels.js spiegelt firestore.rules', () => {
     // test stilzwijgend groen maken: nul collecties vergelijken lukt altijd.
     expect(Object.keys(UIT_RULES).length).toBeGreaterThan(25)
     expect(UIT_RULES.tasks).toEqual(['isTeam'])
-    expect(UIT_RULES.socialEvents).toEqual(['isTeam', 'isSocial'])
+    /*
+      `socialEvents` staat hier met opzet níét meer in. Haar leesregel hangt
+      sinds de medewerkers aan de inhoud van het document — een medewerker leest
+      alleen de rijen waar hij zelf in `medewerkers` staat — en dat is geen
+      rolpredicaat meer. De lezer hierboven slaat zo'n regel over, en dat is
+      juist: wat hij niet begrijpt, keurt hij niet goed. Dat die regel klopt,
+      bewijst de browsertest met een echte medewerker.
+    */
+    expect(UIT_RULES.socialEvents).toBeUndefined()
+    expect(UIT_RULES.socialPosts).toBeDefined()
   })
 
   for (const [collectie, predicaten] of Object.entries(UIT_RULES)) {

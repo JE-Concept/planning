@@ -5,6 +5,7 @@ import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
 import { bestellijstVoorEvent, prijsVan } from '@lib/formules'
 import { isDone } from '@lib/taak'
+import { kaartMensen, medewerkersVan, verantwoordelijkeVan } from '@lib/eventteam'
 import { useAuth } from '@context/AuthProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { createTask, deleteTask, setTaskStatus, statusFields, updateTask, useTasks } from './tasks'
@@ -47,7 +48,14 @@ export function toEvent(task, { brandById = {} } = {}) {
     quoteAmount: quoteOf(task),
     concept: brand?.name ?? null,
     conceptShort: brand ? shortBrand(brand.name) : null,
-    team: task.assignees ?? [],
+    /*
+      `team` is wat op de kaarten komt, en dat is alleen de verantwoordelijke.
+      De ploeg staat apart: op een kaart van tweehonderd pixels past één vraag,
+      en dat is wie je hierover aanspreekt. Zie `@lib/eventteam`.
+    */
+    team: kaartMensen(task),
+    verantwoordelijke: verantwoordelijkeVan(task),
+    medewerkers: medewerkersVan(task),
   }
 }
 

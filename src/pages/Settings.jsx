@@ -121,7 +121,7 @@ export default function Settings() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 1040 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <Tabs items={TABS.map((x) => ({ value: x.value, label: t(x.sleutel) }))} value={tab} onChange={setTab} />
             {tab === 'team' ? <TeamTab /> : null}
             {tab === 'pijplijn' ? <PipelineTab /> : null}

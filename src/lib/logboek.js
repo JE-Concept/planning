@@ -33,6 +33,7 @@ export const VELDNAAM = {
   statusName: 'logboek.veld.status',
   dueDate: 'logboek.veld.deadline',
   assignees: 'logboek.veld.uitvoerders',
+  medewerkers: 'logboek.veld.medewerkers',
   priority: 'logboek.veld.prioriteit',
   archived: 'logboek.veld.archief',
   budget: 'logboek.veld.budget',

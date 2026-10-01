@@ -3,7 +3,14 @@ import { onSnapshot, query, where } from 'firebase/firestore'
 import { COL, col, fromQuery, ref } from '@lib/collections'
 
 /**
- * De events zoals de socialrol ze ziet: zonder één bedrag erin.
+ * De events zonder één bedrag erin, voor wie de echte niet mag lezen.
+ *
+ * Twee rollen lezen hier: de socialrol, die content maakt bij events, en de
+ * medewerkers, die de events willen zien waarop ze staan. Welke rijen wie mag,
+ * staat in `firestore.rules` — de socialrol alle, een medewerker alleen die
+ * waar hij zelf in `medewerkers` staat.
+ *
+ * Hieronder: de socialrol ziet ze allemaal.
  *
  * `socialEvents` is een kale kopie van de events die content moeten opleveren,
  * bijgehouden door een trigger. Waarom die kopie bestaat staat in
@@ -48,6 +55,44 @@ export function useSocialEventKaarten({ aan = true } = {}) {
  * Dat is geen beperking maar de waarheid — in deze kopie staan precies de events
  * die content moeten opleveren, en aan de andere heeft ze niets te hangen.
  */
+export function useMijnEvents(uid) {
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(Boolean(uid))
+
+  useEffect(() => {
+    if (!uid) {
+      setEvents([])
+      setLoading(false)
+      return undefined
+    }
+
+    /*
+      De vraag is zelf al beperkt tot wat deze persoon mag zien, en dat moet
+      ook: de regels staan een medewerker alleen de rijen toe waar hij in
+      `medewerkers` staat, en Firestore weigert een `list` die méér zou kunnen
+      opleveren. Een breder abonnement met een filter erachteraan geeft hier
+      dus geen gegevens maar een rechtenfout — en dat is de bedoeling.
+
+      Geen `orderBy` erbij: dat zou een samengestelde index vragen voor een
+      lijst van hooguit een stuk of twintig events. Sorteren doet de browser.
+    */
+    return onSnapshot(
+      query(col(COL.socialEvents), where('medewerkers', 'array-contains', uid)),
+      (snap) => {
+        setEvents(
+          fromQuery(snap)
+            .filter((e) => !e.parentId)
+            .sort((a, b) => new Date(a.eventDate ?? 0) - new Date(b.eventDate ?? 0))
+        )
+        setLoading(false)
+      },
+      () => setLoading(false)
+    )
+  }, [uid])
+
+  return { events, loading }
+}
+
 export function useSocialEventZoeker(term, { max = 25, enabled = true } = {}) {
   const { events, loading } = useSocialEventKaarten({ aan: enabled })
 

@@ -204,11 +204,15 @@ export async function countTasksWithTag(naam) {
 // ─── Member administration ──────────────────────────────────────────────────
 
 /** An invite is what turns a Google sign-in into a profile. */
-export function inviteMember({ email, role = 'member', invitedBy }) {
+export function inviteMember({ email, role = 'member', department = null, invitedBy }) {
   const key = email.trim().toLowerCase()
   return setDoc(ref(COL.invites, key), {
     email: key,
     role,
+    // Voor medewerkers: hun afdeling bepaalt welke punten ze op de openings- en
+    // sluitingslijst zien. Die staat hier al, zodat iemand bij zijn eerste
+    // aanmelding meteen de juiste lijst krijgt in plaats van een lege.
+    department,
     invitedBy: invitedBy ?? null,
     createdAt: serverTimestamp(),
   }).then(() => key)

@@ -25,7 +25,7 @@ import {
   mailVoorToewijzing,
 } from './mail.js'
 import { taalVan, zeg } from './teksten.js'
-import { heeftSocial, kopieVan, moetBijwerken } from './social-projectie.js'
+import { hoortInSpiegel, kopieVan, moetBijwerken } from './social-projectie.js'
 import { AUDIT, regelVan, teOud } from './audit.js'
 import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
@@ -105,6 +105,10 @@ export const ensureProfile = onCall({ region: REGION }, async (request) => {
     fullName: auth.token.name ?? null,
     avatarUrl: auth.token.picture ?? null,
     role,
+    // De afdeling komt uit de uitnodiging. Zonder dit krijgt een medewerker bij
+    // zijn eerste aanmelding een lege openings- en sluitingslijst, en moet er
+    // alsnog een beheerder aan te pas komen.
+    department: invite.data()?.department ?? null,
     hourlyRate: null,
     active: true,
     createdAt: FieldValue.serverTimestamp(),
@@ -843,9 +847,8 @@ export const spiegelSocialEvent = onDocumentWritten(
     const voor = event.data?.before?.exists ? event.data.before.data() : null
     const spiegel = db.collection('socialEvents').doc(event.params.taskId)
 
-    const hoort = Boolean(na) && !na.archived && !na.parentId && heeftSocial(na)
-    if (!hoort) {
-      if (voor && heeftSocial(voor)) await spiegel.delete().catch(() => {})
+    if (!hoortInSpiegel(na)) {
+      if (hoortInSpiegel(voor)) await spiegel.delete().catch(() => {})
       return
     }
 

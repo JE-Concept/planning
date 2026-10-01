@@ -5,7 +5,7 @@ import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { PLANNING, planningKleur, planningVan } from '@lib/planning'
 import { useNarrow } from '@lib/useNarrow'
 import { ARCHIEF_NA_DAGEN, jaarVan, jarenIn, splitsArchief } from '@lib/archief'
-import { Bar, Button, Icon, IconButton, Select, Stat, Tabs, Tag } from '@components/ds'
+import { Badge, Bar, Button, Icon, IconButton, Select, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
 import EventRow from '@components/events/EventRow'
@@ -23,6 +23,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { byEventDate, moveEvent, useEvents } from '@data/events'
+import { useLosseMails } from '@data/mails'
 import { Spinner } from '@ui/index'
 
 const VIEWS = [
@@ -65,6 +66,9 @@ export default function Events() {
   const { t } = useTaal()
   const { brands, brandById, eventStatuses, profileById } = useWorkspace()
   const { events, tasksByEvent, loading } = useEvents()
+  // Wat er in het postvak ligt en nergens bij hoort: het getal naast het
+  // envelopje hierboven. Dezelfde bron als de aanvragenpagina zelf.
+  const { mails: losse } = useLosseMails()
   const [dialog, setDialog] = useState(false)
 
   const onCalendarRoute = location.pathname === '/kalender'
@@ -136,9 +140,23 @@ export default function Events() {
         eyebrow={view === 'kalender' ? null : `JE Concept · ${t('events.lopend', { aantal: lopend.length })}`}
         title={view === 'kalender' ? t('nav.kalender') : t('nav.events')}
         actions={
-          <Button size="sm" iconLeft="plus" onClick={() => setDialog(true)}>
-            {t('events.nieuw')}
-          </Button>
+          <>
+            {/*
+              Het postvak hing als menu-ingang onder Events, en stond er elke dag
+              voor niets: wat binnenkomt hangt meestal al aan een event. Hier is
+              het een envelopje met het aantal erbij — zie je niets, dan is er
+              niets, en hoef je er niet te gaan kijken.
+            */}
+            <IconButton
+              icon="mail"
+              label={losse.length ? t('events.postvak_aantal', { aantal: losse.length }) : t('nav.aanvragen')}
+              onClick={() => navigate('/aanvragen')}
+            />
+            {losse.length ? <Badge tone="accent">{losse.length}</Badge> : null}
+            <Button size="sm" iconLeft="plus" onClick={() => setDialog(true)}>
+              {t('events.nieuw')}
+            </Button>
+          </>
         }
       />
 

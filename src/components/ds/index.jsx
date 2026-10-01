@@ -7,7 +7,7 @@ import {
   ShieldCheck, Sparkles, Square, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
 } from 'lucide-react'
 import { cn } from '@lib/cn'
-import { portretVan } from '@lib/portret'
+import { portretVoor } from '@lib/portret'
 
 /**
  * De componenten uit het JE Concept Design System, als React.
@@ -606,8 +606,18 @@ export function Avatar({ profile, size = 'sm', ring = false, tone = 'pale', titl
   const label = title ?? (profile?.fullName || profile?.email || 'Niet toegewezen')
   const px = typeof size === 'number' ? size : (AVATAR_PX[size] ?? AVATAR_PX.sm)
 
-  // Het profiel wint; staat er niets, dan het portret uit de handtekening.
-  const bron = profile?.avatarUrl || portretVan(profile?.email)
+  /*
+    Het profiel wint, dan het portret uit de handtekening, dan de initialen.
+
+    `stuk` vangt het geval ertussenin: een `avatarUrl` die niet laadt. De
+    profielen dragen de foto die Google bij het aanmelden meegaf, en die adressen
+    verlopen of weigeren voor iedereen behalve de eigenaar — wat je dan ziet is
+    een gebroken plaatje naast iemands naam. Valt hij om, dan zakken we door naar
+    de volgende bron in plaats van het kapotte te blijven tonen.
+  */
+  const [stuk, setStuk] = useState([])
+  const kandidaten = [profile?.avatarUrl, portretVoor(profile)].filter(Boolean)
+  const bron = kandidaten.find((k) => !stuk.includes(k)) ?? null
 
   return (
     <span
@@ -621,7 +631,15 @@ export function Avatar({ profile, size = 'sm', ring = false, tone = 'pale', titl
         style={{ fontSize: px >= 44 ? Math.round(px / 3) : px >= 34 ? 12 : px >= 26 ? 10 : 9, ...AVATAR_TONEN[tone] }}
       >
         {bron ? (
-          <img src={bron} alt={label} referrerPolicy="no-referrer" className="je-avatar__foto" />
+          <img
+            src={bron}
+            alt={label}
+            referrerPolicy="no-referrer"
+            className="je-avatar__foto"
+            // Elke mislukte bron valt definitief af, dus dit eindigt altijd —
+            // bij de initialen, als geen van beide laadt.
+            onError={() => setStuk((lijst) => (lijst.includes(bron) ? lijst : [...lijst, bron]))}
+          />
         ) : (
           initials(profile?.fullName, profile?.email)
         )}

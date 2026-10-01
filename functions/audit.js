@@ -40,6 +40,7 @@ export const AUDIT = {
       'statusName',
       'dueDate',
       'assignees',
+      'medewerkers',
       'priority',
       'archived',
       'budget',

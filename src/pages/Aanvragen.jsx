@@ -35,7 +35,7 @@ export default function Aanvragen() {
         eyebrow={`JE Concept · ${t('mail.postvak.aantal', { aantal: mails.length })}`}
         title={t('nav.aanvragen')}
       />
-      <div className="je-pagebody" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', maxWidth: 960 }}>
+      <div className="je-pagebody" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         {laadt ? (
           <div className="je-muted-caption" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <Spinner /> {t('mail.postvak.laden')}

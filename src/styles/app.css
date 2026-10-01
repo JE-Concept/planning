@@ -2778,3 +2778,79 @@ button.je-paneel-kaart:hover {
   display: block;
   object-fit: contain;
 }
+
+/* ── Medewerkers ───────────────────────────────────────────────────────── */
+
+/* Eén regel per persoon. Breekt op een telefoon netjes af in plaats van de
+   events naast de naam te persen. */
+.je-medewerker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-hairline);
+}
+.je-panel__head + .je-medewerker { border-top: none; }
+.je-medewerker__adres { flex: 1 1 240px; }
+
+/* ── Mijn events (medewerker) ──────────────────────────────────────────── */
+
+/* Eén event per regel, met de datum als blok links. Dit scherm staat op een
+   telefoon in een keuken; vandaar de grote dag en de korte regels. */
+.je-mijnevent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-hairline);
+}
+.je-panel__head + .je-mijnevent { border-top: none; }
+.je-mijnevent__datum {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 56px;
+  color: var(--text-accent);
+}
+.je-mijnevent__dag { font: var(--fw-medium) 24px/1 var(--font-display); }
+.je-mijnevent__regels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-top: 4px;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-2);
+}
+.je-mijnevent__regels > span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ── Profiel ───────────────────────────────────────────────────────────── */
+
+/* Twee kolommen zodra er plaats voor is. De kaarten houden zichzelf leesbaar
+   breed; de pagina laat het scherm niet half leeg staan. */
+.je-profiel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  align-content: start;
+  gap: var(--space-6);
+}
+
+.je-voorkeuren {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+/* Naam links, knop rechts; op een telefoon onder elkaar. */
+.je-voorkeur {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-hairline);
+}
+.je-voorkeur__naam { font: var(--type-body-sm); font-weight: 600; }

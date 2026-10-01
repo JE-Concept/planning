@@ -327,10 +327,11 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  // 64 sinds de herhalingen: één query op `herhalingen`, gesorteerd op titel.
+  // 65 sinds de medewerkers: één vraag op `socialEvents`, op wie erin staat —
+  // de events die een medewerker van zichzelf mag lezen.
   // Die heeft geen samengestelde index nodig — één veld, één richting — en
   // staat daarom wel hier en niet in de tabel hierboven.
-  const QUERIES_IN_DE_APP = 64
+  const QUERIES_IN_DE_APP = 65
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

@@ -43,6 +43,8 @@ const Goals          = lazy(() => import('@pages/Goals'))
 const Customers      = lazy(() => import('@pages/Customers'))
 const Settings       = lazy(() => import('@pages/Settings'))
 const Profiel        = lazy(() => import('@pages/Profiel'))
+const Medewerkers    = lazy(() => import('@pages/Medewerkers'))
+const MijnEvents     = lazy(() => import('@pages/MijnEvents'))
 const NotFound       = lazy(() => import('@pages/NotFound'))
 
 function Loading() {
@@ -86,6 +88,11 @@ function Authenticated() {
           <Pages>
             <Routes>
               <Route path="/openen-sluiten" element={<Checklists />} />
+              {/*
+                De events waarop hij staat, uit de kale kopie zonder bedragen.
+                Zie `@pages/MijnEvents` voor waarom dat een andere bron is.
+              */}
+              <Route path="/mijn-events" element={<MijnEvents />} />
               {/* Ook wie maar één scherm mag zien, heeft een naam en een foto. */}
               <Route path="/profiel" element={<Profiel />} />
               <Route path="*" element={<Navigate to="/openen-sluiten" replace />} />
@@ -146,6 +153,7 @@ function Authenticated() {
             <Route path="/overleg" element={<Meetings />} />
             <Route path="/uren" element={<TimeTracking />} />
             <Route path="/rooster" element={<Rooster />} />
+            <Route path="/medewerkers" element={<Medewerkers />} />
             <Route path="/logboek" element={<Logboek />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/instellingen" element={<Settings />} />

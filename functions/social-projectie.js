@@ -38,7 +38,14 @@ export const VELDEN = [
   'socialWanted',
   'dueDate',
   'eventDate',
+  'startDate',
   'date',
+  // Voor de ploeg: wie er komt werken, en met hoeveel gasten. Een aantal is
+  // geen bedrag — wie achter de bar staat moet weten of het er veertig of
+  // honderdveertig zijn.
+  'medewerkers',
+  'pax',
+  'kids',
   'location',
   'locationPlaceId',
   'locationLat',
@@ -66,6 +73,27 @@ export function heeftSocial(taak) {
   if (!taak) return false
   if (taak.socialWanted === false) return false
   return Boolean(taak.socialStage) || taak.socialWanted === true || SOCIAL_VANAF.includes(norm(taak.statusName))
+}
+
+/** Staat er een ploeg op dit event? Dan hebben zíj de kale kopie nodig. */
+export function heeftPloeg(taak) {
+  return Array.isArray(taak?.medewerkers) && taak.medewerkers.length > 0
+}
+
+/**
+ * Of dit event een kale kopie hoort te hebben.
+ *
+ * Twee redenen, één kopie. De socialrol leest deze collectie omdat zij content
+ * maakt bij events; een medewerker leest er de events waarop hij staat. Beiden
+ * horen geen bedragen te zien, en het antwoord op "hoe verberg je een veld in
+ * Firestore" is nog altijd: je verbergt het niet, je kopieert het niet.
+ *
+ * Wie welke rij mag lezen staat in `firestore.rules`: de socialrol mag ze
+ * allemaal, een medewerker alleen die waar hij zelf in `medewerkers` staat.
+ */
+export function hoortInSpiegel(taak) {
+  if (!taak || taak.archived || taak.parentId) return false
+  return heeftSocial(taak) || heeftPloeg(taak)
 }
 
 /** De kale versie van een event. Alleen wat in `VELDEN` staat. */

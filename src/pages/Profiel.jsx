@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { formatCurrency } from '@lib/format'
 import { Avatar, Button, Field, Input } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
+import Voorkeuren from '@components/profiel/Voorkeuren'
 import { ROLE_LABEL } from '@components/layout/Sidebar'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -93,7 +94,12 @@ export default function Profiel() {
     <div>
       <PageHeader eyebrow={t('profiel.eyebrow')} title={t('profiel.titel')} subtitle={t('profiel.uitleg')} />
 
-      <div className="je-pagebody" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 680 }}>
+      {/*
+        Twee kolommen op een breed scherm, onder elkaar op een smal. De velden
+        zelf blijven leesbaar breed — een naamveld van twee schermbreedtes is
+        geen betere naam — maar de pagina laat het scherm niet half leeg.
+      */}
+      <div className="je-pagebody je-profiel">
         <section className="je-card" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-6)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -147,6 +153,8 @@ export default function Profiel() {
             </form>
           </div>
         </section>
+
+        <Voorkeuren />
 
         <section className="je-card" style={{ padding: 'var(--space-6)' }}>
           <h2 style={{ font: 'var(--type-h4)', margin: 0 }}>{t('profiel.vast')}</h2>

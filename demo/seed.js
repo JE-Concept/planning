@@ -195,7 +195,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
     timeEstimateMinutes: o.estimate ?? null,
     budget: o.budget ?? null, location: o.location ?? null,
     locationPlaceId: o.placeId ?? null, locationLat: o.lat ?? null, locationLng: o.lng ?? null,
-    assignees: o.assignees ?? [], tags: o.tags ?? [],
+    assignees: o.assignees ?? [], medewerkers: o.medewerkers ?? [], tags: o.tags ?? [],
     customerId: o.customerId ?? null,
     customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
     socialStage: o.socialStage ?? null,
@@ -225,6 +225,9 @@ function taak(id, listId, statuses, statusName, o = {}) {
     socialWanted: o.socialWanted ?? null,
     dueDate: o.dueDate ?? null,
     eventDate: o.eventDate ?? (o.parentId ? null : o.dueDate ?? null),
+    startDate: o.startDate ?? null,
+    pax: o.pax ?? null,
+    kids: o.kids ?? null,
     location: o.location ?? null,
     locationPlaceId: o.placeId ?? null,
     locationLat: o.lat ?? null,
@@ -232,6 +235,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
     customerName: o.customerId ? KLANTNAMEN[o.customerId] : null,
     brandId: o.brandId ?? null,
     assignees: o.assignees ?? [],
+    medewerkers: o.medewerkers ?? [],
     tags: o.tags ?? [],
     parentId: o.parentId ?? null,
     position: pos,
@@ -240,12 +244,16 @@ function taak(id, listId, statuses, statusName, o = {}) {
 }
 
 /**
- * De kale kopie van een event, zoals de socialrol ze ziet.
+ * De kale kopie van een event: zonder één bedrag erin.
+ *
+ * Twee rollen lezen hier. De socialrol, die er content bij maakt, en de
+ * medewerkers, die de events willen zien waarop ze staan — daarom krijgt ook
+ * elk event met een ploeg een kopie.
  *
  * In de echte tool houdt een trigger deze bij (`functions/social-projectie.js`);
  * de demo heeft geen functions, dus doet de seed het. Wat erin mag staat daar
- * als witte lijst, en hier staat precies hetzelfde — met opzet géén `budget`,
- * `quoteAmount` of `pax`.
+ * als witte lijst, en hier staat precies hetzelfde — met opzet géén `budget`
+ * of `quoteAmount`.
  *
  * Dat de twee uit elkaar kunnen lopen is het risico van een demo zonder server.
  * Het alternatief — de socialrol in de demo op de echte events laten kijken —
@@ -254,15 +262,16 @@ function taak(id, listId, statuses, statusName, o = {}) {
  */
 const SOCIAL_VANAF = ['ready to invoice', 'invoiced', 'complete']
 function spiegelSocial(id, kaart) {
-  const hoortErop =
+  const voorSocial =
     kaart.socialWanted !== false &&
     (Boolean(kaart.socialStage) || kaart.socialWanted === true || SOCIAL_VANAF.includes(kaart.statusName))
-  if (!hoortErop || kaart.parentId) return
+  const voorPloeg = (kaart.medewerkers ?? []).length > 0
+  if ((!voorSocial && !voorPloeg) || kaart.parentId) return
   seedDoc('socialEvents', id, { ...kaart, taskId: id, bijgewerkt: NU })
 }
 
 taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { planning: 'bezig', pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],
-  title: 'Trouw Niels en Inez', assignees: ['u-jasper', 'u-elke'], priority: 2, customerId: 'k-niels-inez',
+  title: 'Trouw Niels en Inez', assignees: ['u-jasper'], medewerkers: ['u-lotte', 'u-sam'], priority: 2, customerId: 'k-niels-inez',
   dueDate: dag(6), budget: 16399, location: 'Hoeve Vanhove, Kortessem',
   // Eén event met een echte plek erachter, zodat de kaartlink op de fiche te
   // zien is zonder dat de demo een Google-sleutel nodig heeft.
@@ -275,7 +284,10 @@ taak('t-trouw-2', 'l-overview', OVERVIEW, 'complete',     { parentId: 't-trouw',
 taak('t-trouw-3', 'l-overview', OVERVIEW, 'create offer', { parentId: 't-trouw', title: 'Prijs open bar apart opgeven', assignees: ['u-elke'] })
 
 taak('t-blum', 'l-overview', OVERVIEW, 'offer accepted', { pax: 180, formule: 'Receptie + diner + dansfeest', eventType: 'Bedrijfsevent',
-  title: 'Blum België — 20-jarig bestaan', assignees: ['u-jasper'], priority: 2, customerId: 'k-blum',
+  // Jasper staat hier zelf in de ploeg: de demo draait altijd onder zijn
+  // account, ook wanneer je de rol op personeel zet, en zonder dit zou het
+  // scherm "Mijn events" in de demo leeg blijven.
+  title: 'Blum België — 20-jarig bestaan', assignees: ['u-jasper'], medewerkers: ['u-lotte', 'u-jasper'], priority: 2, customerId: 'k-blum',
   dueDate: dag(82), budget: 24800, location: 'Cultureel Centrum, Sint-Truiden',
   tracked: 35100, comments: 1, tags: ['losse events'], clickupId: '86b1qk4x9',
   description: '180 medewerkers + partners. Onthaal 18.30 · diner 20.00 · dansfeest tot 02.00.\n\nOpbouw donderdag 18 december vanaf 09.00.',

@@ -75,6 +75,15 @@ service cloud.firestore {
       return isMember() && role() != 'social';
     }
 
+    /*
+      Een medewerker: student of flexi. Beperkte login — de openings- en
+      sluitingslijst, en de events waarop hij zelf staat. Geen bedragen, en dus
+      geen `tasks`: die leest hij uit de kale kopie in `socialEvents`.
+    */
+    function isStaff() {
+      return isMember() && role() == 'staff';
+    }
+
     function isAdmin() {
       return isMember() && role() in ['owner', 'admin'];
     }
@@ -251,6 +260,9 @@ service cloud.firestore {
         && tekstOfNiets('planning')
         && tekstOfNiets('customerId')
         && lijstOfNiets('assignees')
+        // De ploeg die komt werken. Een eigen lijst naast `assignees`, want
+        // dat veld draagt wie verantwoordelijk is — zie `@lib/eventteam`.
+        && lijstOfNiets('medewerkers')
         && lijstOfNiets('tags');
     }
 
@@ -273,7 +285,17 @@ service cloud.firestore {
       een kopie die een browser kan bewerken is geen kopie meer.
     */
     match /socialEvents/{id} {
-      allow read:  if isTeam() || isSocial();
+      /*
+        Een medewerker leest alleen de events waarop hij zelf staat.
+
+        Dat staat hier en niet in een filter op het scherm: een filter in de
+        browser bepaalt wat je ziet, een regel bepaalt wat je krijgt. Dit werkt
+        alleen als de vraag zelf ook zo beperkt is — Firestore weigert een
+        `list` die méér zou kunnen opleveren dan wat hier toegestaan is — en
+        dat is precies de bedoeling: er bestaat geen vraag die er meer uithaalt.
+      */
+      allow read:  if isTeam() || isSocial()
+        || (isStaff() && request.auth.uid in resource.data.medewerkers);
       allow write: if false;
     }
 

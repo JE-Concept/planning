@@ -10,9 +10,6 @@ import { useToast } from '@context/ToastProvider'
 import { useEvents, useWeekEntries } from '@data/events'
 import { stopTimer, useRunningTimer } from '@data/time'
 import TimerStarten from '@components/time/TimerStarten'
-import { AgendaMenuItem, InstallMenuItem, MeldingsVoorkeurenMenuItem, PushMenuItem, TaalMenuItem } from './AppMenuItems'
-import MeldingsVoorkeuren from '@components/notifications/MeldingsVoorkeuren'
-import AgendaAbonnement from '@components/kalenderfeed/AgendaAbonnement'
 
 /**
  * De navigatie in twee niveaus.
@@ -30,8 +27,15 @@ import AgendaAbonnement from '@components/kalenderfeed/AgendaAbonnement'
  * bij Events, en /bord/<id> bij het bord waar je op klikte.
  */
 export function navSecties({ isAdmin, isStaff, isSocial }) {
+  /*
+    Een medewerker ziet twee dingen: zijn lijsten en de events waarop hij staat.
+    Niet de planning, niet de bedragen — de regels laten hem er ook niet bij.
+  */
   if (isStaff) {
-    return [{ to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten', kinderen: [] }]
+    return [
+      { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten', kinderen: [] },
+      { to: '/mijn-events', icon: 'kanban', sleutel: 'nav.mijnevents', kinderen: [] },
+    ]
   }
 
   // De socialrol heeft één plek. De rest weigeren de regels toch; dit zorgt dat
@@ -52,27 +56,22 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
 
   return [
     { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard', kinderen: [] },
+    /*
+      Events heeft geen tweede niveau meer.
+
+      Er stonden vier regels onder: Bord en Kalender waren de tabs van de
+      pagina zelf, Klanten staat nu op het eerste niveau, en het postvak hangt
+      aan een envelopje rechtsboven op de eventpagina — daar kijk je erin, en
+      daar maak je er een event van. Een menu-ingang naar een scherm dat
+      meestal leeg is, is een ingang die je elke dag passeert voor niets.
+    */
     {
       to: '/',
       icon: 'kanban',
       sleutel: 'nav.events',
       end: true,
       match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/aanvragen',
-      kinderen: [
-        /*
-          Bord en Kalender stonden hier ook, en dat was dubbel: de Events-pagina
-          heeft zelf tabs voor Lijst, Bord, Kalender en Archief. Twee bedieningen
-          voor dezelfde keuze betekent dat de ene de andere niet bijhoudt — je
-          klikt in het menu op Kalender en de tab bovenaan zegt nog Bord.
-          De weergave kies je op de pagina; het menu brengt je naar de pagina.
-
-          /kalender blijft wel een route: oude links en de telefoonnavigatie
-          komen daar binnen en landen op de kalenderweergave.
-        */
-        // Het postvak hangt onder Events en niet apart: wat erin staat wordt
-        // een event, of het hoort bij een event dat er al is.
-        { to: '/aanvragen', icon: 'mail', sleutel: 'nav.aanvragen' },
-      ],
+      kinderen: [],
     },
     /*
       Klanten staat op zichzelf en niet onder Events.
@@ -116,9 +115,13 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       to: '/overleg',
       icon: 'messages-square',
       sleutel: 'nav.team',
-      match: (p) => p === '/overleg' || p === '/uren' || p === '/rooster' || p === '/logboek',
+      match: (p) =>
+        p === '/overleg' || p === '/uren' || p === '/rooster' || p === '/logboek' || p === '/medewerkers',
       kinderen: [
         { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
+        // De ploeg die komt werken: studenten en flexi's. Staat bij Team en
+        // niet achter het tandwiel, want dit is wekelijks werk en geen instelling.
+        { to: '/medewerkers', icon: 'users', sleutel: 'nav.medewerkers' },
         { to: '/rooster', icon: 'calendar-days', sleutel: 'nav.rooster' },
         { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
         { to: '/logboek', icon: 'file-text', sleutel: 'nav.logboek' },
@@ -130,7 +133,12 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
 
 /** De platte lijst die de onderbalk op een telefoon nodig heeft. */
 export function mainNav({ isAdmin, isStaff, isSocial }) {
-  if (isStaff) return [{ to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' }]
+  if (isStaff) {
+    return [
+      { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
+      { to: '/mijn-events', icon: 'kanban', sleutel: 'nav.mijnevents' },
+    ]
+  }
   if (isSocial) return [{ to: '/social', icon: 'share-2', sleutel: 'nav.socials' }]
   return [
     { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
@@ -366,14 +374,21 @@ function SideTimer() {
   )
 }
 
+/**
+ * Jij, onderaan de zijbalk.
+ *
+ * Hier hing een menu met zes regels: je taal, twee soorten meldingen, je
+ * agenda, afmelden. Dat was een tweede navigatie geworden op de plek waar de
+ * eerste al staat, en je moest erin zoeken naar iets wat je één keer instelt.
+ *
+ * Nu brengt een klik op je foto of je naam je naar je profiel, en staat alles
+ * wat alleen over jou gaat dáár bij elkaar. Afmelden blijft als icoon ernaast
+ * — dat is het enige wat je van hieruit meteen wil kunnen.
+ */
 function Me() {
   const { profile, logOut } = useAuth()
   const { t } = useTaal()
   const navigeer = useNavigate()
-  const [menu, setMenu] = useState(false)
-  // Buiten het menu, want het menu klapt dicht bij de klik erop.
-  const [voorkeuren, setVoorkeuren] = useState(false)
-  const [agenda, setAgenda] = useState(false)
 
   return (
     <div className="je-side__me">
@@ -382,10 +397,9 @@ function Me() {
       <button
         type="button"
         className="je-plainbtn"
-        style={{ minWidth: 0, flex: 1 }}
-        onClick={() => setMenu((m) => !m)}
-        aria-haspopup="menu"
-        aria-expanded={menu}
+        style={{ minWidth: 0, flex: 1, textAlign: 'left' }}
+        onClick={() => navigeer('/profiel')}
+        title={t('profiel.titel')}
       >
         <div style={{ font: 'var(--type-body-sm)', color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {profile?.fullName || profile?.email}
@@ -397,23 +411,6 @@ function Me() {
       <span style={{ color: 'var(--navy-300)' }}>
         <IconButton icon="log-out" label={t('schil.afmelden')} size="sm" onClick={logOut} />
       </span>
-      {menu ? (
-        <div className="je-menu" role="menu" onClick={() => setMenu(false)}>
-          <button type="button" role="menuitem" onClick={() => navigeer('/profiel')}>
-            {t('profiel.titel')}
-          </button>
-          <TaalMenuItem />
-          <InstallMenuItem />
-          <PushMenuItem />
-          <MeldingsVoorkeurenMenuItem onOpen={() => setVoorkeuren(true)} />
-          <AgendaMenuItem onOpen={() => setAgenda(true)} />
-          <button type="button" role="menuitem" onClick={logOut}>
-            {t('schil.afmelden')}
-          </button>
-        </div>
-      ) : null}
-      {voorkeuren ? <MeldingsVoorkeuren open onClose={() => setVoorkeuren(false)} /> : null}
-      {agenda ? <AgendaAbonnement open onClose={() => setAgenda(false)} /> : null}
     </div>
   )
 }

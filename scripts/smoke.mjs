@@ -217,23 +217,20 @@ await test('het socialbord toont de events vanaf ready to invoice', async () => 
   await page.close()
 })
 
-await test('de zijbalk herhaalt de tabs van de Events-pagina niet', async () => {
+await test('Events heeft geen tweede niveau in de navigatie', async () => {
   /*
-    Bord en Kalender stonden zowel in het menu onder Events als als tab op de
-    pagina zelf. Twee bedieningen voor dezelfde keuze lopen uit elkaar: je klikt
-    in het menu op Kalender en de tab bovenaan zegt nog Bord.
-
-    Klanten en Aanvragen blijven er wél staan: dat zijn eigen pagina's en geen
-    weergave van de eventlijst.
+    Er stonden vier regels onder Events. Bord en Kalender waren de tabs van de
+    pagina zelf — twee bedieningen voor dezelfde keuze lopen uit elkaar. Klanten
+    is een eigen pagina en staat nu op het eerste niveau. En het postvak hangt
+    aan een envelopje rechtsboven op de eventpagina, want het is er meestal leeg.
   */
   const page = await tabblad('/')
   const zijbalk = await page.getByLabel('Hoofdnavigatie').innerText()
-  for (const dubbel of ['Bord', 'Archief']) {
-    zouden(!bevat(zijbalk, dubbel), `"${dubbel}" staat zowel in het menu als op de tabs: ${zijbalk}`)
+  for (const weg of ['Bord', 'Archief', 'Aanvragen']) {
+    zouden(!bevat(zijbalk, weg), `"${weg}" staat nog in het menu: ${zijbalk}`)
   }
-  zouden(bevat(zijbalk, 'Aanvragen'), `Aanvragen is uit het menu verdwenen: ${zijbalk}`)
-  // Klanten staat op het eerste niveau: een klant is geen weergave van de
-  // eventlijst, en je komt er even vaak vanuit een offerte als vanuit een event.
+  // Klanten staat op het eerste niveau: je komt er even vaak vanuit een offerte
+  // als vanuit een event.
   zouden(bevat(zijbalk, 'Klanten'), `Klanten is uit het menu verdwenen: ${zijbalk}`)
 
   // De tabs doen het werk nog wel, en /kalender blijft een geldig adres.
@@ -1298,14 +1295,56 @@ await test('iedereen staat in dezelfde zeshoek, met foto of met initialen', asyn
   await page.close()
 })
 
+await test('onder je naam zit je profiel en geen tweede navigatie', async () => {
+  /*
+    Hier hing een menu van zes regels: taal, twee soorten meldingen, agenda,
+    afmelden. Een tweede navigatie op de plek waar de eerste al staat. Nu is het
+    één klik naar je profiel, met alles wat alleen over jou gaat bij elkaar.
+  */
+  const page = await tabblad('/')
+  const zijbalk = page.locator('aside').first()
+
+  await zijbalk.getByRole('button', { name: /Jasper/ }).click()
+  await page.waitForTimeout(900)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Mijn profiel'), `de knop onder je naam opent je profiel niet: ${tekst.slice(0, 300)}`)
+  for (const verhuisd of ['Taal', 'Welke meldingen ik krijg', 'Events in mijn agenda']) {
+    zouden(bevat(tekst, verhuisd), `"${verhuisd}" staat niet op het profiel: ${tekst.slice(0, 600)}`)
+  }
+  // Afmelden is een icoon naast je naam, geen regel in een menu.
+  zouden(
+    (await zijbalk.getByRole('button', { name: 'Afmelden' }).count()) === 1,
+    'afmelden staat niet als icoon in de zijbalk'
+  )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('het postvak hangt aan een envelopje op de eventpagina', async () => {
+  // Het stond als menu-ingang onder Events en was er meestal leeg; nu kijk je
+  // ernaar vanaf de plek waar je er toch een event van maakt.
+  const page = await tabblad('/')
+  const zijbalk = await page.locator('aside').first().innerText()
+  zouden(!bevat(zijbalk, 'Aanvragen'), `het postvak staat nog in het menu: ${zijbalk}`)
+
+  await page.getByRole('button', { name: /Postvak|Aanvragen/ }).first().click()
+  await page.waitForTimeout(900)
+  const na = await inhoud(page)
+  zouden(bevat(na, 'Aanvragen'), `het envelopje opent het postvak niet: ${na.slice(0, 300)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de tool schakelt over naar het Engels en onthoudt dat', async () => {
   const page = await tabblad('/')
   const zijbalk = page.locator('aside').first()
   const nederlands = await zijbalk.innerText()
   zouden(nederlands.includes('Instellingen') && nederlands.includes('Eigenaar'), 'de zijbalk staat niet in het Nederlands')
 
-  // De taalknop hangt in het accountmenu, onderaan de zijbalk.
-  await zijbalk.locator('[aria-haspopup="menu"]').click()
+  // De taalknop staat op je profiel; het menu onder je naam bestaat niet meer.
+  await zijbalk.getByRole('button', { name: /Jasper/ }).click()
+  await page.waitForTimeout(800)
   await page.getByRole('menuitemradio', { name: 'English' }).click()
   await page.waitForTimeout(400)
 
@@ -1507,6 +1546,107 @@ await test('? toont de sneltoetsen en een losse letter springt naar het scherm',
   await page.close()
 })
 
+await test('een event heeft één verantwoordelijke en een aparte ploeg', async () => {
+  /*
+    "Toegewezen aan" was een rijtje vinkjes waar zowel de verantwoordelijke als
+    de ploeg in stond, en bij vijf vinkjes is iedereen verantwoordelijk en dus
+    niemand. Nu: één keuzelijst voor wie het dossier draagt, en daarnaast de
+    vinkjes voor wie komt werken.
+  */
+  const page = await tabblad('/events/t-trouw')
+  await page.waitForTimeout(600)
+
+  const wie = page.getByLabel('Verantwoordelijk')
+  zouden((await wie.count()) === 1, 'er staat geen verantwoordelijke op de fiche')
+  zouden(
+    (await wie.locator('option:checked').innerText()).includes('Jasper'),
+    `de verantwoordelijke klopt niet: ${await wie.locator('option:checked').innerText()}`
+  )
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Medewerkers'), 'de ploeg staat niet apart op de fiche')
+  // Zaalpersoneel staat alleen bij de ploeg en nooit bij de verantwoordelijke:
+  // zij lezen de bedragen niet eens.
+  const keuzes = await wie.locator('option').allInnerTexts()
+  zouden(!keuzes.some((k) => k.includes('Lotte')), `personeel staat bij de verantwoordelijken: ${keuzes.join(', ')}`)
+
+  // Verzetten en het blijft er één.
+  await wie.selectOption({ label: keuzes.find((k) => k.includes('Elke')) })
+  await page.waitForTimeout(800)
+  zouden(
+    (await wie.locator('option:checked').innerText()).includes('Elke'),
+    'de verantwoordelijke is niet verzet'
+  )
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('op een eventkaart staat één gezicht: dat van de verantwoordelijke', async () => {
+  const page = await tabblad('/?weergave=lijst')
+  await page.waitForTimeout(900)
+  // De ploeg van dit event is twee man; op de kaart hoort er één te staan.
+  // Een rij in de lijstweergave is een <button>, geen <tr>.
+  const kaart = page.getByRole('button').filter({ hasText: 'Trouw Niels en Inez' }).first()
+  const gezichten = await kaart.locator('.je-avatar').count()
+  zouden(gezichten === 1, `er staan ${gezichten} gezichten op de kaart in plaats van één`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de medewerkers staan onder Team, met waar ze staan', async () => {
+  const page = await tabblad('/medewerkers')
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Medewerkers'), 'de medewerkerspagina opent niet')
+  for (const wie of ['Lotte Vrijsen', 'Sam Deckers']) {
+    zouden(bevat(tekst, wie), `${wie} staat niet in de lijst: ${tekst.slice(0, 400)}`)
+  }
+  // Dit is waarvoor de pagina bestaat: niet wie er is, maar wie er zaterdag staat.
+  zouden(bevat(tekst, 'Trouw Niels en Inez'), `er staat niet bij waar ze werken: ${tekst.slice(0, 600)}`)
+  // En geen uurtarieven: dit scherm staat open op een telefoon achter de bar.
+  zouden(!/€\s?\d/.test(tekst), `er staan bedragen op de medewerkerspagina: ${tekst.slice(0, 400)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een medewerker ziet zijn eigen events, zonder één bedrag', async () => {
+  /*
+    De gegevens komen uit de kale kopie en niet uit `tasks`: Firestore kan geen
+    velden verbergen, dus "hij ziet geen prijzen" kan alleen door hem het event
+    helemaal niet te laten lezen. Dat de regels dat ook echt doen, bewaakt de
+    rolsweep hieronder; dit kijkt of er dan nog iets bruikbaars overblijft.
+  */
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  const fouten = []
+  page.on('pageerror', (e) => fouten.push(String(e).split('\n')[0]))
+  await page.goto(`${adres}/?rol=personeel#/mijn-events`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(1400)
+
+  const tekst = (await page.locator('body').innerText()).trim()
+  zouden(bevat(tekst, 'Mijn events'), `het scherm opent niet: ${tekst.slice(0, 300)}`)
+  zouden(bevat(tekst, 'Blum'), `het event waarop hij staat ontbreekt: ${tekst.slice(0, 500)}`)
+  // Wel wat hij moet weten om te komen werken.
+  zouden(bevat(tekst, 'gasten'), 'het aantal gasten staat er niet bij')
+  // Geen bedragen, en ook niet het event waar hij níét op staat.
+  zouden(!/€\s?\d/.test(tekst), `een medewerker ziet een bedrag: ${tekst.slice(0, 400)}`)
+  zouden(!bevat(tekst, 'kerstborrel'), 'hij ziet een event waar hij niet op staat')
+  zouden(fouten.length === 0, `fouten: ${fouten[0]}`)
+  await page.close()
+})
+
+await test('op Tasks staat de knop om een taak toe te voegen altijd rechtsboven', async () => {
+  // Hij stond er alleen op het bord van één lijst: je moest eerst een lijst
+  // kiezen en naar de bordweergave voor je iets kon toevoegen.
+  const page = await tabblad('/tasks')
+  await page.waitForTimeout(900)
+  const knop = page.getByRole('button', { name: /nieuwe taak/i }).first()
+  zouden((await knop.count()) > 0, 'er staat geen toevoegknop op de takenlijst')
+  await knop.click()
+  await page.waitForTimeout(700)
+  zouden(bevat(await inhoud(page), 'Titel'), 'het venster om een taak toe te voegen opent niet')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 // ─── 4. Personeel ziet alleen zijn eigen scherm ─────────────────────────────
 
 await test('personeel komt op de dagelijkse lijst en nergens anders', async () => {
@@ -1570,6 +1710,7 @@ const ROLROUTES = [
   '/', '/kalender', '/tasks', '/werklast', '/dashboard', '/meer', '/social',
   '/klanten', '/openen-sluiten', '/registraties', '/overleg', '/uren',
   '/rooster', '/logboek', '/goals', '/instellingen',
+  '/medewerkers', '/mijn-events', '/profiel',
 ]
 
 /** Wat de demo weigerde sinds de vorige keer vragen, en de lijst leegmaken. */

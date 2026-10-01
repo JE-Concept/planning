@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { dayKey, fromDateInput } from '@lib/dates'
 import { planningKeuzes } from '@lib/planning'
 import { missingForOffer } from '@lib/pipeline'
+import { medewerkersVan, verantwoordelijkeVan, wisselMedewerker, zetVerantwoordelijke } from '@lib/eventteam'
 import { Checkbox, Icon, Input, Select } from '@components/ds'
 import { euro, longDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
@@ -37,8 +38,25 @@ export default function EventFiche({ ev }) {
   const { brands, profiles } = useWorkspace()
   const toast = useToast()
 
-  const team = useMemo(
+  /*
+    Twee lijsten, want het zijn twee vragen.
+
+    Verantwoordelijk is iemand van het bureau: wie het dossier draagt, de
+    offerte maakt en de klant belt. Personeel en de socialrol staan daar niet
+    tussen — die lezen de bedragen niet eens.
+
+    Medewerkers is wie er komt werken, en dáár hoort personeel juist wél bij:
+    studenten en flexi's staan bovenaan, want zij vullen die lijst het vaakst.
+  */
+  const verantwoordelijken = useMemo(
     () => profiles.filter((p) => p.active !== false && p.role !== 'staff' && p.role !== 'social'),
+    [profiles]
+  )
+  const medewerkers = useMemo(
+    () =>
+      profiles
+        .filter((p) => p.active !== false && p.role !== 'social')
+        .sort((a, b) => (a.role === 'staff' ? 0 : 1) - (b.role === 'staff' ? 0 : 1)),
     [profiles]
   )
   const ontbreekt = missingForOffer(ev)
@@ -132,21 +150,39 @@ export default function EventFiche({ ev }) {
         />
       </div>
 
+      {/*
+        Verantwoordelijk is één persoon, en dat is hier een keuzelijst en geen
+        rijtje vinkjes. Bij vijf vinkjes is iedereen verantwoordelijk en dus
+        niemand; een lijst waar er maar één uit kan, zegt dat zonder uitleg.
+      */}
       <div className="je-fiche__team">
-        <span className="je-caps">{t('events.fiche.team')}</span>
+        <span className="je-caps">{t('events.fiche.verantwoordelijk')}</span>
+        <div className="je-fiche__cel" style={{ maxWidth: 320 }}>
+          <Select
+            aria-label={t('events.fiche.verantwoordelijk')}
+            value={verantwoordelijkeVan(ev) ?? ''}
+            onChange={(e) => bewaar(zetVerantwoordelijke(e.target.value))}
+            options={[
+              { value: '', label: t('events.fiche.niemand') },
+              ...verantwoordelijken.map((p) => ({ value: p.id, label: p.fullName || p.email })),
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="je-fiche__team">
+        <span className="je-caps">{t('events.fiche.medewerkers')}</span>
         <div className="je-fiche__mensen">
-          {team.map((p) => (
+          {medewerkers.map((p) => (
             <Checkbox
               key={p.id}
               label={p.fullName || p.email}
-              checked={(ev.assignees ?? []).includes(p.id)}
-              onChange={() => {
-                const nu = ev.assignees ?? []
-                bewaar({ assignees: nu.includes(p.id) ? nu.filter((a) => a !== p.id) : [...nu, p.id] })
-              }}
+              checked={medewerkersVan(ev).includes(p.id)}
+              onChange={() => bewaar(wisselMedewerker(ev, p.id))}
             />
           ))}
         </div>
+        <span className="je-muted-caption">{t('events.fiche.medewerkers_hint')}</span>
       </div>
 
       {/*

@@ -66,7 +66,19 @@ export const REGELS = {
           ctx.lijstIsSocial)),
   },
 
-  socialEvents:   { lezen: (rol) => isTeam(rol) || isSocial(rol), schrijven: () => false },
+  /*
+    De kale kopie, zonder één bedrag erin. Twee rollen lezen hier: de socialrol
+    alle rijen, een medewerker alleen die waar hij zelf op staat. Dat laatste
+    kan alleen als de vraag zelf zo beperkt is — net als in `firestore.rules`,
+    waar een `list` die méér zou kunnen opleveren geweigerd wordt.
+  */
+  socialEvents: {
+    lezen: (rol, ctx) =>
+      isTeam(rol) ||
+      isSocial(rol) ||
+      (rol === 'staff' && (ctx.filters ?? []).some((f) => f.field === 'medewerkers' && f.op === 'array-contains' && f.value === ctx.uid)),
+    schrijven: () => false,
+  },
   customers:      { lezen: isTeam, schrijven: isTeam },
   comments:       { lezen: isTeam, schrijven: isTeam },
   attachments:    { lezen: isTeam, schrijven: isTeam },

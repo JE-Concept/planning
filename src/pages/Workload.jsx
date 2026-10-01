@@ -80,7 +80,7 @@ export default function Workload() {
         }
       />
       <div className="je-pagebody">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 1120 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div className="je-panel" style={{ overflowX: 'auto' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '200px repeat(7, minmax(56px, 1fr)) 150px', minWidth: 760 }}>
               <div className="je-eyebrow" style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-hairline)', letterSpacing: '.14em', color: 'var(--text-2)' }}>

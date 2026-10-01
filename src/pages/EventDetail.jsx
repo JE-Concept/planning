@@ -180,7 +180,7 @@ export default function EventDetail() {
       */}
       <div className="je-pagebody">
         <div className={narrow ? undefined : 'je-event-met-notities'} style={{ maxWidth: 1480 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: 1120 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           {/*
             De tabs staan bovenaan en de fiche eronder, in het overzicht.
 

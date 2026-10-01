@@ -73,7 +73,7 @@ const IN_ADRES = ['weergave', 'lijst', 'groep', 'wie']
 
 export default function Tasks() {
   const { uid, isAdmin } = useAuth()
-  const { profiles, listById, lists, tags, statusesOf } = useWorkspace()
+  const { boards, eventsList, profiles, listById, lists, tags, statusesOf } = useWorkspace()
   const { t } = useTaal()
   const toast = useToast()
   const [zoekArgs, setZoekArgs] = useSearchParams()
@@ -170,6 +170,22 @@ export default function Tasks() {
     [bordModus, opties.lijstId, statusesOf]
   )
 
+  /*
+    Waar een nieuwe taak landt.
+
+    Op het bord van een lijst is dat die lijst. Daarbuiten — de gewone
+    takenweergave — was er helemaal geen knop: je moest eerst een lijst kiezen
+    en naar de bordweergave, en dat is drie handelingen voor "nog iets dat ik
+    niet mag vergeten". Nu staat de knop er altijd en kiest hij zelf een bord:
+    het eerste gewone takenbord, en nadrukkelijk niet de eventpijplijn — een
+    los to-do hoort niet als event in de verkooptrechter te belanden.
+  */
+  const doelLijst = lijst ?? boards.find((l) => l.id !== eventsList?.id) ?? boards[0] ?? null
+  const doelStatuses = useMemo(
+    () => (doelLijst ? statusesOf(doelLijst.id) : []),
+    [doelLijst, statusesOf]
+  )
+
   // Het bord toont de lijst zelf, met posities en subtaken — dat is iets anders
   // dan "wat er op jouw naam staat", en het abonnement is dus ook een ander.
   const { top: lijstTop, subtasks: lijstSub, loading: lijstLaadt } = useTasks(
@@ -246,18 +262,18 @@ export default function Tasks() {
         title="Tasks"
         subtitle={bordModus ? lijst.name : undefined}
         actions={
-          bordModus ? (
-            <>
-              {isAdmin ? (
-                <Button variant="secondary" size="sm" onClick={() => setKolommenOpen(true)}>
-                  {t('bord.kolommen')}
-                </Button>
-              ) : null}
-              <Button size="sm" iconLeft="plus" onClick={() => setNieuweTaak({ status: statuses[0] })}>
+          <>
+            {bordModus && isAdmin ? (
+              <Button variant="secondary" size="sm" onClick={() => setKolommenOpen(true)}>
+                {t('bord.kolommen')}
+              </Button>
+            ) : null}
+            {doelLijst ? (
+              <Button size="sm" iconLeft="plus" onClick={() => setNieuweTaak({ status: doelStatuses[0] })}>
                 {t('bord.nieuwe_taak')}
               </Button>
-            </>
-          ) : null
+            ) : null}
+          </>
         }
       />
 
@@ -310,10 +326,10 @@ export default function Tasks() {
         <Lijst groepen={groepen} onOpen={setOpenTaskId} profileById={profileById} listById={listById} tags={tags} />
       )}
 
-      {nieuweTaak && lijst ? (
+      {nieuweTaak && doelLijst ? (
         <NewTaskDialog
-          list={lijst}
-          statuses={statuses}
+          list={doelLijst}
+          statuses={doelStatuses}
           initialStatus={nieuweTaak.status}
           uid={uid}
           onClose={() => setNieuweTaak(null)}

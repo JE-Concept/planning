@@ -51,4 +51,26 @@ export default {
   'profiel.afdeling': { nl: 'Afdeling', en: 'Department' },
   'profiel.tarief': { nl: 'Uurtarief', en: 'Hourly rate' },
   'profiel.geen_afdeling': { nl: 'Geen', en: 'None' },
+
+  // ── Wat vroeger in het menu onder je naam hing ─────────────────────────
+  'profiel.voorkeuren': { nl: 'Jouw instellingen', en: 'Your settings' },
+  'profiel.instellen': { nl: 'Instellen', en: 'Set up' },
+  'profiel.push': { nl: 'Meldingen op dit toestel', en: 'Notifications on this device' },
+  'profiel.push_hint': {
+    nl: 'Een seintje op dit scherm zodra er iets voor jou klaarstaat.',
+    en: 'A ping on this screen as soon as something is waiting for you.',
+  },
+  'profiel.welke_meldingen_hint': {
+    nl: 'Welke berichten je wil ontvangen, en langs welke weg. Geldt op al je toestellen.',
+    en: 'Which messages you want, and how. Applies on all your devices.',
+  },
+  'profiel.agenda_hint': {
+    nl: 'Een adres waarmee je de eventdatums in je eigen agenda zet.',
+    en: 'An address that puts the event dates in your own calendar.',
+  },
+  'profiel.installeren': { nl: 'Installeren', en: 'Install' },
+  'profiel.installeren_hint': {
+    nl: 'JE Plan op je beginscherm, zonder adresbalk.',
+    en: 'JE Plan on your home screen, without an address bar.',
+  },
 }
