@@ -1525,6 +1525,15 @@ await test('de socialrol kan een post openen, koppelen en haar tijd boeken', asy
 
 await test('het logboek toont wie wat veranderde, en filtert', async () => {
   const page = await tabblad('/logboek')
+
+  // De periode staat standaard op de lopende kalendermaand, en de demoregels
+  // staan een paar dagen voor vandaag. Op de eerste dagen van een maand vallen
+  // ze daar dus buiten — terecht, maar dan test je de klok en niet het scherm.
+  // Daarom eerst de periode openzetten: wat hier getest wordt is dat de regels
+  // er staan en dat het soortfilter werkt.
+  await page.getByLabel('Periode').selectOption('')
+  await page.waitForTimeout(500)
+
   const alles = await inhoud(page)
   zouden(bevat(alles, 'offertebedrag'), `de regels staan er niet: ${alles.slice(0, 200)}`)
   zouden(bevat(alles, 'Elke Motmans'), 'wie het deed staat er niet')
