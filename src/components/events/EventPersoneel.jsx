@@ -14,13 +14,25 @@ import {
   standVan,
   urenTekst,
 } from '@lib/aapi-weergave'
-import { Badge, Button, Icon } from '@components/ds'
+import { medewerkersVan, wisselMedewerker } from '@lib/eventteam'
+import { Badge, Button, Checkbox } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
+import { useWorkspace } from '@context/WorkspaceProvider'
 import { koppelShift, useAapiMedewerkers, useAapiShifts, useShiftsVanEvent } from '@data/aapi'
+import { updateEvent } from '@data/events'
 
 /**
- * Wie er op dit event staat, volgens AAPI.
+ * Wie er op dit event staat.
+ *
+ * ── Waarom de ploeg hier staat en niet op de fiche ────────────────────────
+ * "Medewerkers" was een rijtje vinkjes op de fiche, naast Verantwoordelijk.
+ * Dat zette twee verschillende vragen onder elkaar: wie het dossier draagt
+ * (één iemand van het bureau) en wie er die dag komt werken (een ploeg). De
+ * tweede vraag wordt ondertussen grotendeels door AAPI beantwoord, en dan is
+ * het rijtje vinkjes het derde antwoord op een vraag die al twee keer ergens
+ * anders staat. Alles wat over de ploeg gaat staat nu bij elkaar: de mensen
+ * die je met de hand aanduidt bovenaan, de shifts uit AAPI eronder.
  *
  * ── De vraag die dit beantwoordt ──────────────────────────────────────────
  * "Staat er zaterdag genoeg volk, en van welk soort." Vandaar de samenvatting
@@ -43,7 +55,22 @@ export default function EventPersoneel({ event }) {
   const { t } = useTaal()
   const toast = useToast()
   const navigate = useNavigate()
+  const { profiles } = useWorkspace()
   const [bezig, setBezig] = useState(null)
+
+  /*
+    Wie je met de hand op een event kan zetten. Personeel staat bovenaan: dat
+    is wie deze lijst het vaakst vult. De socialrol staat er niet tussen, die
+    komt niet werken.
+  */
+  const teKiezen = useMemo(
+    () =>
+      profiles
+        .filter((p) => p.active !== false && p.role !== 'social')
+        .sort((a, b) => (a.role === 'staff' ? 0 : 1) - (b.role === 'staff' ? 0 : 1)),
+    [profiles]
+  )
+  const gekozen = medewerkersVan(event)
 
   const { shifts } = useShiftsVanEvent(event?.id)
   const { opId: medewerkerOpId } = useAapiMedewerkers()
@@ -85,81 +112,106 @@ export default function EventPersoneel({ event }) {
     }
   }
 
-  // Niets te melden en niets te kiezen: dan hoort dit blok er ook niet te
-  // staan. Een lege kop op elk event is ruis op de events waar AAPI niet aan
-  // te pas komt.
-  if (!shifts.length && !kandidaten.length) return null
+  const zetPloeg = (id) =>
+    updateEvent(event.id, wisselMedewerker(event, id)).catch((err) => toast.error(err.message))
+
+  // Het AAPI-deel tekent zichzelf niet wanneer er niets te melden valt: op
+  // events waar AAPI niet aan te pas komt, is een lege kop alleen maar ruis.
+  // De ploeg die je met de hand aanduidt staat er wél altijd — anders is er
+  // geen plek meer om iemand aan te duiden.
+  const heeftAapi = shifts.length > 0 || kandidaten.length > 0
 
   return (
     <section className="je-panel">
       <div className="je-panel__head">
         <span className="je-eyebrow">{t('aapi.event.titel')}</span>
-        <span className="je-panel__right">
-          {t('aapi.event.samenvatting', { aantal: telling.gepland, uren: urenTekst(telling.minuten) })}
-          {telling.afgezegd ? ` · ${t('aapi.event.afgezegd', { aantal: telling.afgezegd })}` : ''}
-        </span>
       </div>
 
-      {Object.keys(telling.perStatuut).length ? (
-        <div className="je-personeelstatuten">
-          {Object.entries(telling.perStatuut)
-            .sort((a, b) => b[1] - a[1])
-            .map(([statuut, aantal]) => (
-              <Badge key={statuut} tone="neutral">
-                {aantal}× {t(STATUUT_TEKST[statuut] ?? 'aapi.statuut.onbekend')}
-              </Badge>
-            ))}
-        </div>
-      ) : null}
-
-      {shifts.length === 0 ? (
-        <p className="je-muted-caption" style={{ padding: 'var(--space-5) var(--space-6)' }}>
-          {t('aapi.event.leeg')}
-        </p>
-      ) : (
-        shifts.map((s) => (
-          <PersoneelRij
-            key={s.aapiPlanningId}
-            shift={s}
-            naam={naamVan(s, medewerkerOpId)}
-            bezig={bezig === s.aapiPlanningId}
-            actie={
-              <Button
-                size="sm"
-                variant="ghost"
-                loading={bezig === s.aapiPlanningId}
-                onClick={() => koppel(s.aapiPlanningId, 'unlinked')}
-              >
-                {t('aapi.shift.losmaken')}
-              </Button>
-            }
-          />
-        ))
-      )}
-
-      {kandidaten.length ? (
-        <>
-          <div className="je-panel__head" style={{ borderTop: '1px solid var(--border-hairline)' }}>
-            <span className="je-eyebrow">{t('aapi.event.mogelijk')}</span>
-          </div>
-          {kandidaten.map((s) => (
-            <PersoneelRij
-              key={s.aapiPlanningId}
-              shift={s}
-              naam={naamVan(s, medewerkerOpId)}
-              bezig={bezig === s.aapiPlanningId}
-              actie={
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  loading={bezig === s.aapiPlanningId}
-                  onClick={() => koppel(s.aapiPlanningId, 'manual', event.id)}
-                >
-                  {t('aapi.event.koppel_hier')}
-                </Button>
-              }
+      <div className="je-ploeg">
+        <span className="je-caps">{t('events.fiche.medewerkers')}</span>
+        <div className="je-ploeg__mensen">
+          {teKiezen.map((p) => (
+            <Checkbox
+              key={p.id}
+              label={p.fullName || p.email}
+              checked={gekozen.includes(p.id)}
+              onChange={() => zetPloeg(p.id)}
             />
           ))}
+        </div>
+        <span className="je-muted-caption">{t('events.fiche.medewerkers_hint')}</span>
+      </div>
+
+      {!heeftAapi ? null : (
+        <>
+          <div className="je-panel__head" style={{ borderTop: '1px solid var(--border-hairline)' }}>
+            <span className="je-eyebrow">{t('aapi.event.uit_aapi')}</span>
+            <span className="je-panel__right">
+              {t('aapi.event.samenvatting', { aantal: telling.gepland, uren: urenTekst(telling.minuten) })}
+              {telling.afgezegd ? ` · ${t('aapi.event.afgezegd', { aantal: telling.afgezegd })}` : ''}
+            </span>
+          </div>
+
+          {Object.keys(telling.perStatuut).length ? (
+            <div className="je-personeelstatuten">
+              {Object.entries(telling.perStatuut)
+                .sort((a, b) => b[1] - a[1])
+                .map(([statuut, aantal]) => (
+                  <Badge key={statuut} tone="neutral">
+                    {aantal}× {t(STATUUT_TEKST[statuut] ?? 'aapi.statuut.onbekend')}
+                  </Badge>
+                ))}
+            </div>
+          ) : null}
+
+          {shifts.length === 0 ? (
+            <p className="je-muted-caption" style={{ padding: 'var(--space-5) var(--space-6)' }}>
+              {t('aapi.event.leeg')}
+            </p>
+          ) : (
+            shifts.map((s) => (
+              <PersoneelRij
+                key={s.aapiPlanningId}
+                shift={s}
+                naam={naamVan(s, medewerkerOpId)}
+                bezig={bezig === s.aapiPlanningId}
+                actie={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    loading={bezig === s.aapiPlanningId}
+                    onClick={() => koppel(s.aapiPlanningId, 'unlinked')}
+                  >
+                    {t('aapi.shift.losmaken')}
+                  </Button>
+                }
+              />
+            ))
+          )}
+
+          {kandidaten.length ? (
+            <>
+              <div className="je-panel__head" style={{ borderTop: '1px solid var(--border-hairline)' }}>
+                <span className="je-eyebrow">{t('aapi.event.mogelijk')}</span>
+              </div>
+              {kandidaten.map((s) => (
+                <PersoneelRij
+                  key={s.aapiPlanningId}
+                  shift={s}
+                  naam={naamVan(s, medewerkerOpId)}
+                  bezig={bezig === s.aapiPlanningId}
+                  actie={
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      loading={bezig === s.aapiPlanningId}
+                      onClick={() => koppel(s.aapiPlanningId, 'manual', event.id)}
+                    >
+                      {t('aapi.event.koppel_hier')}
+                    </Button>
+                  }
+                />
+              ))}
         </>
       ) : null}
 
@@ -173,6 +225,8 @@ export default function EventPersoneel({ event }) {
           {t('aapi.event.naar_kalender')}
         </Button>
       </div>
+        </>
+      )}
     </section>
   )
 }

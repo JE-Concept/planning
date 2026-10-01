@@ -93,6 +93,7 @@ export default {
 
   // ── Het blok op een event ───────────────────────────────────────────────
   'aapi.event.titel': { nl: 'Personeel', en: 'Crew' },
+  'aapi.event.uit_aapi': { nl: 'Uit AAPI', en: 'From AAPI' },
   'aapi.event.leeg': { nl: 'Er staat nog niemand van AAPI op dit event.', en: 'Nobody from AAPI is on this event yet.' },
   'aapi.event.samenvatting': {
     nl: '{aantal} ingepland · {uren} samen',

@@ -41,7 +41,13 @@ export default function Voorkeuren() {
             <div className="je-voorkeur__naam">{t('taal.titel')}</div>
             <div className="je-muted-caption">{t('taal.uitleg')}</div>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {/*
+            Een radiogroep en geen menu meer. Deze knoppen stonden vroeger in
+            het menu onder je naam; sinds ze op je profiel staan, is er geen
+            menu meer om `menuitemradio` bij te horen, en een menu-item zonder
+            menu is precies wat een schermlezer verkeerd voorleest.
+          */}
+          <div role="radiogroup" aria-label={t('taal.titel')} style={{ display: 'flex', gap: 'var(--space-2)' }}>
             {/*
               De knoppen staan altijd in de eigen taal en worden niet vertaald:
               wie de tool per ongeluk in een taal zette die hij niet leest, moet
@@ -52,7 +58,7 @@ export default function Voorkeuren() {
                 key={optie.code}
                 size="sm"
                 variant={optie.code === taal ? 'primary' : 'secondary'}
-                role="menuitemradio"
+                role="radio"
                 aria-checked={optie.code === taal}
                 lang={optie.code}
                 onClick={() => kies(optie.code)}

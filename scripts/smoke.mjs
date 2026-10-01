@@ -1445,7 +1445,7 @@ await test('de tool schakelt over naar het Engels en onthoudt dat', async () => 
   // De taalknop staat op je profiel; het menu onder je naam bestaat niet meer.
   await zijbalk.getByRole('button', { name: /Jasper/ }).click()
   await page.waitForTimeout(800)
-  await page.getByRole('menuitemradio', { name: 'English' }).click()
+  await page.getByRole('radio', { name: 'English' }).click()
   await page.waitForTimeout(400)
 
   // De navigatie, de rol eronder en de timerknop komen uit drie verschillende
@@ -1663,8 +1663,20 @@ await test('een event heeft één verantwoordelijke en een aparte ploeg', async 
     `de verantwoordelijke klopt niet: ${await wie.locator('option:checked').innerText()}`
   )
 
-  const tekst = await inhoud(page)
-  zouden(bevat(tekst, 'Medewerkers'), 'de ploeg staat niet apart op de fiche')
+  /*
+    De ploeg staat niet meer op de fiche maar in het personeelsblok, naast de
+    shifts die uit AAPI komen. Het is één vraag — wie komt er die dag werken —
+    en die hoorde niet op twee plaatsen te staan.
+  */
+  const fiche = await page.locator('.je-fiche').innerText()
+  zouden(!fiche.includes('Medewerkers'), `de ploeg staat nog op de fiche: ${fiche.slice(0, 300)}`)
+  const ploeg = page.locator('.je-panel').filter({ hasText: 'Personeel' }).locator('.je-ploeg')
+  zouden((await ploeg.count()) === 1, 'de ploeg staat niet in het personeelsblok')
+  zouden(
+    (await ploeg.innerText()).includes('Lotte'),
+    `zaalpersoneel staat niet bij de ploeg: ${await ploeg.innerText()}`
+  )
+
   // Zaalpersoneel staat alleen bij de ploeg en nooit bij de verantwoordelijke:
   // zij lezen de bedragen niet eens.
   const keuzes = await wie.locator('option').allInnerTexts()

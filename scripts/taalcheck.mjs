@@ -57,8 +57,10 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } })
 // Eerst de taal omzetten; de keuze blijft in deze browser staan.
 await page.goto(`${adres}/#/`, { waitUntil: 'networkidle' })
 await page.waitForTimeout(1200)
-await page.locator('aside').first().locator('[aria-haspopup="menu"]').click()
-await page.getByRole('menuitemradio', { name: 'English' }).click()
+// De taalknop staat op je profiel; het menu onder je naam bestaat niet meer.
+await page.goto(`${adres}/#/profiel`, { waitUntil: 'networkidle' })
+await page.waitForTimeout(900)
+await page.getByRole('radio', { name: 'English' }).click()
 await page.waitForTimeout(600)
 
 let totaal = 0

@@ -230,13 +230,14 @@ export default function EventDetail() {
               />
               <EventFiche ev={ev} />
               {/*
-                Wie er die dag komt werken, uit AAPI. Staat op het overzicht en
-                niet in een eigen tab: "is er genoeg volk" hoort bij de stand
-                van een event, en een tab die je moet openen om dat te weten,
-                open je pas als je al twijfelt.
+                Wie er die dag komt werken: de ploeg die je met de hand
+                aanduidt én wat uit AAPI komt. Staat op het overzicht en niet
+                in een eigen tab: "is er genoeg volk" hoort bij de stand van
+                een event, en een tab die je moet openen om dat te weten, open
+                je pas als je al twijfelt.
 
-                Het blok tekent zichzelf niet wanneer er niets te melden valt —
-                op events waar AAPI niet aan te pas komt, blijft het weg.
+                Het AAPI-deel blijft weg op events waar AAPI niet aan te pas
+                komt; de ploeg staat er altijd, want daar moet je bij kunnen.
               */}
               <EventPersoneel event={ev} />
               <EventOmschrijving ev={ev} />

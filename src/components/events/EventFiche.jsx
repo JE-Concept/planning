@@ -2,8 +2,8 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { dayKey, fromDateInput } from '@lib/dates'
 import { planningKeuzes } from '@lib/planning'
 import { missingForOffer } from '@lib/pipeline'
-import { medewerkersVan, verantwoordelijkeVan, wisselMedewerker, zetVerantwoordelijke } from '@lib/eventteam'
-import { Checkbox, Icon, Input, Select } from '@components/ds'
+import { verantwoordelijkeVan, zetVerantwoordelijke } from '@lib/eventteam'
+import { Icon, Input, Select } from '@components/ds'
 import { euro, longDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -39,24 +39,14 @@ export default function EventFiche({ ev }) {
   const toast = useToast()
 
   /*
-    Twee lijsten, want het zijn twee vragen.
+    Wie het dossier mag dragen: iemand van het bureau. Personeel en de
+    socialrol staan daar niet tussen — die lezen de bedragen niet eens.
 
-    Verantwoordelijk is iemand van het bureau: wie het dossier draagt, de
-    offerte maakt en de klant belt. Personeel en de socialrol staan daar niet
-    tussen — die lezen de bedragen niet eens.
-
-    Medewerkers is wie er komt werken, en dáár hoort personeel juist wél bij:
-    studenten en flexi's staan bovenaan, want zij vullen die lijst het vaakst.
+    Wie er komt werken staat niet meer hier maar in het personeelsblok, bij de
+    ploeg die uit AAPI komt. Zie `EventPersoneel`.
   */
   const verantwoordelijken = useMemo(
     () => profiles.filter((p) => p.active !== false && p.role !== 'staff' && p.role !== 'social'),
-    [profiles]
-  )
-  const medewerkers = useMemo(
-    () =>
-      profiles
-        .filter((p) => p.active !== false && p.role !== 'social')
-        .sort((a, b) => (a.role === 'staff' ? 0 : 1) - (b.role === 'staff' ? 0 : 1)),
     [profiles]
   )
   const ontbreekt = missingForOffer(ev)
@@ -168,21 +158,6 @@ export default function EventFiche({ ev }) {
             ]}
           />
         </div>
-      </div>
-
-      <div className="je-fiche__team">
-        <span className="je-caps">{t('events.fiche.medewerkers')}</span>
-        <div className="je-fiche__mensen">
-          {medewerkers.map((p) => (
-            <Checkbox
-              key={p.id}
-              label={p.fullName || p.email}
-              checked={medewerkersVan(ev).includes(p.id)}
-              onChange={() => bewaar(wisselMedewerker(ev, p.id))}
-            />
-          ))}
-        </div>
-        <span className="je-muted-caption">{t('events.fiche.medewerkers_hint')}</span>
       </div>
 
       {/*

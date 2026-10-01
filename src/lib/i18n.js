@@ -94,8 +94,8 @@ export const localeVan = (taal) => TALEN.find((t) => t.code === taal)?.locale ??
   waarin iedereen het over de eerste blijft hebben.
 
   Dus: iedereen begint in het Nederlands, en wie Engels wil, kiest het. Die keuze
-  staat op het profiel en volgt mee naar elk toestel. De knop staat in het
-  accountmenu en heet "English" — in het Engels, zodat wie geen Nederlands leest
+  staat op het profiel en volgt mee naar elk toestel. De knop staat daar bij je
+  voorkeuren en heet "English" — in het Engels, zodat wie geen Nederlands leest
   hem toch herkent.
 */
 
