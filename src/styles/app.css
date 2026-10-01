@@ -2771,3 +2771,10 @@ button.je-paneel-kaart:hover {
     grid-template-columns: 1fr auto;
   }
 }
+
+/* Het volledige logo staat op zichzelf; het woordmerk ernaast vervalt dan,
+   want "JE Concept" staat er al in. */
+.je-logotype__volledig {
+  display: block;
+  object-fit: contain;
+}

@@ -439,60 +439,73 @@ export function initialsOf(profile) {
 }
 
 /*
-  Het beeldmerk, als er een is.
+  Het beeldmerk.
 
-  Het stond hier als een vast pad naar `public/brand/je-concept-logo.png`, en
-  dat bestand heeft nooit in de repo gestaan. Elke pagina vroeg het dus op,
-  kreeg een 404, en viel daarna terug op het getekende zeshoekje — zichtbaar
-  niets aan de hand, maar een mislukte aanvraag bij elke keer dat de zijbalk
-  tekent, en niemand die merkte dat het echte logo ontbrak.
+  De zes hoekpunten van beide zeshoeken staan hier letterlijk, overgenomen uit
+  `public/brand/je-concept-logo.svg`. Niet als `<img>`, om twee redenen: zo
+  volgt het merk `currentColor` — en dus de nachtschil, zonder tweede bestand —
+  en er gaat geen aanvraag de deur uit voor iets wat op elke pagina staat.
 
-  Nu is het omgekeerd: zonder `VITE_LOGO_URL` tekent de app meteen het
-  zeshoekje, en er gaat geen aanvraag de deur uit. Zet die variabele zodra het
-  echte bestand er is, en het verschijnt overal tegelijk.
+  Het is de verkleinde vorm: zonder de letters, met een zwaardere lijn. Onder
+  de 48px zijn "JE" en het schrift een vlek, en de haarlijn van het origineel
+  is op 16px een derde van een pixel. Het volledige logo staat in
+  `public/brand/je-concept-logo.svg` en wordt op het aanmeldscherm getoond.
 
-  Nagetekend wordt het niet. Een merk dat benaderd is, is geen merk.
+  `tests/merk.test.js` legt deze twee paden naast die in `public/favicon.svg`,
+  zodat ze niet uit elkaar kunnen lopen.
 */
-const LOGO_SRC = import.meta.env.VITE_LOGO_URL || null
+const ZESHOEK = {
+  hoofd: 'M 187.5 303.469 L 76.4648 239.363 L 76.4648 111.129 L 187.5 47.0273 L 298.535 111.129 L 298.535 239.363 Z',
+  spook: 'M 97.1836 278.742 L 32.2852 168.168 L 95.6094 56.6641 L 223.816 55.75 L 288.715 166.324 L 225.391 277.832 Z',
+}
+
+/** Het merk alleen: twee zeshoeken, in de kleur van de tekst eromheen. */
+export function Merk({ size = 40, className, style, titel = 'JE Concept' }) {
+  return (
+    <svg
+      className={cn('je-logotype__mark', className)}
+      viewBox="0 0 375 375"
+      width={size}
+      height={size}
+      style={{ width: size, height: size, ...style }}
+      role="img"
+      aria-label={titel}
+    >
+      <path d={ZESHOEK.spook} fill="none" stroke="currentColor" strokeOpacity="0.4" strokeWidth="16" strokeLinejoin="round" />
+      <path d={ZESHOEK.hoofd} fill="none" stroke="currentColor" strokeWidth="16" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 /**
  * Het JE Concept-woordmerk: het beeldmerk met "JE" en "Concept" ernaast.
  *
- * Zonder beeldmerk staat er een zeshoek met JE erin, in de kleuren van het
- * huis. Dat is geen plaatshouder maar een volwaardige variant: hij staat in de
- * zijbalk, op het aanmeldscherm en op de favicon.
+ * Twee delen, want ze doen twee dingen. Het merk is de vorm die je herkent en
+ * blijft leesbaar tot 16px; de naam ernaast is wat je leest. In de zijbalk
+ * staat het op 38px, en daar zou het volledige logo — met de letters erin —
+ * een vlek zijn.
+ *
+ * Wie het volledige logo wil, zet `volledig`: dan staat er het echte bestand,
+ * met de letters, en vervalt de naam ernaast omdat die er al in zit. Dat is
+ * wat het aanmeldscherm doet.
  */
-export function Logotype({ size = 40, invert = false, word = true, className, style }) {
-  const [failed, setFailed] = useState(false)
+export function Logotype({ size = 40, invert = false, word = true, volledig = false, className, style }) {
+  if (volledig) {
+    return (
+      <img
+        className={cn('je-logotype__volledig', className)}
+        src={`${import.meta.env.BASE_URL}brand/je-concept-logo${invert ? '-invert' : ''}.svg`}
+        alt="JE Concept"
+        width={size}
+        height={size}
+        style={{ width: size, height: size, ...style }}
+      />
+    )
+  }
+
   return (
     <span className={cn('je-logotype', className)} style={{ fontSize: Math.round(size * 0.62), ...style }}>
-      {failed || !LOGO_SRC ? (
-        <span
-          className="je-hexchip"
-          aria-label="JE Concept"
-          style={{
-            width: size,
-            height: size,
-            flex: `0 0 ${size}px`,
-            background: invert ? 'var(--navy-100)' : 'var(--navy-800)',
-            color: invert ? 'var(--navy-950)' : 'var(--white)',
-            fontFamily: 'var(--font-serif)',
-            fontSize: Math.round(size * 0.36),
-          }}
-        >
-          JE
-        </span>
-      ) : (
-        <img
-          className={cn('je-logotype__mark', invert && 'je-logotype__mark--invert')}
-          src={LOGO_SRC}
-          alt="JE Concept"
-          width={size}
-          height={size}
-          style={{ width: size, height: size }}
-          onError={() => setFailed(true)}
-        />
-      )}
+      <Merk size={size} style={{ color: invert ? 'var(--navy-100)' : 'var(--navy-800)' }} />
       {word ? (
         <span className="je-logotype__word">
           <span className="je-logotype__je">JE</span>

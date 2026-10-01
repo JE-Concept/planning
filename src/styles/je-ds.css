@@ -16,14 +16,14 @@
   /* --- Navy: the brand ink, sampled from the logo (#003060) --- */
   --navy-950:#00172E;
   --navy-900:#002246;
-  --navy-800:#003060; /* logo ink */
+  --navy-800:#003366; /* de inkt van het logo, afgelezen uit brand/je-concept-logo.svg */
   --navy-700:#1B3A6B; /* primary interactive navy */
   --navy-600:#2A4E86;
   --navy-500:#3E67A3;
   --navy-400:#6C8CBE;
   --navy-300:#9DB3D5;
   --navy-200:#C6D3E8;
-  --navy-100:#DCE4F0; /* pale hexagon blue from the logo */
+  --navy-100:#D5E2F1; /* het bleke blauw van de tweede zeshoek, uit datzelfde bestand */
   --navy-50:#EEF2F8;
 
   /* --- Paper & neutrals --- */
@@ -57,9 +57,9 @@
   --text-link:var(--navy-700);
   --text-link-hover:var(--navy-500);
 
-  --border-hairline:rgba(0,48,96,.14);
-  --border-subtle:rgba(0,48,96,.22);
-  --border-strong:rgba(0,48,96,.52); /* 3,14 op canvas; op .42 was het 2,41 en dat is onder de 3:1 die een vinkjesrand nodig heeft */
+  --border-hairline:rgba(0,51,102,.14);
+  --border-subtle:rgba(0,51,102,.22);
+  --border-strong:rgba(0,51,102,.52); /* 3,14 op canvas; op .42 was het 2,41 en dat is onder de 3:1 die een vinkjesrand nodig heeft */
   --border-accent:var(--navy-700);
 
   --accent:var(--navy-700);
@@ -74,7 +74,7 @@
   --info:var(--navy-600);
 
   /* --- Brand washes. No hue-shifting gradients: navy fading to nothing. --- */
-  --grad-hairline:linear-gradient(90deg,rgba(0,48,96,0) 0%,rgba(0,48,96,.35) 50%,rgba(0,48,96,0) 100%); /* @kind color */
+  --grad-hairline:linear-gradient(90deg,rgba(0,51,102,0) 0%,rgba(0,51,102,.35) 50%,rgba(0,51,102,0) 100%); /* @kind color */
   --grad-veil:linear-gradient(180deg,rgba(0,23,46,.86) 0%,rgba(0,23,46,.42) 55%,rgba(0,23,46,.08) 100%); /* @kind color */
   --grad-protect:linear-gradient(to top,var(--navy-950) 0%,rgba(0,23,46,.72) 45%,rgba(0,23,46,0) 100%); /* @kind color */
   --grad-tint:linear-gradient(180deg,var(--navy-50) 0%,var(--paper) 100%); /* @kind color */

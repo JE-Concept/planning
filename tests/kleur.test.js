@@ -127,9 +127,9 @@ describe('de tokens van het design system halen hun drempel', () => {
   })
 
   it('border-strong haalt 3:1, want het is de rand van een vinkje', () => {
-    const m = /--border-strong\s*:\s*rgba\(0,48,96,([\d.]+)\)/.exec(ds)
+    const m = /--border-strong\s*:\s*rgba\(0,51,102,([\d.]+)\)/.exec(ds)
     expect(m).not.toBeNull()
-    const rand = meng('#003060', Number(m[1]), CANVAS)
+    const rand = meng('#003366', Number(m[1]), CANVAS)
     expect(contrast(rand, CANVAS)).toBeGreaterThanOrEqual(DREMPEL.groot)
   })
 

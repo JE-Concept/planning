@@ -43,7 +43,10 @@ export default function Login() {
           color: 'var(--navy-950)',
         }}
       >
-        <Logotype size={44} />
+        {/* Het volledige logo: hier is plaats voor de letters, en dit is het
+            enige scherm waar het merk op zichzelf staat. De pagina draagt
+            `je-night`, dus de omgekeerde versie. */}
+        <Logotype size={132} volledig invert />
         <div>
           <div className="je-eyebrow" style={{ color: 'var(--navy-700)' }}>
             JE Plan
