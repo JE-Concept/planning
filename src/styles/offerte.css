@@ -35,16 +35,288 @@
   --o-serif: "Prata", Didot, "Times New Roman", serif;
   --o-script: "Parisienne", cursive;
 
-  width: 210mm;
-  min-height: 297mm;
-  padding: 18mm 16mm 16mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8mm;
   margin: 0 auto;
-  box-sizing: border-box;
-  background: var(--o-papier);
   color: var(--o-ink);
   font-family: var(--o-tekst);
   font-size: 10.5pt;
   line-height: 1.5;
+}
+
+/* ── Eén pagina ───────────────────────────────────────────────────────── */
+
+/*
+ * A4 met echte marges, ook op het scherm. Het blad is hier de eenheid en niet
+ * een hulpmiddel voor de printer: een onderdeel dat op het scherm netjes staat
+ * maar bij het afdrukken van zijn prijs gescheiden wordt, is in Canva precies
+ * wat er altijd misging.
+ *
+ * `position: relative` draagt de voetregel, die onderaan het blad staat en
+ * niet onder de tekst — anders zweeft het paginanummer halverwege op een
+ * pagina met één kort onderdeel.
+ */
+.je-vblad {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 16mm 16mm 22mm;
+  box-sizing: border-box;
+  background: var(--o-papier);
+  break-after: page;
+  display: flex;
+  flex-direction: column;
+}
+
+.je-vblad:last-child {
+  break-after: auto;
+}
+
+.je-vblad__kop {
+  font-family: var(--o-display);
+  font-size: 7.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--o-zacht);
+  padding-bottom: 4mm;
+  border-bottom: 1px solid var(--o-lijn-zacht);
+  margin-bottom: 10mm;
+}
+
+.je-vblad__binnen {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Twee onderdelen op één blad: evenveel ruimte, een haarlijn ertussen. */
+.je-vblad__binnen--delen {
+  display: flex;
+  flex-direction: column;
+  gap: 12mm;
+}
+
+.je-vblad__binnen--delen > * + * {
+  border-top: 1px solid var(--o-lijn-zacht);
+  padding-top: 12mm;
+}
+
+.je-vblad__voet {
+  position: absolute;
+  left: 16mm;
+  right: 16mm;
+  bottom: 12mm;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--o-display);
+  font-size: 7.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--o-zacht);
+}
+
+/* ── De cover ─────────────────────────────────────────────────────────── */
+
+/*
+ * Donker, met de naam van de klant als enige grote ding erop. De cover doet
+ * één ding: zeggen dat dit voor hén gemaakt is. Alles wat er nog bij zou
+ * kunnen — een logo, een foto, een prijs — maakt dat zwakker, niet sterker.
+ */
+.je-vblad--cover {
+  background: var(--o-ink);
+  color: #fff;
+  justify-content: center;
+  /* Browsers laten achtergronden bij het afdrukken standaard weg. Een cover
+     met witte letters op wit papier is onleesbaar, dus deze moet mee. */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.je-vblad--cover .je-vblad__voet {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.je-vblad__coverbinnen {
+  display: flex;
+  flex-direction: column;
+  gap: 6mm;
+}
+
+.je-vblad--cover .je-vblad__eyebrow {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.je-vblad__covernaam {
+  margin: 0;
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 44pt;
+  line-height: 1.06;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.je-vblad__leus {
+  margin: 0;
+  font-family: var(--o-script);
+  font-size: 24pt;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.je-vblad__coverdatum {
+  margin: 4mm 0 0;
+  font-family: var(--o-display);
+  font-size: 11pt;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ── Koppen en tekst op een voorstelpagina ────────────────────────────── */
+
+.je-vblad__eyebrow {
+  display: block;
+  font-family: var(--o-display);
+  font-size: 8.5pt;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--o-accent);
+  margin-bottom: 3mm;
+}
+
+.je-vblad__titel {
+  margin: 0 0 5mm;
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 26pt;
+  line-height: 1.04;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* Het laatste woord van een titel in het schrift: de enige plek in het hele
+   document waar de krul staat, en daarom werkt ze. */
+.je-vblad__script {
+  font-family: var(--o-script);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 30pt;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--o-accent);
+}
+
+.je-vblad__subtitel {
+  margin: 12mm 0 4mm;
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 12pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.je-vblad__wie p {
+  margin: 0 0 3mm;
+  max-width: 125mm;
+}
+
+.je-vblad__ondertekening {
+  font-family: var(--o-script);
+  font-size: 18pt;
+  color: var(--o-accent);
+}
+
+/* ── Het voorstel in één oogopslag ────────────────────────────────────── */
+
+.je-vblad__reeks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.je-vblad__reeks li {
+  display: flex;
+  align-items: baseline;
+  gap: 5mm;
+  padding: 3mm 0;
+  border-bottom: 1px solid var(--o-lijn-zacht);
+}
+
+.je-vblad__reeksnummer {
+  font-family: var(--o-display);
+  font-size: 11pt;
+  color: var(--o-zacht);
+  min-width: 10mm;
+}
+
+.je-vblad__reekstitel {
+  flex: 1;
+  font-family: var(--o-display);
+  font-size: 12pt;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.je-vblad__reeksprijs {
+  font-family: var(--o-display);
+  font-size: 12pt;
+  color: var(--o-accent);
+  white-space: nowrap;
+}
+
+/* ── Eén onderdeel ────────────────────────────────────────────────────── */
+
+.je-vdeel__tekst {
+  margin: 0 0 4mm;
+  max-width: 130mm;
+}
+
+.je-vdeel__punten {
+  margin: 0 0 4mm;
+  padding-left: 5mm;
+}
+
+.je-vdeel__punten li {
+  margin-bottom: 1.5mm;
+}
+
+/* De prijs: apart gezet, onderaan, en niet in de lopende tekst. Een bedrag
+   dat je moet zoeken is een bedrag waar de klant over gaat bellen. */
+.je-vdeel__prijs {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+  padding-top: 3mm;
+  border-top: 2px solid var(--o-ink);
+  width: fit-content;
+}
+
+.je-vdeel__prijslabel {
+  font-family: var(--o-display);
+  font-size: 8.5pt;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--o-zacht);
+}
+
+.je-vdeel__prijsbedrag {
+  font-family: var(--o-display);
+  font-weight: 500;
+  font-size: 20pt;
+}
+
+.je-vdeel__prijsnoot {
+  font-size: 9.5pt;
+  color: var(--o-zacht);
+}
+
+/* De tabelpagina draagt zijn eigen kop; de bladkop zou er twee maken. */
+.je-vblad--tabel .je-offerteblad__kop {
+  margin-top: 0;
 }
 
 /* Op een scherm is 210mm vaak breder dan de kolom. Schalen in plaats van
@@ -56,10 +328,29 @@
 }
 @media (max-width: 900px) {
   .je-offerteblad {
+    gap: 4mm;
+  }
+  .je-vblad {
     width: 100%;
     min-height: 0;
-    padding: 6mm;
+    padding: 6mm 6mm 14mm;
+  }
+  .je-vblad__voet {
+    left: 6mm;
+    right: 6mm;
+    bottom: 5mm;
+  }
+  .je-offerteblad {
     font-size: 10pt;
+  }
+  .je-vblad__covernaam {
+    font-size: 30pt;
+  }
+  .je-vblad__titel {
+    font-size: 20pt;
+  }
+  .je-vblad__script {
+    font-size: 23pt;
   }
 }
 
@@ -285,11 +576,25 @@
     visibility: visible;
   }
   .je-offerteblad {
+    display: block;
+    gap: 0;
+    margin: 0;
+  }
+  /* Bij het afdrukken zet `@page` de marge; het blad doet het dan niet nog
+     eens, anders staat alles een centimeter te ver naar binnen. */
+  .je-vblad {
     width: auto;
     min-height: 0;
-    margin: 0;
-    padding: 0;
+    padding: 0 0 14mm;
     box-shadow: none;
+  }
+  .je-vblad--cover {
+    min-height: 240mm;
+    padding: 20mm;
+  }
+  .je-vdeel,
+  .je-vblad__reeks li {
+    break-inside: avoid;
   }
   .je-offerteblad-schaal {
     overflow: visible;

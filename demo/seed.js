@@ -1014,7 +1014,90 @@ seedDoc('offertes', 'off-trouw', {
     { id: 'r3', rubriek: 'personeel', omschrijving: 'Bediening en toog, 8 uur', eenheidExcl: 28, aantal: 48, eenheid: 'u', btwPercent: 21, optioneel: false },
     { id: 'r4', rubriek: 'optioneel', omschrijving: 'Vuurkorven op het terras', eenheidExcl: 240, aantal: 1, eenheid: 'st', btwPercent: 21, optioneel: true },
   ],
+  /*
+    Het conceptvoorstel: de pagina's die de klant voor de tabel leest. De
+    prijzen staan er met opzet niet allemaal op — de ontvangst heeft een eigen
+    bedrag, de rest haalt het uit de regels hierboven. Zo dekt de demo allebei
+    de manieren waarop een voorstel aan zijn prijs komt.
+  */
+  onderdelen: [
+    {
+      id: 'o-locatie',
+      soort: 'locatie',
+      titel: 'De',
+      accent: 'locatie',
+      tekst: 'Uw feest vindt plaats in de authentieke schuur van Hoeve Vanhove, die we exclusief voor uw gezelschap inrichten.',
+      punten: [],
+      perPersoon: null,
+      prijsNoot: '',
+    },
+    {
+      id: 'o-ontvangst',
+      soort: 'ontvangst',
+      titel: 'Ontvangst &',
+      accent: 'hapjes',
+      tekst: 'We verwelkomen uw gasten met een keuze uit cocktail, mocktail, cava of frisdrank.',
+      punten: ['Oosterse scampi', 'Arrosticini', 'Loaded nacho'],
+      perPersoon: 6,
+      prijsNoot: '',
+    },
+    {
+      id: 'o-hoofd',
+      soort: 'hoofd',
+      titel: 'Walking',
+      accent: 'dinner',
+      tekst: 'Zes gangen die aan tafel gebracht worden, met Haspengouwse producten als vertrekpunt. Vegetarische gangen zijn mogelijk; laat ons gerust weten of er allergieën zijn.',
+      punten: [],
+      perPersoon: null,
+      prijsNoot: '',
+    },
+    {
+      id: 'o-dranken',
+      soort: 'dranken',
+      titel: 'Open',
+      accent: 'bar',
+      tekst: 'De bar blijft open tot drie uur, met bediening aan de toog.',
+      punten: ['Frisdranken, plat en bruisend water', 'Bier van het vat, cava', 'Een selectie witte, rosé en rode wijn'],
+      perPersoon: null,
+      prijsNoot: '',
+    },
+  ],
   createdAt: dag(-9),
+})
+
+/*
+  Werk dat vanzelf terugkomt. Eén wekelijkse en één maandelijkse, zodat het
+  scherm allebei de ritmes toont en de browsertest kan nakijken dat "volgende
+  keer" er echt staat.
+*/
+seedDoc('herhalingen', 'ebox-controle', {
+  titel: 'eBox / Doccle / burgerprofiel / e-Box enterprise controleren',
+  omschrijving: 'Nakijken of er nieuwe officiële post binnenkwam.',
+  doel: 'taak',
+  listId: 'l-overleg',
+  profileId: 'u-elke',
+  brandId: null,
+  soort: 'wekelijks',
+  dagen: [1],
+  dagVanMaand: 1,
+  prioriteit: '',
+  actief: true,
+  createdAt: dag(-30),
+})
+
+seedDoc('herhalingen', 'je-nieuwsbrief', {
+  titel: 'JE Nieuwsbrief',
+  omschrijving: 'De maandelijkse nieuwsbrief opstellen en versturen.',
+  doel: 'taak',
+  listId: 'l-overleg',
+  profileId: 'u-jasper',
+  brandId: null,
+  soort: 'maandelijks',
+  dagen: [],
+  dagVanMaand: 1,
+  prioriteit: '',
+  actief: true,
+  createdAt: dag(-30),
 })
 
 /*

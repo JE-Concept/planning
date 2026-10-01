@@ -378,6 +378,40 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    /*
+      Werk dat vanzelf terugkomt.
+
+      Lezen doet het team — iedereen hoort te kunnen zien waarom er elke
+      maandag dezelfde taak staat. Beheren doet een beheerder: een herhaling
+      die aan een persoon hangt, deelt werk uit, en dat is een afspraak en geen
+      voorkeursinstelling.
+
+      Schrijven van de taken zélf doet een geplande functie met
+      beheerdersrechten; die gaat hier niet langs. Wat hier staat, gaat alleen
+      over het recept.
+
+      De soort wordt afgegrensd zoals bij de business rules: een herhaling met
+      een onbekende soort zou elke nacht door de planner gelezen worden en
+      nooit iets doen, en dat is een stille storing.
+    */
+    function herhalingVorm() {
+      return tekstOfNiets('titel')
+        && tekstOfNiets('omschrijving')
+        && tekstOfNiets('prioriteit')
+        && lijstOfNiets('dagen')
+        && aantalOfNiets('dagVanMaand')
+        && (!('soort' in request.resource.data)
+            || request.resource.data.soort in ['dagelijks', 'wekelijks', 'maandelijks'])
+        && (!('doel' in request.resource.data)
+            || request.resource.data.doel in ['taak', 'social']);
+    }
+
+    match /herhalingen/{id} {
+      allow read:   if isTeam();
+      allow create, update: if isAdmin() && herhalingVorm();
+      allow delete: if isAdmin();
+    }
+
     // Het logboek van de regels: welke regel vuurde, op welk document, en bij
     // een beslissingstabel op welke rij. Alleen de server schrijft erin — zij is
     // de enige die het weet — en niemand bewerkt achteraf wat er staat. Zelfde
@@ -515,7 +549,8 @@ service cloud.firestore {
         && aantalOfNiets('personen')
         && bedragOfNiets('bedragExcl')
         && bedragOfNiets('bedragIncl')
-        && lijstOfNiets('regels');
+        && lijstOfNiets('regels')
+        && lijstOfNiets('onderdelen');
     }
 
     match /offertes/{id} {

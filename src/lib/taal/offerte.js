@@ -31,6 +31,10 @@ export default {
     nl: 'De link staat op je klembord.',
     en: 'The link is on your clipboard.',
   },
+  'offerte.link_nog_concept': {
+    nl: 'Nog niet bereikbaar — de pagina opent pas zodra de offerte verstuurd is.',
+    en: 'Not live yet — the page opens once the quote has been sent.',
+  },
   'offerte.link_kopieer_mislukt': {
     nl: 'Kopiëren lukte niet; selecteer de link hierboven.',
     en: 'Copying failed; select the link above.',

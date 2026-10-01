@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { deleteDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 import { maakRegel, offerteVanEvent, totalenVan } from '@lib/offerte'
+import { maakOnderdeel, sorteer as sorteerOnderdelen, voorstelVanOfferte } from '@lib/voorstel'
 import { klantAdres } from '@lib/klantadres'
 
 /**
@@ -74,6 +75,10 @@ export async function maakOfferte({ event, prijs = null, uid = null, volgnummer 
 
   await setDoc(doc, {
     ...basis,
+    // Meteen een voorstel erbij. Een offerte die als lege tabel begint, wordt
+    // als lege tabel verstuurd; een voorstel dat al klopt op de prijzen is
+    // werk dat herschreven wordt in plaats van werk dat begonnen moet worden.
+    onderdelen: voorstelVanOfferte(basis, { locatie: event?.location ?? '' }),
     token: nieuwToken(),
     createdAt: serverTimestamp(),
     createdBy: uid ?? null,
@@ -124,6 +129,38 @@ export async function verstuurOfferte(offerte, uid = null) {
   )
   return totalen
 }
+
+/* ── Het conceptvoorstel ─────────────────────────────────────────────────
+   De onderdelen staan op dezelfde offerte en niet in een eigen document. Dat
+   is met opzet: ze lezen hun prijs uit de offerteregels, en twee documenten
+   die elkaars getallen nodig hebben lopen vroeg of laat uit elkaar. Zie
+   `@lib/voorstel` voor hoe die koppeling werkt. */
+
+export const zetOnderdelen = (id, onderdelen, uid = null) =>
+  bewerkOfferte(id, { onderdelen: sorteerOnderdelen(onderdelen) }, uid)
+
+export const voegOnderdeelToe = (offerte, onderdeel, uid = null) =>
+  zetOnderdelen(offerte.id, [...(offerte.onderdelen ?? []), maakOnderdeel(onderdeel)], uid)
+
+export const wijzigOnderdeel = (offerte, onderdeelId, velden, uid = null) =>
+  zetOnderdelen(
+    offerte.id,
+    (offerte.onderdelen ?? []).map((o) =>
+      o.id === onderdeelId ? maakOnderdeel({ ...o, ...velden, id: o.id }) : o
+    ),
+    uid
+  )
+
+export const wisOnderdeel = (offerte, onderdeelId, uid = null) =>
+  zetOnderdelen(
+    offerte.id,
+    (offerte.onderdelen ?? []).filter((o) => o.id !== onderdeelId),
+    uid
+  )
+
+/** Een voorstel dat uit de offerteregels volgt. Vervangt wat er stond. */
+export const stelVoorstelVoor = (offerte, event, uid = null) =>
+  zetOnderdelen(offerte.id, voorstelVanOfferte(offerte, { locatie: event?.location ?? '' }), uid)
 
 /** Een nieuw adres voor de klant. Het oude werkt daarna niet meer. */
 export const vernieuwToken = (id, uid = null) => bewerkOfferte(id, { token: nieuwToken() }, uid)

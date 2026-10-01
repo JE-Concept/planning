@@ -45,6 +45,9 @@ const OFFERTE_VELDEN = [
   'locatie',
   'personen',
   'regels',
+  // Het conceptvoorstel: de pagina's die de klant leest. Zonder dit staat er
+  // op de publieke pagina een tabel zonder verhaal eromheen.
+  'onderdelen',
   'status',
   'antwoordOp',
   'feedback',

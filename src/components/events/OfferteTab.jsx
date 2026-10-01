@@ -17,6 +17,7 @@ import {
   wisRegel,
 } from '@data/offertes'
 import OfferteBlad from './OfferteBlad'
+import VoorstelWerk from './VoorstelWerk'
 
 const BTW_TARIEVEN = [6, 12, 21]
 
@@ -91,6 +92,7 @@ export default function OfferteTab({ ev }) {
   const mist = ontbrekend(offerte, { date: ev.eventDate })
 
   const link = offerteLink(offerte)
+  const nogConcept = offerte.status === 'concept'
 
   const versturen = async () => {
     setBezig(true)
@@ -143,17 +145,36 @@ export default function OfferteTab({ ev }) {
           nakijkt, wil met één blik zien wat de klant te zien krijgt — en met
           één klik het adres hebben dat hij hem stuurt.
         */}
+        {/*
+          Zolang de offerte een concept is, bestaat deze pagina niet voor de
+          klant: `functions/portaal.js` weigert ze met opzet, zodat een link
+          die per ongeluk vertrekt geen bedragen toont waar nog aan gerekend
+          wordt. Dat is juist — maar het adres stond hier wél al klaar om te
+          kopiëren, zonder dat erbij stond dat het nog nergens heen ging. Wie
+          hem doorstuurde, kreeg van de klant te horen dat de pagina niet
+          bestaat. Nu zegt de knop wat de server doet.
+        */}
         {link ? (
-          <div className="je-offertewerk__link">
+          <div className="je-offertewerk__link" data-nogniet={nogConcept ? '' : undefined}>
             <span className="je-caps">{t('offerte.klantpagina')}</span>
-            <a href={link} target="_blank" rel="noreferrer" className="je-link-quiet">
-              {link.replace(/^https?:\/\//, '')}
-            </a>
+            {nogConcept ? (
+              <span className="je-muted-caption">{t('offerte.link_nog_concept')}</span>
+            ) : (
+              <a href={link} target="_blank" rel="noreferrer" className="je-link-quiet">
+                {link.replace(/^https?:\/\//, '')}
+              </a>
+            )}
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-3)' }}>
-              <Button variant="ghost" size="sm" iconLeft="copy" onClick={kopieer}>
+              <Button variant="ghost" size="sm" iconLeft="copy" onClick={kopieer} disabled={nogConcept}>
                 {t('offerte.link_kopieren')}
               </Button>
-              <Button variant="secondary" size="sm" iconLeft="share-2" onClick={() => window.open(link, '_blank')}>
+              <Button
+                variant="secondary"
+                size="sm"
+                iconLeft="share-2"
+                disabled={nogConcept}
+                onClick={() => window.open(link, '_blank')}
+              >
                 {t('offerte.link_openen')}
               </Button>
             </span>
@@ -208,6 +229,8 @@ export default function OfferteTab({ ev }) {
           <strong>{geld(totalen.incl)}</strong>
         </div>
       </div>
+
+      <VoorstelWerk offerte={offerte} ev={ev} />
 
       {/* Hetzelfde blad dat de klant krijgt, meteen ernaast: wie een lijn
           aanpast, ziet wat het met het document doet. */}

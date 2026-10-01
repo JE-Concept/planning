@@ -254,3 +254,52 @@ beschrijf('het eigen profiel', () => {
     await assertFails(updateDoc(doc(alsWie('u-lid'), 'profiles/u-tweede'), { role: 'admin' }))
   })
 })
+
+beschrijf('werk dat vanzelf terugkomt', () => {
+  const geldig = {
+    titel: 'eBox controleren',
+    omschrijving: '',
+    doel: 'taak',
+    soort: 'wekelijks',
+    dagen: [1],
+    dagVanMaand: 1,
+    prioriteit: '',
+    actief: true,
+  }
+
+  it('leest het hele team', async () => {
+    await assertSucceeds(getDoc(doc(alsWie('u-lid'), 'herhalingen/h-1')))
+  })
+
+  it('maar personeel niet', async () => {
+    await assertFails(getDoc(doc(alsWie('u-personeel'), 'herhalingen/h-1')))
+  })
+
+  /*
+    Een herhaling deelt werk uit aan een persoon, elke week opnieuw. Dat is een
+    afspraak en geen voorkeursinstelling, dus ze hoort bij de beheerders —
+    anders zet het ene teamlid stilletjes een taak op de agenda van het andere.
+  */
+  it('wordt door een beheerder gezet, niet door een gewoon lid', async () => {
+    await assertFails(setDoc(doc(alsWie('u-lid'), 'herhalingen/h-nieuw'), geldig))
+    await assertSucceeds(setDoc(doc(alsWie('u-eigenaar'), 'herhalingen/h-nieuw'), geldig))
+  })
+
+  /*
+    Een onbekende soort zou elke nacht gelezen worden en nooit iets doen: een
+    stille storing, en die zijn het duurst.
+  */
+  it('weigert een ritme dat de planner niet kent', async () => {
+    await assertFails(
+      setDoc(doc(alsWie('u-eigenaar'), 'herhalingen/h-raar'), { ...geldig, soort: 'per kwartaal' })
+    )
+  })
+
+  it('weigert een bestemming die niet bestaat', async () => {
+    await assertFails(setDoc(doc(alsWie('u-eigenaar'), 'herhalingen/h-raar'), { ...geldig, doel: 'factuur' }))
+  })
+
+  it('weigert een titel die geen tekst is', async () => {
+    await assertFails(setDoc(doc(alsWie('u-eigenaar'), 'herhalingen/h-raar'), { ...geldig, titel: 42 }))
+  })
+})
