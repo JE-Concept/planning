@@ -1249,11 +1249,6 @@ await test('op je eigen profiel pas je je naam en je foto aan', async () => {
   const tekst = await inhoud(page)
   zouden(bevat(tekst, 'Mijn profiel'), 'de profielpagina opent niet')
 
-  // Wat vastligt staat erop, met de reden erbij — niet als grijs vakje.
-  for (const vast of ['jasper@jeconcept.be', 'Eigenaar']) {
-    zouden(bevat(tekst, vast), `"${vast}" staat niet bij de vaste gegevens: ${tekst.slice(0, 400)}`)
-  }
-
   const naam = page.getByLabel('Naam')
   await naam.fill('Jasper H.')
   await page.getByRole('button', { name: 'Bewaren' }).click()

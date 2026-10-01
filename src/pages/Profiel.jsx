@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatCurrency } from '@lib/format'
 import { Avatar, Button, Field, Input } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import Voorkeuren from '@components/profiel/Voorkeuren'
-import { ROLE_LABEL } from '@components/layout/Sidebar'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -83,13 +81,6 @@ export default function Profiel() {
     }
   }
 
-  const vast = [
-    { label: t('profiel.adres'), waarde: profile?.email },
-    { label: t('profiel.rol'), waarde: profile?.role ? t(ROLE_LABEL[profile.role] ?? profile.role) : null },
-    { label: t('profiel.afdeling'), waarde: profile?.department || t('profiel.geen_afdeling') },
-    ...(profile?.hourlyRate ? [{ label: t('profiel.tarief'), waarde: `${formatCurrency(profile.hourlyRate)} / u` }] : []),
-  ]
-
   return (
     <div>
       <PageHeader eyebrow={t('profiel.eyebrow')} title={t('profiel.titel')} subtitle={t('profiel.uitleg')} />
@@ -156,20 +147,6 @@ export default function Profiel() {
 
         <Voorkeuren />
 
-        <section className="je-card" style={{ padding: 'var(--space-6)' }}>
-          <h2 style={{ font: 'var(--type-h4)', margin: 0 }}>{t('profiel.vast')}</h2>
-          <p style={{ font: 'var(--type-body-sm)', color: 'var(--ink-500)', margin: 'var(--space-2) 0 var(--space-4)' }}>
-            {t('profiel.vast_uitleg')}
-          </p>
-          <dl style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,2fr)', gap: 'var(--space-3) var(--space-5)', margin: 0 }}>
-            {vast.map((r) => (
-              <div key={r.label} style={{ display: 'contents' }}>
-                <dt style={{ font: 'var(--type-body-sm)', color: 'var(--ink-500)' }}>{r.label}</dt>
-                <dd style={{ font: 'var(--type-body-sm)', margin: 0 }}>{r.waarde}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
       </div>
     </div>
   )

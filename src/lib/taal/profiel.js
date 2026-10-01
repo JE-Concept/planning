@@ -41,16 +41,6 @@ export default {
     en: 'This photo is larger than 10 MB. Choose a smaller one.',
   },
 
-  'profiel.vast': { nl: 'Wat een beheerder regelt', en: 'Managed by an admin' },
-  'profiel.vast_uitleg': {
-    nl: 'Je adres, je rol en je uurtarief staan vast. Klopt er iets niet, vraag het aan een beheerder.',
-    en: 'Your address, role and hourly rate are fixed. If something is wrong, ask an admin.',
-  },
-  'profiel.adres': { nl: 'E-mailadres', en: 'Email address' },
-  'profiel.rol': { nl: 'Rol', en: 'Role' },
-  'profiel.afdeling': { nl: 'Afdeling', en: 'Department' },
-  'profiel.tarief': { nl: 'Uurtarief', en: 'Hourly rate' },
-  'profiel.geen_afdeling': { nl: 'Geen', en: 'None' },
 
   // ── Wat vroeger in het menu onder je naam hing ─────────────────────────
   'profiel.voorkeuren': { nl: 'Jouw instellingen', en: 'Your settings' },
