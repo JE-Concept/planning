@@ -3307,8 +3307,19 @@ button.je-paneel-kaart:hover {
    met vier knoppen een scherm op zich.
 */
 @media (pointer: coarse) {
+  /*
+    Een tab is zo breed als zijn woord, en "Mail" is een kort woord.
+
+    Dat kwam er niet uit op mijn eigen machine en wél in CI: daar staan andere
+    lettertypes, "Mail" werd zevenentwintig pixels, en de meting sloeg om. Dat
+    is geen toevalstreffer maar precies het geval waarvoor dit bestaat — een
+    tab die onder de duim van een ander toestel wegvalt. De ondergrens haalt
+    hem er bovendien uit: wat de breedte is, hangt nu niet meer af van welk
+    lettertype er toevallig geladen werd.
+  */
   .je-tab {
     padding-block: 11px;
+    min-width: 44px;
   }
 
   /* Invoervelden met een onderlijn: de regel is dun, het raakvlak hoeft dat

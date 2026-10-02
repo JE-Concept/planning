@@ -75,6 +75,23 @@ const viewport = devices['iPhone 13'].viewport
 
 const browser = await chromium.launch()
 const context = await browser.newContext({ ...devices['iPhone 13'] })
+
+/*
+  Geen webfonts, met opzet.
+
+  Dit script was groen op mijn machine en rood in CI: daar werd "Mail" in een
+  tab zevenentwintig pixels en hier vierendertig. Welke letters er precies
+  getekend worden hangt af van de machine — welke Chromium, welke lettertypes
+  erop staan — en een tripwire die daarvan afhangt, meldt dingen die niemand
+  ziet en mist dingen die iemand wél ziet.
+
+  Het echte antwoord was de knoppen een ondergrens geven die niet van een woord
+  afhangt (zie `.je-tab` in app.css). Dit blokkeren is wat overblijft: het
+  terugvallettertype is smaller dan het echte, dus hiermee meet elke machine
+  hetzelfde én het ongunstigste geval. Wat hier past, past overal.
+*/
+await context.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort())
+
 const page = await context.newPage()
 
 const fouten = []
