@@ -74,18 +74,34 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
         </div>
       </section>
 
-      {/* ── Wat er nog aan schort ───────────────────────────────────── */}
+      {/*
+        ── Wat er nog aan schort ─────────────────────────────────────
+
+        Eén regel met een teller, en de opsomming pas wanneer je erom vraagt.
+
+        Het stond hier als een uitgeklapte lijst van vijf zinnen, bovenaan het
+        scherm dat je opent om te weten hoe het ervoor staat. Vijf zinnen lees
+        je één keer; de tweede keer scroll je eroverheen, en dan is de
+        waarschuwing meubilair geworden. "Vijf dingen ontbreken" is wat je moet
+        weten, en wát precies pas wanneer je er iets aan gaat doen.
+
+        Een `<details>` en geen eigen open-dicht-toestand: dat is wat de
+        browser hiervoor heeft, het werkt met het toetsenbord en een
+        schermlezer zegt vanzelf of het open of dicht staat.
+      */}
       {stand.aandacht.length ? (
-        <section className="je-panel je-overzicht__aandacht" data-stand={stand.stand}>
-          <h2 className="je-caps">
-            <Icon name="alert-triangle" size={14} /> {t('overzicht.vraagt_aandacht')}
-          </h2>
+        <details className="je-panel je-overzicht__aandacht" data-stand={stand.stand}>
+          <summary className="je-aandachtkop">
+            <Icon name="alert-triangle" size={15} />
+            <strong>{t('overzicht.mist_aantal', { aantal: stand.aandacht.length })}</strong>
+            <span className="je-muted-caption">{t('overzicht.mist_bekijk')}</span>
+          </summary>
           <ul>
             {stand.aandacht.map((sleutel) => (
               <li key={sleutel}>{t(sleutel, { dagen: DREMPELS.gegevens })}</li>
             ))}
           </ul>
-        </section>
+        </details>
       ) : (
         <section className="je-panel je-overzicht__aandacht" data-stand="rond">
           <h2 className="je-caps">

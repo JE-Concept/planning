@@ -2026,6 +2026,20 @@ await test('het overzicht zegt in één blik hoe een event ervoor staat', async 
   // kop. Beide knoppen moeten er zijn, want terugzetten kon tot nu niet.
   zouden(bevat(tekst, 'Vorige'), 'de knop om een stap terug te gaan ontbreekt')
 
+  /*
+    Wat er mist, staat ingeklapt: één rode regel met een teller. Uitgeklapt
+    waren het vijf zinnen bovenaan het scherm, en vijf zinnen lees je één keer
+    — daarna scroll je eroverheen en is de waarschuwing meubilair.
+  */
+  const aandacht = page.locator('.je-overzicht__aandacht')
+  const kop = aandacht.locator('.je-aandachtkop')
+  zouden(/\d+ dingen vragen aandacht/.test(await kop.innerText()), `de teller staat er niet: ${await kop.innerText()}`)
+  zouden(!(await aandacht.locator('li').first().isVisible()), 'de opsomming staat open in plaats van ingeklapt')
+
+  await kop.click()
+  await page.waitForTimeout(200)
+  zouden(await aandacht.locator('li').first().isVisible(), 'de opsomming komt niet open bij een klik')
+
   // Een kaart brengt je naar het tabblad waar je er iets aan kunt doen.
   await page.getByRole('button', { name: /Taken/ }).first().click()
   await page.waitForTimeout(700)

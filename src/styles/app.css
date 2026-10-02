@@ -2723,12 +2723,40 @@ select.je-compact { padding-right: 24px; }
   border-left: 3px solid var(--border-hairline);
 }
 
-.je-overzicht__aandacht[data-stand='aandacht'] {
-  border-left-color: var(--amber-500, #d08700);
-}
+/*
+  Rood zodra er iets mist, en niet oranje bij "nog even tijd".
 
+  Dat onderscheid stond er wel, maar het was er een dat niemand maakte: een
+  dossier waar iets aan ontbreekt, is een dossier waar iets aan ontbreekt. Nu
+  de regel is ingeklapt tot één zin met een teller, telt alleen nog of er iets
+  staat — en dan is één kleur duidelijker dan twee die op elkaar lijken.
+*/
+.je-overzicht__aandacht[data-stand='aandacht'],
 .je-overzicht__aandacht[data-stand='dringend'] {
   border-left-color: var(--red-500, #c0392b);
+}
+
+/* De ingeklapte regel: de teller, en waar je op klikt om meer te zien. */
+.je-aandachtkop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  color: var(--red-500, #c0392b);
+  font: var(--type-body-sm);
+  /* Het eigen driehoekje van de browser staat links en springt bij het
+     openen; de regel heeft al een icoon. */
+  list-style: none;
+}
+.je-aandachtkop::-webkit-details-marker {
+  display: none;
+}
+.je-aandachtkop:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.je-overzicht__aandacht[open] .je-aandachtkop {
+  margin-bottom: var(--space-3);
 }
 
 .je-overzicht__aandacht[data-stand='rond'] {

@@ -16,6 +16,11 @@ export default {
   'overzicht.pijplijn': { nl: 'Waar staat het', en: 'Where it stands' },
 
   'overzicht.vraagt_aandacht': { nl: 'Vraagt aandacht', en: 'Needs attention' },
+  'overzicht.mist_aantal': {
+    nl: '{aantal} dingen vragen aandacht',
+    en: '{aantal} things need attention',
+  },
+  'overzicht.mist_bekijk': { nl: 'bekijken', en: 'show' },
   'overzicht.in_orde': { nl: 'Alles in orde', en: 'All good' },
   'overzicht.in_orde_uitleg': {
     nl: 'Er is niets dat nu om een beslissing vraagt.',
