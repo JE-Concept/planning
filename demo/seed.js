@@ -439,6 +439,8 @@ taak('t-soc-5', 'l-socials', SOCIALS, 'done', { title: 'Terugblik Loonse Feesten
   ['c1', 't-blum', 'u-elke', 'Elke Motmans', 'Leverancierschecklist doorgenomen met Jasper. Verhuur, catering, sanitair en drank apart offreren — de goedkoopste verhuurder wacht nog op bevestiging. Interne materiaallijst staat in de gedeelde map.', dag(-6)],
   ['c2', 't-trouw', 'u-elke', 'Elke Motmans', 'Klant wil dezelfde tentopstelling als bij de Odeurs-trouw vorig jaar. Foto\'s doorgestuurd. Let op: bredere dansvloer gevraagd.', dag(-12)],
   ['c3', 't-trouw', 'u-jasper', 'Jasper Hansen', 'Locatiebezoek gedaan. Boomgaard ligt schuin — vloer nodig onder de ceremonie, dat zit nog niet in de raming.', dag(-9)],
+  // Met een link erin: hieronder hoort een voorbeeldkaartje te komen.
+  ['c5', 't-trouw', 'u-elke', 'Elke Motmans', 'Alle info over de zaal staat hier: https://hoeve-vanhove.be/zalen (zie zeker de plattegrond).', dag(-7)],
   ['c4', 't-loonse', 'u-jasper', 'Jasper Hansen', 'Eindafrekening: voorschot van €8.600 verrekenen. Drie dagen bar, 8 tappunten, geen schade gemeld.', dag(-4)],
 ].forEach(([id, taskId, authorId, authorName, body, createdAt]) =>
   seedDoc('comments', id, { taskId, postId: null, authorId, authorName, body, createdAt }))

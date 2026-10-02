@@ -2408,6 +2408,33 @@ await test('met @ spreek je iemand aan in een notitie', async () => {
   await page.close()
 })
 
+await test('een link in een notitie krijgt een kaartje', async () => {
+  /*
+    Zoals Facebook en Slack het doen. Het ophalen gebeurt op de server — een
+    browser mag een vreemde site niet lezen — en in de demo komt het uit een
+    stub: een demo die een echte site ophaalt, gaat zonder internet stuk en
+    meldt elke bezoeker aan bij iemand anders' server.
+  */
+  const page = await tabblad('/events/t-trouw')
+  await page.waitForTimeout(1400)
+  const kolom = page.getByLabel('Notities')
+
+  // De link zelf is aanklikbaar, en opent in een nieuw tabblad.
+  const link = kolom.getByRole('link', { name: 'https://hoeve-vanhove.be/zalen' })
+  zouden((await link.count()) === 1, 'de link is geen link geworden')
+  zouden((await link.getAttribute('rel'))?.includes('noopener'), 'de link mist noopener')
+  // Het sluithaakje van de zin hoort niet bij het adres.
+  zouden(!(await link.getAttribute('href')).includes(')'), 'het haakje van de zin zit in de link')
+
+  const kaart = kolom.locator('.je-linkkaart')
+  zouden((await kaart.count()) === 1, 'er staat geen voorbeeldkaartje onder de notitie')
+  const tekst = await kaart.innerText()
+  zouden(tekst.includes('Hoeve Vanhove'), `de titel staat niet op het kaartje: ${tekst}`)
+  zouden(tekst.includes('Borgloon'), `de omschrijving staat niet op het kaartje: ${tekst}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de notities staan naast het event en zijn het gesprek', async () => {
   const page = await tabblad('/events/t-trouw')
 

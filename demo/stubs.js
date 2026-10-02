@@ -22,4 +22,23 @@ export const getDownloadURL = async (bestand) =>
   bestand.blob ? URL.createObjectURL(bestand.blob) : '#'
 export const deleteObject = async () => {}
 export const getFunctions = () => ({ __demo: true })
-export const httpsCallable = () => async () => ({ data: { ok: true, role: 'owner' } })
+/*
+  De demo kent één functie bij naam: het voorbeeldkaartje bij een link. De rest
+  geeft hetzelfde vriendelijke antwoord als altijd.
+
+  Het kaartje is verzonnen en er gaat niets de deur uit — een demo die een
+  vreemde site ophaalt, is een demo die zonder internet stukgaat en die elke
+  bezoeker aanmeldt bij iemand anders' server.
+*/
+const VERZONNEN_KAARTJE = {
+  titel: 'Hoeve Vanhove — feestzaal in Borgloon',
+  omschrijving: 'Een gerestaureerde vierkantshoeve met boomgaard, tot 180 gasten. Parkeren op het erf.',
+  afbeelding: null,
+  site: 'Hoeve Vanhove',
+  leeg: false,
+}
+
+export const httpsCallable = (_functions, naam) => async (gegevens) => {
+  if (naam === 'linkVoorbeeld') return { data: { url: gegevens?.url ?? null, ...VERZONNEN_KAARTJE } }
+  return { data: { ok: true, role: 'owner' } }
+}

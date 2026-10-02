@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDateTime } from '@lib/dates'
+import { linksIn } from '@lib/links'
 import { kandidaten, metMarkering, ruweStukken, zetVermelding, zoekopdrachtVan } from '@lib/vermelding'
 import { Avatar, Button, IconButton, Textarea } from '@components/ds'
+import LinkVoorbeeld from '@components/common/LinkVoorbeeld'
 import Notitietekst from '@components/common/Notitietekst'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -196,6 +198,11 @@ export default function EventNotities({ ev, compact = false }) {
                     mij={profile?.id}
                     profileById={profileById}
                   />
+                  {/*
+                    Eén kaartje, bij de eerste link. Zie `LinkVoorbeeld` voor
+                    waarom niet bij alle drie.
+                  */}
+                  <LinkVoorbeeld url={linksIn(n.body)[0]} />
                 </div>
               </article>
             )

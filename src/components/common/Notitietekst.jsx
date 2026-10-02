@@ -1,3 +1,4 @@
+import { stukkenMetLinks } from '@lib/links'
 import { stukken } from '@lib/vermelding'
 import { Avatar } from '@components/ds'
 
@@ -15,7 +16,7 @@ import { Avatar } from '@components/ds'
 export default function Notitietekst({ tekst, mij, profileById = {}, className, style }) {
   return (
     <span className={className} style={style}>
-      {stukken(tekst).map((stuk, i) =>
+      {metLinks(stukken(tekst)).map((stuk, i) =>
         stuk.soort === 'naam' ? (
           <strong
             key={i}
@@ -36,10 +37,36 @@ export default function Notitietekst({ tekst, mij, profileById = {}, className, 
             ) : null}
             {stuk.tekst}
           </strong>
+        ) : stuk.soort === 'link' ? (
+          <a
+            key={i}
+            href={stuk.href}
+            // `noreferrer` hoort bij `noopener`: zonder het eerste geeft een
+            // nieuw tabblad het adres van dit scherm door aan de site die
+            // geopend wordt, en daar staat een event-id in.
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="je-notitielink"
+          >
+            {stuk.tekst}
+          </a>
         ) : (
           <span key={i}>{stuk.tekst}</span>
         )
       )}
     </span>
   )
+}
+
+/**
+ * De vermeldingen zijn al uitgeknipt; de links komen daar doorheen.
+ *
+ * Twee keer knippen en niet één reguliere expressie voor allebei: een naam en
+ * een adres zijn twee verschillende dingen met twee verschillende regels, en
+ * een patroon dat ze allebei moet kennen, kent ze geen van beide goed. De
+ * tweede knipbeurt slaat de naamstukken over — in `@[Jan](uid)` zit geen link,
+ * en er mag er ook geen uit tevoorschijn komen.
+ */
+function metLinks(delen) {
+  return delen.flatMap((stuk) => (stuk.soort === 'tekst' ? stukkenMetLinks(stuk.tekst) : stuk))
 }

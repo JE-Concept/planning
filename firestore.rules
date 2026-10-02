@@ -300,6 +300,19 @@ service cloud.firestore {
       die gaat via een functie en niet via deze regels. Zo staat op één plek
       wat een geldige koppeling is, en kan `linkedBy` niet gelogen worden.
     */
+    /*
+      De voorbeeldkaartjes bij links in notities.
+
+      Lezen mag het team — het is een titel en een plaatje van een openbare
+      pagina. Schrijven doet alleen de functie: een kaartje dat een browser kan
+      bewerken, is een kaartje waarin iemand een andere titel en een ander
+      adres kan zetten, en dan is het een val in plaats van een hulp.
+    */
+    match /linkVoorbeelden/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
     match /aapiShifts/{id} {
       allow read:  if isTeam();
       allow write: if false;

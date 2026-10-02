@@ -31,6 +31,7 @@ import { AUDIT, regelVan, teOud } from './audit.js'
 import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
 import { maakHerhalingen } from './herhalingen.js'
+import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
 
 initializeApp()
 const db = getFirestore()
@@ -760,6 +761,14 @@ export const portaal = maakPortaal({ db, region: REGION })
 /* Werk dat vanzelf terugkomt; zie `herhalingen.js` voor waarom het 's nachts
    gebeurt en niet zodra iemand de tool opent. */
 export const herhalingen = maakHerhalingen({ db, region: REGION })
+
+/*
+  Het voorbeeldkaartje bij een link in een notitie. Een browser mag een vreemde
+  site niet lezen, dus doet de server het — met de nodige bewaking eromheen,
+  want dit is het enige punt waar een gebruiker de server een adres laat
+  opvragen. Zie `linkvoorbeeld.js`.
+*/
+export const { linkVoorbeeld } = maakLinkVoorbeeld({ db, region: REGION })
 
 /*
   De planning uit AAPI: importeren en koppelen. Het rekenwerk staat in `aapi/`,

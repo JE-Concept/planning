@@ -78,6 +78,10 @@ export const REGELS = {
   aapiImportRuns: { lezen: isTeam, schrijven: () => false },
   aapiImportQueue: { lezen: isTeam, schrijven: () => false },
 
+  // Het voorbeeldkaartje bij een link: lezen mag het team, schrijven doet
+  // alleen de functie — anders staat er een titel in die iemand zelf koos.
+  linkVoorbeelden: { lezen: isTeam, schrijven: () => false },
+
   socialEvents: {
     lezen: (rol, ctx) =>
       isTeam(rol) ||
