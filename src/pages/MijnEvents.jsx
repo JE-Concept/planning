@@ -1,10 +1,12 @@
-import { formatDate } from '@lib/dates'
+import { formatDate, formatTime, formatWeekday } from '@lib/dates'
 import { Badge, Icon } from '@components/ds'
 import { EmptyState, Spinner } from '@ui/index'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useMijnEvents } from '@data/social-events'
+import { useMijnShifts } from '@data/aapi'
+import { STAND_TEKST, STATUUT_TEKST, afdelingLabel, kleurVan, minutenVan, standVan, urenTekst } from '@lib/aapi-weergave'
 import { eindeVan } from '@lib/eventdagen'
 import { eventDagCijfer } from '@components/events/parts'
 
@@ -79,6 +81,7 @@ export default function MijnEvents() {
       <PageHeader eyebrow={t('mijnevents.eyebrow')} title={t('mijnevents.titel')} subtitle={t('mijnevents.uitleg')} />
 
       <div className="je-pagebody" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        <MijnDiensten />
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}>
             <Spinner />
@@ -114,5 +117,64 @@ export default function MijnEvents() {
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Mijn diensten, zoals ze in AAPI staan.
+ *
+ * ── Waarom alleen lezen ───────────────────────────────────────────────────
+ * Omdat AAPI de bron is. Zou je hier je uren kunnen verzetten, dan staan er
+ * twee waarheden over dezelfde dienst en hangt er loon aan welke er klopt.
+ * Klopt er iets niet, dan klopt de planning niet — en die wordt rechtgezet
+ * waar ze gemaakt is.
+ *
+ * ── Wat je wel ziet ───────────────────────────────────────────────────────
+ * Wanneer, waar, hoe lang en met welke pauze. Alleen van jezelf: de regels
+ * laten je de diensten van een collega niet zien, en de vraag is zelf ook zo
+ * beperkt.
+ */
+function MijnDiensten() {
+  const { t } = useTaal()
+  const { profile } = useAuth()
+  const { shifts } = useMijnShifts(profile?.aapiEmployeeId ?? null)
+
+  // Wat geweest is zakt eruit: dit scherm gaat over wat er nog komt. De
+  // afgelopen uren staan op het urenscherm.
+  const vandaag = new Date().setHours(0, 0, 0, 0)
+  const komend = shifts.filter((s) => new Date(s.end ?? s.start).getTime() >= vandaag)
+  if (!komend.length) return null
+
+  return (
+    <section className="je-panel">
+      <div className="je-panel__head">
+        <span className="je-eyebrow">{t('mijnevents.diensten')}</span>
+        <span className="je-panel__right">{komend.length}</span>
+      </div>
+      <p className="je-muted-caption" style={{ padding: 'var(--space-3) var(--space-6) 0' }}>
+        {t('mijnevents.diensten_uitleg')}
+      </p>
+      {komend.map((s) => (
+        <div key={s.aapiPlanningId} className="je-personeelrij" style={{ '--afdeling': kleurVan(s.locationName) }}>
+          <span className="je-personeelrij__streep" aria-hidden="true" />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, textTransform: 'capitalize' }}>
+              {formatWeekday(s.start)} {formatDate(s.start)}
+            </div>
+            <div className="je-muted-caption">
+              {afdelingLabel(t, s.locationName)}
+              {' · '}
+              {formatTime(s.start)}–{formatTime(s.end)}
+              {' · '}
+              {t('aapi.shift.pauze', { minuten: s.pauseMinutes ?? 0 })}
+              {' · '}
+              {urenTekst(minutenVan(s))}
+            </div>
+          </div>
+          <Badge tone="neutral">{t(STATUUT_TEKST[s.statuut] ?? 'aapi.statuut.onbekend')}</Badge>
+          {s.canceled ? <Badge tone="neutral">{t(STAND_TEKST[standVan(s)])}</Badge> : null}
+        </div>
+      ))}
+    </section>
   )
 }

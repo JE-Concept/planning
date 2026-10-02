@@ -338,12 +338,18 @@ describe('firestore.indexes.json', () => {
   niet een getal goedzetten.
 */
 describe('nieuwe queries', () => {
-  // 70 sinds de AAPI-planning: vijf vragen in `src/data/aapi.js` — de kalender,
-  // de shifts van één event, de medewerkers, de importhistoriek en de wachtrij
-  // van wat er per mail binnenkwam.
-  // Die heeft geen samengestelde index nodig — één veld, één richting — en
-  // staat daarom wel hier en niet in de tabel hierboven.
-  const QUERIES_IN_DE_APP = 70
+  /*
+    71 sinds de ploeg met een code binnenkomt: zes vragen in `src/data/aapi.js`
+    — de kalender, de shifts van één event, mijn eigen diensten, de
+    medewerkers, de importhistoriek en de wachtrij van wat er per mail
+    binnenkwam.
+
+    "Mijn eigen diensten" vraagt `aapiEmployeeId ==` zonder `orderBy` en heeft
+    daarom geen samengestelde index nodig — sorteren doet de browser, want het
+    zijn er hooguit een paar tientallen. Daarom staat ze wel hier en niet in de
+    tabel hierboven.
+  */
+  const QUERIES_IN_DE_APP = 71
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

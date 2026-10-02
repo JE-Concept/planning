@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Field, Input, Select } from '@components/ds'
+import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useEvents } from '@data/events'
+import { useMijnEvents } from '@data/social-events'
 import { werkKeuzes, werkVan } from '@lib/werkkeuze'
 
 /**
@@ -15,9 +17,36 @@ import { werkKeuzes, werkVan } from '@lib/werkkeuze'
  * Een zoekveld erboven en niet alleen een keuzelijst: met tachtig lopende
  * dossiers is scrollen door een <select> geen kiezen meer.
  */
+/**
+ * Waar de lijst vandaan komt, en dat hangt af van wie je bent.
+ *
+ * Het bureau leest de events uit `tasks` — daar staat alles op. Een medewerker
+ * mag die collectie niet lezen, want de bedragen staan erin en Firestore kan
+ * geen velden verbergen. Hij krijgt de kale kopie van de events waarop hij
+ * zelf staat, en dat is precies waarop hij uren boekt.
+ *
+ * Beide hooks worden altijd aangeroepen — React staat niet toe ze om de beurt
+ * over te slaan — maar de hook die er niet toe doet, krijgt niets te doen.
+ */
+function useWerkBronnen() {
+  const { uid, profile } = useAuth()
+  const ploeg = profile?.role === 'staff'
+
+  const { events: alle, tasks } = useEvents()
+  const { events: eigen } = useMijnEvents(ploeg ? uid : null)
+
+  return useMemo(
+    () =>
+      ploeg
+        ? { events: eigen.map((e) => ({ ...e, name: e.name ?? e.title })), tasks: [] }
+        : { events: alle, tasks },
+    [ploeg, eigen, alle, tasks]
+  )
+}
+
 export default function WerkKiezer({ value, onChange, behoud = null, label, hint }) {
   const { t } = useTaal()
-  const { events, tasks } = useEvents()
+  const { events, tasks } = useWerkBronnen()
   const [zoek, setZoek] = useState('')
 
   const keuzes = useMemo(
@@ -46,6 +75,6 @@ export default function WerkKiezer({ value, onChange, behoud = null, label, hint
 
 /** Het echte event of de echte taak achter de keuze, voor wie hem wil opslaan. */
 export function useWerk(id) {
-  const { events, tasks } = useEvents()
+  const { events, tasks } = useWerkBronnen()
   return useMemo(() => werkVan(id, { events, tasks }), [id, events, tasks])
 }

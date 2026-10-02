@@ -88,6 +88,42 @@ export function usePlanningStanden(events = []) {
   }, [events, shifts, van, tot])
 }
 
+/**
+ * Mijn eigen diensten, voor wie met een code binnenkomt.
+ *
+ * De vraag is zelf beperkt tot één medewerker, en dat moet ook: de regels
+ * laten een medewerker alleen zijn eigen diensten zien, en Firestore weigert
+ * een `list` die méér zou kunnen opleveren. Een bredere vraag met een filter
+ * erachteraan geeft hier dus geen gegevens maar een weigering — en dat is de
+ * bedoeling.
+ *
+ * Geen `orderBy` erbij: dat zou een samengestelde index vragen voor een lijst
+ * van hooguit een paar tientallen diensten. Sorteren doet de browser.
+ */
+export function useMijnShifts(aapiEmployeeId) {
+  const [shifts, setShifts] = useState([])
+  const [laadt, setLaadt] = useState(Boolean(aapiEmployeeId))
+
+  useEffect(() => {
+    if (!aapiEmployeeId) {
+      setShifts([])
+      setLaadt(false)
+      return undefined
+    }
+    setLaadt(true)
+    return onSnapshot(
+      query(col(COL.aapiShifts), where('aapiEmployeeId', '==', aapiEmployeeId)),
+      (snap) => {
+        setShifts(fromQuery(snap).sort((a, b) => new Date(a.start) - new Date(b.start)))
+        setLaadt(false)
+      },
+      () => setLaadt(false)
+    )
+  }, [aapiEmployeeId])
+
+  return { shifts, laadt }
+}
+
 /** De shifts die aan één event hangen. */
 export function useShiftsVanEvent(eventId) {
   const [shifts, setShifts] = useState([])

@@ -1920,6 +1920,34 @@ await test('op Tasks staat de knop om een taak toe te voegen altijd rechtsboven'
   await page.close()
 })
 
+await test('een medewerker ziet zijn eigen diensten en boekt zijn eigen uren', async () => {
+  /*
+    Wat uit AAPI komt staat er alleen om te lezen: zou hij zijn uren hier
+    kunnen verzetten, dan staan er twee waarheden over dezelfde dienst en hangt
+    er loon aan welke er klopt.
+  */
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  const fouten = []
+  page.on('pageerror', (e) => fouten.push(String(e).split('\n')[0]))
+  await page.goto(`${adres}/?rol=personeel#/mijn-events`, { waitUntil: 'networkidle' })
+  await page.getByText('Mijn diensten').waitFor({ timeout: 8000 })
+
+  const tekst = (await page.locator('body').innerText()).trim()
+  zouden(bevat(tekst, 'Mijn diensten'), `zijn diensten staan er niet: ${tekst.slice(0, 400)}`)
+  zouden(bevat(tekst, 'pauze'), 'de uren van zijn dienst staan er niet bij')
+  zouden(!/€\s?\d/.test(tekst), `er staat een bedrag op: ${tekst.slice(0, 400)}`)
+
+  // En zijn uren: hij kiest werk uit de events waarop hij staat, niet uit alles.
+  await page.goto(`${adres}/?rol=personeel#/uren`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(1400)
+  const uren = (await page.locator('body').innerText()).trim()
+  zouden(bevat(uren, 'Uren'), `het urenscherm opent niet: ${uren.slice(0, 300)}`)
+  zouden(!bevat(uren, 'Hele team'), 'een medewerker kan de uren van het team opvragen')
+
+  zouden(fouten.length === 0, `fouten: ${fouten[0]}`)
+  await page.close()
+})
+
 // ─── 4. Personeel ziet alleen zijn eigen scherm ─────────────────────────────
 
 await test('personeel komt op de dagelijkse lijst en nergens anders', async () => {
@@ -1931,7 +1959,13 @@ await test('personeel komt op de dagelijkse lijst en nergens anders', async () =
 
   const tekst = (await page.locator('body').innerText()).trim()
   zouden(tekst.includes('Openen'), 'personeel ziet de dagelijkse lijst niet')
-  for (const verboden of ['Instellingen', 'Teamoverleg', 'Social kalender', 'Uren']) {
+  zouden(tekst.includes('Uren'), 'personeel kan zijn eigen uren niet boeken')
+  /*
+    "Uren" staat er sinds de ploeg zijn eigen tijd mag boeken — maar alleen de
+    zijne: de regels laten hem de uren van een collega niet zien. De rest
+    blijft verboden.
+  */
+  for (const verboden of ['Instellingen', 'Teamoverleg', 'Social kalender', 'Werklast']) {
     zouden(!tekst.includes(verboden), `personeel ziet "${verboden}"`)
   }
   zouden(fouten.length === 0, `fouten: ${fouten[0]}`)

@@ -602,18 +602,27 @@ service cloud.firestore {
       leest die van niemand anders. Wat het team geboekt heeft, is een
       bedrijfscijfer.
     */
+    /*
+      Uren. Het team ziet alles — dat is wat een werklastoverzicht is. Wie
+      alleen komt werken (de socialrol, de ploeg) ziet en schrijft alleen zijn
+      eigen uren: hoeveel een collega gewerkt heeft, gaat over zijn loon.
+    */
+    function eigenUren() {
+      return isMember() && !isTeam();
+    }
+
     match /timeEntries/{id} {
-      allow read: if isTeam() || (isSocial() && resource.data.profileId == request.auth.uid);
-      allow create: if (isTeam() || isSocial())
+      allow read: if isTeam() || (eigenUren() && resource.data.profileId == request.auth.uid);
+      allow create: if (isTeam() || eigenUren())
         && (request.resource.data.profileId == request.auth.uid || isAdmin());
-      allow update, delete: if (isTeam() || isSocial())
+      allow update, delete: if (isTeam() || eigenUren())
         && (resource.data.profileId == request.auth.uid || isAdmin());
     }
 
     // The running timer is keyed by uid, which is what makes "one timer per
     // person" true by construction instead of by convention.
     match /runningTimers/{uid} {
-      allow read: if isTeam() || (isSocial() && request.auth.uid == uid);
+      allow read: if isTeam() || (isMember() && request.auth.uid == uid);
       allow write: if signedIn() && request.auth.uid == uid;
     }
 

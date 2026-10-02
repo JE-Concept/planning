@@ -148,11 +148,12 @@ function Shell({ children }) {
           <div className="je-topbar">
             <GlobalSearch narrow={narrow} />
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              {/* Sneltoetsen zijn onvindbaar als je niet weet dat ze bestaan;
-                  dit knopje is de enige plek waar ze zichzelf aankondigen. */}
-              {narrow ? null : (
-                <IconButton icon="keyboard" label={t('menu.sneltoetsen')} variant="bare" onClick={() => setHulpOpen(true)} />
-              )}
+              {/*
+                Het toetsenbordknopje is weg. Het stond er om de sneltoetsen
+                aan te kondigen, maar het was het enige icoon in de kop dat
+                niets deed met wat er op het scherm staat — en wie ze zoekt,
+                vindt ze met `?` of in Instellingen. Zie `Sneltoetsen.jsx`.
+              */}
               {narrow ? (
                 <IconButton icon="sparkles" label={t('schil.assistent')} variant="outline" onClick={() => setOpen(!chatOpen)} />
               ) : (

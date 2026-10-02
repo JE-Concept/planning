@@ -15,8 +15,17 @@ export default {
   'pijplijn.create offer': { nl: 'Offerte maken', en: 'Draw up quote' },
   'pijplijn.offer send': { nl: 'Offerte verstuurd', en: 'Quote sent' },
   'pijplijn.offer accepted': { nl: 'Akkoord', en: 'Accepted' },
-  'pijplijn.planning ongoing': { nl: 'Planning loopt', en: 'Planning under way' },
-  'pijplijn.planning ready': { nl: 'Planning klaar', en: 'Planning done' },
+  /*
+    "Planning" betekende hier twee dingen tegelijk: deze stap in de pijplijn,
+    en de personeelsplanning uit AAPI die ondertussen een eigen scherm en een
+    eigen bolletje heeft. Op een bord met beide staat "Planning klaar" naast
+    een rood planningsbolletje, en dan klopt er voor de lezer iets niet.
+
+    De sleutels in de databank blijven de ClickUp-namen; alleen het label
+    verandert. Zie de kop van dit bestand.
+  */
+  'pijplijn.planning ongoing': { nl: 'Voorbereiding loopt', en: 'Preparation under way' },
+  'pijplijn.planning ready': { nl: 'Voorbereiding klaar', en: 'Preparation done' },
   'pijplijn.ready to invoice': { nl: 'Te factureren', en: 'To be invoiced' },
   'pijplijn.invoiced': { nl: 'Gefactureerd', en: 'Invoiced' },
   'pijplijn.complete': { nl: 'Afgerond', en: 'Completed' },

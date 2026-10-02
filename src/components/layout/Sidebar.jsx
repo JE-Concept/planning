@@ -35,6 +35,9 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
     return [
       { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten', kinderen: [] },
       { to: '/mijn-events', icon: 'kanban', sleutel: 'nav.mijnevents', kinderen: [] },
+      // Zijn eigen uren, en alleen die: de regels laten hem de uren van een
+      // collega niet zien, want dat gaat over diens loon.
+      { to: '/uren', icon: 'clock', sleutel: 'nav.uren', kinderen: [] },
     ]
   }
 

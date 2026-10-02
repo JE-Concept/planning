@@ -36,6 +36,11 @@ export default {
     nl: 'De events waarop je ingepland staat: wanneer, waar en met hoeveel.',
     en: 'The events you are scheduled for: when, where and how many.',
   },
+  'mijnevents.diensten': { nl: 'Mijn diensten', en: 'My shifts' },
+  'mijnevents.diensten_uitleg': {
+    nl: 'Zoals ze in AAPI staan. Klopt er iets niet, geef het door — hier is het alleen om te lezen.',
+    en: 'As they stand in AAPI. If something is wrong, report it — this is read-only.',
+  },
   'mijnevents.komt': { nl: 'Komt eraan', en: 'Coming up' },
   'mijnevents.geweest': { nl: 'Geweest', en: 'Past' },
   'mijnevents.niets_komt': { nl: 'Er staat niets nieuws ingepland.', en: 'Nothing new is scheduled.' },

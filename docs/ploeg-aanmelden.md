@@ -73,3 +73,21 @@ mee — die persoon komt niet, en hoort het event dus ook niet te kunnen openen.
 Dat gebeurt na elke import en na elke handmatige koppeling, voor het oude én
 het nieuwe event: wie van event wisselt, moet van het ene af en bij het andere
 bij.
+
+## Wat iemand met een code ziet en kan
+
+- **Mijn events** — de events waarop hij staat, uit de kale kopie zonder één
+  bedrag erin. Bovenaan staan **zijn eigen diensten** zoals ze in AAPI staan:
+  wanneer, waar, hoe lang en met welke pauze. Alleen lezen — zou hij ze hier
+  kunnen verzetten, dan staan er twee waarheden over dezelfde dienst en hangt
+  er loon aan welke er klopt.
+- **Uren** — zijn eigen tijdsregistratie. Alleen de zijne: de regels laten hem
+  de uren van een collega niet zien, en hij boekt op de events waarop hij
+  staat en niet op de hele lijst.
+- **Openen & sluiten** — de dagelijkse lijsten, zoals voorheen.
+- **Zijn profiel** — zijn foto, zijn naam en zijn code wijzigen.
+
+Wat hij niet ziet: bedragen, offertes, klanten, het bord, de planning van
+anderen, en de notities bij een event. Dat staat niet in een filter op het
+scherm maar in `firestore.rules` — een filter bepaalt wat je ziet, een regel
+bepaalt wat je krijgt.

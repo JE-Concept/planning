@@ -17,8 +17,13 @@ import { doc, updateDoc } from './firestore.js'
  * te zien krijgt, en waar het scherm meer vraagt dan ze mag.
  */
 const ROLLEN = {
-  personeel: { role: 'staff', fullName: 'Lotte Vrijsen' },
-  staff: { role: 'staff', fullName: 'Lotte Vrijsen' },
+  /*
+    De medewerker van de demo is iemand uit AAPI die met een code binnenkomt.
+    Daardoor laat `?rol=personeel` ook zien wat zo iemand van zijn eigen
+    diensten ziet, en niet alleen wat hij níét mag.
+  */
+  personeel: { role: 'staff', fullName: 'Jumana Mhanawi', aapiEmployeeId: 'a-jumana', viaCode: true },
+  staff: { role: 'staff', fullName: 'Jumana Mhanawi', aapiEmployeeId: 'a-jumana', viaCode: true },
   social: { role: 'social', fullName: 'Charish Nolmans' },
   member: { role: 'member', fullName: 'Sam Beckers' },
   team: { role: 'member', fullName: 'Sam Beckers' },
