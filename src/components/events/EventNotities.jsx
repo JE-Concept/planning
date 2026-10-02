@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDateTime } from '@lib/dates'
-import { kandidaten, zetVermelding, zoekopdrachtVan } from '@lib/vermelding'
+import { kandidaten, metMarkering, ruweStukken, zetVermelding, zoekopdrachtVan } from '@lib/vermelding'
 import { Avatar, Button, IconButton, Textarea } from '@components/ds'
 import Notitietekst from '@components/common/Notitietekst'
 import { useAuth } from '@context/AuthProvider'
@@ -40,11 +40,20 @@ export default function EventNotities({ ev, compact = false }) {
   const notities = useComments({ taskId: ev.id })
 
   const [tekst, setTekst] = useState('')
+  /*
+    Wie er in deze nog niet verstuurde notitie aangesproken is.
+
+    In het veld staat gewone tekst — `@Maxine Vanbrabant` — want dat is wat
+    leesbaar is. Welke naam bij welk account hoort, staat hier, en wordt er bij
+    het bewaren omheen gezet. Zie `@lib/vermelding`.
+  */
+  const [gekozen, setGekozen] = useState([])
   const [bezig, setBezig] = useState(false)
   const [vraag, setVraag] = useState(null)
   const [actief, setActief] = useState(0)
   const onderkant = useRef(null)
   const veld = useRef(null)
+  const spiegel = useRef(null)
 
   // Wie er te vermelden valt: het team. Personeel en de socialrol lezen dit
   // event niet (zie `firestore.rules`), dus hen aanspreken zou een melding zijn
@@ -76,6 +85,7 @@ export default function EventNotities({ ev, compact = false }) {
     const cursor = veldje?.selectionStart ?? tekst.length
     const uit = zetVermelding(tekst, cursor, persoon)
     setTekst(uit.tekst)
+    if (uit.vermelding) setGekozen((lijst) => [...lijst, uit.vermelding])
     setVraag(null)
     // De cursor moet achter de naam komen te staan, en dat kan pas nadat React
     // de nieuwe waarde in het veld gezet heeft.
@@ -90,8 +100,11 @@ export default function EventNotities({ ev, compact = false }) {
     if (!schoon || bezig) return
     setBezig(true)
     try {
-      await addComment({ taskId: ev.id, body: schoon, author: profile })
+      // Pas hier komt de markering erin. Wie de naam ondertussen weer
+      // weggeveegd heeft, spreekt niemand aan — en dat klopt.
+      await addComment({ taskId: ev.id, body: metMarkering(schoon, gekozen), author: profile })
       setTekst('')
+      setGekozen([])
       setVraag(null)
     } catch (err) {
       toast.error(err.message)
@@ -177,7 +190,12 @@ export default function EventNotities({ ev, compact = false }) {
                       />
                     ) : null}
                   </div>
-                  <Notitietekst className="je-notitie__tekst" tekst={n.body} mij={profile?.id} />
+                  <Notitietekst
+                    className="je-notitie__tekst"
+                    tekst={n.body}
+                    mij={profile?.id}
+                    profileById={profileById}
+                  />
                 </div>
               </article>
             )
@@ -210,22 +228,52 @@ export default function EventNotities({ ev, compact = false }) {
           </div>
         ) : null}
 
-        <Textarea
-          ref={veld}
-          value={tekst}
-          onChange={(e) => {
-            setTekst(e.target.value)
-            volg(e.target.value, e.target.selectionStart)
-          }}
-          // Ook bij klikken en pijltjes verschuift de cursor; zonder dit blijft
-          // de lijst openstaan terwijl er allang ergens anders getypt wordt.
-          onSelect={(e) => volg(e.target.value, e.target.selectionStart)}
-          onBlur={() => setTimeout(() => setVraag(null), 140)}
-          placeholder={t('events.notities.plaatshouder')}
-          rows={tekst ? 4 : 2}
-          aria-label={t('events.notities.toevoegen')}
-          onKeyDown={opToets}
-        />
+        {/*
+          Een spiegel achter het tekstvak, en het tekstvak zelf doorzichtig.
+
+          Een `<textarea>` kan geen gekleurd stukje tonen; een invoerveld dat
+          dat wél kan (`contenteditable`) brengt zijn eigen ellende mee —
+          plakken, selecteren, ongedaan maken, schermlezers. Vandaar deze
+          oplossing: precies dezelfde tekst, in precies hetzelfde lettertype en
+          dezelfde breedte, eronder getekend met een pil rond de namen. Omdat
+          het dezelfde letters zijn, staat de pil exact waar de naam staat.
+
+          Het meescrollen moet met de hand: de spiegel heeft geen schuifbalk.
+        */}
+        <div className="je-vermeldveld">
+          <div className="je-vermeldveld__spiegel" aria-hidden="true" ref={spiegel}>
+            {ruweStukken(tekst, gekozen).map((stuk, i) =>
+              stuk.soort === 'naam' ? (
+                <mark key={i} className="je-vermeldpil">{`@${stuk.naam}`}</mark>
+              ) : (
+                <span key={i}>{stuk.tekst}</span>
+              )
+            )}
+            {/* Een afsluitende regel, anders knipt de browser een tekst die op
+                een enter eindigt een regel te kort af. */}
+            {'\n'}
+          </div>
+          <Textarea
+            ref={veld}
+            className="je-vermeldveld__invoer"
+            value={tekst}
+            onChange={(e) => {
+              setTekst(e.target.value)
+              volg(e.target.value, e.target.selectionStart)
+            }}
+            // Ook bij klikken en pijltjes verschuift de cursor; zonder dit blijft
+            // de lijst openstaan terwijl er allang ergens anders getypt wordt.
+            onSelect={(e) => volg(e.target.value, e.target.selectionStart)}
+            onScroll={(e) => {
+              if (spiegel.current) spiegel.current.scrollTop = e.target.scrollTop
+            }}
+            onBlur={() => setTimeout(() => setVraag(null), 140)}
+            placeholder={t('events.notities.plaatshouder')}
+            rows={tekst ? 4 : 2}
+            aria-label={t('events.notities.toevoegen')}
+            onKeyDown={opToets}
+          />
+        </div>
         <div className="je-notities__knop">
           <span className="je-muted-caption">{t('events.notities.vermeld_hint')}</span>
           <Button size="sm" onClick={plaats} loading={bezig} disabled={!tekst.trim()}>

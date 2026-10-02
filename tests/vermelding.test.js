@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   kandidaten,
   leesbaar,
+  metMarkering,
+  ruweStukken,
   stukken,
   vermeldingenIn,
   zetVermelding,
@@ -103,28 +105,115 @@ describe('waar iemand aan het typen is', () => {
   })
 })
 
+/*
+  In het tekstvak staat gewone tekst. De markering kwam hier vroeger meteen in
+  te staan, en dan zag wie Maxine aansprak
+  `@[Maxine Vanbrabant](spdwOygRumebHfPZAQ2pxXCFlVN2)` in zijn eigen zin staan.
+*/
 describe('de naam in de tekst zetten', () => {
-  it('vervangt wat er getypt was en zet de cursor erachter', () => {
+  it('zet er leesbare tekst neer en zegt wie er bedoeld is', () => {
     const tekst = 'Hey @elk'
     const uit = zetVermelding(tekst, tekst.length, TEAM[1])
-    expect(uit.tekst).toBe('Hey @[Elke Vandeput](u-elke) ')
+    expect(uit.tekst).toBe('Hey @Elke Vandeput ')
     expect(uit.cursor).toBe(uit.tekst.length)
+    expect(uit.vermelding).toEqual({ uid: 'u-elke', naam: 'Elke Vandeput' })
   })
 
   it('houdt wat er achter de cursor stond', () => {
     const tekst = 'Hey @elk, lukt dat?'
     const uit = zetVermelding(tekst, 8, TEAM[1])
-    expect(uit.tekst).toBe('Hey @[Elke Vandeput](u-elke) , lukt dat?')
+    expect(uit.tekst).toBe('Hey @Elke Vandeput , lukt dat?')
   })
 
   // Blokhaken in een naam zouden de markering van binnenuit breken.
   it('haalt blokhaken uit de naam', () => {
     const uit = zetVermelding('@x', 2, { id: 'u-raar', fullName: 'Piet [de] Brouwer' })
-    expect(uit.tekst).toBe('@[Piet de Brouwer](u-raar) ')
+    expect(uit.tekst).toBe('@Piet de Brouwer ')
+    expect(metMarkering(uit.tekst, [uit.vermelding])).toBe('@[Piet de Brouwer](u-raar) ')
   })
 
   it('doet niets wanneer er niets te vervangen valt', () => {
-    expect(zetVermelding('gewoon tekst', 12, TEAM[0])).toEqual({ tekst: 'gewoon tekst', cursor: 12 })
+    expect(zetVermelding('gewoon tekst', 12, TEAM[0])).toEqual({ tekst: 'gewoon tekst', cursor: 12, vermelding: null })
+  })
+})
+
+describe('de markering erbij zetten vlak voor het bewaren', () => {
+  const elke = { uid: 'u-elke', naam: 'Elke Vandeput' }
+  const anneleen = { uid: 'u-anneleen', naam: 'Anneleen Van Loon' }
+
+  it('zet de markering rond wat er getypt staat', () => {
+    expect(metMarkering('Hey @Elke Vandeput, lukt dat?', [elke]))
+      .toBe('Hey @[Elke Vandeput](u-elke), lukt dat?')
+  })
+
+  it('doet dat voor elke keer dat de naam er staat', () => {
+    expect(metMarkering('@Elke Vandeput en nog eens @Elke Vandeput', [elke]))
+      .toBe('@[Elke Vandeput](u-elke) en nog eens @[Elke Vandeput](u-elke)')
+  })
+
+  it('laat een naam die weer weggeveegd is gewoon weg', () => {
+    expect(metMarkering('toch maar niet', [elke])).toBe('toch maar niet')
+    expect(vermeldingenIn(metMarkering('toch maar niet', [elke]))).toEqual([])
+  })
+
+  // "Elke" is een begin van "Elke Vandeput": de kortste eerst proberen knipt
+  // de langste doormidden.
+  it('neemt de langste naam en niet de kortste', () => {
+    const kort = { uid: 'u-kort', naam: 'Elke' }
+    expect(metMarkering('@Elke Vandeput', [kort, elke])).toBe('@[Elke Vandeput](u-elke)')
+    expect(metMarkering('@Elke', [kort, elke])).toBe('@[Elke](u-kort)')
+  })
+
+  it('laat een naam die in een woord doorloopt met rust', () => {
+    const kort = { uid: 'u-kort', naam: 'Elke' }
+    expect(metMarkering('@Elkeen weet dat', [kort])).toBe('@Elkeen weet dat')
+  })
+
+  it('raakt een e-mailadres niet aan', () => {
+    expect(metMarkering('mail naar info@jeconcept.be', [elke])).toBe('mail naar info@jeconcept.be')
+  })
+
+  it('verdraagt twee namen in één zin', () => {
+    expect(metMarkering('@Elke Vandeput en @Anneleen Van Loon', [elke, anneleen]))
+      .toBe('@[Elke Vandeput](u-elke) en @[Anneleen Van Loon](u-anneleen)')
+  })
+
+  it('zonder vermeldingen verandert er niets', () => {
+    expect(metMarkering('gewoon een zin', [])).toBe('gewoon een zin')
+    expect(metMarkering('', [elke])).toBe('')
+  })
+
+  // Wat bewaard wordt, moet terug te lezen zijn: anders stuurt de trigger
+  // geen melding of de verkeerde.
+  it('levert iets op dat de lezer weer herkent', () => {
+    const bewaard = metMarkering('Hey @Elke Vandeput en @Anneleen Van Loon', [elke, anneleen])
+    expect(vermeldingenIn(bewaard)).toEqual(['u-elke', 'u-anneleen'])
+    expect(leesbaar(bewaard)).toBe('Hey @Elke Vandeput en @Anneleen Van Loon')
+  })
+})
+
+describe('de stukken voor de spiegel onder het tekstvak', () => {
+  const elke = { uid: 'u-elke', naam: 'Elke Vandeput' }
+
+  it('knipt de tekst langs de namen', () => {
+    expect(ruweStukken('Hey @Elke Vandeput!', [elke])).toEqual([
+      { soort: 'tekst', tekst: 'Hey ' },
+      { soort: 'naam', naam: 'Elke Vandeput', uid: 'u-elke' },
+      { soort: 'tekst', tekst: '!' },
+    ])
+  })
+
+  /*
+    De som van de stukken is de tekst zelf. Zonder dat staat de pil niet meer
+    boven de naam: de spiegel tekent dan andere letters dan het veld.
+  */
+  it('laat geen letter vallen en voegt er geen toe', () => {
+    for (const bron of ['', 'gewoon', 'Hey @Elke Vandeput!', '@Elke Vandeput @Elke Vandeput', 'a@b.c']) {
+      const terug = ruweStukken(bron, [elke])
+        .map((s) => (s.soort === 'naam' ? `@${s.naam}` : s.tekst))
+        .join('')
+      expect(terug).toBe(bron)
+    }
   })
 })
 

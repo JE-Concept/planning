@@ -2473,13 +2473,72 @@ select.je-compact { padding-right: 24px; }
 /* Een vermelding die eruitziet als gewone tekst is geen vermelding maar een
    woord; wat over jou gaat, mag nog een tikje meer opvallen. */
 .je-vermelding {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* `baseline` en niet `middle`: de pil staat midden in een zin, en moet op
+     dezelfde lijn blijven staan als de woorden ernaast. */
+  vertical-align: baseline;
   color: var(--text-accent);
   font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 999px;
+  padding: 1px 7px 1px 2px;
+}
+.je-vermelding__gezicht {
+  flex: 0 0 auto;
 }
 .je-vermelding[data-mij] {
   background: var(--accent-quiet);
-  border-radius: 3px;
-  padding: 0 3px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/*
+  Het schrijfvak met een spiegel eronder.
+
+  De spiegel draagt dezelfde tekst in hetzelfde lettertype en op dezelfde
+  breedte, met een pil rond de namen; het tekstvak erboven is doorzichtig. Elke
+  eigenschap die de regelafbreking bepaalt — lettertype, grootte, regelhoogte,
+  spatiëring, opvulling, rand — moet aan allebei gelijk zijn, anders schuift de
+  pil weg van de naam. Daarom erven ze hier van elkaar in plaats van elk hun
+  eigen waarde te krijgen.
+*/
+.je-vermeldveld {
+  position: relative;
+}
+.je-vermeldveld__spiegel,
+.je-vermeldveld .je-vermeldveld__invoer {
+  font: var(--type-body);
+  font-family: var(--font-ui);
+  line-height: 1.6;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  min-height: 96px;
+}
+.je-vermeldveld__spiegel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: transparent;
+  pointer-events: none;
+}
+.je-vermeldveld .je-vermeldveld__invoer {
+  position: relative;
+  background: transparent;
+  border-bottom-color: var(--border-subtle);
+}
+/* De pil. `mark` draagt standaard een gele achtergrond mee; die gaat eraf. */
+.je-vermeldpil {
+  background: var(--accent-quiet);
+  color: inherit;
+  border-radius: 4px;
+  /* Een negatieve marge tegen de opvulling: de pil mag breder lijken dan de
+     letters, maar geen enkele letter mag erdoor verschuiven. */
+  padding: 1px 3px;
+  margin: 0 -3px;
 }
 
 /* De lijst staat bóven het schrijfvak: dat vak zit onderaan de kolom vast, en

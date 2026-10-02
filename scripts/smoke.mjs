@@ -2379,9 +2379,24 @@ await test('met @ spreek je iemand aan in een notitie', async () => {
   await lijst.getByRole('option').first().click()
   await page.waitForTimeout(300)
 
-  // In het veld staat de markering; op het scherm hoort alleen de naam.
+  /*
+    In het veld staat gewone tekst, en niet de markering. Die stond hier
+    vroeger wel, en dan zag wie iemand aansprak
+    `@[Elke Motmans](spdwOygRumebHf…)` in zijn eigen zin staan. De pil erachter
+    toont wélk stuk een vermelding is.
+  */
   const getypt = await schrijf.inputValue()
-  zouden(getypt.includes('@[Elke'), `de vermelding staat niet in de tekst: ${getypt}`)
+  zouden(getypt.includes('@Elke Motmans'), `de naam staat niet in de tekst: ${getypt}`)
+  zouden(!getypt.includes('@['), `de markering staat nog in het veld: ${getypt}`)
+  zouden(!/u-elke|\(spdw/.test(getypt), `er staat een id in het veld: ${getypt}`)
+  zouden(
+    (await kolom.locator('.je-vermeldpil').count()) === 1,
+    'de naam krijgt geen pil in het schrijfvak'
+  )
+  zouden(
+    (await kolom.locator('.je-vermeldpil').innerText()) === '@Elke Motmans',
+    `de pil staat om de verkeerde tekst: ${await kolom.locator('.je-vermeldpil').innerText()}`
+  )
 
   await kolom.getByRole('button', { name: /Bewaren|Save/i }).click()
   await page.waitForTimeout(900)

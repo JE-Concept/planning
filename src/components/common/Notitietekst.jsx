@@ -1,4 +1,5 @@
 import { stukken } from '@lib/vermelding'
+import { Avatar } from '@components/ds'
 
 /**
  * De tekst van een notitie, met de vermelde namen eruit gelicht.
@@ -11,7 +12,7 @@ import { stukken } from '@lib/vermelding'
  * lezen zoals het geschreven is, ook nadat iemand hernoemd is. Wie het is,
  * bepaalt de id ernaast — die staat in `mentions` en gaat naar de melding.
  */
-export default function Notitietekst({ tekst, mij, className, style }) {
+export default function Notitietekst({ tekst, mij, profileById = {}, className, style }) {
   return (
     <span className={className} style={style}>
       {stukken(tekst).map((stuk, i) =>
@@ -23,6 +24,16 @@ export default function Notitietekst({ tekst, mij, className, style }) {
             // gaat: dat is het verschil tussen meelezen en aangesproken worden.
             data-mij={stuk.uid === mij ? '' : undefined}
           >
+            {/*
+              Het gezichtje erbij, zodat je in een draad van tien notities in
+              één oogopslag ziet wie er aangesproken wordt zonder de naam te
+              lezen. Alleen wanneer we het account nog kennen: bij iemand die
+              vertrokken is blijft de naam staan zoals ze geschreven werd —
+              dat is wat er toen gezegd is.
+            */}
+            {profileById[stuk.uid] ? (
+              <Avatar profile={profileById[stuk.uid]} size={16} className="je-vermelding__gezicht" />
+            ) : null}
             {stuk.tekst}
           </strong>
         ) : (

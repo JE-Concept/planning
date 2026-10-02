@@ -84,17 +84,105 @@ export function zoekopdrachtVan(tekst, cursor) {
 /**
  * De gekozen naam in de tekst zetten, op de plek waar iemand `@` typte.
  *
- * Geeft de nieuwe tekst terug én waar de cursor daarna hoort te staan: achter
- * de naam en de spatie, zodat doortypen gewoon doorgaat.
+ * ── Waarom er gewone tekst in het veld komt ───────────────────────────────
+ * Hier stond vroeger de markering zelf: wie Maxine aansprak, zag
+ * `@[Maxine Vanbrabant](spdwOygRumebHfPZAQ2pxXCFlVN2)` in zijn tekstvak staan.
+ * Technisch klopte dat — het is wat bewaard wordt — maar het is onleesbaar, het
+ * neemt drie regels in, en wie het per ongeluk half wegveegt houdt een kapotte
+ * vermelding over zonder te zien wat er mis is.
+ *
+ * Nu komt er `@Maxine Vanbrabant ` in het veld, en wordt de markering er pas
+ * bij het bewaren omheen gezet (`metMarkering`). Wat je typt is wat je leest.
+ *
+ * Geeft de nieuwe tekst terug, waar de cursor daarna hoort te staan — achter
+ * de naam en de spatie, zodat doortypen gewoon doorgaat — en het kaartje van
+ * wie er aangesproken is, zodat de oproeper dat kan bijhouden.
  */
 export function zetVermelding(tekst, cursor, profiel) {
   const plek = zoekopdrachtVan(tekst, cursor)
-  const naam = (profiel?.fullName || profiel?.email || '').replace(/[[\]]/g, '').trim()
-  if (!plek || !profiel?.id || !naam) return { tekst: tekst ?? '', cursor: cursor ?? 0 }
+  const naam = naamVoor(profiel)
+  if (!plek || !profiel?.id || !naam) return { tekst: tekst ?? '', cursor: cursor ?? 0, vermelding: null }
 
-  const stuk = `@[${naam}](${profiel.id}) `
+  const stuk = `@${naam} `
   const nieuw = (tekst ?? '').slice(0, plek.begin) + stuk + (tekst ?? '').slice(cursor ?? 0)
-  return { tekst: nieuw, cursor: plek.begin + stuk.length }
+  return {
+    tekst: nieuw,
+    cursor: plek.begin + stuk.length,
+    vermelding: { uid: profiel.id, naam },
+  }
+}
+
+/**
+ * De naam zoals ze in een vermelding komt te staan.
+ *
+ * Blokhaken eruit, want die zijn de markering zelf: een naam met een `]` erin
+ * zou de markering halverwege afbreken en de rest van de zin in de id duwen.
+ */
+export function naamVoor(profiel) {
+  return (profiel?.fullName || profiel?.email || '').replace(/[[\]]/g, '').trim()
+}
+
+/**
+ * De getypte tekst opgeknipt langs de vermeldingen die erin staan.
+ *
+ * Eén doorloop die zowel het bewaren als het tekenen voedt — twee keer
+ * dezelfde regel schrijven is twee plekken waar de pil en de markering uit
+ * elkaar kunnen lopen.
+ *
+ * Langste naam eerst, want "Maxine" is een begin van "Maxine Vanbrabant": wie
+ * de kortste eerst probeert, knipt de langste doormidden. Dragen twee mensen
+ * dezelfde naam, dan valt er aan de tekst niet te zien wie bedoeld is en wint
+ * degene die het eerst aangeklikt werd — daarom staat de id ook apart op de
+ * reactie.
+ */
+export function ruweStukken(tekst, vermeldingen = []) {
+  const bron = tekst ?? ''
+  const lijst = (vermeldingen ?? [])
+    .filter((v) => v?.uid && v?.naam)
+    .sort((a, b) => b.naam.length - a.naam.length)
+  if (!lijst.length) return bron ? [{ soort: 'tekst', tekst: bron }] : []
+
+  const uit = []
+  let gewoon = ''
+  let i = 0
+
+  while (i < bron.length) {
+    const treffer =
+      bron[i] === '@'
+        ? lijst.find((v) => bron.startsWith(v.naam, i + 1) && !grensInWoord(bron, i + 1 + v.naam.length))
+        : null
+
+    if (!treffer) {
+      gewoon += bron[i]
+      i += 1
+      continue
+    }
+
+    if (gewoon) uit.push({ soort: 'tekst', tekst: gewoon })
+    gewoon = ''
+    uit.push({ soort: 'naam', naam: treffer.naam, uid: treffer.uid })
+    i += 1 + treffer.naam.length
+  }
+
+  if (gewoon) uit.push({ soort: 'tekst', tekst: gewoon })
+  return uit
+}
+
+// Een naam die doorloopt in een woord is de naam niet: "@Elke" in "@Elkeen".
+const grensInWoord = (bron, eind) => eind < bron.length && /[\p{L}\p{N}]/u.test(bron[eind])
+
+/**
+ * De tekst zoals ze bewaard wordt: `@Maxine Vanbrabant` wordt
+ * `@[Maxine Vanbrabant](uid)`.
+ *
+ * Wat niet meer in de tekst staat, komt er niet in: wie de naam weer weggeveegd
+ * heeft, heeft de vermelding weggehaald, en die hoort dan ook geen melding te
+ * sturen.
+ */
+export function metMarkering(tekst, vermeldingen = []) {
+  return ruweStukken(tekst, vermeldingen)
+    .map((stuk) => (stuk.soort === 'naam' ? `@[${stuk.naam}](${stuk.uid})` : stuk.tekst))
+    .join('')
 }
 
 /**
