@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
+import PlanningBol from './PlanningBol'
 import { PlanningBadge, TeamHexes, eventOndertitel, paxLabel } from './parts'
 
 /**
@@ -9,7 +10,7 @@ import { PlanningBadge, TeamHexes, eventOndertitel, paxLabel } from './parts'
  * zwaarder: tijdens het slepen verandert er per muisbeweging iets aan de
  * kolom, en zonder dit tekent elke kaart van elke kolom zich dan opnieuw.
  */
-function EventBoardCard({ event, progress, profileById, dragging, onOpen, onDragStart, onDragEnd }) {
+function EventBoardCard({ event, progress, profileById, planningStand, dragging, onOpen, onDragStart, onDragEnd }) {
   return (
     <button
       type="button"
@@ -28,7 +29,12 @@ function EventBoardCard({ event, progress, profileById, dragging, onOpen, onDrag
         de afwezigheid van een merk en geen eigenschap van het feest, en het
         stond de naam in de weg op precies de plek waar je hem zoekt.
       */}
-      <span style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>{event.name}</span>
+      <span style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+        <span style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3, minWidth: 0 }}>{event.name}</span>
+        {/* Of er volk staat, naast de naam: dat is wat je van een kaart wil
+            weten zonder ze te openen. Zie `PlanningBol`. */}
+        <PlanningBol stand={planningStand} />
+      </span>
       <span className="je-muted-caption">{eventOndertitel(event, { kort: true })}</span>
       {/* Alleen wanneer er een stand gekozen is; anders staat op elke kaart
           dezelfde badge en zegt ze niets meer. */}

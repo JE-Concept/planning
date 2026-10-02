@@ -32,6 +32,11 @@ zoveel woorden bij; dat is net de dag die je wil zien. De dag vóór het event
 krijgt zijn eigen kop, want wie de tent zet werkt een andere dag dan wie
 bedient.
 
+Datzelfde bolletje staat **op de eventkaarten** — op het bord, in de lijst en
+als derde stipje op een chip in de kalender. Eén abonnement voor het hele
+scherm en niet een per kaart; wat buiten het venster valt (ruim anderhalve
+maand terug tot een half jaar vooruit) krijgt geen bolletje.
+
 **Diensten die nog niet ingevuld zijn** staan bovenaan dat tabblad. Dat zijn
 rijen uit AAPI met een Planning Id maar zonder Employee Id: ingepland, nog
 niemand op. Ze tellen niet mee in het aantal of in de uren — er komt niemand —

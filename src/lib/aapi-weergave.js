@@ -244,6 +244,50 @@ export function tabStand({ shifts = [], kandidaten = [] } = {}) {
   return 'groen'
 }
 
+/**
+ * Het bolletje voor een hele lijst events in één keer.
+ *
+ * ── Waarom niet per kaart ─────────────────────────────────────────────────
+ * Een bord met veertig kaarten zou veertig abonnementen openen, elk voor de
+ * shifts van één event. Dat is veertig keer dezelfde vraag aan dezelfde
+ * collectie. Hier gaat één lijst shifts in en komt er een kaart per event uit.
+ *
+ * ── Waarom er geen bolletje staat buiten het venster ──────────────────────
+ * De lijst shifts dekt een periode rond vandaag. Een event van volgend jaar
+ * valt daarbuiten, en dan weten we niets — en niets weten hoort geen kleur te
+ * krijgen, want een rood bolletje op een event waarvan de planning nog niet
+ * gemaakt is, is een vals alarm dat iedereen leert wegkijken.
+ */
+export function standenVoorEvents(events = [], shifts = [], { van = null, tot = null } = {}) {
+  const opEvent = new Map()
+  const opDag = new Map()
+  for (const s of shifts) {
+    if (s.eventRef) {
+      if (!opEvent.has(s.eventRef)) opEvent.set(s.eventRef, [])
+      opEvent.get(s.eventRef).push(s)
+    }
+    if (s.dag) {
+      if (!opDag.has(s.dag)) opDag.set(s.dag, [])
+      opDag.get(s.dag).push(s)
+    }
+  }
+
+  const uit = new Map()
+  for (const event of events) {
+    const dagen = event?.dagen ?? []
+    // Buiten het venster: geen oordeel. Een event zonder dagen evenmin.
+    const binnen = dagen.length && (!van || dagen[dagen.length - 1] >= van) && (!tot || dagen[0] <= tot)
+    if (!binnen) continue
+
+    const eigen = opEvent.get(event.id) ?? []
+    const vanDieDagen = dagen.flatMap((d) => opDag.get(d) ?? [])
+    const kandidaten = mogelijkVoor(event.id, dagen, vanDieDagen)
+    const stand = tabStand({ shifts: eigen, kandidaten })
+    if (stand) uit.set(event.id, stand)
+  }
+  return uit
+}
+
 export const TAB_STAND_TEKST = {
   groen: 'aapi.tab.rond',
   oranje: 'aapi.tab.aandacht',

@@ -26,6 +26,8 @@ import { byEventDate, moveEvent, useEvents } from '@data/events'
 import { useLosseMails } from '@data/mails'
 import { Spinner } from '@ui/index'
 import { dagenVan, raaktPeriode } from '@lib/eventdagen'
+import PlanningBol from '@components/events/PlanningBol'
+import { usePlanningStanden } from '@data/aapi'
 
 const VIEWS = [
   { value: 'lijst', sleutel: 'events.weergave.lijst' },
@@ -226,6 +228,7 @@ export default function Events() {
 
 function ListView({ events, all, archief, tasksByEvent, profileById, statuses, narrow, onArchief }) {
   const { t } = useTaal()
+  const planningStanden = usePlanningStanden(events)
   const navigate = useNavigate()
   // Vast, zodat de gememoriseerde rijen niet hertekenen bij elke render.
   const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
@@ -295,6 +298,7 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
               progress={progressOf(tasksByEvent[e.id])}
               statuses={statuses}
               profileById={profileById}
+              planningStand={planningStanden.get(e.id)}
               columns={cols}
               narrow={narrow}
               first={i === 0}
@@ -402,6 +406,11 @@ function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
 
 function BoardView({ events, tasksByEvent, profileById, statuses }) {
   const navigate = useNavigate()
+  /*
+    Eén abonnement voor het hele bord. Per kaart zou het er veertig zijn, elk
+    met dezelfde vraag aan dezelfde collectie — zie `usePlanningStanden`.
+  */
+  const planningStanden = usePlanningStanden(events)
 
   // Vaste functies: de kaarten zijn gememoriseerd en hertekenen anders alsnog
   // bij elke muisbeweging tijdens het slepen.
@@ -486,6 +495,7 @@ function BoardView({ events, tasksByEvent, profileById, statuses }) {
                 event={e}
                 progress={progressOf(tasksByEvent[e.id])}
                 profileById={profileById}
+                planningStand={planningStanden.get(e.id)}
                 dragging={dragging === e.id}
                 onOpen={openEvent}
                 onDragStart={beginSleep}
@@ -503,6 +513,7 @@ function BoardView({ events, tasksByEvent, profileById, statuses }) {
 
 function CalendarView({ events, narrow }) {
   const { t } = useTaal()
+  const planningStanden = usePlanningStanden(events)
   const navigate = useNavigate()
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const todayKey = dayKey(new Date())
@@ -613,6 +624,10 @@ function CalendarView({ events, narrow }) {
                     style={{ width: 6, height: 6, flex: '0 0 6px', borderRadius: 3, background: planningKleur(e) }}
                   />
                 ) : null}
+                {/* En of er volk staat. In een chip van tachtig pixels is een
+                    derde stipje het maximum; wat het betekent staat in de
+                    tooltip van de chip. */}
+                <PlanningBol stand={planningStanden.get(e.id)} titel={false} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {narrow ? e.name.split(' ')[0] : e.name}
                 </span>

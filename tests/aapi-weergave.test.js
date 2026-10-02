@@ -10,6 +10,7 @@ import {
   perDag,
   samenvatting,
   standVan,
+  standenVoorEvents,
   tabStand,
   teltMee,
   urenTekst,
@@ -283,5 +284,72 @@ describe('het bolletje op de personeelstab', () => {
     expect(tabStand({
       shifts: [gepland(), gepland({ aapiPlanningId: 'p2', open: true }), gepland({ aapiPlanningId: 'p3', linkStatus: 'ambiguous' })],
     })).toBe('rood')
+  })
+})
+
+/*
+  Het bolletje voor een hele lijst events in één keer: een bord met veertig
+  kaarten mag geen veertig abonnementen openen.
+*/
+describe('de standen voor een lijst events', () => {
+  const shift = (over = {}) => ({
+    aapiPlanningId: `p${Math.random()}`,
+    locationName: 'evenementen',
+    linkStatus: 'auto',
+    linkScore: 1,
+    start: new Date('2026-10-12T10:00:00Z'),
+    end: new Date('2026-10-12T18:00:00Z'),
+    pauseMinutes: 0,
+    dag: '2026-10-12',
+    ...over,
+  })
+  const venster = { van: '2026-10-01', tot: '2026-10-31' }
+
+  it('geeft per event zijn eigen kleur', () => {
+    const uit = standenVoorEvents(
+      [{ id: 'e1', dagen: ['2026-10-12'] }, { id: 'e2', dagen: ['2026-10-12'] }],
+      [shift({ eventRef: 'e1' }), shift({ eventRef: 'e2', open: true })],
+      venster
+    )
+    expect(uit.get('e1')).toBe('groen')
+    expect(uit.get('e2')).toBe('rood')
+  })
+
+  it('ziet een losse shift van die dag als iets om naar te kijken', () => {
+    const uit = standenVoorEvents(
+      [{ id: 'e1', dagen: ['2026-10-12'] }],
+      [shift({ eventRef: 'e1' }), shift({ eventRef: null, linkStatus: 'unlinked' })],
+      venster
+    )
+    expect(uit.get('e1')).toBe('oranje')
+  })
+
+  // Niets weten is geen kleur. Een rood bolletje op een event waarvan de
+  // planning nog gemaakt moet worden, is een vals alarm.
+  it('zwijgt over een event zonder shifts in de buurt', () => {
+    const uit = standenVoorEvents([{ id: 'e1', dagen: ['2026-10-12'] }], [], venster)
+    expect(uit.has('e1')).toBe(false)
+  })
+
+  it('zwijgt over een event buiten het venster', () => {
+    const uit = standenVoorEvents(
+      [{ id: 'e1', dagen: ['2027-06-01'] }],
+      [shift({ eventRef: 'e1' })],
+      venster
+    )
+    expect(uit.has('e1')).toBe(false)
+  })
+
+  it('zwijgt over een event zonder datum', () => {
+    expect(standenVoorEvents([{ id: 'e1', dagen: [] }], [shift({ eventRef: 'e1' })], venster).has('e1')).toBe(false)
+  })
+
+  it('telt bij een meerdaags event alle dagen mee', () => {
+    const uit = standenVoorEvents(
+      [{ id: 'e1', dagen: ['2026-10-12', '2026-10-13'] }],
+      [shift({ eventRef: 'e1' }), shift({ eventRef: 'e1', dag: '2026-10-13', open: true })],
+      venster
+    )
+    expect(uit.get('e1')).toBe('rood')
   })
 })

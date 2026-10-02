@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
+import PlanningBol from './PlanningBol'
 import { PlanningBadge, StatusBadge, TeamHexes, eventDagCijfer, eventTijd, monthShort, paxLabel } from './parts'
 
 /**
@@ -16,7 +17,7 @@ import { PlanningBadge, StatusBadge, TeamHexes, eventDagCijfer, eventTijd, month
  * een useCallback, en de afgeleide waarden (voortgang, regels tekst) worden
  * hier berekend in plaats van in de pagina.
  */
-function EventRow({ event, progress, statuses, profileById, columns, narrow, first, onOpen }) {
+function EventRow({ event, progress, statuses, profileById, planningStand, columns, narrow, first, onOpen }) {
   const { t } = useTaal()
   /*
     Het concept staat er alleen wanneer er een is. "Los event" was de
@@ -61,15 +62,19 @@ function EventRow({ event, progress, statuses, profileById, columns, narrow, fir
       <div style={{ minWidth: 0 }}>
         <div
           style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 'var(--space-2)',
             fontWeight: 600,
             fontSize: 15,
             color: 'var(--text-1)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}
         >
-          {event.name}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {event.name}
+          </span>
+          {/* Of er volk staat; dezelfde kleur als op de personeelstab. */}
+          <PlanningBol stand={planningStand} />
         </div>
         <div
           className="je-muted-caption"

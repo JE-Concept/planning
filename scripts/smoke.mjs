@@ -1490,6 +1490,32 @@ await test('een meerdaags event splitst zijn ploeg per dag', async () => {
   await page.close()
 })
 
+await test('het planningsbolletje staat ook op de kaarten en in de kalender', async () => {
+  /*
+    Dezelfde kleur als op de personeelstab: wie hem daar leert kennen, leest
+    hem op het bord zonder uitleg. Het trouwfeest heeft een openstaande dienst
+    en staat dus op rood.
+  */
+  for (const [weergave, waar] of [['bord', '.je-boardcard'], ['lijst', 'button']]) {
+    const page = await tabblad(`/?weergave=${weergave}`)
+    await page.waitForTimeout(1400)
+    const kaart = page.locator(waar).filter({ hasText: 'Trouw Niels en Inez' }).first()
+    zouden(
+      (await kaart.locator('.je-bol--rood').count()) >= 1,
+      `geen rood bolletje op de ${weergave}weergave`
+    )
+    zouden(page.fouten.length === 0, `fouten op ${weergave}: ${page.fouten[0]}`)
+    await page.close()
+  }
+
+  // En in de kalender, als derde stipje op de chip.
+  const kal = await tabblad('/?weergave=kalender')
+  await kal.waitForTimeout(1400)
+  zouden((await kal.locator('.je-calchip .je-bol').count()) >= 1, 'geen bolletje in de kalender')
+  zouden(kal.fouten.length === 0, `fouten: ${kal.fouten[0]}`)
+  await kal.close()
+})
+
 await test('de tool schakelt over naar het Engels en onthoudt dat', async () => {
   const page = await tabblad('/')
   const zijbalk = page.locator('aside').first()

@@ -15,6 +15,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { COL, col, fromQuery } from '@lib/collections'
+import { dayKey } from '@lib/dates'
+import { dagenVan } from '@lib/eventdagen'
+import { standenVoorEvents } from '@lib/aapi-weergave'
 import { app } from '@lib/firebase'
 
 // Dezelfde regio als de functies zelf; zie `src/data/meetings.js`.
@@ -51,6 +54,38 @@ export function useAapiShifts({ van, tot } = {}) {
   }, [vanTijd, totTijd])
 
   return { shifts, laadt, fout }
+}
+
+/**
+ * Het planningsbolletje voor een hele lijst events.
+ *
+ * Eén abonnement voor het hele bord, en niet een per kaart: veertig kaarten
+ * zouden anders veertig keer dezelfde vraag aan dezelfde collectie stellen.
+ *
+ * Het venster loopt van anderhalve maand terug tot een half jaar vooruit. Dat
+ * is ruim genoeg voor alles waar al personeel voor ingepland staat, en smal
+ * genoeg om niet de hele collectie op te halen. Wat erbuiten valt krijgt geen
+ * bolletje — zie `standenVoorEvents` voor waarom dat beter is dan gokken.
+ */
+const VENSTER_TERUG_DAGEN = 45
+const VENSTER_VOORUIT_DAGEN = 180
+
+export function usePlanningStanden(events = []) {
+  const { van, tot } = useMemo(() => {
+    const nu = new Date()
+    const v = new Date(nu)
+    v.setDate(v.getDate() - VENSTER_TERUG_DAGEN)
+    const t = new Date(nu)
+    t.setDate(t.getDate() + VENSTER_VOORUIT_DAGEN)
+    return { van: v, tot: t }
+  }, [])
+
+  const { shifts } = useAapiShifts({ van, tot })
+
+  return useMemo(() => {
+    const metDagen = events.map((e) => ({ id: e.id, dagen: dagenVan(e) }))
+    return standenVoorEvents(metDagen, shifts, { van: dayKey(van), tot: dayKey(tot) })
+  }, [events, shifts, van, tot])
 }
 
 /** De shifts die aan één event hangen. */
