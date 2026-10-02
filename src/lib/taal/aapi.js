@@ -96,6 +96,7 @@ export default {
   'aapi.event.titel': { nl: 'Personeel', en: 'Crew' },
   'aapi.event.uit_aapi': { nl: 'Uit AAPI', en: 'From AAPI' },
   'aapi.event.open_aantal': { nl: '{aantal} nog in te vullen', en: '{aantal} still open' },
+  'aapi.event.dag_leeg': { nl: 'Niemand ingepland', en: 'Nobody scheduled' },
   'aapi.event.open_titel': { nl: 'Nog in te vullen', en: 'Still to fill' },
   'aapi.event.open_uitleg': {
     nl: 'Diensten die in AAPI ingepland staan zonder dat er iemand op staat. Invullen doe je in AAPI.',

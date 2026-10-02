@@ -1251,6 +1251,50 @@ const uurOp = (datum, uur, minuut = 0) => {
     ...koppeling,
   }))
 
+/*
+  De beurs duurt drie dagen, en dan wordt de personeelstab per dag opgedeeld.
+  Dag twee staat er met opzet leeg bij: een dag zonder volk hoort juist
+  zichtbaar te zijn, en dat is wat de kop "Niemand ingepland" zegt.
+*/
+const BEURS_DAGEN = [9, 10, 11].map((n) => {
+  const d = dag(n)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+})
+
+;[
+  ['s-b1', 'a-jumana', 'flexi', 0, 8, 18, 30],
+  ['s-b2', 'a-herman', 'zelfstandig', 0, 10, 19, 30],
+  ['s-b3', 'a-faycal', 'student', 2, 9, 17, 30],
+].forEach(([id, employeeId, statuut, dagNummer, van, tot, pauze]) =>
+  seedDoc('aapiShifts', id, {
+    aapiPlanningId: id,
+    aapiEmployeeId: employeeId,
+    open: false,
+    statuut,
+    establishmentName: 'Meer-Bistro Het Vinne',
+    locationName: 'evenementen',
+    rawLocationName: 'evenementen',
+    dag: BEURS_DAGEN[dagNummer],
+    start: uurOp(BEURS_DAGEN[dagNummer], van),
+    end: uurOp(BEURS_DAGEN[dagNummer], tot),
+    pauseMinutes: pauze,
+    defaultStart: uurOp(BEURS_DAGEN[dagNummer], van),
+    defaultEnd: uurOp(BEURS_DAGEN[dagNummer], tot),
+    defaultPauseMinutes: pauze,
+    canceled: false,
+    removedFromSourceAt: null,
+    linkStatus: 'auto',
+    eventRef: 't-beurs',
+    linkScore: 1,
+    linkCandidates: [],
+    linkedAt: dag(-1),
+    linkedBy: null,
+    aapiCreatedOn: dag(-20),
+    aapiLastModifiedOn: dag(-2),
+    importedAt: dag(-1),
+    importRunId: 'ir-1',
+  }))
+
 seedDoc('aapiImportRuns', 'ir-1', {
   source: 'xlsx-upload',
   fileName: 'Planning Overview.xlsx',

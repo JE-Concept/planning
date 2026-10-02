@@ -3163,6 +3163,27 @@ button.je-paneel-kaart:hover {
   color: var(--danger);
 }
 
+/* De dagkop in het personeelsblok van een meerdaags event. */
+.je-dagkop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  border-top: 1px solid var(--border-hairline);
+  background: var(--surface-2);
+  position: sticky;
+  /* Blijft staan terwijl je door de ploeg van die dag scrollt: anders weet je
+     halverwege een festival van drie dagen niet meer naar welke dag je kijkt. */
+  top: 0;
+  z-index: 1;
+}
+.je-dagkop__dag {
+  font: var(--type-body-sm);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
 /* Het personeelsblok op een event. */
 .je-personeelstatuten {
   display: flex;

@@ -1460,6 +1460,36 @@ await test('op een event staat wie er komt werken, met een bolletje op de tab', 
   await page.close()
 })
 
+await test('een meerdaags event splitst zijn ploeg per dag', async () => {
+  /*
+    "Elf mensen, 84 uur" over drie dagen beantwoordt geen enkele vraag die
+    iemand stelt. De vraag is of er zaterdag genoeg volk staat, en dat is een
+    vraag per dag.
+  */
+  const page = await tabblad('/events/t-beurs')
+  await page.waitForTimeout(1400)
+  await page.getByRole('tab', { name: /Personeel/ }).click()
+  await page.waitForTimeout(900)
+
+  const koppen = page.locator('.je-dagkop')
+  zouden((await koppen.count()) === 4, `er staan ${await koppen.count()} dagkoppen in plaats van vier`)
+
+  // Drie dagen event plus de dag ervoor, voor de opbouw.
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Niemand ingepland'), `een lege dag staat er niet bij: ${tekst.slice(0, 700)}`)
+
+  // En een event van één dag krijgt geen koppen: dat zou alleen ruis zijn.
+  const enkel = await tabblad('/events/t-trouw')
+  await enkel.waitForTimeout(1400)
+  await enkel.getByRole('tab', { name: /Personeel/ }).click()
+  await enkel.waitForTimeout(800)
+  zouden((await enkel.locator('.je-dagkop').count()) === 0, 'een event van één dag krijgt toch dagkoppen')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await enkel.close()
+  await page.close()
+})
+
 await test('de tool schakelt over naar het Engels en onthoudt dat', async () => {
   const page = await tabblad('/')
   const zijbalk = page.locator('aside').first()

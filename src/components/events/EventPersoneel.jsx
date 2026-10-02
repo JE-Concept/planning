@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { dayKey, formatTime } from '@lib/dates'
+import { dayKey, formatDate, formatTime, formatWeekday } from '@lib/dates'
 import {
   STAND_TEKST,
   STAND_TOON,
   STATUUT_TEKST,
   afdelingLabel,
+  groepenPerDag,
   isOpen,
   kleurVan,
   minutenVan,
@@ -16,7 +17,7 @@ import {
   tabStand,
   urenTekst,
 } from '@lib/aapi-weergave'
-import { dagenVan } from '@lib/eventdagen'
+import { dagenVan, isMeerdaags } from '@lib/eventdagen'
 import { Badge, Button } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -122,6 +123,36 @@ export default function EventPersoneel({ event, personeel }) {
   const openDiensten = useMemo(() => shifts.filter(isOpen), [shifts])
   const ingevuld = useMemo(() => shifts.filter((s) => !isOpen(s)), [shifts])
 
+  /*
+    Bij een meerdaags event wordt de lijst per dag opgedeeld.
+
+    Want dan is "elf mensen, 84 uur" over de hele reeks geen antwoord op de
+    vraag die iemand stelt. Die vraag is "staat er zaterdag genoeg volk", en
+    dat is een vraag per dag. Bij een event van één dag zou een kop boven een
+    enkele lijst alleen maar ruis zijn.
+
+    `dagen` draagt ook de dag vóór het event — de opbouw — en die krijgt dus
+    zijn eigen groep. Dat klopt: wie de tent zet, werkt een andere dag dan wie
+    bedient.
+  */
+  const perDagGroepen = useMemo(
+    () => (isMeerdaags(event) ? groepenPerDag(ingevuld, dagen) : null),
+    [event, ingevuld, dagen]
+  )
+
+  const losmaakRij = (s) =>
+    rij(
+      s,
+      <Button
+        size="sm"
+        variant="ghost"
+        loading={bezig === s.aapiPlanningId}
+        onClick={() => koppel(s.aapiPlanningId, 'unlinked')}
+      >
+        {t('aapi.shift.losmaken')}
+      </Button>
+    )
+
   const rij = (s, actie = null) => (
     <PersoneelRij
       key={s.aapiPlanningId}
@@ -179,20 +210,27 @@ export default function EventPersoneel({ event, personeel }) {
         <p className="je-muted-caption" style={{ padding: 'var(--space-5) var(--space-6)' }}>
           {t('aapi.event.leeg')}
         </p>
+      ) : perDagGroepen ? (
+        perDagGroepen.map((groep) => (
+          <div key={groep.dag}>
+            <div className="je-dagkop">
+              <span className="je-dagkop__dag">
+                {formatWeekday(`${groep.dag}T12:00:00`)} {formatDate(`${groep.dag}T12:00:00`)}
+              </span>
+              <span className="je-muted-caption">
+                {groep.shifts.length
+                  ? t('aapi.event.samenvatting', {
+                      aantal: groep.telling.gepland,
+                      uren: urenTekst(groep.telling.minuten),
+                    })
+                  : t('aapi.event.dag_leeg')}
+              </span>
+            </div>
+            {groep.shifts.map((s) => losmaakRij(s))}
+          </div>
+        ))
       ) : (
-        ingevuld.map((s) =>
-          rij(
-            s,
-            <Button
-              size="sm"
-              variant="ghost"
-              loading={bezig === s.aapiPlanningId}
-              onClick={() => koppel(s.aapiPlanningId, 'unlinked')}
-            >
-              {t('aapi.shift.losmaken')}
-            </Button>
-          )
-        )
+        ingevuld.map((s) => losmaakRij(s))
       )}
 
       {kandidaten.length ? (

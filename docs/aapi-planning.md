@@ -25,6 +25,13 @@ te weten of ze rond is:
 | 🔴 rood | Er staat niemand, of er staat een dienst open. |
 | *geen* | AAPI komt bij dit event niet aan te pas. Dan is er niets om over te oordelen, en liegt elke kleur. |
 
+**Bij een meerdaags event** wordt de ploeg per dag opgedeeld, met per dag een
+eigen telling — "staat er zaterdag genoeg volk" is een vraag per dag, en één
+getal over de hele reeks beantwoordt ze niet. Een dag zonder volk staat er met
+zoveel woorden bij; dat is net de dag die je wil zien. De dag vóór het event
+krijgt zijn eigen kop, want wie de tent zet werkt een andere dag dan wie
+bedient.
+
 **Diensten die nog niet ingevuld zijn** staan bovenaan dat tabblad. Dat zijn
 rijen uit AAPI met een Planning Id maar zonder Employee Id: ingepland, nog
 niemand op. Ze tellen niet mee in het aantal of in de uren — er komt niemand —

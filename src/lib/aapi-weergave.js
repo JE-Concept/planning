@@ -287,6 +287,31 @@ export function perDag(shifts = []) {
   return uit
 }
 
+/**
+ * Shifts gebundeld per dag, met per dag een eigen telling.
+ *
+ * Voor een meerdaags event: een festival van drie dagen heeft drie ploegen, en
+ * "elf mensen, 84 uur" over de hele reeks beantwoordt geen enkele vraag die
+ * iemand stelt. De vraag is "staat er zaterdag genoeg volk", en dat is een
+ * vraag per dag.
+ *
+ * De dagen van het event geven de volgorde én de volledigheid: een dag zonder
+ * één shift hoort er juist te staan, want dat is de dag waarop niemand werkt.
+ * Shifts op een dag die het event niet beslaat — de opbouw daags ervoor —
+ * komen erachteraan, zodat er niets wegvalt.
+ */
+export function groepenPerDag(shifts = [], dagen = []) {
+  const op = perDag(shifts)
+  const volgorde = [...dagen, ...Object.keys(op).filter((d) => !dagen.includes(d)).sort()]
+  const uit = []
+  for (const dag of volgorde) {
+    if (uit.some((g) => g.dag === dag)) continue
+    const eigen = op[dag] ?? []
+    uit.push({ dag, shifts: eigen, telling: samenvatting(eigen) })
+  }
+  return uit
+}
+
 /** Wat er aandacht vraagt: twijfel en ongekoppeld, alleen bij Evenementen. */
 export function vraagtAandacht(shift) {
   if (shift?.locationName !== 'evenementen' || !leeftNog(shift)) return false
