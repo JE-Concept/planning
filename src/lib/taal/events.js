@@ -53,7 +53,6 @@ export default {
   // ── Events: het archief ────────────────────────────────────────────────
   'events.archief.titel': { nl: 'Archief', en: 'Archive' },
   'events.archief.jaar': { nl: 'Jaar', en: 'Year' },
-  'events.archief.alle_jaren': { nl: 'Alle jaren', en: 'All years' },
   'events.archief.nieuwste': { nl: 'Nieuwste eerst', en: 'Newest first' },
   'events.archief.uitleg': {
     nl: 'Hier staat wat afgesloten is: alles op “Afgerond”, plus wat langer dan {dagen} dagen geleden gefactureerd werd. Er wordt niets verwijderd — de offertes, facturen en documenten blijven bij het event staan.',

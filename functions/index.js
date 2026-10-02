@@ -33,6 +33,7 @@ import { maakPortaal } from './portaal.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
 import { maakPloegFuncties } from './ploeg.js'
+import { maakArchiveren } from './archiveren.js'
 
 initializeApp()
 const db = getFirestore()
@@ -777,6 +778,15 @@ export const { linkVoorbeeld } = maakLinkVoorbeeld({ db, region: REGION })
   collectie die geen enkel tabblad mag openen; alleen deze functies komen
   erbij. Zie `ploeg.js` voor wat die vier cijfers wél en niet beschermen.
 */
+/*
+  Het archief op het document in plaats van in de browser.
+
+  De app haalde élk event op — ook het trouwfeest van twee jaar geleden — om er
+  daarna de helft van te verbergen. Nu schrijft de server het antwoord, en
+  vraagt de app alleen nog wat er níét op staat. Zie `archiveren.js`.
+*/
+export const { archiveerBijWijziging, archiveerDagelijks } = maakArchiveren({ db, region: REGION })
+
 export const { ploegLijst, ploegAanmelden, ploegCodeWijzigen, ploegCodeLezen } = maakPloegFuncties({
   db,
   region: REGION,

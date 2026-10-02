@@ -1171,17 +1171,23 @@ await test('het archief toont de afgesloten events, met een filter op jaar', asy
   zouden(!bevat(bord, 'Kerstmarkt Borgloon 2025'), 'een afgesloten event staat nog op het bord')
   zouden(bevat(bord, 'Trouw Niels en Inez'), 'het bord is leeg geworden')
 
+  /*
+    Het archief haalt één jaar tegelijk op — het hele archief ophalen is
+    precies wat hier afgeschaft is. Het opent op het recentste jaar, want dat
+    is wat mensen zoeken.
+  */
   await page.getByRole('tab', { name: 'Archief' }).click()
   await page.waitForTimeout(900)
-  const alles = await inhoud(page)
-  for (const naald of ['Kerstmarkt Borgloon 2025', 'Oldskool Festival 2024', 'kick-off 2025']) {
-    zouden(bevat(alles, naald), `"${naald}" staat niet in het archief`)
+  const recentste = await inhoud(page)
+  for (const naald of ['Kerstmarkt Borgloon 2025', 'kick-off 2025']) {
+    zouden(bevat(recentste, naald), `"${naald}" staat niet in het archief van 2025`)
   }
+  zouden(!bevat(recentste, 'Oldskool Festival 2024'), 'het archief toont nog alle jaren tegelijk')
   // Niets wordt verwijderd, en dat staat er ook.
-  zouden(bevat(alles, 'niets verwijderd'), 'er staat niet bij dat er niets verwijderd wordt')
+  zouden(bevat(recentste, 'niets verwijderd'), 'er staat niet bij dat er niets verwijderd wordt')
 
   await page.getByText('2024', { exact: true }).first().click()
-  await page.waitForTimeout(700)
+  await page.waitForTimeout(900)
   const vanJaar = await inhoud(page)
   zouden(bevat(vanJaar, 'Oldskool Festival 2024'), 'het filter op 2024 verbergt zijn eigen event')
   zouden(!bevat(vanJaar, 'Kerstmarkt Borgloon 2025'), 'het filter op jaar filtert niet')

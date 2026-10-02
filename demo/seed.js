@@ -6,6 +6,10 @@
 import { seedDoc } from './firestore.js'
 import { CHECKLIST_TEMPLATES } from '../src/lib/checklist-templates.js'
 import { DEFAULT_FORMULES } from '../src/lib/formule-templates.js'
+// Dezelfde regel als op de server, want de demo moet dezelfde documenten
+// hebben: de app vraagt nu `afgesloten == false` en Firestore vindt daarmee
+// geen document waar dat veld ontbreekt. Zonder dit is het bord in de demo leeg.
+import { archiefVelden } from '../functions/archief-stand.js'
 
 const D = (s) => new Date(s)
 const NU = D('2026-09-28T09:20:00')
@@ -181,10 +185,35 @@ function mail(id, o) {
 
 // ─── Taken ──────────────────────────────────────────────────────────────────
 let pos = 0
+
+/*
+  De archiefstand per event, zoals de server hem zou geschreven hebben.
+
+  Een subtaak krijgt de stand van haar event en niet haar eigen: ze verdwijnt
+  van het bord omdat het dossier afgesloten is, niet omdat zij zelf afgevinkt
+  is. Precies wat `functions/archiveren.js` doet.
+*/
+const archiefstand = new Map()
+
 function taak(id, listId, statuses, statusName, o = {}) {
   const s = statuses.find((x) => x.name === statusName)
   const list = { 'l-overview': 'Events', 'l-socials': 'Socials' }[listId]
+  const stand = o.parentId
+    ? (archiefstand.get(o.parentId) ?? { afgesloten: false, afgeslotenJaar: null })
+    : archiefVelden(
+        {
+          statusName: s.name,
+          eventDate: o.eventDate ?? o.dueDate ?? null,
+          eventEndDate: o.eventEndDate ?? null,
+          dueDate: o.dueDate ?? null,
+          createdAt: o.createdAt ?? dag(-30),
+        },
+        { nu: NU }
+      )
+  if (!o.parentId) archiefstand.set(id, stand)
+
   seedDoc('tasks', id, {
+    ...stand,
     listId, listName: list, spaceId: 's-je', brandId: o.brandId ?? null,
     parentId: o.parentId ?? null,
     title: o.title, description: o.description ?? '',
@@ -943,6 +972,21 @@ seedDoc('config', 'access', {
   allowedDomains: ['jeconcept.be', 'kenjeklanten.be'],
   socialOwnerEmail: 'charish.talento@gmail.com',
   updatedAt: NU,
+})
+
+/*
+  Wat er in het archief zit, zonder het archief op te halen.
+
+  Echt wordt dit geschreven door de nachtronde en bijgewerkt door de trigger
+  (`functions/archiveren.js`); hier wordt het geteld uit wat hierboven geseed
+  is, zodat de demo niet uit de pas loopt met haar eigen events zodra er één
+  bijkomt of van jaar verschuift.
+*/
+const dicht = [...archiefstand.values()].filter((v) => v.afgesloten)
+seedDoc('config', 'archief', {
+  jaren: [...new Set(dicht.map((v) => v.afgeslotenJaar).filter(Boolean))].sort((a, b) => b - a),
+  aantal: dicht.length,
+  bijgewerkt: NU,
 })
 
 // ─── Het logboek ────────────────────────────────────────────────────────────

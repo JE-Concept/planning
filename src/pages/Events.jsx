@@ -4,7 +4,7 @@ import { addMonths, dayKey, startOfDay, startOfMonth } from '@lib/dates'
 import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { PLANNING, planningKleur, planningVan } from '@lib/planning'
 import { useNarrow } from '@lib/useNarrow'
-import { ARCHIEF_NA_DAGEN, jaarVan, jarenIn, splitsArchief } from '@lib/archief'
+import { ARCHIEF_NA_DAGEN } from '@lib/archief'
 import { Badge, Bar, Button, Icon, IconButton, Select, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
@@ -22,7 +22,7 @@ import {
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { byEventDate, moveEvent, useEvents } from '@data/events'
+import { byEventDate, moveEvent, useArchiefJaar, useArchiefStand, useEvents } from '@data/events'
 import { useLosseMails } from '@data/mails'
 import { Spinner } from '@ui/index'
 import { dagenVan, raaktPeriode } from '@lib/eventdagen'
@@ -118,24 +118,25 @@ export default function Events() {
   /*
     Afgesloten events gaan naar het archief en niet naar de prullenmand.
 
-    De bordweergaven tonen alleen wat er nog toe doet; het archief toont precies
-    de rest. Beide kijken naar dezelfde lijst, zodat een event nooit in geen van
-    beide belandt — dat zou lijken op verdwenen data, en bij een dossier met
-    facturatiegegevens is dat geen kleinigheid.
+    `events` is hier alleen nog het actieve deel: de server zet `afgesloten` op
+    het document en het abonnement slaat die over (zie `functions/archiveren.js`
+    en `EventsProvider`). Het archief is dus geen andere helft van dezelfde
+    lijst meer maar een eigen scherm met een eigen vraag, per jaar. Wat er in
+    zit, staat in `config/archief` — zodat de link hieronder een aantal kan
+    tonen zonder het archief op te halen.
   */
-  const { actief, archief } = useMemo(() => splitsArchief(events), [events])
-  const zichtbaar = view === 'archief' ? archief : actief
+  const archiefStand = useArchiefStand()
 
   const filtered = useMemo(
     () =>
-      zichtbaar
+      events
         .filter((e) => concept === 'Alle' || (concept === LOS ? !e.brandId || !brandById[e.brandId] : e.brandId === concept))
         .filter((e) => planningFilter === 'alle' || (e.planning ?? '') === planningFilter)
         .sort(byEventDate),
-    [zichtbaar, concept, brandById, planningFilter]
+    [events, concept, brandById, planningFilter]
   )
 
-  const lopend = actief.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice'))
+  const lopend = events.filter((e) => indexOf(e.statusName) >= 0 && indexOf(e.statusName) < indexOf('ready to invoice'))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
@@ -195,8 +196,9 @@ export default function Events() {
           </div>
         ) : view === 'archief' ? (
           <ArchiefView
-            events={filtered}
-            tasksByEvent={tasksByEvent}
+            jaren={archiefStand.jaren}
+            concept={concept}
+            planningFilter={planningFilter}
             profileById={profileById}
             statuses={eventStatuses}
             narrow={narrow}
@@ -204,8 +206,8 @@ export default function Events() {
         ) : view === 'lijst' ? (
           <ListView
             events={filtered}
-            all={actief}
-            archief={archief}
+            all={events}
+            archief={archiefStand.aantal}
             tasksByEvent={tasksByEvent}
             profileById={profileById}
             statuses={eventStatuses}
@@ -312,7 +314,7 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
           is "weg van het bord" niet te onderscheiden van "weg". */}
       <div style={{ textAlign: 'center' }}>
         <button type="button" className="je-plainbtn je-archieflink" onClick={onArchief}>
-          {t('events.archief.link', { aantal: archief.length })}
+          {t('events.archief.link', { aantal: archief })}
         </button>
       </div>
     </>
@@ -331,20 +333,34 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
  * Het filter staat op jaar en niet op maand, omdat de vraag die mensen hier
  * stellen bijna altijd "wat deden we vorig jaar rond deze tijd" is — een
  * vergelijkbaar dossier terugvinden, of nakijken wat er toen aangerekend werd.
+ *
+ * Eén jaar tegelijk, en niet "alle jaren" zoals eerder. Dat laatste was het
+ * hele archief ophalen, en precies dat gebeurde vroeger bij élke start van de
+ * app, op elk scherm. Nu wordt er pas iets opgehaald wanneer je dit scherm
+ * opent, en dan één jaar. Het recentste jaar staat open: dat is wat mensen
+ * zoeken, en een scherm dat leeg opent omdat je nog een jaar moet aanklikken,
+ * leest als een archief dat niets bevat.
  */
-function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
+function ArchiefView({ jaren, concept, planningFilter, profileById, statuses, narrow }) {
   const { t } = useTaal()
   const navigate = useNavigate()
+  const { brandById, eventsList } = useWorkspace()
   const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
-  const [jaar, setJaar] = useState('alle')
+  const [gekozen, setGekozen] = useState(null)
 
-  const jaren = useMemo(() => jarenIn(events), [events])
+  // Zolang niemand koos: het recentste jaar dat er is.
+  const jaar = gekozen != null && jaren.includes(gekozen) ? gekozen : (jaren[0] ?? null)
+  const { events, tasksByEvent, loading } = useArchiefJaar(jaar, { listId: eventsList?.id, brandById })
+
+  // Dezelfde filters als op het bord: wie op een merk filtert en dan naar het
+  // archief gaat, verwacht niet dat dat filter stilletjes losgelaten wordt.
   const getoond = useMemo(
     () =>
       events
-        .filter((e) => jaar === 'alle' || jaarVan(e) === jaar)
+        .filter((e) => concept === 'Alle' || (concept === LOS ? !e.brandId || !brandById[e.brandId] : e.brandId === concept))
+        .filter((e) => planningFilter === 'alle' || (e.planning ?? '') === planningFilter)
         .sort((a, b) => byEventDate(b, a)),
-    [events, jaar]
+    [events, concept, brandById, planningFilter]
   )
 
   const cols = narrow ? '44px minmax(0,1fr) 16px' : '48px minmax(120px,1fr) 64px 136px 84px 96px 16px'
@@ -354,11 +370,8 @@ function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
       <div className="je-panel" style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-4)' }}>
         <span className="je-eyebrow">{t('events.archief.jaar')}</span>
         <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-          <Tag selectable selected={jaar === 'alle'} onClick={() => setJaar('alle')}>
-            {t('events.archief.alle_jaren')}
-          </Tag>
           {jaren.map((j) => (
-            <Tag key={j} selectable selected={jaar === j} onClick={() => setJaar(j)}>
+            <Tag key={j} selectable selected={jaar === j} onClick={() => setGekozen(j)}>
               {j}
             </Tag>
           ))}
@@ -372,7 +385,11 @@ function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
         {t('events.archief.uitleg', { dagen: ARCHIEF_NA_DAGEN })}
       </p>
 
-      {getoond.length === 0 ? (
+      {loading ? (
+        <div className="je-muted-caption" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Spinner /> {t('events.laden')}
+        </div>
+      ) : getoond.length === 0 ? (
         <div className="je-panel" style={{ padding: 'var(--space-7)', textAlign: 'center' }}>
           <div className="je-muted-caption">{t('events.archief.leeg')}</div>
         </div>
@@ -381,7 +398,7 @@ function ArchiefView({ events, tasksByEvent, profileById, statuses, narrow }) {
           <div className="je-panel__head" style={{ padding: 'var(--space-5) var(--space-6)' }}>
             <span className="je-eyebrow">{t('events.archief.titel')}</span>
             <span className="je-panel__sub">{t('events.archief.nieuwste')}</span>
-            <span className="je-panel__right">{jaar === 'alle' ? t('events.archief.alle_jaren') : jaar}</span>
+            <span className="je-panel__right">{jaar}</span>
           </div>
           {getoond.map((e, i) => (
             <EventRow

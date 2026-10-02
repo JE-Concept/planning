@@ -74,6 +74,12 @@ const VRAGEN = [
     sorteer: [['position', ASC]],
   },
   {
+    naam: 'useTasks — de eventlijst, zonder wat afgesloten is (src/data/tasks.js)',
+    col: 'tasks',
+    eq: [['listId', EQ], ['archived', EQ], ['afgesloten', EQ]],
+    sorteer: [['position', ASC]],
+  },
+  {
     naam: 'useMyTasks — mijn open werk (src/data/tasks.js)',
     col: 'tasks',
     eq: [['assignees', CONTAINS], ['open', EQ]],
@@ -347,12 +353,18 @@ describe('nieuwe queries', () => {
     En 72 sinds de ploeg getagd kan worden: "notities waarin ik genoemd ben"
     vraagt `mentions array-contains` in `src/data/comments.js`.
 
+    En 74 sinds het archief server-side beslist wordt: `useArchiefJaar` in
+    `src/data/events.js` haalt één jaar op in plaats van alles, en `useLosEvent`
+    haalt de taken op van een dossier dat niet meer op het bord staat.
+
     "Mijn eigen diensten" vraagt `aapiEmployeeId ==` zonder `orderBy` en heeft
     daarom geen samengestelde index nodig — sorteren doet de browser, want het
-    zijn er hooguit een paar tientallen. Daarom staat ze wel hier en niet in de
-    tabel hierboven.
+    zijn er hooguit een paar tientallen. Hetzelfde geldt voor de twee
+    archiefvragen: gelijkheden zonder sortering, en die bedient Firestore uit
+    zijn eigen veldindexen. Daarom staan ze wel hier en niet in de tabel
+    hierboven.
   */
-  const QUERIES_IN_DE_APP = 72
+  const QUERIES_IN_DE_APP = 74
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

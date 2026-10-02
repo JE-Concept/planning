@@ -101,6 +101,10 @@ async function maakTaak({ db, herhaling, vandaag }) {
       tags: [],
       position: Date.now(),
       archived: false,
+      // Zoals elke verse taak: het bord vraagt naar `afgesloten == false`, en
+      // een document zonder dat veld komt daar niet in voor.
+      afgesloten: false,
+      afgeslotenJaar: null,
       completedAt: null,
       trackedSeconds: 0,
       commentCount: 0,

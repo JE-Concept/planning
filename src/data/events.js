@@ -1,5 +1,5 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useState } from 'react'
-import { getDocs, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
+import { doc, getDocs, onSnapshot, query, where, writeBatch } from 'firebase/firestore'
 import { COL, col, fromQuery, newRef } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
@@ -89,7 +89,16 @@ export function EventsProvider({ children }) {
     twee rollen dan niets, en dat klopt: voor hen bestaan de events niet.
   */
   const { isStaff, isSocial } = useAuth()
-  const { top, subtasks, loading, error } = useTasks(isStaff || isSocial ? null : eventsList?.id)
+  /*
+    Alleen het actieve deel. Wat afgesloten is, staat op het document (de
+    server zet `afgesloten`, zie `functions/archiveren.js`) en komt hier niet
+    meer binnen — het archiefscherm vraagt het per jaar op wanneer je het
+    opent. Eerder kwam élk dossier van de laatste jaren mee, met al zijn taken,
+    bij elke start van de app, om er daarna de helft van te verbergen.
+  */
+  const { top, subtasks, loading, error } = useTasks(isStaff || isSocial ? null : eventsList?.id, {
+    alleenActief: true,
+  })
 
   const value = useMemo(() => {
     const events = top.map((t) => toEvent(t, { brandById }))
@@ -248,6 +257,9 @@ export async function createEventFromTemplate({
     location: null,
     tags: [],
     archived: false,
+    // Zie `createTask`: zonder deze twee staat een vers event nergens.
+    afgesloten: false,
+    afgeslotenJaar: null,
     completedAt: null,
     trackedSeconds: 0,
     commentCount: 0,
@@ -332,6 +344,174 @@ export async function createEventFromTemplate({
 
   await batch.commit()
   return eventRef.id
+}
+
+// ─── Archief ───────────────────────────────────────────────────────────────
+
+/**
+ * Wat er in het archief zit, zonder het archief op te halen.
+ *
+ * `config/archief` draagt de jaren waarin iets afgesloten is en hoeveel het er
+ * in totaal zijn. Eén document, één leesbeurt — tegenover het hele archief
+ * ophalen om die twee getallen zelf te tellen, wat de app vroeger deed en de
+ * reden is dat deze verandering er is.
+ *
+ * De nachtronde schrijft het exact; de trigger werkt het meteen bij wanneer
+ * iemand een event afsluit. Staat het document er nog niet (een verse
+ * werkruimte, of de eerste uitrol), dan is het antwoord leeg en niet stuk.
+ */
+export function useArchiefStand() {
+  const [stand, setStand] = useState({ jaren: [], aantal: 0 })
+
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, COL.config, 'archief'),
+        (snap) => {
+          const data = snap.exists() ? snap.data() : null
+          setStand({
+            jaren: [...(data?.jaren ?? [])].sort((a, b) => b - a),
+            aantal: Math.max(0, data?.aantal ?? 0),
+          })
+        },
+        () => setStand({ jaren: [], aantal: 0 })
+      ),
+    []
+  )
+
+  return stand
+}
+
+/**
+ * Eén event dat niet (meer) op het bord staat, met zijn taken.
+ *
+ * De eventfiche las alles uit `useEvents()`, en daar zit sinds kort alleen nog
+ * het actieve deel in. Een link naar een afgesloten dossier — uit het archief,
+ * uit de zoekbalk, uit een oude mail — kwam daardoor op een lege pagina uit.
+ * Dat is erger dan traag: het leest als een event dat weg is, terwijl er
+ * offertebedragen en facturatiegegevens aan hangen.
+ *
+ * Wel een abonnement en geen losse vraag, in tegenstelling tot `useArchiefJaar`
+ * hierboven: dit is het scherm waar iemand staat te werken, en wat een collega
+ * ondertussen wijzigt hoort hier te verschijnen.
+ *
+ * `aan` staat uit zolang het event gewoon op het bord staat; dan is dit een
+ * tweede abonnement op gegevens die er al zijn.
+ */
+export function useLosEvent(id, { aan = true, brandById = {} } = {}) {
+  const [taak, setTaak] = useState(null)
+  const [subtaken, setSubtaken] = useState([])
+  const [loading, setLoading] = useState(aan)
+
+  useEffect(() => {
+    if (!aan || !id) {
+      setTaak(null)
+      setSubtaken([])
+      setLoading(false)
+      return undefined
+    }
+
+    setLoading(true)
+    let klaar = 0
+    const af = () => {
+      klaar += 1
+      if (klaar >= 2) setLoading(false)
+    }
+
+    const stopEvent = onSnapshot(
+      doc(db, COL.tasks, id),
+      (snap) => {
+        setTaak(snap.exists() ? { id: snap.id, ...snap.data() } : null)
+        af()
+      },
+      () => {
+        setTaak(null)
+        af()
+      }
+    )
+
+    const stopTaken = onSnapshot(
+      query(col(COL.tasks), where('parentId', '==', id)),
+      (snap) => {
+        setSubtaken(fromQuery(snap))
+        af()
+      },
+      () => af()
+    )
+
+    return () => {
+      stopEvent()
+      stopTaken()
+    }
+  }, [id, aan])
+
+  return useMemo(
+    () => ({
+      event: taak ? toEvent(taak, { brandById }) : null,
+      tasks: [...subtaken].sort(byDue),
+      loading,
+    }),
+    [taak, subtaken, brandById, loading]
+  )
+}
+
+/**
+ * De afgesloten events van één jaar.
+ *
+ * Geen abonnement maar één vraag: het archief verandert hoogstens een paar
+ * keer per jaar en niemand zit ernaar te kijken wanneer dat gebeurt. Een
+ * `onSnapshot` zou hier een luisteraar openhouden op honderden documenten die
+ * stilstaan.
+ *
+ * De subtaken komen mee uit Firestore — ze dragen dezelfde stand, zodat ze het
+ * bord ook niet meer belasten — en worden hier gescheiden, net zoals
+ * `useTasks` dat doet.
+ */
+export function useArchiefJaar(jaar, { listId, brandById = {} } = {}) {
+  const [rijen, setRijen] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!jaar || !listId) {
+      setRijen([])
+      setLoading(false)
+      return undefined
+    }
+
+    let actueel = true
+    setLoading(true)
+    getDocs(
+      query(
+        col(COL.tasks),
+        where('listId', '==', listId),
+        where('afgesloten', '==', true),
+        where('afgeslotenJaar', '==', jaar)
+      )
+    )
+      .then((snap) => {
+        if (!actueel) return
+        setRijen(fromQuery(snap))
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (!actueel) return
+        console.error('JE Plan: het archief is niet op te halen', err)
+        setRijen([])
+        setLoading(false)
+      })
+
+    return () => {
+      actueel = false
+    }
+  }, [jaar, listId])
+
+  return useMemo(() => {
+    const events = rijen.filter((t) => !t.parentId).map((t) => toEvent(t, { brandById }))
+    const tasksByEvent = {}
+    for (const t of rijen) if (t.parentId) (tasksByEvent[t.parentId] ??= []).push(t)
+    for (const list of Object.values(tasksByEvent)) list.sort(byDue)
+    return { events, tasksByEvent, loading }
+  }, [rijen, brandById, loading])
 }
 
 // ─── Tijd per event ────────────────────────────────────────────────────────

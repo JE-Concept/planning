@@ -22,7 +22,7 @@ import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import EventNotities from '@components/events/EventNotities'
 import { deleteDocument, leesbareGrootte, uploadDocument, useDocuments } from '@data/documents'
-import { addEventTask, deleteEvent, isDone, moveEvent, updateEvent, useEventTime, useEvents } from '@data/events'
+import { addEventTask, deleteEvent, isDone, moveEvent, updateEvent, useEventTime, useEvents, useLosEvent } from '@data/events'
 import { durationOf } from '@lib/time-math'
 import { useRunningTimer } from '@data/time'
 import { Spinner } from '@ui/index'
@@ -36,12 +36,25 @@ export default function EventDetail() {
   const narrow = useNarrow()
   const toast = useToast()
   const { t } = useTaal()
-  const { eventStatuses, profileById } = useWorkspace()
-  const { eventById, tasksByEvent, loading } = useEvents()
+  const { brandById, eventStatuses, profileById } = useWorkspace()
+  const { eventById, tasksByEvent, loading: bordLaadt } = useEvents()
   const [drawer, setDrawer] = useState(null)
 
-  const ev = eventById[id]
-  const tasks = useMemo(() => tasksByEvent[id] ?? [], [tasksByEvent, id])
+  /*
+    Een afgesloten event staat niet meer in `useEvents()` — dat abonnement
+    draagt alleen nog het actieve deel. Komt de link uit het archief of uit de
+    zoekbalk, dan haalt `useLosEvent` het dossier apart op; staat het gewoon op
+    het bord, dan gaat dat abonnement niet open.
+  */
+  const opBord = eventById[id]
+  const los = useLosEvent(id, { aan: !bordLaadt && !opBord, brandById })
+  const ev = opBord ?? los.event
+  const loading = bordLaadt || los.loading
+
+  const tasks = useMemo(
+    () => (opBord ? (tasksByEvent[id] ?? []) : los.tasks),
+    [opBord, tasksByEvent, id, los.tasks]
+  )
   // Alleen om de verwijdervraag te kunnen laten zeggen wát er weggaat; het
   // tabblad Bijlagen leest dezelfde lijst nog eens, en dat is één abonnement
   // waard boven een vraag die liegt over wat ze weggooit.

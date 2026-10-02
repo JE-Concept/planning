@@ -294,6 +294,24 @@ Er wordt geen Maps-SDK geladen: de Places API (New) antwoordt op een gewone `fet
 
 ---
 
+## Het archief
+
+Een afgesloten event gaat van het bord af en nergens anders heen. Er wordt niets verplaatst en zeker niets gewist: een dossier draagt offertebedragen en facturatiegegevens, en die horen te blijven bestaan, ook als niemand ze nog nodig heeft. "Archief" is hier alleen een uitspraak over waar iets getoond wordt.
+
+De regel is met opzet twee regels, want "klaar" gebeurt op twee manieren. Iemand zet het event op **`complete`** — dat is een uitspraak, en die volgen we meteen. Of er is **gefactureerd** en de factuur is ouder dan zestig dagen: zo gaat het in de praktijk, er wordt gefactureerd en daarna kijkt niemand er nog naar. Een factuur staat op dertig dagen; na het dubbele daarvan is een openstaande betaling een zaak voor de boekhouding en geen planningswerk meer. `ready to invoice` staat er niet tussen, hoe oud het ook is — daar moet nog iemand iets doen, en dat verstoppen zou de factuur verstoppen. Bij een meerdaags event telt de **laatste** dag: een festival van drie dagen is niet voorbij omdat het begonnen is.
+
+**De server beslist dat, niet de browser.** Dat was eerst andersom, en dan moest de app élk event ophalen — ook het trouwfeest van twee jaar geleden, met al zijn taken — om er daarna de helft van te verbergen. Dat werkt bij tachtig events en niet bij vijfhonderd: een tragere start, meer geheugen op een telefoon, en Firestore rekent per gelezen document, elke keer dat iemand de app opent.
+
+Nu schrijft de server het antwoord op het document (`afgesloten`, `afgeslotenJaar`) en vraagt de app alleen nog wat daar níét op staat. Twee functies doen dat, en dat is geen verdubbeling: `archiveerBijWijziging` reageert meteen wanneer iemand een event afsluit, en `archiveerDagelijks` loopt om 05:10 alles na, want "de factuur is zestig dagen oud" is iets wat gebeurt zonder dat er iemand op een knop drukt. De subtaken van een event krijgen dezelfde stand mee; zouden alleen de events het veld dragen, dan bleven hun taken wél binnenkomen en was er niets gewonnen.
+
+Het archiefscherm vraagt per jaar op wanneer je het opent, en weet welke jaren er zijn uit `config/archief` — één document met de jaren en het aantal, bijgehouden door diezelfde twee functies. Zo kost de link *Archief (123)* onder de lijst één leesbeurt in plaats van het hele archief.
+
+De regel staat in `functions/archief-stand.js` en nergens anders; wat de app ervan nodig heeft is het getal in de uitlegzin, en `tests/archief.test.js` houdt die twee gelijk.
+
+**De eerste uitrol vult het veld bij.** Firestore vindt een document niet met `where('afgesloten', '==', false)` zolang dat veld er niet op staat, dus zou elk event van voor deze verandering onzichtbaar zijn — niet weg, maar voor wie ermee werkt is dat hetzelfde. `scripts/seed.mjs` zet daarom de stand op alles wat er al is. Die seed draait in de uitrol vóór de nieuwe app gepubliceerd wordt, en ze is herhaalbaar: wat al klopt wordt niet geschreven, en de tweede uitrol doet niets meer.
+
+---
+
 ## Socials
 
 Twee dingen die uit elkaar gehaald horen te worden: de **content per event** en de **posts per dag**.

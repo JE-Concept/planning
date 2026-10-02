@@ -22,6 +22,12 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { CHECKLIST_TEMPLATES } from '../src/lib/checklist-templates.js'
 import { DEFAULT_FORMULES } from '../src/lib/formule-templates.js'
 import { TASKS_KOLOMMEN, TASKS_LIJST_ID, planHernoeming, taakVelden } from '../src/lib/tasks-kolommen.js'
+// Uit `functions/` en niet uit `src/`: dit is de serverkant van de archiefregel
+// en dit script draait op Node zonder bundler. `src/lib/archief.js` hangt via
+// `dates.js` aan de i18n-glob van Vite en is hier dus niet te laden; de twee
+// kopieën worden door `tests/archief.test.js` gelijk gehouden.
+import { archiefVelden } from '../functions/archief-stand.js'
+import { isEventLijst } from '../functions/events-bron.js'
 
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
 initializeApp(
@@ -211,6 +217,8 @@ async function main() {
 
   await vulKlantveldenAan()
 
+  await zetArchiefstand()
+
   await seedFacturatieRegel()
 
   await seedHerhalingen()
@@ -375,6 +383,98 @@ async function vulKlantveldenAan() {
     await snap.ref.set({ ...patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
     aangevuld.push(`klant ${data.name ?? snap.id}: ${Object.keys(patch).join(', ')}`)
   }
+}
+
+/**
+ * Zet op elk event of het in het archief hoort — en op zijn subtaken.
+ *
+ * De app vroeg vroeger álle events op en besliste daarna in de browser welke
+ * ze verborg. Nu staat het antwoord op het document (`afgesloten`) en vraagt
+ * ze alleen nog wat er níét op staat. Daar zit één scherpe rand aan: Firestore
+ * vindt een document niet met `where('afgesloten', '==', false)` zolang dat
+ * veld er niet op staat. Een event van voor deze verandering zou dus
+ * spoorloos zijn — niet weg, maar onzichtbaar, en dat is voor wie ermee werkt
+ * hetzelfde.
+ *
+ * Daarom staat dit hier en niet in een losse migratie: de uitrol draait dit
+ * script vóór de nieuwe app gepubliceerd wordt, dus tegen de tijd dat iemand
+ * het nieuwe scherm opent, draagt elk document het veld al.
+ *
+ * Aanvullend en herhaalbaar, in de lijn van `vulMeetveldenAan`: wat al klopt
+ * wordt niet geschreven, er verdwijnt niets, en de tweede uitrol doet niets
+ * meer. Daarna houdt `functions/archiveren.js` het bij.
+ */
+async function zetArchiefstand() {
+  const lijsten = await db.collection('lists').get()
+  const lijst = lijsten.docs.map((d) => ({ id: d.id, ...d.data() })).find(isEventLijst)
+  if (!lijst) {
+    console.log('Archiefstand overgeslagen: geen eventlijst gevonden.')
+    return
+  }
+
+  const snap = await db.collection('tasks').where('listId', '==', lijst.id).get()
+  const alles = snap.docs.map((d) => ({ id: d.id, ref: d.ref, data: d.data() }))
+  const events = alles.filter((t) => !t.data.parentId)
+
+  // De subtaken bij hun event, zodat ze dezelfde stand krijgen. Zonder dat
+  // zouden de taken van een afgesloten event wél blijven binnenkomen en was
+  // er niets gewonnen.
+  const kinderen = new Map()
+  for (const taak of alles) {
+    if (!taak.data.parentId) continue
+    const rij = kinderen.get(taak.data.parentId)
+    if (rij) rij.push(taak)
+    else kinderen.set(taak.data.parentId, [taak])
+  }
+
+  const nu = new Date()
+  const jaren = new Set()
+  const teSchrijven = []
+  let dicht = 0
+
+  for (const event of events) {
+    const velden = archiefVelden(event.data, { nu })
+    if (velden.afgesloten) {
+      dicht += 1
+      if (velden.afgeslotenJaar) jaren.add(velden.afgeslotenJaar)
+    }
+
+    const familie = [event, ...(kinderen.get(event.id) ?? [])]
+    for (const taak of familie) {
+      // `moetBijgewerkt` kijkt naar wat er al op staat; bij een subtaak naar de
+      // stand van haar event, want dat is wat ze hoort te dragen.
+      const staat = { afgesloten: taak.data.afgesloten ?? null, afgeslotenJaar: taak.data.afgeslotenJaar ?? null }
+      if (staat.afgesloten === velden.afgesloten && staat.afgeslotenJaar === velden.afgeslotenJaar) continue
+      teSchrijven.push({ ref: taak.ref, velden })
+    }
+  }
+
+  for (const stuk of stukjes(teSchrijven, 400)) {
+    const batch = db.batch()
+    for (const { ref, velden } of stuk) {
+      batch.set(ref, { ...velden, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    }
+    await batch.commit()
+  }
+
+  // De jaren en de teller apart bewaard: het archiefscherm vraagt per jaar op
+  // en moet weten welke jaren er zijn en hoeveel er in zit, zonder eerst alles
+  // op te halen — want dat is precies wat hier afgeschaft wordt. De trigger en
+  // de nachtelijke ronde houden dit daarna bij.
+  await db.collection('config').doc('archief').set(
+    { jaren: [...jaren].sort((a, b) => b - a), aantal: dicht, bijgewerkt: FieldValue.serverTimestamp() },
+    { merge: true }
+  )
+
+  if (teSchrijven.length === 0) {
+    console.log(`Archiefstand stond al goed op ${events.length} events.`)
+    return
+  }
+  aangevuld.push(`archiefstand: ${teSchrijven.length} documenten van ${events.length} events`)
+  console.log(
+    `Archiefstand gezet op ${teSchrijven.length} ${teSchrijven.length === 1 ? 'document' : 'documenten'} `
+      + `(${events.length} events, archiefjaren ${[...jaren].sort((a, b) => b - a).join(', ') || 'geen'}).`
+  )
 }
 
 async function seedFacturatieRegel() {

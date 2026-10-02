@@ -69,6 +69,15 @@ export function createTask({ list, status, title, ...rest }) {
     tags: [],
     position: Date.now(),
     archived: false,
+    /*
+      Een verse taak hoort op het bord, en Firestore vindt een document niet
+      met `where('afgesloten', '==', false)` zolang dat veld er niet op staat.
+      Zonder deze twee regels is een nieuw event meteen onzichtbaar — niet weg,
+      maar dat scheelt voor wie ermee werkt niets. De server rekent het daarna
+      bij; zie `functions/archiveren.js`.
+    */
+    afgesloten: false,
+    afgeslotenJaar: null,
     completedAt: null,
     trackedSeconds: 0,
     commentCount: 0,
@@ -203,8 +212,20 @@ export async function moveTaskTo({ taskId, status, columnTasks, index }) {
 
 // ─── Subscriptions ──────────────────────────────────────────────────────────
 
-/** Live top-level tasks of one list, ordered the way the board shows them. */
-export function useTasks(listId, { includeArchived = false } = {}) {
+/**
+ * Live top-level tasks of one list, ordered the way the board shows them.
+ *
+ * `alleenActief` laat wat afgesloten is buiten het abonnement. Dat scheelt op
+ * de eventlijst het meeste: daar stond élk dossier van de laatste jaren in,
+ * met al zijn taken, op elk scherm en bij elke start — om in de browser de
+ * helft ervan weer te verbergen. De server zet nu `afgesloten` op het document
+ * (zie `functions/archiveren.js`) en deze vraag slaat die documenten over.
+ *
+ * Alleen voor de eventlijst aanzetten: op het Tasks- en socialbord bestaat het
+ * veld niet, en Firestore vindt een document niet met `== false` wanneer het
+ * veld er niet op staat. Dat zou daar een leeg bord opleveren.
+ */
+export function useTasks(listId, { includeArchived = false, alleenActief = false } = {}) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -219,11 +240,12 @@ export function useTasks(listId, { includeArchived = false } = {}) {
     setLoading(true)
     const clauses = [where('listId', '==', listId)]
     if (!includeArchived) clauses.push(where('archived', '==', false))
+    if (alleenActief) clauses.push(where('afgesloten', '==', false))
 
     // Dit abonnement draagt het hele bord. Wat er hier nog niet doorgestuurd is,
     // telt mee in de melding bovenaan: een taak die iemand met slecht bereik
     // verzet, hoort net zo zichtbaar open te staan als een vinkje in de keuken.
-    const bron = `tasks:${listId}${includeArchived ? ':alles' : ''}`
+    const bron = `tasks:${listId}${includeArchived ? ':alles' : ''}${alleenActief ? ':actief' : ''}`
 
     const stop = onSnapshot(
       query(col(COL.tasks), ...clauses, orderBy('position')),
@@ -243,7 +265,7 @@ export function useTasks(listId, { includeArchived = false } = {}) {
       stop()
       vergeetBron(bron)
     }
-  }, [listId, includeArchived])
+  }, [listId, includeArchived, alleenActief])
 
   const [top, subtasks] = useMemo(() => {
     const roots = tasks.filter((t) => !t.parentId).sort(byPosition)
