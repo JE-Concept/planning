@@ -344,12 +344,15 @@ describe('nieuwe queries', () => {
     medewerkers, de importhistoriek en de wachtrij van wat er per mail
     binnenkwam.
 
+    En 72 sinds de ploeg getagd kan worden: "notities waarin ik genoemd ben"
+    vraagt `mentions array-contains` in `src/data/comments.js`.
+
     "Mijn eigen diensten" vraagt `aapiEmployeeId ==` zonder `orderBy` en heeft
     daarom geen samengestelde index nodig — sorteren doet de browser, want het
     zijn er hooguit een paar tientallen. Daarom staat ze wel hier en niet in de
     tabel hierboven.
   */
-  const QUERIES_IN_DE_APP = 71
+  const QUERIES_IN_DE_APP = 72
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

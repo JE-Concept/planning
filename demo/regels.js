@@ -98,7 +98,10 @@ export const REGELS = {
     schrijven: () => false,
   },
   customers:      { lezen: isTeam, schrijven: isTeam },
-  comments:       { lezen: isTeam, schrijven: isTeam },
+  // Het team leest alle notities; wie alleen komt werken, leest de notitie
+  // waarin hij zelf aangesproken is — anders is taggen een melding die naar
+  // een gesloten deur wijst.
+  comments:       { lezen: (rol) => isTeam(rol) || rol === 'staff', schrijven: isTeam },
   attachments:    { lezen: isTeam, schrijven: isTeam },
   goals:          { lezen: isTeam, schrijven: isTeam },
   goalUpdates:    { lezen: isTeam, schrijven: isTeam },

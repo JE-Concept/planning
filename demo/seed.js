@@ -442,8 +442,20 @@ taak('t-soc-5', 'l-socials', SOCIALS, 'done', { title: 'Terugblik Loonse Feesten
   // Met een link erin: hieronder hoort een voorbeeldkaartje te komen.
   ['c5', 't-trouw', 'u-elke', 'Elke Motmans', 'Alle info over de zaal staat hier: https://hoeve-vanhove.be/zalen (zie zeker de plattegrond).', dag(-7)],
   ['c4', 't-loonse', 'u-jasper', 'Jasper Hansen', 'Eindafrekening: voorschot van €8.600 verrekenen. Drie dagen bar, 8 tappunten, geen schade gemeld.', dag(-4)],
+  // Met een vermelding erin: zo ziet de ploeg dat er iets tegen hén gezegd is.
+  ['c6', 't-blum', 'u-jasper', 'Jasper Hansen', 'De opbouw begint een uur vroeger, @[Jumana Mhanawi](u-jasper) — om 15:00 aan de achteringang.', dag(-2)],
 ].forEach(([id, taskId, authorId, authorName, body, createdAt]) =>
-  seedDoc('comments', id, { taskId, postId: null, authorId, authorName, body, createdAt }))
+  seedDoc('comments', id, {
+    taskId,
+    postId: null,
+    authorId,
+    authorName,
+    body,
+    createdAt,
+    // Dezelfde lijst die de trigger live schrijft: daaraan hangen de melding
+    // én de regel die de getagde de notitie laat lezen.
+    mentions: [...body.matchAll(/@\[[^\]]+\]\(([^)]+)\)/g)].map((m) => m[1]),
+  }))
 
 // ─── Activiteitslog ─────────────────────────────────────────────────────────
 //

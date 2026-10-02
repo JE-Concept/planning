@@ -35,6 +35,38 @@ export function useComments({ taskId, postId }) {
   return comments
 }
 
+/**
+ * De notities waarin jij aangesproken bent.
+ *
+ * Voor wie met een code binnenkomt: hij leest de eventnotities niet, maar de
+ * notitie waarin hij zélf genoemd wordt wel — anders is taggen een melding die
+ * naar een gesloten deur wijst. De vraag is daarom zelf beperkt tot dat ene
+ * veld, want de regels staan niets ruimers toe.
+ *
+ * Geen `orderBy`: dat zou een samengestelde index vragen voor een lijst van
+ * hooguit een handvol berichten. Sorteren doet de browser.
+ */
+export function useMijnVermeldingen(uid) {
+  const [notities, setNotities] = useState([])
+
+  useEffect(() => {
+    if (!uid) {
+      setNotities([])
+      return undefined
+    }
+    return onSnapshot(
+      query(col(COL.comments), where('mentions', 'array-contains', uid)),
+      (snap) =>
+        setNotities(
+          fromQuery(snap).sort((a, b) => new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0))
+        ),
+      () => setNotities([])
+    )
+  }, [uid])
+
+  return notities
+}
+
 export async function addComment({ taskId, postId, body, author }) {
   const trimmed = body.trim()
   if (!trimmed) return null

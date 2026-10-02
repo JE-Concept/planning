@@ -6,6 +6,8 @@ import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useMijnEvents } from '@data/social-events'
 import { useMijnShifts } from '@data/aapi'
+import { useMijnVermeldingen } from '@data/comments'
+import Notitietekst from '@components/common/Notitietekst'
 import { STAND_TEKST, STATUUT_TEKST, afdelingLabel, kleurVan, minutenVan, standVan, urenTekst } from '@lib/aapi-weergave'
 import { eindeVan } from '@lib/eventdagen'
 import { eventDagCijfer } from '@components/events/parts'
@@ -81,6 +83,7 @@ export default function MijnEvents() {
       <PageHeader eyebrow={t('mijnevents.eyebrow')} title={t('mijnevents.titel')} subtitle={t('mijnevents.uitleg')} />
 
       <div className="je-pagebody" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        <VoorJou />
         <MijnDiensten />
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}>
@@ -174,6 +177,43 @@ function MijnDiensten() {
           <Badge tone="neutral">{t(STATUUT_TEKST[s.statuut] ?? 'aapi.statuut.onbekend')}</Badge>
           {s.canceled ? <Badge tone="neutral">{t(STAND_TEKST[standVan(s)])}</Badge> : null}
         </div>
+      ))}
+    </section>
+  )
+}
+
+/**
+ * Notities waarin iemand jou aangesproken heeft.
+ *
+ * Taggen zonder dat de getagde de zin kan lezen, is een melding die naar een
+ * gesloten deur wijst. De eventnotities blijven voor het bureau; dit zijn de
+ * regels waar jouw naam in staat, en meer niet.
+ *
+ * Nieuwste bovenaan. Dit is geen gesprek om terug te lezen maar een lijstje
+ * met wat er tegen jou gezegd is — en dan is het laatste het belangrijkste.
+ */
+function VoorJou() {
+  const { t } = useTaal()
+  const { uid, profile } = useAuth()
+  const notities = useMijnVermeldingen(uid)
+  if (!notities.length) return null
+
+  return (
+    <section className="je-panel">
+      <div className="je-panel__head">
+        <span className="je-eyebrow">{t('mijnevents.voor_jou')}</span>
+        <span className="je-panel__right">{notities.length}</span>
+      </div>
+      {notities.map((n) => (
+        <article key={n.id} className="je-notitie" style={{ padding: 'var(--space-4) var(--space-6)' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="je-notitie__kop">
+              <span className="je-notitie__wie">{n.authorName}</span>
+              <span className="je-muted-caption">{n.createdAt ? formatDate(n.createdAt) : ''}</span>
+            </div>
+            <Notitietekst className="je-notitie__tekst" tekst={n.body} mij={profile?.id} />
+          </div>
+        </article>
       ))}
     </section>
   )

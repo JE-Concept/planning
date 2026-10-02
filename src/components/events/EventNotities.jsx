@@ -57,11 +57,27 @@ export default function EventNotities({ ev, compact = false }) {
   const veld = useRef(null)
   const spiegel = useRef(null)
 
-  // Wie er te vermelden valt: het team. Personeel en de socialrol lezen dit
-  // event niet (zie `firestore.rules`), dus hen aanspreken zou een melding zijn
-  // over iets wat ze niet kunnen openen.
+  /*
+    Wie er te vermelden valt: het team, en de ploeg.
+
+    De ploeg stond er niet bij, en terecht: wie het event niet kon openen,
+    aanspreken is een melding sturen die naar een gesloten deur wijst. Sinds de
+    regels een medewerker de notitie laten lezen waarin hij zélf genoemd wordt,
+    klopt dat bezwaar niet meer — en dan is het juist de ploeg die je het
+    vaakst iets wil doorgeven: dat de opbouw een uur vroeger begint, dat de
+    ingang verlegd is.
+
+    De socialrol blijft erbuiten: die leest dit event sowieso niet, en komt
+    ook niet werken.
+
+    De ploeg staat onderaan. Een notitie bij een event gaat meestal over het
+    dossier, en dan zoek je een collega van het bureau.
+  */
   const team = useMemo(
-    () => profiles.filter((p) => p.active !== false && p.role !== 'staff' && p.role !== 'social'),
+    () =>
+      profiles
+        .filter((p) => p.active !== false && p.role !== 'social')
+        .sort((a, b) => (a.role === 'staff' ? 1 : 0) - (b.role === 'staff' ? 1 : 0)),
     [profiles]
   )
   const voorstellen = useMemo(

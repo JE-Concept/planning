@@ -438,8 +438,21 @@ service cloud.firestore {
       Beheerders mogen wél wissen: iemand vertrekt, of er staat iets dat er
       niet hoort te staan, en dan moet er een weg zijn.
     */
+    /*
+      Notities. Het team leest ze allemaal; wie alleen komt werken, leest de
+      notitie waarin hij zelf aangesproken is.
+
+      Dat laatste is wat taggen betekent. Iemand vermelden en hem de zin niet
+      laten lezen, is een melding sturen die naar een gesloten deur wijst —
+      dan is de vermelding geen vermelding maar een kennisgeving.
+
+      Alleen díé notitie, en niet de hele draad: `mentions` is een lijst met
+      accounts en de regel toetst of hij erin staat. De vraag van het scherm
+      is zelf ook zo beperkt, want Firestore weigert een `list` die méér zou
+      kunnen opleveren.
+    */
     match /comments/{id} {
-      allow read:   if isTeam();
+      allow read:   if isTeam() || (isMember() && request.auth.uid in resource.data.mentions);
       allow create: if isTeam() && request.resource.data.authorId == request.auth.uid;
       allow update: if false;
       allow delete: if isTeam() && (resource.data.authorId == request.auth.uid || isAdmin());

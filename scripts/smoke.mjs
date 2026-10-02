@@ -1934,6 +1934,12 @@ await test('een medewerker ziet zijn eigen diensten en boekt zijn eigen uren', a
 
   const tekst = (await page.locator('body').innerText()).trim()
   zouden(bevat(tekst, 'Mijn diensten'), `zijn diensten staan er niet: ${tekst.slice(0, 400)}`)
+  /*
+    En de notitie waarin hij getagd is. Taggen zonder dat de getagde de zin
+    kan lezen, is een melding die naar een gesloten deur wijst.
+  */
+  zouden(bevat(tekst, 'Voor jou'), `wat er tegen hem gezegd is staat er niet: ${tekst.slice(0, 500)}`)
+  zouden(bevat(tekst, 'een uur vroeger'), 'de notitie zelf staat er niet bij')
   zouden(bevat(tekst, 'pauze'), 'de uren van zijn dienst staan er niet bij')
   zouden(!/€\s?\d/.test(tekst), `er staat een bedrag op: ${tekst.slice(0, 400)}`)
 

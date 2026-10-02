@@ -87,7 +87,12 @@ bij.
 - **Openen & sluiten** — de dagelijkse lijsten, zoals voorheen.
 - **Zijn profiel** — zijn foto, zijn naam en zijn code wijzigen.
 
+- **Voor jou** — de notities waarin iemand hem met `@` aangesproken heeft.
+  Alleen díé notities, niet de hele draad. Taggen zonder dat de getagde de zin
+  kan lezen, is een melding die naar een gesloten deur wijst — dan is de
+  vermelding geen vermelding maar een kennisgeving.
+
 Wat hij niet ziet: bedragen, offertes, klanten, het bord, de planning van
-anderen, en de notities bij een event. Dat staat niet in een filter op het
+anderen, en de eventnotities waarin hij niet genoemd is. Dat staat niet in een filter op het
 scherm maar in `firestore.rules` — een filter bepaalt wat je ziet, een regel
 bepaalt wat je krijgt.

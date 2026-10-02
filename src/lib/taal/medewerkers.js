@@ -36,6 +36,7 @@ export default {
     nl: 'De events waarop je ingepland staat: wanneer, waar en met hoeveel.',
     en: 'The events you are scheduled for: when, where and how many.',
   },
+  'mijnevents.voor_jou': { nl: 'Voor jou', en: 'For you' },
   'mijnevents.diensten': { nl: 'Mijn diensten', en: 'My shifts' },
   'mijnevents.diensten_uitleg': {
     nl: 'Zoals ze in AAPI staan. Klopt er iets niet, geef het door — hier is het alleen om te lezen.',
