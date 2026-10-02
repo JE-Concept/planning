@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Button, Icon, Logotype } from '@components/ds'
+import CodeAanmelden from '@components/ploeg/CodeAanmelden'
 import { Spinner } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -10,6 +12,16 @@ import { useTaal } from '@context/TaalProvider'
 export default function Login() {
   const { state, signIn, error, logOut, user, herstelZonderCache } = useAuth()
   const { t } = useTaal()
+  /*
+    Twee wegen naar binnen, en de ene staat niet in de weg van de andere.
+
+    Het bureau meldt zich aan met Google; de ploeg met een naam en vier
+    cijfers. Beide knoppen naast elkaar op het eerste scherm zou van elke
+    aanmelding een keuze maken, en de meeste mensen hoeven niet te kiezen.
+    Dus: Google blijft de knop, en eronder staat één regel voor wie komt
+    werken.
+  */
+  const [metCode, setMetCode] = useState(false)
 
   return (
     <div
@@ -86,7 +98,9 @@ export default function Login() {
           </>
         ) : null}
 
-        {state === 'signed-out' ? (
+        {state === 'signed-out' && metCode ? <CodeAanmelden onTerug={() => setMetCode(false)} /> : null}
+
+        {state === 'signed-out' && !metCode ? (
           <>
             <Button size="lg" block iconLeft="log-in" onClick={signIn}>
               {t('login.met_google')}
@@ -95,6 +109,9 @@ export default function Login() {
             <p style={{ margin: 0, font: 'var(--type-caption)', fontWeight: 400, color: 'var(--slate-500)', textAlign: 'center' }}>
               {t('login.enkel_voor')}
             </p>
+            <Button variant="ghost" size="md" block iconLeft="users" onClick={() => setMetCode(true)}>
+              {t('ploeg.ik_kom_werken')}
+            </Button>
           </>
         ) : null}
 

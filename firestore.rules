@@ -308,13 +308,48 @@ service cloud.firestore {
       bewerken, is een kaartje waarin iemand een andere titel en een ander
       adres kan zetten, en dan is het een val in plaats van een hulp.
     */
+    /*
+      De cijfercodes van de ploeg.
+
+      Geen enkel tabblad komt hierbij, ook een beheerder niet. Zou het team
+      mogen lezen, dan leest iedereen iedereens code — en wie hem wil inkijken,
+      doet dat via `ploegCodeLezen`, die het in een logboek zet. Dat is wat
+      "zichtbaar in de backoffice" draaglijk maakt: niet dat niemand kan
+      kijken, maar dat kijken een spoor nalaat.
+
+      Schrijven doet alleen de functie die de code ook controleert. Kon een
+      browser hier schrijven, dan zette iemand de code van een ander op vier
+      cijfers naar keuze en meldde zich als hem aan.
+    */
+    match /personeelCodes/{id} {
+      allow read, write: if false;
+    }
+
+    /* Wie welke code inkeek. Alleen de functie schrijft; beheerders lezen. */
+    match /personeelCodeGelezen/{id} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
     match /linkVoorbeelden/{id} {
       allow read:  if isTeam();
       allow write: if false;
     }
 
     match /aapiShifts/{id} {
-      allow read:  if isTeam();
+      /*
+        Het team leest alles; een medewerker alleen zijn eigen diensten.
+
+        `request.auth.token.aapiEmployeeId` is een claim die bij het aanmelden
+        met een code meegegeven wordt — zie `functions/ploeg.js`. Een claim en
+        geen veld in zijn profiel: een claim zet hij niet zelf.
+
+        De vraag moet zelf ook zo beperkt zijn, want Firestore weigert een
+        `list` die méér zou kunnen opleveren. Dat is de bedoeling: er bestaat
+        geen vraag waarmee hij de uren van een collega te zien krijgt.
+      */
+      allow read:  if isTeam()
+        || (isMember() && resource.data.aapiEmployeeId == request.auth.token.aapiEmployeeId);
       allow write: if false;
     }
 

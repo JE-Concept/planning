@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Avatar, Button, Field, Input } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
+import EigenCode from '@components/profiel/EigenCode'
 import Voorkeuren from '@components/profiel/Voorkeuren'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -145,6 +146,9 @@ export default function Profiel() {
           </div>
         </section>
 
+        {/* Alleen voor wie met een code binnenkomt; wie Google gebruikt
+            heeft er geen. */}
+        {profile?.viaCode ? <EigenCode /> : null}
         <Voorkeuren />
 
       </div>

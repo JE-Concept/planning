@@ -73,7 +73,10 @@ export const REGELS = {
     waar een `list` die méér zou kunnen opleveren geweigerd wordt.
   */
   // De planning uit AAPI: het team leest, niemand schrijft vanuit de browser.
-  aapiShifts:     { lezen: isTeam, schrijven: () => false },
+  // Het team leest alles; een medewerker alleen zijn eigen diensten (de regels
+  // toetsen dat op de claim `aapiEmployeeId`, die bij het aanmelden met een
+  // code meegegeven wordt).
+  aapiShifts:     { lezen: (rol) => isTeam(rol) || rol === 'staff', schrijven: () => false },
   aapiEmployees:  { lezen: isTeam, schrijven: () => false },
   aapiImportRuns: { lezen: isTeam, schrijven: () => false },
   aapiImportQueue: { lezen: isTeam, schrijven: () => false },
@@ -81,6 +84,11 @@ export const REGELS = {
   // Het voorbeeldkaartje bij een link: lezen mag het team, schrijven doet
   // alleen de functie — anders staat er een titel in die iemand zelf koos.
   linkVoorbeelden: { lezen: isTeam, schrijven: () => false },
+
+  // De cijfercodes van de ploeg: geen enkel tabblad komt erbij, ook een
+  // beheerder niet. Inkijken gaat via een functie die het logt.
+  personeelCodes: { lezen: () => false, schrijven: () => false },
+  personeelCodeGelezen: { lezen: isAdmin, schrijven: () => false },
 
   socialEvents: {
     lezen: (rol, ctx) =>

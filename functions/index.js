@@ -32,6 +32,7 @@ import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
+import { maakPloegFuncties } from './ploeg.js'
 
 initializeApp()
 const db = getFirestore()
@@ -769,6 +770,17 @@ export const herhalingen = maakHerhalingen({ db, region: REGION })
   opvragen. Zie `linkvoorbeeld.js`.
 */
 export const { linkVoorbeeld } = maakLinkVoorbeeld({ db, region: REGION })
+
+/*
+  Aanmelden met een cijfercode, voor de ploeg: wie één zaterdag per maand komt
+  werken, maakt daar geen Google-account voor aan. De code staat in een
+  collectie die geen enkel tabblad mag openen; alleen deze functies komen
+  erbij. Zie `ploeg.js` voor wat die vier cijfers wél en niet beschermen.
+*/
+export const { ploegLijst, ploegAanmelden, ploegCodeWijzigen, ploegCodeLezen } = maakPloegFuncties({
+  db,
+  region: REGION,
+})
 
 /*
   De planning uit AAPI: importeren en koppelen. Het rekenwerk staat in `aapi/`,

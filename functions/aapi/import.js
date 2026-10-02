@@ -259,6 +259,10 @@ export function planImport({
       aapiPlanningId: rij.aapiPlanningId,
       nieuw: !bestaand,
       patch,
+      // Waar deze shift vóór deze beurt aan hing. Nodig om de ploeg van dát
+      // event ook bij te werken: wie van event wisselt, moet van het ene af en
+      // bij het andere bij.
+      vorigeEventRef: bestaand?.eventRef ?? null,
       soort: bestaand ? 'bijgewerkt' : 'aangemaakt',
     })
   }
@@ -276,6 +280,7 @@ export function planImport({
     if (!venster || !start || start < venster.van || start > venster.tot) continue
     verdwenen.push({
       aapiPlanningId: bestaand.aapiPlanningId,
+      vorigeEventRef: bestaand.eventRef ?? null,
       patch: { removedFromSourceAt: nu, importRunId },
     })
   }

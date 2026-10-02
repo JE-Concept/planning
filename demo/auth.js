@@ -7,7 +7,18 @@ const DEMO_USER = {
   getIdToken: async () => 'demo-token',
 }
 
-let current = DEMO_USER
+/*
+  Met `?afgemeld` begint de demo buiten.
+
+  Anders is het aanmeldscherm in de demo onbereikbaar — en dus ook niet te
+  testen, terwijl er sinds de cijfercode twee wegen naar binnen lopen. Eén
+  parameter, en de browsertest kan het scherm openen dat een medewerker als
+  eerste ziet.
+*/
+const begintBuiten =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('afgemeld')
+
+let current = begintBuiten ? null : DEMO_USER
 const watchers = new Set()
 
 export const getAuth = () => ({ get currentUser() { return current } })
@@ -22,6 +33,15 @@ export function onAuthStateChanged(_auth, cb) {
   return () => watchers.delete(cb)
 }
 
+/**
+ * Aanmelden met een cijfercode doet in de demo hetzelfde als met Google:
+ * je komt binnen als Jasper. De controle op de code gebeurt in de stub van
+ * `ploegAanmelden`, zodat een verkeerde code hier hetzelfde zegt als live.
+ */
+export async function signInWithCustomToken() {
+  return signInWithPopup()
+}
+
 export async function signInWithPopup() {
   current = DEMO_USER
   watchers.forEach((cb) => cb(current))
@@ -29,6 +49,8 @@ export async function signInWithPopup() {
 }
 
 export async function signOut() {
-  // In de demo blijft aanmelden zinloos, dus meteen weer binnen.
+  // In de demo blijft aanmelden zinloos, dus meteen weer binnen — tenzij de
+  // demo met `?afgemeld` begon; dan is buiten blijven juist het punt.
+  if (begintBuiten) current = null
   watchers.forEach((cb) => cb(current))
 }

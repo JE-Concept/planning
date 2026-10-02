@@ -1516,6 +1516,61 @@ await test('het planningsbolletje staat ook op de kaarten en in de kalender', as
   await kal.close()
 })
 
+await test('de ploeg meldt zich aan met een naam en vier cijfers', async () => {
+  /*
+    Twee wegen naar binnen. Het bureau gebruikt Google; wie één zaterdag per
+    maand komt werken, maakt daar geen account voor aan. In de demo meldt
+    `?afgemeld` je af, want anders is dit scherm onbereikbaar.
+  */
+  const page = await browser.newPage({ viewport: { width: 420, height: 860 } })
+  const fouten = []
+  page.on('pageerror', (e) => fouten.push(String(e).split('\n')[0]))
+  await page.goto(`${adres}/?afgemeld#/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+
+  zouden(bevat(await page.locator('body').innerText(), 'Aanmelden'), 'het aanmeldscherm staat er niet')
+  await page.getByRole('button', { name: 'Ik kom werken' }).click()
+  await page.waitForTimeout(600)
+
+  // Zoeken op een stuk van de naam, en dan kiezen.
+  await page.getByRole('textbox', { name: 'Je naam' }).fill('jum')
+  await page.waitForTimeout(300)
+  await page.getByRole('option', { name: /Jumana/ }).click()
+  await page.waitForTimeout(300)
+
+  // Een verkeerde code zegt dat ook, en wist wat je typte.
+  await page.getByLabel('Code', { exact: true }).fill('1111')
+  await page.getByRole('button', { name: 'Aanmelden' }).click()
+  await page.waitForTimeout(600)
+  zouden(bevat(await page.locator('body').innerText(), 'klopt niet'), 'een verkeerde code wordt niet gemeld')
+
+  // En de juiste brengt je binnen.
+  await page.getByLabel('Code', { exact: true }).fill('4821')
+  await page.getByRole('button', { name: 'Aanmelden' }).click()
+  await page.waitForTimeout(1200)
+  zouden(!bevat(await page.locator('body').innerText(), 'Ik kom werken'), 'het aanmeldscherm blijft staan')
+
+  zouden(fouten.length === 0, `fouten: ${fouten[0]}`)
+  await page.close()
+})
+
+await test('het bureau kan een code opvragen, en dat laat een spoor na', async () => {
+  const page = await tabblad('/medewerkers')
+  await page.waitForTimeout(1200)
+
+  // Niet zomaar zichtbaar: vier cijfers zijn de vorm van een bankcode, en dit
+  // scherm blijft openliggen terwijl er iemand meekijkt.
+  zouden(!/\b4821\b/.test(await inhoud(page)), 'de code staat er zomaar op')
+
+  // De rij van Jumana, en niet zomaar de eerste knop: de lijst staat op naam.
+  const rij = page.locator('.je-medewerker').filter({ hasText: 'Jumana' }).first()
+  await rij.getByRole('button', { name: 'Code tonen' }).click()
+  await page.waitForTimeout(600)
+  zouden(/\b4821\b/.test(await rij.innerText()), `de code komt niet tevoorschijn: ${await rij.innerText()}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de tool schakelt over naar het Engels en onthoudt dat', async () => {
   const page = await tabblad('/')
   const zijbalk = page.locator('aside').first()

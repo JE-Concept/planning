@@ -3191,6 +3191,55 @@ button.je-paneel-kaart:hover {
   color: var(--danger);
 }
 
+/* Aanmelden met een cijfercode. */
+.je-codeaanmelden {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.je-codeaanmelden__namen {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-control);
+}
+.je-codeaanmelden__naam {
+  padding: var(--space-4) var(--space-5);
+  text-align: left;
+  font: var(--type-body-sm);
+}
+.je-codeaanmelden__naam + .je-codeaanmelden__naam {
+  border-top: 1px solid var(--border-hairline);
+}
+.je-codeaanmelden__naam:hover {
+  background: var(--accent-quiet);
+}
+/* Cijfers die je op een tablet achter de bar nog kunt lezen, en een afstand
+   ertussen zodat je ziet hoeveel je er getypt hebt. */
+.je-codeveld {
+  font: var(--fw-medium) 26px/1.4 var(--font-display);
+  letter-spacing: .5em;
+  text-align: center;
+}
+.je-fout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--danger);
+}
+.je-ploegcode {
+  font: var(--fw-medium) 16px/1 var(--font-display);
+  letter-spacing: .22em;
+  color: var(--text-1);
+  background: var(--surface-2);
+  border-radius: var(--radius-control);
+  padding: 5px 10px;
+}
+
 /* De dagkop in het personeelsblok van een meerdaags event. */
 .je-dagkop {
   display: flex;

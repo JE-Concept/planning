@@ -32,6 +32,7 @@ import { herkenBlad, planPersoneel } from './aapi/personeel.js'
 import { ImportFout } from './aapi/parser.js'
 import { brusselseDag } from './aapi/tijd.js'
 import { dagenVanEvent, komtInAanmerking } from './aapi/matcher.js'
+import { uidVan } from './ploegcode.js'
 
 /** Hoe groot een exportbestand hoogstens mag zijn. Oktober was 15 kB. */
 const MAX_BYTES = 8 * 1024 * 1024
@@ -48,6 +49,46 @@ const PER_BATCH = 450
  * dagen dekt alles wat JE Concept doet; een festival duurt geen maand.
  */
 const MAX_EVENTDAGEN = 31
+
+/**
+ * De ploeg van een event bijwerken op het event zelf.
+ *
+ * ── Waarom het veld `medewerkers` blijft bestaan ──────────────────────────
+ * Daar hing al alles aan: de kale kopie die de ploeg leest, de regel die zegt
+ * welke events een medewerker mag zien, en het scherm "mijn events". Het werd
+ * met de hand gevuld, en dat is nu net wat eruit moest — maar het veld zelf
+ * was goed. Nu vult AAPI het: wie op een shift van dit event staat, staat in
+ * dit veld.
+ *
+ * Het draagt profiel-id's en geen Employee Id's, want daar vragen de regels
+ * naar. Die id's zijn afgeleid van het Employee Id (`uidVan`), dus ze bestaan
+ * al voordat iemand zich één keer aangemeld heeft — en dat is precies wat
+ * nodig is: je moet op het event kunnen staan vóór je eerste aanmelding.
+ */
+async function verversPloeg(db, eventId) {
+  if (!eventId) return
+  const snap = await db.collection('aapiShifts').where('eventRef', '==', eventId).get()
+  const uids = [
+    ...new Set(
+      snap.docs
+        .map((d) => d.data())
+        // Afgezegd of uit AAPI verdwenen: die komt niet, en hoort het event
+        // dus ook niet te kunnen openen.
+        .filter((s) => !s.canceled && !s.removedFromSourceAt && s.aapiEmployeeId)
+        .map((s) => uidVan(s.aapiEmployeeId))
+        .filter(Boolean)
+    ),
+  ].sort()
+
+  const ref = db.collection('tasks').doc(eventId)
+  const bestaand = await ref.get()
+  if (!bestaand.exists) return
+  const nu = bestaand.data().medewerkers ?? []
+  // Alleen schrijven wanneer er iets verandert: anders zet elke import elk
+  // event opnieuw en loopt het logboek vol met wijzigingen die er geen zijn.
+  if (nu.length === uids.length && nu.every((x, i) => x === uids[i])) return
+  await ref.set({ medewerkers: uids, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+}
 
 export function maakAapiFuncties({ db, region, meld = null }) {
   async function profielVan(uid, toegestaan) {
@@ -181,6 +222,22 @@ export function maakAapiFuncties({ db, region, meld = null }) {
     }
     await schrijfInBatches(bewerkingen)
 
+    /*
+      En dan de ploeg op de events zelf. Elk event dat een shift erbij kreeg of
+      kwijtraakte wordt opnieuw opgeteld — oud én nieuw, want wie van event
+      wisselt moet van het ene af en bij het andere bij.
+    */
+    const geraakt = new Set()
+    for (const s of [...plan.shifts, ...plan.verdwenen]) {
+      if (s.patch?.eventRef) geraakt.add(s.patch.eventRef)
+      if (s.vorigeEventRef) geraakt.add(s.vorigeEventRef)
+    }
+    for (const eventId of geraakt) {
+      await verversPloeg(db, eventId).catch((err) =>
+        logger.warn('ploeg bijwerken mislukt', { eventId, fout: String(err?.message ?? err) })
+      )
+    }
+
     await db.collection('aapiImportRuns').doc(loopId).set({
       ...plan.rapport,
       startedAt: nu,
@@ -295,7 +352,9 @@ export function maakAapiFuncties({ db, region, meld = null }) {
     if (status === 'manual' && !eventId) throw new HttpsError('invalid-argument', 'Kies een event.')
 
     const ref = db.collection('aapiShifts').doc(planningId)
-    if (!(await ref.get()).exists) throw new HttpsError('not-found', 'Die shift bestaat niet.')
+    const was = await ref.get()
+    if (!was.exists) throw new HttpsError('not-found', 'Die shift bestaat niet.')
+    const vorig = was.data().eventRef ?? null
 
     await ref.set(
       {
@@ -313,6 +372,11 @@ export function maakAapiFuncties({ db, region, meld = null }) {
       },
       { merge: true }
     )
+
+    // Oud en nieuw: wie losgemaakt wordt, moet van het oude event af.
+    for (const id of new Set([vorig, status === 'manual' ? eventId : null].filter(Boolean))) {
+      await verversPloeg(db, id)
+    }
 
     return { ok: true }
   })

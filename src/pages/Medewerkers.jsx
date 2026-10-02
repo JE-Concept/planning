@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatDate } from '@lib/dates'
 import { Badge, Button } from '@components/ds'
+import PloegCode from '@components/ploeg/PloegCode'
 import { EmptyState } from '@ui/index'
 import PageHeader from '@components/layout/PageHeader'
 import { useTaal } from '@context/TaalProvider'
@@ -107,6 +108,10 @@ export default function Medewerkers() {
                       {t('medewerkers.sinds', { datum: formatDate(m.inDienstSinds) })}
                     </span>
                   ) : null}
+                  {/* De cijfercode waarmee hij zich aanmeldt. Niet zomaar
+                      zichtbaar: opvragen is een handeling, en ze wordt
+                      bijgehouden. Zie `functions/ploeg.js`. */}
+                  <PloegCode medewerkerId={m.id} />
                 </div>
               ))}
             </>
