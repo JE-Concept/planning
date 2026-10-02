@@ -15,8 +15,8 @@
     { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Mijn werk", "url": "/mijn-werk" },
-    { "name": "Openen & sluiten", "url": "/openen-sluiten" },
-    { "name": "Vandaag", "url": "/" }
+    { "name": "Openen & sluiten", "short_name": "Lijsten", "url": "/openen-sluiten" },
+    { "name": "Mijn events", "short_name": "Mijn events", "url": "/mijn-events" },
+    { "name": "Planning", "short_name": "Planning", "url": "/planning" }
   ]
 }

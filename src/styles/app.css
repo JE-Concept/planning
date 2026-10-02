@@ -3283,3 +3283,155 @@ button.je-paneel-kaart:hover {
   background: var(--afdeling, var(--navy-300));
   border-radius: 2px;
 }
+
+/* ── Op een telefoon moet je het kunnen raken ─────────────────────────────
+
+   Elk scherm van deze tool wordt ook op een telefoon geopend — de dagelijkse
+   lijsten in de koelcel, de planning op een festivalterrein, zijn uren door
+   iemand die net klaar is achter de bar. `scripts/mobiel.mjs` meet dat na, en
+   de meting zei hetzelfde over bijna elk scherm: de knoppen zijn te klein.
+
+   Tabs van zesentwintig pixels, een zoekveld van tweeëntwintig, plusjes van
+   vierentwintig. Dat werkt met een muis, want een muis heeft één punt. Een
+   duim is een vlek van ongeveer een centimeter, en onder de tweeëndertig
+   pixels raak je ernaast — niet altijd, maar vaak genoeg om de tool als
+   onhandig te ervaren zonder te kunnen zeggen waarom.
+
+   `pointer: coarse` en geen schermbreedte: het gaat niet over hoe groot het
+   scherm is maar over waarmee je het aanraakt. Een tablet van elf duim op de
+   bar heeft dezelfde duim als een telefoon, en een smal venster op een laptop
+   heeft nog altijd een muis. Op een muis blijft alles dus staan zoals het is.
+
+   Veertig en niet achtenveertig: Apple houdt vierenveertig aan, Google
+   achtenveertig. Veertig raakt iedereen, en bij achtenveertig wordt een rij
+   met vier knoppen een scherm op zich.
+*/
+@media (pointer: coarse) {
+  .je-tab {
+    padding-block: 11px;
+  }
+
+  /* Invoervelden met een onderlijn: de regel is dun, het raakvlak hoeft dat
+     niet te zijn. */
+  .je-input,
+  .je-select,
+  .je-textarea {
+    padding-block: 12px;
+  }
+
+  /* Het zoekveld in de kop staat los van de ontwerpcomponenten en had dus
+     zijn eigen hoogte van tweeëntwintig pixels. */
+  .je-search input {
+    min-height: 40px;
+  }
+
+  .je-btn {
+    min-height: 40px;
+  }
+
+  .je-iconbtn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* Het plusje in het rooster, en de andere kale knopjes die een eigen vorm
+     hebben: een ondergrens, zonder hun uiterlijk over te nemen. */
+  .je-rooster__plus,
+  .je-choice,
+  .je-codeaanmelden__naam {
+    min-height: 36px;
+  }
+
+  /* Het plusje per dag staat in een kolom van een weekrooster: breder maken
+     dan de kolom kan niet, maar vierkant genoeg om te raken wel. */
+  .je-rooster__plus {
+    min-width: 34px;
+    justify-content: center;
+  }
+
+  /* "Op de kaart" onder een locatie: een link van zeventien pixels hoog. */
+  .je-link-quiet {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Een chip in de maandkalender. De cel wordt er hoger van en de maand
+     langer — dat mag: op een telefoon scrol je toch, en een chip die je niet
+     kunt aantikken heeft geen zin. */
+  .je-calchip {
+    min-height: 32px;
+  }
+
+  /* Een dienst in het weekrooster: tweeëndertig in plaats van dertig. */
+  .je-rooster__dienst {
+    min-height: 34px;
+  }
+
+  /* Het kruisje op een label (een toegelaten domein, een tag) was dertien
+     pixels. De tag eromheen groeit mee zodat het kruisje er los in past. */
+  .je-tag__remove {
+    min-width: 32px;
+    min-height: 32px;
+    align-items: center;
+    justify-content: center;
+    margin-right: -8px;
+  }
+
+  /* Een regel die je invult op een onderlijn, zonder omranding. */
+  .je-underline-input {
+    min-height: 40px;
+  }
+
+  /*
+    De vinkjes op de dagelijkse lijsten.
+
+    Het vakje is twintig pixels en het label eromheen tweeëntwintig, want de
+    regel is één regel tekst. Dit is het scherm dat in de koelcel op een
+    telefoon openstaat met natte handen — hier raakt het meeste mis, en hier
+    hoort de rij dus ruim te zijn.
+  */
+  .je-checklijst label {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  /* De terugkoppeling boven een eventdossier ("Alle events") was een regel
+     tekst van tweeëntwintig pixels hoog. */
+  .je-terug,
+  /* En een paar knopjes die alleen uit tekst bestaan: "Bijwerken", "Verloop",
+     "Al besproken". Ze zijn klein met opzet — ze mogen de regel eronder niet
+     overstemmen — maar achttien pixels is geen knop meer. */
+  .je-tekstknop {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* De timer in de mobiele balk staat er alleen op een telefoon, dus die hoeft
+   geen voorwaarde: hij was negenentwintig pixels hoog. */
+.je-mobilebar__timer {
+  min-height: 40px;
+}
+
+/* ── De uitnodiging om de app te installeren ──────────────────────────────
+   Dezelfde plek en dezelfde vorm als de versiemelding: één regel bovenaan die
+   zegt wat je moet weten voor je verdergaat. Zie `InstallBalk.jsx`. */
+.je-installbalk {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--accent-quiet);
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-1);
+}
+.je-installbalk__tekst {
+  font: var(--type-body-sm);
+  font-weight: 600;
+}
+.je-installbalk__uitleg {
+  font: var(--type-caption);
+  color: var(--text-2);
+}

@@ -38,6 +38,15 @@ function redirectToCanonicalHost() {
   return true
 }
 
+/*
+  Vroeg genoeg om `beforeinstallprompt` te horen.
+
+  Die gebeurtenis vuurt één keer, kort na het laden. Een luisteraar in een
+  scherm dat later getekend wordt, mist hem — en dan verschijnt de
+  installatieknop nooit. Zie `@lib/installeren`.
+*/
+import './lib/installeren'
+
 async function boot() {
   const demo = import.meta.env.MODE === 'demo'
   if (!demo && redirectToCanonicalHost()) return

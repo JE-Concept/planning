@@ -24,7 +24,7 @@ import { createServer } from 'node:http'
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
+import { chromium, devices } from 'playwright'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist-demo')
 // Verzetbaar, zodat twee takken tegelijk kunnen testen zonder elkaar de poort
@@ -1569,6 +1569,77 @@ await test('het bureau kan een code opvragen, en dat laat een spoor na', async (
   zouden(/\b4821\b/.test(await rij.innerText()), `de code komt niet tevoorschijn: ${await rij.innerText()}`)
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
+})
+
+await test('de app nodigt op een telefoon uit om zich te laten installeren', async () => {
+  /*
+    Zonder installatie geen pushbericht op een iPhone, geen app tussen de
+    andere apps, en elke keer eerst een adresbalk. De knop stond op het
+    profiel en daar kwam niemand — erger nog: `beforeinstallprompt` vuurt
+    kort na het laden, en de luisteraar zat in een scherm dat pas later
+    getekend wordt. Hij hoorde die gebeurtenis dus nooit.
+
+    Headless Chromium stuurt zelf geen `beforeinstallprompt`; die wordt hier
+    nagebootst. Wat getest wordt is wat wij ermee doen.
+  */
+  // Een Android-toestel: daar hángt het van de gebeurtenis af.
+  const context = await browser.newContext({ ...devices['Pixel 5'] })
+  const page = await context.newPage()
+  const fouten = []
+  page.on('pageerror', (e) => fouten.push(String(e).split('\n')[0]))
+
+  await page.goto(`${adres}/#/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  zouden(!bevat(await page.locator('body').innerText(), 'beginscherm'), 'de balk staat er zonder aanleiding')
+
+  const doeAlsof = () =>
+    page.evaluate(() => {
+      const e = new Event('beforeinstallprompt')
+      e.prompt = () => {}
+      e.userChoice = Promise.resolve({ outcome: 'accepted' })
+      window.dispatchEvent(e)
+    })
+
+  await doeAlsof()
+  await page.waitForTimeout(400)
+  const balk = page.locator('.je-installbalk')
+  zouden((await balk.count()) === 1, 'de uitnodiging verschijnt niet')
+  zouden(bevat(await balk.innerText(), 'beginscherm'), `de balk zegt het verkeerde: ${await balk.innerText()}`)
+
+  // Wegklikken werkt, en blijft werken na herladen — maar niet voor altijd.
+  await page.getByRole('button', { name: 'Later' }).click()
+  await page.waitForTimeout(300)
+  zouden((await page.locator('.je-installbalk').count()) === 0, 'wegklikken doet niets')
+
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.waitForTimeout(900)
+  await doeAlsof()
+  await page.waitForTimeout(400)
+  zouden((await page.locator('.je-installbalk').count()) === 0, 'de balk komt meteen terug na wegklikken')
+
+  zouden(fouten.length === 0, `fouten: ${fouten[0]}`)
+  await context.close()
+
+  /*
+    En op een iPhone, waar die gebeurtenis nooit komt: Safari kent geen
+    installatieknop en zal die nooit kennen. Daar is het enige wat we kunnen
+    doen de weg wijzen — en zonder die regel is de app op de helft van de
+    telefoons niet te installeren zonder dat iemand het voordoet.
+  */
+  const apple = await browser.newContext({ ...devices['iPhone 13'] })
+  const ipage = await apple.newPage()
+  await ipage.goto(`${adres}/#/`, { waitUntil: 'networkidle' })
+  await ipage.waitForTimeout(900)
+
+  const ibalk = ipage.locator('.je-installbalk')
+  zouden((await ibalk.count()) === 1, 'een iPhone krijgt geen uitnodiging')
+  await ipage.getByRole('button', { name: 'Hoe?' }).click()
+  await ipage.waitForTimeout(300)
+  zouden(
+    bevat(await ibalk.innerText(), 'beginscherm') && bevat(await ibalk.innerText(), 'deel'),
+    `de weg naar installeren staat er niet: ${await ibalk.innerText()}`
+  )
+  await apple.close()
 })
 
 await test('de tool schakelt over naar het Engels en onthoudt dat', async () => {

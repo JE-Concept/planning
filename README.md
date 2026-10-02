@@ -522,6 +522,7 @@ npm run dev              # http://localhost:5173
 npm run lint
 npm test                 # unit tests op de rekenlogica
 npm run smoke            # de echte app in een echte browser
+npm run mobiel           # elk scherm op een telefoon: past het, en kun je het raken
 npm run taalcheck        # elk scherm in het Engels, wat is er nog Nederlands
 npm run build
 
@@ -541,6 +542,12 @@ Twee lagen, met een duidelijke taakverdeling.
 **`npm run smoke`** doet wat geen unittest kan: elke pagina echt openen in Chromium, op de demobuild. Geen wit scherm, niets in de console, en op elk scherm één handeling die er hoort te werken — een taak openen, een punt afvinken, een agendapunt toevoegen, het verloop van een doel uitklappen. Plus de twee dingen die de tool onbruikbaar maken zonder dat er iets "stuk" is: personeel dat meer ziet dan zijn eigen lijst, en een pagina die na een uitrol niet meer laadt.
 
 Dat laatste staat er omdat het gebeurd is. Wie een tabblad open had staan terwijl er uitgerold werd, kreeg bij de volgende klik een **wit scherm**: de pagina vroeg een bestandsnaam op die na de uitrol niet meer bestond, React haalde de hele boom weg en er bleef niets over. Nu vangt een foutgrens dat op, ruimt de cache op en herlaadt één keer; lukt dat niet, dan staat er een uitleg met een knop in plaats van niets. De test speelt precies dat na door een bestand te laten verdwijnen.
+
+**`npm run mobiel`** loopt elk scherm af op een iPhone-formaat en meet twee dingen die je met kijken niet vindt: steekt er iets buiten het scherm dat je niet kunt bereiken, en zijn de knoppen groot genoeg om met een duim te raken. "Is het mobielvriendelijk" is namelijk geen vraag die je met kijken beantwoordt — je bekijkt drie schermen, ze zien er goed uit, en het vierde heeft een tabel die honderd pixels uitsteekt.
+
+De eerste keer dat hij draaide: één van de zevenentwintig schermen was in orde. Niet door kapotte layouts maar door raakvlakken — tabs van 26 pixels, een zoekveld van 22, plusjes van 24. Dat werkt met een muis, want een muis heeft één punt; een duim is een vlek van een centimeter. De grens ligt op 32 pixels, en wat te klein is wordt groter gemaakt onder `@media (pointer: coarse)` — dus alleen op een toestel dat je aanraakt, niet op een smal venster met een muis ernaast.
+
+Wat wél breder mag zijn dan het scherm — een bord met negen kolommen, een weekrooster — staat met naam in het script. Een tabel die niet schuift maar afgesneden wordt, is wél een fout: dan bestaat de helft van je gegevens wel en kan niemand ze lezen.
 
 **`npm run test:rules`** draait `firestore.rules` tegen de emulator — het echte bestand, geen kopie. Dat kwam er later bij en om een vervelende reden: de regels stonden in geen enkele test, dus een fout erin kwam pas in productie aan het licht, op een tool waar klantgegevens en bedragen in staan. Wat er getest wordt zijn de gevallen waar het om gaat: komt personeel bij de bedragen, blijft de vorm van een bedrag kloppen, kan iemand andermans notitie wissen, kan het logboek aangevuld worden, zet iemand zijn eigen rol. Zonder emulator slaan die tests zichzelf over en staan ze als *skipped* — niet als geslaagd. Een test die stilletjes slaagt terwijl hij niet gedraaid heeft, leest als bewijs en is er geen.
 

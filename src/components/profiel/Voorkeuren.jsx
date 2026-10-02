@@ -7,6 +7,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import MeldingsVoorkeuren from '@components/notifications/MeldingsVoorkeuren'
 import AgendaAbonnement from '@components/kalenderfeed/AgendaAbonnement'
+import { useInstalleren } from '@lib/installeren'
 
 /**
  * Jouw instellingen: taal, meldingen, agenda, de app op je toestel.
@@ -163,43 +164,47 @@ function PushRegel() {
   )
 }
 
-/** De app op je beginscherm. Staat er alleen wanneer de browser het aanbiedt. */
+/**
+ * De app op je beginscherm, op het profiel.
+ *
+ * Dezelfde bron als de balk bovenaan (`@lib/installeren`): die vangt de
+ * gebeurtenis op bij het laden, en hier hoeven we er dus niet op te wachten.
+ * Dat was het probleem van de vorige versie — deze regel luisterde pas vanaf
+ * het moment dat je het profiel opende, en toen was het moment voorbij.
+ *
+ * Op een iPhone staat hier de weg in plaats van een knop, en wie de app al
+ * geïnstalleerd heeft, krijgt dat te horen in plaats van niets.
+ */
 function InstallRegel() {
   const { t } = useTaal()
-  const [prompt, setPrompt] = useState(null)
+  const { kan, apple, alGeopend, installeer } = useInstalleren()
 
-  useEffect(() => {
-    // Chrome toont zijn eigen balk maar één keer en onthoudt dat je hem
-    // wegklikte; zo staat de knop er altijd nog.
-    const onPrompt = (e) => {
-      e.preventDefault()
-      setPrompt(e)
-    }
-    window.addEventListener('beforeinstallprompt', onPrompt)
-    window.addEventListener('appinstalled', () => setPrompt(null))
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
-  }, [])
+  if (alGeopend) {
+    return (
+      <div className="je-voorkeur">
+        <div>
+          <div className="je-voorkeur__naam">{t('menu.installeren')}</div>
+          <div className="je-muted-caption">{t('install.al_geopend')}</div>
+        </div>
+      </div>
+    )
+  }
 
-  if (!prompt) return null
+  if (!kan) return null
 
   return (
     <div className="je-voorkeur">
       <div>
         <div className="je-voorkeur__naam">{t('menu.installeren')}</div>
-        <div className="je-muted-caption">{t('profiel.installeren_hint')}</div>
+        <div className="je-muted-caption">
+          {apple ? t('install.apple_stappen') : t('profiel.installeren_hint')}
+        </div>
       </div>
-      <Button
-        size="sm"
-        variant="secondary"
-        iconLeft="download"
-        onClick={async () => {
-          prompt.prompt()
-          await prompt.userChoice
-          setPrompt(null)
-        }}
-      >
-        {t('profiel.installeren')}
-      </Button>
+      {apple ? null : (
+        <Button size="sm" variant="secondary" iconLeft="download" onClick={installeer}>
+          {t('profiel.installeren')}
+        </Button>
+      )}
     </div>
   )
 }

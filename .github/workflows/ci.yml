@@ -45,6 +45,12 @@ jobs:
           npm run build:demo
           node scripts/smoke.mjs
 
+      # Past elk scherm op een telefoon? Niet met het oog maar gemeten: wat er
+      # buiten het scherm valt en welke knoppen te klein zijn om met een duim
+      # te raken. Zie scripts/mobiel.mjs.
+      - name: Telefoontest
+        run: node scripts/mobiel.mjs
+
       - name: Build
         run: npm run build
         env:

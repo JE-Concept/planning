@@ -353,7 +353,7 @@ function Agenda({ items }) {
             <button
               type="button"
               onClick={() => setToonBesproken((v) => !v)}
-              className="text-xs font-semibold text-ink-500 hover:text-ink-800"
+              className="je-tekstknop text-xs font-semibold text-ink-500 hover:text-ink-800"
             >
               {toonBesproken ? '▾' : '▸'} {t('overleg.al_besproken', { aantal: besproken.length })}
             </button>

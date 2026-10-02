@@ -138,6 +138,25 @@ export default {
 
   // ── Accountmenu ────────────────────────────────────────────────────────
   'menu.installeren': { nl: 'Installeren op dit toestel', en: 'Install on this device' },
+
+  // ── De uitnodiging om de app te installeren ────────────────────────────
+  'install.titel': { nl: 'Zet JE Plan op je beginscherm', en: 'Add JE Plan to your home screen' },
+  'install.waarom': {
+    nl: 'Opent zonder adresbalk, werkt zonder bereik en kan je meldingen sturen.',
+    en: 'Opens without an address bar, works without a signal, and can send you notifications.',
+  },
+  'install.nu': { nl: 'Installeren', en: 'Install' },
+  'install.hoe': { nl: 'Hoe?', en: 'How?' },
+  'install.begrepen': { nl: 'Oké', en: 'Got it' },
+  'install.later': { nl: 'Later', en: 'Later' },
+  'install.apple_stappen': {
+    nl: 'Tik onderaan op het deel-icoon, en dan op "Zet op beginscherm".',
+    en: 'Tap the share icon at the bottom, then "Add to Home Screen".',
+  },
+  'install.al_geopend': {
+    nl: 'Je gebruikt JE Plan al als app op dit toestel.',
+    en: 'You are already using JE Plan as an app on this device.',
+  },
   'menu.welke_meldingen': { nl: 'Welke meldingen ik krijg', en: 'Which notifications I get' },
   'menu.push_aanzetten': { nl: 'Meldingen aanzetten', en: 'Turn notifications on' },
   'menu.push_uitzetten': { nl: 'Meldingen uitzetten', en: 'Turn notifications off' },

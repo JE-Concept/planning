@@ -24,6 +24,7 @@ import GlobalSearch from './GlobalSearch'
 import OfflineBar from './OfflineBar'
 import Sidebar, { mainNav } from './Sidebar'
 import Sneltoetsen from './Sneltoetsen'
+import InstallBalk from '@components/layout/InstallBalk'
 
 /**
  * De schil uit het design: donkere zijbalk links, een witte balk met zoeken
@@ -141,6 +142,15 @@ function Shell({ children }) {
           dit toestel staan. Zie @lib/offline.
         */}
         <OfflineBar />
+
+        {/*
+          En de uitnodiging om de app te installeren. Stond op het profiel, en
+          daar kwam niemand — terwijl een geïnstalleerde app voor de ploeg het
+          verschil is tussen wel en geen melding op hun telefoon. Zie
+          `@lib/installeren` voor waarom hij weg te klikken is en toch
+          terugkomt.
+        */}
+        <InstallBalk />
 
         {narrow ? <MobileBar uid={uid} isStaff={isStaff} isSocial={isSocial} /> : null}
 

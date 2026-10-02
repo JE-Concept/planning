@@ -304,7 +304,9 @@ function Item({ item, state, onToggle, onValue }) {
   const done = Boolean(state?.done)
 
   return (
-    <li className={cn('px-4 py-2.5', done && 'bg-ink-50/50')}>
+    <li className={cn('je-checklijst px-4 py-2.5', done && 'bg-ink-50/50')}>
+      {/* `je-checklijst` geeft de rij op een telefoon een ruim raakvlak: dit
+          is het scherm dat in de koelcel openstaat, met natte handen. */}
       <label className="flex cursor-pointer items-start gap-3">
         <input
           type="checkbox"

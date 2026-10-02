@@ -10,7 +10,7 @@
   "scripts": {
     "build": "vite build",
     "build:demo": "vite build --mode demo",
-    "controleer": "npm run lint && npm test && npm run build && npm run smoke && npm run taalcheck",
+    "controleer": "npm run lint && npm test && npm run build && npm run smoke && npm run mobiel && npm run taalcheck",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
@@ -19,6 +19,7 @@
     "lint": "eslint .",
     "migrate:clickup": "node scripts/migrate-clickup.mjs",
     "preview": "vite preview",
+    "mobiel": "node scripts/mobiel.mjs",
     "smoke": "npm run build:demo && node scripts/smoke.mjs",
     "taalcheck": "node scripts/taalcheck.mjs",
     "test": "vitest run",

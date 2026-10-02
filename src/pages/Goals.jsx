@@ -298,14 +298,14 @@ function KeyResultRow({ kr, onCheckIn }) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="text-[11px] font-medium text-accent-700 hover:underline"
+            className="je-tekstknop text-[11px] font-medium text-accent-700 hover:underline"
           >
             {t('goals.bijwerken')}
           </button>
           <button
             type="button"
             onClick={() => setHistorie((h) => !h)}
-            className="text-[11px] font-medium text-ink-500 hover:underline"
+            className="je-tekstknop text-[11px] font-medium text-ink-500 hover:underline"
           >
             {t(historie ? 'goals.verloop_verbergen' : 'goals.verloop')}
           </button>

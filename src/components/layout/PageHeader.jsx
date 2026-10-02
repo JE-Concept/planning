@@ -16,7 +16,9 @@ export default function PageHeader({ title, eyebrow, subtitle, actions, tabs, ba
         {back ? (
           <Link
             to={back.to}
-            className="je-plainbtn"
+            // `je-terug` geeft hem op een telefoon een raakvlak; met een muis
+            // blijft het een regel tekst. Zie `@media (pointer: coarse)`.
+            className="je-plainbtn je-terug"
             style={{
               display: 'inline-flex',
               alignItems: 'center',

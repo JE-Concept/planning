@@ -13,10 +13,22 @@ import { useEffect, useState } from 'react'
  * doorheen glipt, maar wie het zelf te horen krijgt, herlaadt op zijn eigen
  * moment in plaats van halverwege een lijst afvinken.
  *
- * Er wordt gekeken wanneer het tabblad weer op de voorgrond komt en verder elk
- * kwartier — vaker heeft geen zin, want we rollen niet vaker uit dan dat.
+ * ── Wanneer er gekeken wordt ─────────────────────────────────────────────
+ * Meteen bij het openen, telkens als het tabblad weer op de voorgrond komt,
+ * zodra er weer verbinding is, en verder elke vijf minuten. Het stond op een
+ * kwartier en begon pas na dat kwartier — een tabblad dat tien minuten open
+ * stond tijdens een uitrol wist dus van niets, en dat is precies het tabblad
+ * waar het misgaat. Eén klein bestandje per vijf minuten voor een handvol
+ * mensen kost niets.
+ *
+ * ── En de service worker zegt het ook ────────────────────────────────────
+ * Die neemt het bij een uitrol meteen over (`skipWaiting` + `clients.claim`,
+ * zie public/sw.js). Op dat moment staat er zeker iets nieuws, en weet de
+ * browser dat eerder dan onze klok. `controllerchange` is dus het snelste en
+ * zekerste signaal dat er is — en het werkt ook wanneer `version.json` om wat
+ * voor reden dan ook niet te lezen valt.
  */
-const INTERVAL_MS = 15 * 60 * 1000
+const INTERVAL_MS = 5 * 60 * 1000
 
 export function useNieuweVersie() {
   const [nieuw, setNieuw] = useState(false)
@@ -39,13 +51,30 @@ export function useNieuweVersie() {
       }
     }
 
+    /*
+      Een nieuwe service worker die het overneemt, betekent een nieuwe uitrol.
+
+      Niet bij de állereerste: dan neemt de worker het over omdat hij er nog
+      niet was, en niet omdat er iets veranderd is. Die zou iedereen bij zijn
+      eerste bezoek een herlaadmelding geven.
+    */
+    const alEenWorker = Boolean(navigator.serviceWorker?.controller)
+    const opWisseling = () => {
+      if (alEenWorker) setNieuw(true)
+    }
+
+    kijk()
     const klok = setInterval(kijk, INTERVAL_MS)
     document.addEventListener('visibilitychange', kijk)
+    window.addEventListener('online', kijk)
+    navigator.serviceWorker?.addEventListener('controllerchange', opWisseling)
 
     return () => {
       gestopt = true
       clearInterval(klok)
       document.removeEventListener('visibilitychange', kijk)
+      window.removeEventListener('online', kijk)
+      navigator.serviceWorker?.removeEventListener('controllerchange', opWisseling)
     }
   }, [nieuw])
 
