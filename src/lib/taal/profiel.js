@@ -5,7 +5,6 @@
  * regelt een beheerder" is een antwoord, een grijs vakje zonder uitleg niet.
  */
 export default {
-  'profiel.titel': { nl: 'Mijn profiel', en: 'My profile' },
   'profiel.eyebrow': { nl: 'Jouw gegevens', en: 'Your details' },
   'profiel.uitleg': {
     nl: 'Je naam en je foto staan bij elke taak, elk event en elk uur dat je boekt. De rest regelt een beheerder.',
@@ -40,7 +39,6 @@ export default {
     nl: 'Deze foto is groter dan 10 MB. Kies er een kleinere.',
     en: 'This photo is larger than 10 MB. Choose a smaller one.',
   },
-
 
   // ── Wat vroeger in het menu onder je naam hing ─────────────────────────
   'profiel.voorkeuren': { nl: 'Jouw instellingen', en: 'Your settings' },

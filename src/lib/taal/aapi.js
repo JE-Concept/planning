@@ -6,7 +6,6 @@
  * leggen.
  */
 export default {
-  'nav.planning': { nl: 'Planning', en: 'Planning' },
 
   'aapi.titel': { nl: 'Planning', en: 'Planning' },
   'aapi.eyebrow': { nl: 'Uit AAPI', en: 'From AAPI' },

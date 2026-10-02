@@ -1,7 +1,5 @@
-// De teksten van de business rules horen bij het instellingenscherm en komen
-// pas met dat scherm mee; zie `src/lib/instellingen-teksten.js`.
-import '../src/lib/instellingen-teksten'
 import { describe, expect, it } from 'vitest'
+import { laadCatalogus } from '../src/lib/i18n'
 import {
   ENTITIES,
   MAX_DEPTH,
@@ -60,6 +58,11 @@ const taak = (extra = {}) => ({
   dueDate: null,
   ...extra,
 })
+
+// De teksten van de business rules horen bij het instellingenscherm en komen
+// pas met dat scherm mee; zie de routetabel in `src/AppPrive.jsx`.
+await laadCatalogus('instellingen')
+
 
 describe('de bestaande regels blijven werken', () => {
   it('vuurt zodra een taak de status binnenkomt', () => {

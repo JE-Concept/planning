@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dagSleutel, isVervaldag, maakHerhaling, omschrijf, sleutelVan, volgendeKeer } from '../src/lib/herhaling'
+import { laadCatalogus } from '../src/lib/i18n'
 /*
   Uit `herhaling-datum.js` en niet uit `herhalingen.js`: dat tweede bestand
   importeert `firebase-functions`, en dat staat alleen in
@@ -24,6 +25,14 @@ import {
 
 const maandag = new Date('2026-10-05T12:00:00+02:00')
 const dinsdag = new Date('2026-10-06T12:00:00+02:00')
+
+/*
+  De woordenlijst van dit scherm komt pas met dat scherm mee; zie de
+  routetabel in `src/AppPrive.jsx`. Deze test leest de teksten, dus haalt ze
+  ze hier zelf op.
+*/
+await laadCatalogus('herhaling')
+
 
 describe('wanneer een herhaling valt', () => {
   it('wekelijks: op de gekozen dag, en niet de dag erna', () => {

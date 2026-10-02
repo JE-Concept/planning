@@ -17,9 +17,29 @@ In `src/lib/taal/`, één bestand per stuk van de app:
 | `socials.js` | Socials |
 | `instellingen.js` | Instellingen en de regelengine |
 
-Elk bestand wordt vanzelf opgepikt; er is geen lijst die je moet bijwerken.
 Dat er meerdere bestanden zijn, is niet uit netheid: zo schrijven twee mensen
 die tegelijk aan twee schermen werken niet in hetzelfde bestand.
+
+## Welk bestand komt wanneer binnen
+
+Niet alles wordt meteen opgehaald. In de eerste download zit alleen de kern —
+`schil.js`, `ploeg.js`, `pijplijn.js` en de vier `*-gedeeld.js` — want die
+teksten staan op élk scherm. De andere bestanden komen mee met het scherm waar
+ze bij horen; welk scherm welk bestand nodig heeft, staat in de routetabel in
+`src/AppPrive.jsx`:
+
+```jsx
+const Events = pagina(() => import('@pages/Events'), 'aanvraag', 'aapi', 'events', 'mail', 'planning')
+```
+
+Dat was eerst niet zo, en toen haalde iedereen die de tool opende de teksten
+van de hele tool op: 137 kB, ook voor wie alleen zijn uren kwam boeken.
+
+**Waar je dit merkt.** Zet je een tekst bij in een bestand dat dit scherm nog
+niet ophaalt, dan ziet het scherm de kale sleutel staan. `npm test` meldt dat
+(`tests/taalbundels.test.js`) en zegt welk bestand er in de tabel bij moet.
+Staat een tekst op élk scherm — iets in de zijbalk, een melding — dan hoort ze
+in `schil.js` en niet in de lijst van één scherm.
 
 Voor de e-mails en meldingen die de server verstuurt staat er een aparte,
 kleine lijst in `functions/teksten.js`. Die map wordt apart verpakt en

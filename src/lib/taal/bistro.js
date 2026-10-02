@@ -42,34 +42,6 @@ export default {
     nl: 'Wordt doorgestuurd zodra er weer bereik is',
     en: 'Goes across as soon as there is signal again',
   },
-  'lijst.offline_titel': {
-    nl: 'Geen verbinding. Je kunt gewoon verder afvinken.',
-    en: 'No connection. Carry on ticking off as usual.',
-  },
-  'lijst.offline_detail': {
-    nl: 'Alles wat je invult, gaat mee zodra er weer bereik is.',
-    en: 'Everything you enter goes across as soon as there is signal again.',
-  },
-  'lijst.offline_detail_wachtend_een': {
-    nl: '{aantal} wijziging staat nog op dit toestel en gaat mee zodra er weer bereik is.',
-    en: '{aantal} change is still on this device and goes across as soon as there is signal again.',
-  },
-  'lijst.offline_detail_wachtend_meer': {
-    nl: '{aantal} wijzigingen staan nog op dit toestel en gaan mee zodra er weer bereik is.',
-    en: '{aantal} changes are still on this device and go across as soon as there is signal again.',
-  },
-  'lijst.wachtend_een': {
-    nl: '{aantal} wijziging nog op dit toestel.',
-    en: '{aantal} change still on this device.',
-  },
-  'lijst.wachtend_meer': {
-    nl: '{aantal} wijzigingen nog op dit toestel.',
-    en: '{aantal} changes still on this device.',
-  },
-  'lijst.wachtend_detail': {
-    nl: 'Doorsturen is bezig — laat de app nog even open.',
-    en: 'Sending is under way — leave the app open a moment longer.',
-  },
 
   // ── De metingen naast een vinkje ───────────────────────────────────────
   'lijst.waarde': { nl: 'Waarde', en: 'Value' },

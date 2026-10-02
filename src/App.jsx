@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import ErrorBoundary from '@components/layout/ErrorBoundary'
+import { pagina } from '@lib/paginalader'
 
 /**
  * De schakelaar tussen twee applicaties die toevallig hetzelfde adres delen.
@@ -24,8 +25,11 @@ import ErrorBoundary from '@components/layout/ErrorBoundary'
  */
 
 const AppPrive       = lazy(() => import('./AppPrive'))
-const OffertePubliek = lazy(() => import('@pages/OffertePubliek'))
-const KlantPortaal   = lazy(() => import('@pages/KlantPortaal'))
+// De klantenpagina's dragen hun eigen teksten mee, net als de schermen in de
+// tool; zie de routetabel in `AppPrive.jsx`. Zonder dat zou de offerteklant
+// de woordenlijst van de hele tool ophalen om één voorstel te lezen.
+const OffertePubliek = pagina(() => import('@pages/OffertePubliek'), 'offerte', 'voorstel')
+const KlantPortaal   = pagina(() => import('@pages/KlantPortaal'))
 
 /*
   Geen spinner en geen skelet tijdens het laden.

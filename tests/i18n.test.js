@@ -1,7 +1,3 @@
-// Ook de teksten van het instellingenscherm, die pas met dat scherm mee
-// komen: zonder deze regel zou deze test er vijfhonderd minder nakijken
-// en dat stilletjes goedkeuren.
-import '../src/lib/instellingen-teksten'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   STANDAARDTAAL,
@@ -9,11 +5,21 @@ import {
   alleTeksten,
   dubbeleSleutels,
   geldigeTaal,
+  laadAlleCatalogi,
   localeVan,
   ontbrekendeVertalingen,
   vertaal,
 } from '../src/lib/i18n'
 import { formatDay, formatMonth, zetLocale } from '../src/lib/dates'
+
+/*
+  Ook de woordenlijsten die pas met hun eigen scherm meekomen.
+
+  Alleen de kern zit in de eerste download; de rest wordt per scherm opgehaald
+  (zie de routetabel in `AppPrive.jsx`). Zonder deze regel kijkt deze test
+  duizend sleutels minder na en keurt dat stilletjes goed.
+*/
+await laadAlleCatalogi()
 
 const teksten = alleTeksten()
 

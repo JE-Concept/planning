@@ -13,12 +13,24 @@
  *
  * Nederlands is de bron. Ontbreekt een Engelse tekst, dan verschijnt de
  * Nederlandse — niet de sleutel. Een half vertaald scherm met hier en daar een
- * Nederlands woord is bruikbaar; een scherm vol `tasks.leeg.titel` is dat niet.
+ * Nederlands woord is bruikbaar; een scherm vol kale sleutels is dat niet.
  *
- * De teksten staan per stuk van de app in `taal/`, en elk bestand wordt hier
- * vanzelf opgepikt. Dat is niet uit netheid: zonder die opsplitsing schrijven
- * twee mensen die tegelijk aan twee schermen werken in hetzelfde bestand, en
- * dan is het samenvoegen het werk.
+ * De teksten staan per stuk van de app in `taal/`. Dat is niet uit netheid:
+ * zonder die opsplitsing schrijven twee mensen die tegelijk aan twee schermen
+ * werken in hetzelfde bestand, en dan is het samenvoegen het werk.
+ *
+ * ── Wat er in de eerste download zit ──────────────────────────────────────
+ * Vroeger alles: honderddertig kilobyte tekst over elk scherm van de tool,
+ * opgehaald door iedereen die de app opent en door elke klant die op een
+ * offertelink klikt. Daar zat het hele eventscherm in voor wie zijn uren komt
+ * boeken, en de hele instellingenmodule voor wie alleen een afvinklijst doet.
+ *
+ * Nu staat hieronder alleen wat op élk scherm nodig is: de schil, en de
+ * woordenlijsten die de kern van de app zelf gebruikt (`activiteit.js`,
+ * `offline.js`, `formules.js`, `social.js`, de afvinksjablonen). De rest komt
+ * mee met het scherm waar hij bij hoort — zie `laadCatalogus` onderaan en de
+ * tabel in `AppPrive.jsx`. `tests/taalbundels.test.js` rekent na dat geen
+ * scherm een woordenlijst mist; die vergeten is een scherm vol sleutels.
  */
 
 /*
@@ -29,24 +41,52 @@
   juiste antwoord, en geen reden om de seed te laten vallen.
 */
 let BESTANDEN = {}
+let LADERS = {}
 try {
   /*
-    `instellingen.js` doet niet mee.
+    De kern: wat op elk scherm staat, en wat de kern van de app zelf opzoekt.
 
-    Het is een kwart van de hele catalogus — vijfhonderd sleutels over
-    pijplijnen, templates, formules en business rules — en het is alleen nodig
-    op één scherm, dat toch al apart binnenkomt. Meeleveren betekende dat
-    iedereen die de tool opent, en elke klant die een offertelink aanklikt,
-    twaalf kilobyte aan instellingenteksten ophaalde die hij nooit te zien
-    krijgt.
+    `schil.js` is de zijbalk, de zoekbalk, de timer, de assistent en de
+    meldingen. De vier `*-gedeeld.js` horen bij modules die altijd meedraaien
+    (`activiteit.js`, `checklist-templates.js`, `formules.js`, `social.js`) en
+    niet bij één scherm. `pijplijn.js` hoort bij `pipeline.js`, dat op elke
+    kaart en in elke lade de naam van een status zet. `ploeg.js` is het
+    aanmeldscherm met de code, en dat is het eerste wat de helft van de
+    gebruikers ziet.
 
-    Het scherm laadt ze zelf; zie `instellingen-teksten.js`. De zoekbalk en
-    de sneltoetsen stonden daar ook in en zijn naar `schil.js` verhuisd — die
-    staan op élk scherm.
+    Alles wat hier níét staat, komt met zijn eigen scherm mee. Wie een
+    woordenlijst hierbij zet, zet hem in de eerste download van iedereen.
   */
-  BESTANDEN = import.meta.glob(['./taal/*.js', '!./taal/instellingen.js'], { eager: true })
+  BESTANDEN = import.meta.glob(
+    [
+      './taal/schil.js',
+      './taal/taken-gedeeld.js',
+      './taal/lijsten-gedeeld.js',
+      './taal/formules-gedeeld.js',
+      './taal/socials-gedeeld.js',
+      './taal/pijplijn.js',
+      './taal/ploeg.js',
+    ],
+    { eager: true }
+  )
+
+  /*
+    En de rest, als losse brokken. Geen `eager`, dus Vite maakt er aparte
+    bestanden van die pas opgehaald worden wanneer `laadCatalogus` erom vraagt.
+  */
+  LADERS = import.meta.glob([
+    './taal/*.js',
+    '!./taal/schil.js',
+    '!./taal/taken-gedeeld.js',
+    '!./taal/lijsten-gedeeld.js',
+    '!./taal/formules-gedeeld.js',
+    '!./taal/socials-gedeeld.js',
+    '!./taal/pijplijn.js',
+    '!./taal/ploeg.js',
+  ])
 } catch {
   BESTANDEN = {}
+  LADERS = {}
   // In een browser hoort dit niet te kunnen — daar staat de lijst al in de
   // build. Gebeurt het toch, dan zou elk scherm stilletjes vol sleutels komen
   // te staan, en dan wil je weten waarom.
@@ -160,22 +200,21 @@ export function ontbrekendeVertalingen(taal = 'en') {
 }
 
 /** Sleutels die in twee bestanden staan; één van de twee wint en dat wil je weten. */
+export const dubbeleSleutels = () => DUBBELE
+
 /**
  * Een woordenboek dat pas bij zijn eigen scherm binnenkomt.
  *
- * Wordt aangeroepen door `instellingen-teksten.js`, dat in dezelfde brok
- * zit als het instellingenscherm. Dat gebeurt synchroon bij het inladen van
- * die brok — dus vóór het scherm tekent — en daarom hoeft er niets opnieuw
- * getekend te worden.
- *
- * Dubbel toevoegen doet niets: de sleutels zijn dezelfde en de waarden ook.
+ * Dubbel toevoegen doet niets: `laadCatalogus` houdt bij wat er al binnen is,
+ * zodat twee schermen die dezelfde lijst nodig hebben niet elke sleutel als
+ * dubbel melden.
  */
-export function voegCatalogusToe(naam, teksten) {
+function voegCatalogusToe(naam, teksten) {
   for (const [sleutel, waarde] of Object.entries(teksten ?? {})) {
     if (sleutel in TEKSTEN) {
-      // Dezelfde sleutel twee keer is hetzelfde probleem als tussen twee
-      // bestanden: stilletjes wint er een, en dan verandert een tekst op een
-      // scherm waar niemand aan gewerkt heeft.
+      // Dezelfde sleutel in twee bestanden is hetzelfde probleem als eerder:
+      // stilletjes wint er een, en dan verandert een tekst op een scherm waar
+      // niemand aan gewerkt heeft.
       DUBBELE.push(`${sleutel} (${TEKSTEN[sleutel].__bestand} en ${naam})`)
       continue
     }
@@ -183,7 +222,44 @@ export function voegCatalogusToe(naam, teksten) {
   }
 }
 
-export const dubbeleSleutels = () => DUBBELE
+/*
+  Wat er binnen is of onderweg, per bestand.
+
+  Twee schermen kunnen dezelfde woordenlijst nodig hebben, en ze kunnen hem
+  tegelijk vragen. Zonder deze map zou de tweede vraag het bestand nog eens
+  ophalen en elke sleutel als dubbel melden, of — erger — terugkeren vóór de
+  teksten er zijn, en dan tekent dat scherm zijn sleutels.
+*/
+const ONDERWEG = new Map()
+
+/**
+ * Een woordenlijst ophalen die niet in de eerste download zat.
+ *
+ * `naam` is de bestandsnaam zonder `.js`: `laadCatalogus('events')`. Zit hij al
+ * in de kern, dan is dit meteen klaar. Bestaat hij niet, dan is dat een fout en
+ * geen stille leegte — een typefout in een naam hoort niet op te lossen in een
+ * scherm vol sleutels.
+ *
+ * De schermen roepen dit niet zelf aan; `pagina()` in `paginalader.js` doet het
+ * naast het inladen van het scherm, zodat beide tegelijk onderweg zijn en de
+ * Suspense die er toch al staat op allebei wacht.
+ */
+export function laadCatalogus(naam) {
+  const pad = `./taal/${naam}.js`
+  if (pad in BESTANDEN) return Promise.resolve()
+  if (ONDERWEG.has(pad)) return ONDERWEG.get(pad)
+
+  const laad = LADERS[pad]
+  if (!laad) return Promise.reject(new Error(`JE Plan: er is geen tekstenbestand "${naam}".`))
+
+  const bezig = laad().then((module) => voegCatalogusToe(pad, module.default))
+  ONDERWEG.set(pad, bezig)
+  return bezig
+}
+
+/** Alles tegelijk — voor de tests, die over de hele catalogus gaan. */
+export const laadAlleCatalogi = () =>
+  Promise.all(Object.keys(LADERS).map((pad) => laadCatalogus(pad.slice('./taal/'.length, -'.js'.length))))
 
 /** Alle sleutels met hun teksten — voor de tests en voor niets anders. */
 export const alleTeksten = () =>

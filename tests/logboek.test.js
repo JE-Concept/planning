@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { AUDIT, kort, regelVan, teOud, verschillen } from '../functions/audit.js'
 import { filter, mensenIn, naarCsv, perDag, veldNaam, waardeTekst, zinVan } from '../src/lib/logboek'
-import { zetHuidigeTaal } from '../src/lib/i18n'
+import { laadCatalogus, zetHuidigeTaal } from '../src/lib/i18n'
+
+/*
+  De woordenlijst van dit scherm komt pas met dat scherm mee; zie de
+  routetabel in `src/AppPrive.jsx`. Deze test leest de teksten, dus haalt ze
+  ze hier zelf op.
+*/
+await laadCatalogus('logboek')
+
 
 const NU = new Date('2026-09-30T10:00:00Z')
 

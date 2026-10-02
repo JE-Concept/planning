@@ -8,9 +8,6 @@ import { PIPELINE, STEP_RULES, labelOf, toneOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import { Avatar, Badge, Button, Field, Hex, Icon, IconButton, Input, Select, Switch, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
-// De teksten van dit scherm komen met dit scherm mee en niet met de app;
-// zie `@lib/instellingen-teksten`.
-import '@lib/instellingen-teksten'
 import BusinessRules from '@components/settings/BusinessRules'
 import HerhalingenPaneel from '@components/settings/HerhalingenPaneel'
 import SysteemPaneel from '@components/settings/SysteemPaneel'

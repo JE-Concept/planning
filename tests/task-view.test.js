@@ -1,5 +1,14 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { deadlineGroep, filter, groepeer, perDag, sorteer } from '../src/lib/task-view'
+import { laadCatalogus } from '../src/lib/i18n'
+
+/*
+  De woordenlijst van dit scherm komt pas met dat scherm mee; zie de
+  routetabel in `src/AppPrive.jsx`. Deze test leest de teksten, dus haalt ze
+  ze hier zelf op.
+*/
+await laadCatalogus('tasks')
+
 
 // Een donderdag, zodat "deze week" en "volgende week" echt verschillen.
 const DONDERDAG = new Date('2026-10-01T09:00:00')

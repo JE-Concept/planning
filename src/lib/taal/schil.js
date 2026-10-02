@@ -321,4 +321,88 @@ export default {
     nl: 'De losse letters werken alleen als je niet in een veld staat.',
     en: 'The single letters only work when your cursor is not in a field.',
   },
+
+  /*
+    Labels uit de zijbalk die bij hun eigen scherm stonden.
+
+    Ze staan hier omdat de zijbalk ze op élk scherm toont, ook voordat dat
+    scherm ingeladen is. Bleven ze bij `aapi.js`, `medewerkers.js` en
+    `profiel.js` staan, dan moest de hele catalogus van die schermen mee in de
+    eerste download om drie woorden in een menu te kunnen zetten.
+  */
+  'nav.planning': { nl: 'Planning', en: 'Planning' },
+  'nav.medewerkers': { nl: 'Medewerkers', en: 'Crew' },
+  'nav.mijnevents': { nl: 'Mijn events', en: 'My events' },
+  'profiel.titel': { nl: 'Mijn profiel', en: 'My profile' },
+
+  /*
+    De timer in de zijbalk, met zijn werkkiezer.
+
+    Dezelfde reden: hij staat op elk scherm, en de rest van `team.js` — het
+    dashboard, de uren, de werklast — komt pas met die schermen mee.
+  */
+  'uren.waarop': { nl: 'Waarop geboekt', en: 'Booked on' },
+  'uren.waarop_hint': {
+    nl: 'Het event of de taak. Het bord en het merk komen daaruit mee.',
+    en: 'The event or task. The board and brand follow from it.',
+  },
+  'uren.kies_taak': { nl: 'Kies een event of taak', en: 'Choose an event or task' },
+  'uren.zoek_taak': { nl: 'Zoeken', en: 'Search' },
+  'uren.zoek_taak_hint': {
+    nl: 'Typ een deel van de naam om de lijst korter te maken.',
+    en: 'Type part of the name to narrow the list.',
+  },
+  'uren.omschrijving': { nl: 'Omschrijving', en: 'Description' },
+  'uren.omschrijving_hint': { nl: 'Waaraan gewerkt?', en: 'Worked on what?' },
+
+  /* Het assistentpaneel. Open te klappen vanaf elk scherm, dus ook hier. */
+  'dashboard.assistent_wat': {
+    nl: 'Beantwoordt vragen en voert acties uit in de planning.',
+    en: 'Answers questions and carries out actions in the planning.',
+  },
+  'dashboard.assistent_openen': { nl: 'Openen', en: 'Open' },
+  'dashboard.assistent_kijkt': { nl: 'Even kijken in de planning', en: 'Looking in the planning' },
+  'dashboard.assistent_probeer': { nl: 'Probeer', en: 'Try' },
+  'dashboard.assistent_vraag': { nl: 'Vraag of opdracht', en: 'Question or instruction' },
+  'dashboard.assistent_bericht': { nl: 'Bericht aan de assistent', en: 'Message to the assistant' },
+  'dashboard.assistent_versturen': { nl: 'Versturen', en: 'Send' },
+  'dashboard.assistent_vergissen': {
+    nl: 'De assistent kan zich vergissen. Acties zie je meteen in de planning.',
+    en: 'The assistant can get things wrong. You see its actions in the planning straight away.',
+  },
+
+  /*
+    De melding dat er geen bereik is.
+
+    Staat in `offline.js`, dat op elk scherm meeluistert — niet alleen op de
+    afvinklijsten waar de rest van `bistro.js` over gaat.
+  */
+  'lijst.offline_titel': {
+    nl: 'Geen verbinding. Je kunt gewoon verder afvinken.',
+    en: 'No connection. Carry on ticking off as usual.',
+  },
+  'lijst.offline_detail': {
+    nl: 'Alles wat je invult, gaat mee zodra er weer bereik is.',
+    en: 'Everything you enter goes across as soon as there is signal again.',
+  },
+  'lijst.offline_detail_wachtend_een': {
+    nl: '{aantal} wijziging staat nog op dit toestel en gaat mee zodra er weer bereik is.',
+    en: '{aantal} change is still on this device and goes across as soon as there is signal again.',
+  },
+  'lijst.offline_detail_wachtend_meer': {
+    nl: '{aantal} wijzigingen staan nog op dit toestel en gaan mee zodra er weer bereik is.',
+    en: '{aantal} changes are still on this device and go across as soon as there is signal again.',
+  },
+  'lijst.wachtend_een': {
+    nl: '{aantal} wijziging nog op dit toestel.',
+    en: '{aantal} change still on this device.',
+  },
+  'lijst.wachtend_meer': {
+    nl: '{aantal} wijzigingen nog op dit toestel.',
+    en: '{aantal} changes still on this device.',
+  },
+  'lijst.wachtend_detail': {
+    nl: 'Doorsturen is bezig — laat de app nog even open.',
+    en: 'Sending is under way — leave the app open a moment longer.',
+  },
 }

@@ -5,7 +5,6 @@
  * werken, en zo noemt de ploeg ze ook.
  */
 export default {
-  'nav.medewerkers': { nl: 'Medewerkers', en: 'Crew' },
 
   'medewerkers.titel': { nl: 'Medewerkers', en: 'Crew' },
   'medewerkers.uitleg': {
@@ -29,7 +28,6 @@ export default {
   'medewerkers.sinds': { nl: 'sinds {datum}', en: 'since {datum}' },
 
   // ── Wat een medewerker zelf ziet ───────────────────────────────────────
-  'nav.mijnevents': { nl: 'Mijn events', en: 'My events' },
   'mijnevents.eyebrow': { nl: 'Waar jij staat', en: 'Where you work' },
   'mijnevents.titel': { nl: 'Mijn events', en: 'My events' },
   'mijnevents.uitleg': {

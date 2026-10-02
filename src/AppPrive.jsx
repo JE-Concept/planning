@@ -1,6 +1,7 @@
-import { Suspense, lazy } from 'react'
+import { Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Spinner } from '@ui/index'
+import { pagina } from '@lib/paginalader'
 import { AuthProvider, useAuth } from '@context/AuthProvider'
 import { TaalProvider } from '@context/TaalProvider'
 import { ToastProvider } from '@context/ToastProvider'
@@ -23,30 +24,38 @@ import Login from '@pages/Login'
  * voor schermen die je misschien nooit opent. De keerzijde daarvan is dat een
  * uitrol terwijl je tabblad openstaat een bestandsnaam kan weghalen die deze
  * pagina nog wil ophalen — daar staat de ErrorBoundary hieronder voor.
+ *
+ * De namen achter elke pagina zijn haar woordenlijsten uit `src/lib/taal/`.
+ * Die kwamen vroeger allemaal in de eerste download mee: honderddertig
+ * kilobyte tekst over elk scherm van de tool, ook voor wie alleen zijn uren
+ * komt boeken. Nu komen ze tegelijk met hun scherm binnen — zie `pagina()` in
+ * `@lib/paginalader`. Wat op élk scherm staat, zit nog wel in de kern en
+ * hoort hier dus niet bij; `tests/taalbundels.test.js` rekent beide kanten na,
+ * want een vergeten lijst is een scherm vol sleutels.
  */
-const Dashboard      = lazy(() => import('@pages/Dashboard'))
-const Tasks          = lazy(() => import('@pages/Tasks'))
-const Events         = lazy(() => import('@pages/Events'))
-const EventDetail    = lazy(() => import('@pages/EventDetail'))
-const Workload       = lazy(() => import('@pages/Workload'))
-const More           = lazy(() => import('@pages/More'))
-const Board          = lazy(() => import('@pages/Board'))
-const SocialCalendar = lazy(() => import('@pages/SocialCalendar'))
-const Checklists     = lazy(() => import('@pages/Checklists'))
-const ChecklistReport = lazy(() => import('@pages/ChecklistReport'))
-const Meetings       = lazy(() => import('@pages/Meetings'))
-const Aanvragen      = lazy(() => import('@pages/Aanvragen'))
-const TimeTracking   = lazy(() => import('@pages/TimeTracking'))
-const Rooster        = lazy(() => import('@pages/Rooster'))
-const Logboek        = lazy(() => import('@pages/Logboek'))
-const Goals          = lazy(() => import('@pages/Goals'))
-const Customers      = lazy(() => import('@pages/Customers'))
-const Settings       = lazy(() => import('@pages/Settings'))
-const Profiel        = lazy(() => import('@pages/Profiel'))
-const Medewerkers    = lazy(() => import('@pages/Medewerkers'))
-const MijnEvents     = lazy(() => import('@pages/MijnEvents'))
-const Planning       = lazy(() => import('@pages/Planning'))
-const NotFound       = lazy(() => import('@pages/NotFound'))
+const Dashboard      = pagina(() => import('@pages/Dashboard'), 'planning', 'team')
+const Tasks          = pagina(() => import('@pages/Tasks'), 'events', 'tasks')
+const Events         = pagina(() => import('@pages/Events'), 'aanvraag', 'aapi', 'events', 'mail', 'planning')
+const EventDetail    = pagina(() => import('@pages/EventDetail'), 'aapi', 'events', 'mail', 'offerte', 'overzicht', 'planning', 'tasks', 'voorstel')
+const Workload       = pagina(() => import('@pages/Workload'), 'planning', 'tasks')
+const More           = pagina(() => import('@pages/More'))
+const Board          = pagina(() => import('@pages/Board'), 'events', 'tasks')
+const SocialCalendar = pagina(() => import('@pages/SocialCalendar'), 'events', 'socials', 'tasks')
+const Checklists     = pagina(() => import('@pages/Checklists'), 'bistro')
+const ChecklistReport = pagina(() => import('@pages/ChecklistReport'), 'bistro')
+const Meetings       = pagina(() => import('@pages/Meetings'), 'team')
+const Aanvragen      = pagina(() => import('@pages/Aanvragen'), 'aanvraag', 'events', 'mail')
+const TimeTracking   = pagina(() => import('@pages/TimeTracking'), 'events', 'team')
+const Rooster        = pagina(() => import('@pages/Rooster'), 'team')
+const Logboek        = pagina(() => import('@pages/Logboek'), 'logboek')
+const Goals          = pagina(() => import('@pages/Goals'), 'tasks')
+const Customers      = pagina(() => import('@pages/Customers'), 'events', 'tasks')
+const Settings       = pagina(() => import('@pages/Settings'), 'herhaling', 'instellingen', 'systeem', 'tasks')
+const Profiel        = pagina(() => import('@pages/Profiel'), 'kalenderfeed', 'profiel', 'team')
+const Medewerkers    = pagina(() => import('@pages/Medewerkers'), 'aapi', 'medewerkers')
+const MijnEvents     = pagina(() => import('@pages/MijnEvents'), 'aapi', 'medewerkers', 'planning')
+const Planning       = pagina(() => import('@pages/Planning'), 'aapi')
+const NotFound       = pagina(() => import('@pages/NotFound'), 'events')
 
 function Loading() {
   return (

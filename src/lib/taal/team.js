@@ -83,20 +83,6 @@ export default {
   // ── De assistent ───────────────────────────────────────────────────────
   // Hoort bij het dashboard en niet bij een eigen prefix: het paneel staat
   // naast elk scherm en de kop ervan staat al als `schil.assistent`.
-  'dashboard.assistent_wat': {
-    nl: 'Beantwoordt vragen en voert acties uit in de planning.',
-    en: 'Answers questions and carries out actions in the planning.',
-  },
-  'dashboard.assistent_openen': { nl: 'Openen', en: 'Open' },
-  'dashboard.assistent_kijkt': { nl: 'Even kijken in de planning', en: 'Looking in the planning' },
-  'dashboard.assistent_probeer': { nl: 'Probeer', en: 'Try' },
-  'dashboard.assistent_vraag': { nl: 'Vraag of opdracht', en: 'Question or instruction' },
-  'dashboard.assistent_bericht': { nl: 'Bericht aan de assistent', en: 'Message to the assistant' },
-  'dashboard.assistent_versturen': { nl: 'Versturen', en: 'Send' },
-  'dashboard.assistent_vergissen': {
-    nl: 'De assistent kan zich vergissen. Acties zie je meteen in de planning.',
-    en: 'The assistant can get things wrong. You see its actions in the planning straight away.',
-  },
 
   // ── Teamoverleg: de pagina ─────────────────────────────────────────────
   'overleg.agenda': { nl: 'Agenda', en: 'Agenda' },
@@ -289,19 +275,6 @@ export default {
     verslag nog per bord groepeert — dat komt nu uit de gekozen taak mee.
   */
   'uren.lijst': { nl: 'Lijst', en: 'List' },
-  'uren.waarop': { nl: 'Waarop geboekt', en: 'Booked on' },
-  'uren.waarop_hint': {
-    nl: 'Het event of de taak. Het bord en het merk komen daaruit mee.',
-    en: 'The event or task. The board and brand follow from it.',
-  },
-  'uren.kies_taak': { nl: 'Kies een event of taak', en: 'Choose an event or task' },
-  'uren.zoek_taak': { nl: 'Zoeken', en: 'Search' },
-  'uren.zoek_taak_hint': {
-    nl: 'Typ een deel van de naam om de lijst korter te maken.',
-    en: 'Type part of the name to narrow the list.',
-  },
-  'uren.omschrijving': { nl: 'Omschrijving', en: 'Description' },
-  'uren.omschrijving_hint': { nl: 'Waaraan gewerkt?', en: 'Worked on what?' },
   'uren.opgeslagen': { nl: 'Opgeslagen.', en: 'Saved.' },
 
   // ── Rooster ────────────────────────────────────────────────────────────

@@ -58,13 +58,6 @@ export default {
   'social.posts.leeg.tekst': { nl: 'Voeg er een toe in de kalender.', en: 'Add one on the calendar.' },
 
   // ── De standen van een post ────────────────────────────────────────────
-  'social.status.idea': { nl: 'Idee', en: 'Idea' },
-  'social.status.draft': { nl: 'Tekst', en: 'Copy' },
-  'social.status.design': { nl: 'Ontwerp', en: 'Design' },
-  'social.status.review': { nl: 'Nakijken', en: 'To check' },
-  'social.status.approved': { nl: 'Goedgekeurd', en: 'Approved' },
-  'social.status.scheduled': { nl: 'Ingepland', en: 'Scheduled' },
-  'social.status.published': { nl: 'Gepubliceerd', en: 'Published' },
 
   // ── De kaart ───────────────────────────────────────────────────────────
   'social.kaart.label': { nl: '{titel} — {status}', en: '{titel} — {status}' },
@@ -161,10 +154,6 @@ export default {
 
   // ── De review ──────────────────────────────────────────────────────────
   'social.review.kop': { nl: 'Review', en: 'Review' },
-  'social.review.geen': { nl: 'Geen review', en: 'No review' },
-  'social.review.wacht': { nl: 'Wacht op review', en: 'Waiting for review' },
-  'social.review.aanpassing': { nl: 'Aanpassing gevraagd', en: 'Changes asked' },
-  'social.review.goedgekeurd': { nl: 'Goedgekeurd', en: 'Approved' },
   'social.review.gevraagd': { nl: 'Review gevraagd', en: 'Review asked' },
   'social.review.ronde': { nl: 'ronde {aantal}', en: 'round {aantal}' },
   'social.review.door': { nl: 'Nakijken door', en: 'Checked by' },
