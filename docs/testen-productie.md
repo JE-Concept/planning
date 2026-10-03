@@ -29,12 +29,13 @@ niet beantwoord is, staat nog op de aanname.
   Stripe → Payments → Refund. De order komt dan níét op "vervallen" — een
   terugbetaling is geen afgebroken afrekening — dus haal de reservatie met
   de hand weg op het event.
-- [ ] De tweede hosting-site: in de Firebase Console onder Hosting een site
-  `je-planning-verhuur` toevoegen. Zonder die site faalt de uitrol van
-  hosting met "site not found"; de naam staat in `.firebaserc`.
+- [x] De tweede hosting-site `je-planning-verhuur` — de uitrol maakt ze zelf
+  aan en heeft dat op 3 oktober gedaan. **De site staat op
+  <https://je-planning-verhuur.web.app>.** Rolt ze een keer niet uit, dan
+  staat de backoffice nog altijd live en zegt het uitrollogboek waarom.
 - [ ] Het domein: onder Hosting → `je-planning-verhuur` → Add custom domain,
   `rental.jeconcept.be`. Firebase geeft twee DNS-records; zet die bij de
-  domeinhouder. Tot dan werkt `je-planning-verhuur.web.app`.
+  domeinhouder. Tot dan werkt het adres hierboven.
 - [ ] `SMTP_URL`, als je de mails wilt zien aankomen. Zonder blijven ze in
   `mailQueue` staan op "wachtend" — je kunt ze daar wel lezen.
 
@@ -130,7 +131,20 @@ Vul je eigen e-mailadres in en klik op *Betalen*.
 - [ ] Klik *Event maken*. Je komt op een nieuw event met je tekst als
   omschrijving. Terug in het postvak is de aanvraag weg.
 
-## 7. Op een telefoon
+## 7. Inloggen en korting
+
+- [ ] Zet op jouw klantenfiche in JE Plan een *Korting verhuur* van 10%.
+- [ ] Op de site: *Inloggen* → je adres → *Stuur me een inloglink*. De pagina
+  zegt "kijk in je mail", wat je ook intikt.
+- [ ] In `mailQueue` (of je mailbox) staat de link. Klik: je komt op *Mijn
+  huren* met je eerdere huur erin, en de kop zegt *Mijn huren*.
+- [ ] Klik de link nog eens: *Deze link is al gebruikt*. Wacht een kwartier
+  met een nieuwe en klik dan: *verlopen*.
+- [ ] Leg iets in de mand. Je adres staat vast ingevuld en is niet te
+  wijzigen; in de som staat *Je klantenkorting (10%)*. Log uit: de korting
+  is weg uit de som — wat je ook als adres intikt.
+
+## 8. Op een telefoon
 
 Open de site op je telefoon.
 

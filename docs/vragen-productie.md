@@ -11,7 +11,7 @@ oorspronkelijke aanname staat **vet**.
 - [x] **2. Bancontact naast kaart?**
   *Antwoord:* **Kaart, Bancontact én Apple/Google Pay.** `payment_method_types: ['card','bancontact']` in `functions-betaling/index.js`; de wallets toont Stripe vanzelf bij 'card' zodra ze in het dashboard aanstaan.
 - [x] **3. Waarborg automatisch terugstorten na "terug", of met de hand?**
-  *Antwoord:* Knop in de backoffice. Nog te bouwen: 'Waarborg terugstorten' bij een betaalde order, met een in te houden bedrag voor schade.
+  *Antwoord:* Knop in de backoffice. Gebouwd: 'Waarborg terugstorten' op de betaalde order in Materiaal, met een in te houden bedrag voor schade; `verhuurWaarborgTerug` in `functions-betaling/`, alleen voor beheerders, in het logboek.
 - [x] **4. Factuur van ons, of volstaat de Stripe-kwitantie?**
   *Antwoord:* Stripe-kwitantie volstaat. Niets te doen.
 ## Wat online staat
@@ -25,15 +25,15 @@ oorspronkelijke aanname staat **vet**.
 - [x] **8. Hoe ver vooruit?**
   *Antwoord:* 1 jaar. `MAX_DAGEN_VOORAF = 365`.
 - [x] **9. Foto's bij de artikelen — wie levert ze?**
-  *Antwoord:* Uploaden in de backoffice. Nog te bouwen: fotoveld op het artikelformulier, Storage-pad `materiaal/`, plaatshouder op de site.
+  *Antwoord:* Uploaden in de backoffice. Gebouwd: fotoveld op het artikelformulier, verkleind in de browser, Storage-pad `materiaal/<id>/foto.jpg`, plaatshouder met de categorie op de site.
 - [x] **10. Telefoonnummer, mailadres en afhaaluren?**
   *Antwoord:* **info@jeconcept.be; telefoonnummer komt later.** `CONTACT.telefoon = null` in `verhuur/src/lib/instellingen.js`: de site toont geen nummer tot het ingevuld is, en verwijst naar mail.
 ## Klanten
 
 - [x] **11. Korting op e-mailadres aan laten tot er een login is?**
-  *Antwoord:* **Korting via login.** Zodra het klantenlogin er is, komt de korting van de ingelogde klant en niet meer van een ingetikt adres. Tot dan blijft het adres de bron (zie `kortingVoor`).
+  *Antwoord:* **Korting via login.** Gebouwd: de korting komt alleen nog van een sessie (`kortingVoor` in `functions-betaling/index.js`); zonder login is ze nul, wat er ook ingetikt wordt.
 - [x] **12. Klantenlogin nu al (e-mail-link, zonder wachtwoord)?**
-  *Antwoord:* Ja, e-mail-link zonder wachtwoord. Nog te bouwen, zonder Firebase-SDK in de publieke bundel: eigen magische link via `mailQueue`.
+  *Antwoord:* Ja, e-mail-link zonder wachtwoord. Gebouwd: `/login` vraagt een link (15 min, één keer), `/login/<token>` geeft een sessie van 90 dagen, `/mijn` toont de eigen huren. Alleen hashes in `verhuurSessies`; geen Firebase-SDK op de site.
 - [x] **13. Online huur maakt automatisch een klantenfiche aan?**
   *Antwoord:* Ja, bij de eerste betaling. Gebouwd: `klantfiche()` in `functions-betaling/index.js`.
 ## Berichten
