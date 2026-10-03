@@ -333,6 +333,7 @@ export default {
   'nav.planning': { nl: 'Planning', en: 'Planning' },
   'nav.medewerkers': { nl: 'Medewerkers', en: 'Crew' },
   'nav.mijnevents': { nl: 'Mijn events', en: 'My events' },
+  'nav.materiaal': { nl: 'Materiaal', en: 'Equipment' },
   'profiel.titel': { nl: 'Mijn profiel', en: 'My profile' },
 
   /*

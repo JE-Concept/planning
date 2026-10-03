@@ -1188,6 +1188,26 @@ await test('dezelfde waarde opnieuw kiezen levert geen tweede regel op', async (
   await page.close()
 })
 
+await test('het magazijn toont per dag wat vrij is, en meldt een overboeking', async () => {
+  const page = await tabblad('/materiaal')
+  const tekst = await inhoud(page)
+
+  zouden(bevat(tekst, 'Mobiele bar Vue'), 'het materiaal staat er niet')
+  zouden(bevat(tekst, 'Beschikbaarheid'), 'de kalender staat er niet')
+
+  /*
+    In de demo vragen een eigen event en een verhuur op hetzelfde weekend
+    allebei vier terrasverwarmers, terwijl er zes zijn. Dat hoort bovenaan te
+    staan als iets wat iemand moet oplossen — niet verstopt in een rode rij.
+  */
+  zouden(bevat(tekst, 'Terrasverwarmer'), 'het conflict noemt het artikel niet')
+  zouden(/meer beloofd is dan er staat/i.test(tekst), `geen conflictmelding: ${tekst.slice(0, 200)}`)
+  zouden(bevat(tekst, 'te weinig'), 'er staat niet bij hoeveel er tekort is')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de marge van een event rekent, en zegt wat ze mist', async () => {
   const page = await tabblad('/events/t-trouw')
   const tekst = await inhoud(page)

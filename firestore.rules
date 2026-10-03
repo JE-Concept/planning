@@ -555,6 +555,48 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    /*
+      Verhuurmateriaal.
+
+      Lezen doet het team: wie een event plant moet kunnen zien wat er is.
+      Schrijven doet een beheerder — wat er in het magazijn staat en wat het
+      kost is geen kladblok.
+
+      Let op wat hier in staat en dus níét naar de verhuursite mag: de
+      inkoopwaarde en de leverancier. Die horen bij de inkoop en niet bij de
+      klant. De publieke feed is daarom een selectie die een functie maakt,
+      geen doorgeefluik van dit document.
+    */
+    match /materiaal/{id} {
+      allow read:  if isTeam();
+      allow write: if isAdmin();
+    }
+
+    /*
+      Wat er op dat materiaal gereserveerd staat.
+
+      Het hele team mag reserveren: wie een event plant, legt materiaal vast,
+      en daar hoeft geen beheerder aan te pas te komen. Verwijderen ook, want
+      een reservatie die niet doorgaat moet weg kunnen — ze blokkeert anders
+      iets voor een collega.
+
+      Wat een browser níét mag: `materiaalDag` schrijven. Dat zijn de
+      dagtellers, en die worden afgeleid uit deze collectie door
+      `functions/voorraad.js`. Kon een tabblad ze zetten, dan kon het ook
+      zeggen dat er nog tien tenten vrij zijn.
+    */
+    match /reservaties/{id} {
+      allow read:   if isTeam();
+      allow create: if isMember();
+      allow update: if isMember();
+      allow delete: if isMember();
+    }
+
+    match /materiaalDag/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
+
     // Vaste formules (winter bbq aan 29,90 met hapjes, drank en dessert): het
     // team kiest er een bij een nieuw event, een beheerder bepaalt de prijs en
     // de bestelregels. Een prijslijst is geen veld dat je onderweg bijstelt.

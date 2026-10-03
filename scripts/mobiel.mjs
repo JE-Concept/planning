@@ -53,7 +53,7 @@ const SCHERMEN = [
   ['/tasks', null], ['/werklast', null], ['/dashboard', null], ['/meer', null],
   ['/social', null], ['/klanten', null], ['/aanvragen', null],
   ['/openen-sluiten', null], ['/registraties', null], ['/overleg', null],
-  ['/uren', null], ['/rooster', null], ['/medewerkers', null], ['/planning', null],
+  ['/uren', null], ['/rooster', null], ['/medewerkers', null], ['/planning', null], ['/materiaal', null],
   ['/logboek', null], ['/goals', null], ['/instellingen', null], ['/profiel', null],
   // Wat een medewerker ziet, op het toestel waarop hij het ziet.
   ['/mijn-events', 'personeel'], ['/openen-sluiten', 'personeel'], ['/uren', 'personeel'],

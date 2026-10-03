@@ -14,6 +14,10 @@ import { archiefVelden } from '../functions/archief-stand.js'
 const D = (s) => new Date(s)
 const NU = D('2026-09-28T09:20:00')
 const dag = (n) => new Date(NU.getTime() + n * 86400000)
+// Reservaties lopen per dag en niet per tijdstip: 'YYYY-MM-DD', zoals
+// `lib/voorraad.js` ze leest.
+const dagsleutel = (d) =>
+  [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
 
 // ─── Mensen ─────────────────────────────────────────────────────────────────
 const MENSEN = [
@@ -1006,6 +1010,72 @@ const dicht = [...archiefstand.values()].filter((v) => v.afgesloten)
   opzet níét bij, zodat ook te zien is hoe de tool een ontbrekend tarief meldt
   in plaats van het als nul te rekenen.
 */
+// ─── Verhuurmateriaal ───────────────────────────────────────────────────────
+/*
+  Het magazijn, met één bewust conflict erin.
+
+  De terrasverwarmers staan zes keer in bezit en worden op hetzelfde weekend
+  twee keer gevraagd — door een eigen event en door een verhuur. Zo is op het
+  materiaalscherm te zien hoe een overboeking eruitziet: niet als foutmelding,
+  maar als iets wat iemand moet oplossen.
+*/
+const MATERIAAL = [
+  ['m-bar', 'Mobiele bar Vue — 3 m', 'Bar en toog', 4, 1, 185, 260, 650],
+  ['m-tent', 'Partytent 6 × 12 m', 'Tenten', 2, 2, 320, 640, 1400],
+  ['m-koeling', 'Koelkast glasdeur 380 l', 'Koeling', 9, 1, 45, 70, 180],
+  ['m-statafel', 'Statafel zwart Ø 80', 'Meubilair', 40, 1, 9, 14, 32],
+  ['m-verwarmer', 'Terrasverwarmer gas', 'Verwarming', 6, 1, 35, 55, 140],
+  ['m-chalet', 'Chalet 3 × 2 m', 'Tenten', 8, 2, 210, 420, 900],
+]
+MATERIAAL.forEach(([id, naam, categorie, aantal, uitloop, perDag, weekend, week], i) =>
+  seedDoc('materiaal', id, {
+    naam,
+    categorie,
+    omschrijving: '',
+    aantal,
+    uitloopDagen: uitloop,
+    prijsPerDag: perDag,
+    prijsWeekend: weekend,
+    prijsWeek: week,
+    vervangwaarde: null,
+    inkoopwaarde: null,
+    leverancier: '',
+    gerelateerd: [],
+    position: i * 1024,
+    archived: false,
+    createdBy: 'u-jasper',
+    createdAt: dag(-200),
+    updatedAt: dag(-30),
+  }))
+
+const RESERVATIES = [
+  ['rv-1', 'm-bar', 'Mobiele bar Vue — 3 m', 1, 4, 6, 'vast', 't-trouw', 'Trouw Niels en Inez'],
+  ['rv-2', 'm-koeling', 'Koelkast glasdeur 380 l', 2, 4, 6, 'vast', 't-trouw', 'Trouw Niels en Inez'],
+  ['rv-3', 'm-statafel', 'Statafel zwart Ø 80', 12, 4, 6, 'vast', 't-trouw', 'Trouw Niels en Inez'],
+  ['rv-4', 'm-verwarmer', 'Terrasverwarmer gas', 4, 4, 6, 'vast', 't-trouw', 'Trouw Niels en Inez'],
+  // En dit is het conflict: vier plus vier op zes stuks.
+  ['rv-5', 'm-verwarmer', 'Terrasverwarmer gas', 4, 5, 6, 'vast', null, 'Blum België'],
+  ['rv-6', 'm-tent', 'Partytent 6 × 12 m', 1, 9, 11, 'optie', null, 'Gemeente Borgloon'],
+  ['rv-7', 'm-chalet', 'Chalet 3 × 2 m', 6, 14, 20, 'vast', null, 'Kerstmarkt Borgloon'],
+]
+RESERVATIES.forEach(([id, materiaalId, materiaalNaam, aantal, vanaf, tot, status, eventId, klant]) =>
+  seedDoc('reservaties', id, {
+    materiaalId,
+    materiaalNaam,
+    aantal,
+    van: dagsleutel(dag(vanaf)),
+    tot: dagsleutel(dag(tot)),
+    status,
+    soort: eventId ? 'event' : 'verhuur',
+    eventId,
+    eventNaam: klant,
+    aanvraagId: null,
+    optieVervalt: status === 'optie' ? dag(7) : null,
+    createdBy: 'u-jasper',
+    createdAt: dag(-10),
+    updatedAt: dag(-10),
+  }))
+
 seedDoc('config', 'kosten', {
   statuutTarief: { vast: 32, flexi: 18, student: 15, extern: 45 },
   updatedBy: 'u-jasper',

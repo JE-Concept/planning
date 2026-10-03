@@ -111,6 +111,11 @@ export const REGELS = {
   automations:    { lezen: isTeam, schrijven: isAdmin },
   automationRuns: { lezen: isTeam, schrijven: () => false },
   templates:      { lezen: isTeam, schrijven: isAdmin },
+  // Verhuur: het team leest, een beheerder beheert de catalogus, en
+  // reserveren mag ieder lid. De dagtellers schrijft alleen de server.
+  materiaal:      { lezen: isTeam, schrijven: isAdmin },
+  reservaties:    { lezen: isTeam, schrijven: isMember },
+  materiaalDag:   { lezen: isTeam, schrijven: () => false },
   formules:       { lezen: isTeam, schrijven: isAdmin },
   checklists:     { lezen: isBistro, schrijven: isAdmin },
   checklistRuns:  { lezen: isBistro, schrijven: isBistro },

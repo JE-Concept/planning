@@ -135,6 +135,7 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
         */
         { to: '/planning', icon: 'users', sleutel: 'nav.planning' },
         { to: '/rooster', icon: 'calendar-days', sleutel: 'nav.rooster' },
+        { to: '/materiaal', icon: 'package', sleutel: 'nav.materiaal' },
         { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
         { to: '/logboek', icon: 'file-text', sleutel: 'nav.logboek' },
       ],

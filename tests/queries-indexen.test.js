@@ -80,6 +80,12 @@ const VRAGEN = [
     sorteer: [['position', ASC]],
   },
   {
+    naam: 'useMateriaal — de catalogus van het magazijn (src/data/materiaal.js)',
+    col: 'materiaal',
+    eq: [['archived', EQ]],
+    sorteer: [['position', ASC]],
+  },
+  {
     naam: 'useMyTasks — mijn open werk (src/data/tasks.js)',
     col: 'tasks',
     eq: [['assignees', CONTAINS], ['open', EQ]],
@@ -353,9 +359,14 @@ describe('nieuwe queries', () => {
     En 72 sinds de ploeg getagd kan worden: "notities waarin ik genoemd ben"
     vraagt `mentions array-contains` in `src/data/comments.js`.
 
-    En 74 sinds het archief server-side beslist wordt: `useArchiefJaar` in
-    `src/data/events.js` haalt één jaar op in plaats van alles, en `useLosEvent`
-    haalt de taken op van een dossier dat niet meer op het bord staat.
+    En 77 sinds het verhuurmateriaal erbij kwam: de catalogus, de reservaties
+    die een periode raken, en die van één event (`src/data/materiaal.js`),
+    plus `useLosEvent` voor een dossier dat niet meer op het bord staat.
+
+    De reservatievraag draagt één bereik (`tot >= van`) met een `orderBy` op
+    datzelfde veld, en dat bedient Firestore uit zijn eigen veldindex; de
+    andere kant van de periode wordt in de browser weggelaten, want twee
+    bereiken in één vraag kan Firestore niet.
 
     "Mijn eigen diensten" vraagt `aapiEmployeeId ==` zonder `orderBy` en heeft
     daarom geen samengestelde index nodig — sorteren doet de browser, want het
@@ -364,7 +375,7 @@ describe('nieuwe queries', () => {
     zijn eigen veldindexen. Daarom staan ze wel hier en niet in de tabel
     hierboven.
   */
-  const QUERIES_IN_DE_APP = 74
+  const QUERIES_IN_DE_APP = 77
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

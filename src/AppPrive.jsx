@@ -55,6 +55,7 @@ const Profiel        = pagina(() => import('@pages/Profiel'), 'kalenderfeed', 'p
 const Medewerkers    = pagina(() => import('@pages/Medewerkers'), 'aapi', 'medewerkers')
 const MijnEvents     = pagina(() => import('@pages/MijnEvents'), 'aapi', 'medewerkers', 'planning')
 const Planning       = pagina(() => import('@pages/Planning'), 'aapi')
+const Materiaal      = pagina(() => import('@pages/Materiaal'), 'materiaal')
 const NotFound       = pagina(() => import('@pages/NotFound'), 'events')
 
 function Loading() {
@@ -165,6 +166,7 @@ function Authenticated() {
             <Route path="/rooster" element={<Rooster />} />
             <Route path="/medewerkers" element={<Medewerkers />} />
             <Route path="/planning" element={<Planning />} />
+            <Route path="/materiaal" element={<Materiaal />} />
             <Route path="/logboek" element={<Logboek />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/instellingen" element={<Settings />} />

@@ -38,6 +38,22 @@ export const COL = {
   automationRuns: 'automationRuns',
   activity: 'activity',
   templates: 'templates',
+  /*
+    Verhuurmateriaal en wat erop gereserveerd staat.
+
+    Twee collecties en geen veld op het event, want dezelfde voorraad wordt
+    van twee kanten aangesproken: een eigen event en straks een aanvraag van
+    de verhuursite. Zou de reservatie op het event staan, dan was er geen plek
+    waar beide samenkomen en zag niemand een dubbele boeking aankomen.
+
+    `materiaalDag` is afgeleid: één rij per artikel per dag met hoeveel er
+    bezet is, geschreven door een functie. De publieke site moet "wat is vrij
+    van 12 tot 14 maart" in één vraag kunnen beantwoorden, en Firestore kan
+    niet op overlappende periodes zoeken.
+  */
+  materiaal: 'materiaal',
+  reservaties: 'reservaties',
+  materiaalDag: 'materiaalDag',
   shifts: 'shifts',
   /*
     De planning uit AAPI staat naast `shifts` en niet erin. Dat rooster is met

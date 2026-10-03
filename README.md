@@ -282,6 +282,24 @@ De stand kies je op de fiche en ze komt terug op het bord, in de lijst, op het d
 
 ---
 
+## Het magazijn
+
+Verhuurmateriaal werkt niet als voorraad, en dat verschil zit in het datamodel. Een tent gaat niet op: ze is bezet van vrijdag tot maandag en daarna weer vrij. "Hoeveel tenten heb ik" is dus geen getal maar een getal per dag, en de vraag die iemand werkelijk stelt — *kan ik er twee op dat weekend* — lees je alleen af van een tijdbalk. Vandaar dat **Materiaal** een kalender is en geen lijst.
+
+Twee collecties. `materiaal` is wat je bezit, met de prijsstaffel en een **uitlooptijd** per artikel: dagen na de huur waarop het stuk nog niet opnieuw inzetbaar is, want het komt vuil en op een camion terug. `reservaties` is wat erop vastligt, met `van`, `tot`, een aantal en een status (*vast* of *in optie*).
+
+**Reservaties staan apart en niet als lijstje op het event.** Dat is de beslissing waar de hele module op rust: dezelfde voorraad wordt van twee kanten aangesproken — een eigen event, en straks een aanvraag van de verhuursite. Stond ze op het event, dan was er geen plek waar die twee samenkomen, en dan ziet niemand een dubbele boeking aankomen tot de camion half geladen is.
+
+**Beschikbaarheid over een periode is het minimum over de dagen**, niet het gemiddelde en niet de eerste dag. Vier vrij op maandag en nul op dinsdag is niet "gemiddeld twee": het is niet beschikbaar. Dat klinkt vanzelfsprekend en is precies de fout die zo'n module stilletjes maakt; `tests/voorraad.test.js` houdt hem tegen.
+
+Een **overboeking** wordt niet geweigerd. Wie tóch wil vastleggen moet dat kunnen — je huurt bij, of je belt de andere klant — want een slot dat niet opengaat, leidt tot een reservatie die iemand buiten de tool om maakt, en dan klopt de kalender zeker niet meer. Ze komt bovenaan het scherm te staan als iets wat iemand moet oplossen, met hoeveel er tekort is, en blijft daar tot het opgelost is.
+
+Een **optie** die verlopen is, laat vanzelf los. Zonder dat houdt één prijsvrager van vorig jaar een weekend bezet en belt er niemand over, want er lijkt niets mis.
+
+Wat met opzet **niet** naar de verhuursite gaat: de inkoopwaarde en de leverancier. Die horen bij de inkoop en niet bij de klant. De publieke feed wordt daarom een selectie die een functie maakt, geen doorgeefluik van het document.
+
+---
+
 ## Wat een event opbracht, en wat het kostte
 
 Van elk dossier stond vast wat het opbracht en van geen enkel wat het kostte. Daardoor was "verdient een BBQ van veertig personen eigenlijk iets" een gesprek over gevoel. Op de fiche staat nu, onder de velden, **Opbrengst en kosten**: het offertebedrag min de ploeg, de inkoop en de eigen uren, alles exclusief btw.
