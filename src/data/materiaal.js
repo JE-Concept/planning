@@ -32,6 +32,21 @@ import { bezetPerDag } from '@lib/voorraad'
 
 const doorWie = () => auth.currentUser?.uid ?? null
 
+/**
+ * Een vaste volgorde voor reservaties.
+ *
+ * Firestore geeft een vraag zonder `orderBy` terug in een volgorde die niet
+ * vastligt, en bij elke wijziging kan ze anders zijn. Op het scherm springen
+ * de rijen dan van plaats bij elk klein ding dat verandert — en wie net op
+ * "Is buiten" wilde klikken, klikt op de regel eronder. Sorteren in de
+ * browser en niet in de vraag, want dan is er geen tweede index nodig voor
+ * een lijst van hooguit enkele tientallen rijen.
+ */
+const opVolgorde = (a, b) =>
+  (a.van ?? '').localeCompare(b.van ?? '')
+  || (a.materiaalNaam ?? '').localeCompare(b.materiaalNaam ?? '')
+  || (a.id ?? '').localeCompare(b.id ?? '')
+
 /** Alle artikelen, op volgorde van het magazijn. */
 export function useMateriaal({ inclusiefGearchiveerd = false } = {}) {
   const [items, setItems] = useState([])
@@ -82,7 +97,10 @@ export function useReservaties({ van, tot } = {}) {
     )
   }, [van])
 
-  const binnen = useMemo(() => (tot ? rijen.filter((r) => (r.van ?? '') <= tot) : rijen), [rijen, tot])
+  const binnen = useMemo(
+    () => (tot ? rijen.filter((r) => (r.van ?? '') <= tot) : rijen).sort(opVolgorde),
+    [rijen, tot]
+  )
   const perMateriaal = useMemo(() => {
     const kaart = new Map()
     for (const r of binnen) {
@@ -107,7 +125,7 @@ export function useEventReservaties(eventId) {
     }
     return onSnapshot(
       query(col(COL.reservaties), where('eventId', '==', eventId)),
-      (snap) => setRijen(fromQuery(snap)),
+      (snap) => setRijen(fromQuery(snap).sort(opVolgorde)),
       () => setRijen([])
     )
   }, [eventId])
@@ -201,6 +219,23 @@ export function reserveer({ materiaal, van, tot, aantal, eventId = null, eventNa
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }).then(() => reservatieRef.id)
+}
+
+/**
+ * Het stuk is buiten, of het is terug.
+ *
+ * Twee aparte functies en geen `wijzigReservatie` met een stand erin, omdat
+ * er bij terugbrengen iets bij hoort: de dag waarop het echt binnenkwam.
+ * Kwam het vroeger terug dan geboekt, dan geeft `lib/voorraad.js` de dagen
+ * ertussen weer vrij — anders staat een tent twee dagen voor niets
+ * geblokkeerd terwijl ze in het magazijn ligt.
+ */
+export function markeerUit(id) {
+  return wijzigReservatie(id, { status: 'uit', uitGegaanOp: serverTimestamp() })
+}
+
+export function markeerTerug(id, dag) {
+  return wijzigReservatie(id, { status: 'terug', teruggebrachtOp: dag })
 }
 
 export function wijzigReservatie(id, patch) {

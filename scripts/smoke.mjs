@@ -1188,6 +1188,29 @@ await test('dezelfde waarde opnieuw kiezen levert geen tweede regel op', async (
   await page.close()
 })
 
+await test('materiaal reserveren vanuit een event, en uit en terug melden', async () => {
+  const page = await tabblad('/events/t-trouw?tab=materiaal')
+  const tekst = await inhoud(page)
+
+  zouden(bevat(tekst, 'Vastgelegd voor dit event'), 'het materiaalblok staat er niet')
+  // De demo legt vier stukken vast op het trouwfeest.
+  zouden(bevat(tekst, 'Mobiele bar Vue'), 'de reservatie van dit event staat er niet')
+  zouden(bevat(tekst, 'Terrasverwarmer'), 'niet alle reservaties staan er')
+
+  /*
+    Geboekt en fysiek buiten zijn twee verschillende dingen. "Is buiten" zet
+    de stand op uit; daarna hoort "Is terug" te verschijnen en niet meer de
+    knop waarmee je het buiten zet.
+  */
+  await page.getByRole('button', { name: 'Is buiten' }).first().click()
+  await page.waitForTimeout(800)
+  const na = await inhoud(page)
+  zouden(bevat(na, 'Is terug'), `de stand sprong niet naar uit: ${na.slice(0, 200)}`)
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('het magazijn toont per dag wat vrij is, en meldt een overboeking', async () => {
   const page = await tabblad('/materiaal')
   const tekst = await inhoud(page)

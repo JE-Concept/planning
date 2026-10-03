@@ -36,7 +36,7 @@ import Login from '@pages/Login'
 const Dashboard      = pagina(() => import('@pages/Dashboard'), 'planning', 'team')
 const Tasks          = pagina(() => import('@pages/Tasks'), 'events', 'tasks')
 const Events         = pagina(() => import('@pages/Events'), 'aanvraag', 'aapi', 'events', 'mail', 'planning')
-const EventDetail    = pagina(() => import('@pages/EventDetail'), 'aapi', 'events', 'mail', 'offerte', 'overzicht', 'planning', 'tasks', 'voorstel')
+const EventDetail    = pagina(() => import('@pages/EventDetail'), 'aapi', 'events', 'mail', 'materiaal', 'offerte', 'overzicht', 'planning', 'tasks', 'voorstel')
 const Workload       = pagina(() => import('@pages/Workload'), 'planning', 'tasks')
 const More           = pagina(() => import('@pages/More'))
 const Board          = pagina(() => import('@pages/Board'), 'events', 'tasks')

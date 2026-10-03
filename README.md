@@ -294,6 +294,10 @@ Twee collecties. `materiaal` is wat je bezit, met de prijsstaffel en een **uitlo
 
 Een **overboeking** wordt niet geweigerd. Wie tóch wil vastleggen moet dat kunnen — je huurt bij, of je belt de andere klant — want een slot dat niet opengaat, leidt tot een reservatie die iemand buiten de tool om maakt, en dan klopt de kalender zeker niet meer. Ze komt bovenaan het scherm te staan als iets wat iemand moet oplossen, met hoeveel er tekort is, en blijft daar tot het opgelost is.
 
+**Geboekt en buiten zijn twee verschillende dingen.** Een reservatie loopt *in optie → vast → uit → terug*, dezelfde reeks als waar de tafelreservaties straks op draaien (zie het component Reservatiestand in het design system). Zonder *uit* zegt de kalender dat een tent vrij is terwijl ze op een veld staat. En komt een stuk vroeger terug dan geboekt, dan geeft *terug* de dagen ertussen weer vrij — de uitlooptijd begint dan te lopen vanaf de dag dat het echt binnenkwam. Te laat terug verlengt de reservatie niet; dat is een gesprek met de klant, geen reden om de kalender te laten schuiven.
+
+Op de eventfiche staat een tabblad **Materiaal**: wat er voor dit dossier vastligt, met de knoppen om het buiten te zetten en terug te melden, en eronder een kiezer die vóór het vastleggen zegt of het past.
+
 Een **optie** die verlopen is, laat vanzelf los. Zonder dat houdt één prijsvrager van vorig jaar een weekend bezet en belt er niemand over, want er lijkt niets mis.
 
 Wat met opzet **niet** naar de verhuursite gaat: de inkoopwaarde en de leverancier. Die horen bij de inkoop en niet bij de klant. De publieke feed wordt daarom een selectie die een functie maakt, geen doorgeefluik van het document.

@@ -11,6 +11,8 @@ import Bestellijst from '@components/events/Bestellijst'
 import EventFiche from '@components/events/EventFiche'
 import EventPersoneel, { useEventPersoneel } from '@components/events/EventPersoneel'
 import EventMarge from '@components/events/EventMarge'
+import EventMateriaal from '@components/events/EventMateriaal'
+import { useEventReservaties } from '@data/materiaal'
 import OfferteTab from '@components/events/OfferteTab'
 import MailDraad from '@components/events/MailDraad'
 import EventOmschrijving from '@components/events/EventOmschrijving'
@@ -67,6 +69,16 @@ export default function EventDetail() {
     is er net de bedoeling van.
   */
   const personeel = useEventPersoneel(ev)
+  /*
+    Het aantal op het tablabel komt uit hetzelfde abonnement dat het tabblad
+    zelf gebruikt. Zo staat er geen getal op de tab dat een tel verschilt van
+    wat eronder staat — dezelfde reden als bij het bolletje van personeel.
+  */
+  const materiaalReservaties = useEventReservaties(id)
+  const materiaalStuks = useMemo(
+    () => materiaalReservaties.reduce((som, r) => som + (r.aantal ?? 0), 0),
+    [materiaalReservaties]
+  )
 
   const setTab = (v) => {
     const next = new URLSearchParams(params)
@@ -247,6 +259,7 @@ export default function EventDetail() {
                   </span>
                 ),
               },
+              { value: 'materiaal', label: t('eventmat.tab', { aantal: materiaalStuks }) },
               { value: 'offerte', label: t('offerte.tab') },
               { value: 'mail', label: t('mail.tab') },
               { value: 'draaiboek', label: t('events.tab.draaiboek') },
@@ -286,6 +299,8 @@ export default function EventDetail() {
             <TasksTab ev={ev} tasks={tasks} focus={params.get('taak')} onOpen={setDrawer} runningId={timer?.taskId} />
           ) : tab === 'bestellijst' ? (
             <Bestellijst ev={ev} />
+          ) : tab === 'materiaal' ? (
+            <EventMateriaal event={ev} />
           ) : tab === 'offerte' ? (
             <OfferteTab ev={ev} />
           ) : tab === 'mail' ? (

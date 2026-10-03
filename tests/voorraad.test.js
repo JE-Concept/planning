@@ -79,6 +79,36 @@ describe('de dagen die een reservatie bezet houdt', () => {
   })
 })
 
+describe('uit en terug', () => {
+  /*
+    Geboekt en fysiek buiten zijn twee verschillende dingen, en dat verschil
+    is de reden dat deze standen bestaan. Zonder "uit" zegt de kalender dat
+    een tent vrij is terwijl ze op een veld staat; zonder "terug" blijft ze
+    twee dagen voor niets geblokkeerd nadat ze al in het magazijn ligt.
+  */
+  it('telt een stuk dat buiten staat gewoon als bezet', () => {
+    const perDag = bezetPerDag([res({ status: 'uit' })], { uitloopDagen: 0, nu: NU })
+    expect(perDag.get('2027-03-13')).toEqual({ vast: 1, optie: 0 })
+  })
+
+  it('geeft de dagen vrij vanaf het moment dat het stuk terug is', () => {
+    const vroeg = res({ status: 'terug', teruggebrachtOp: '2027-03-13' })
+    expect(dagenVanReservatie(vroeg, 0)).toEqual(['2027-03-12', '2027-03-13'])
+  })
+
+  it('laat de uitlooptijd ingaan op de dag dat het echt terugkwam', () => {
+    const vroeg = res({ status: 'terug', teruggebrachtOp: '2027-03-13' })
+    expect(dagenVanReservatie(vroeg, 1)).toEqual(['2027-03-12', '2027-03-13', '2027-03-14'])
+  })
+
+  it('negeert een terugbrengdatum ná de geboekte einddatum', () => {
+    // Te laat terug verlengt de reservatie niet; dat is een gesprek met de
+    // klant en geen reden om de kalender te laten schuiven.
+    const laat = res({ status: 'terug', teruggebrachtOp: '2027-03-20' })
+    expect(dagenVanReservatie(laat, 0)).toEqual(['2027-03-12', '2027-03-13', '2027-03-14'])
+  })
+})
+
 describe('wat er per dag bezet is', () => {
   const perDag = bezetPerDag(
     [

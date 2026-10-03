@@ -26,6 +26,15 @@ import { dayKey } from './dates'
  * browser te testen is.
  */
 
+/**
+ * De standen die een reservatie doorloopt.
+ *
+ * Dezelfde reeks als in het design system, waar ze ook voor tafels geldt:
+ * nog niet zeker, vastgelegd, gebeurt nu, afgerond, valt weg. Voor materiaal
+ * heet dat optie, vast, uit, terug, geannuleerd.
+ */
+export const STANDEN = ['optie', 'vast', 'uit', 'terug', 'geannuleerd']
+
 /** Een reservatie die niet meetelt: afgezegd, of een optie die verlopen is. */
 export function teltMee(reservatie, nu = new Date()) {
   if (!reservatie || reservatie.status === 'geannuleerd') return false
@@ -35,6 +44,9 @@ export function teltMee(reservatie, nu = new Date()) {
   if (!vervalt || Number.isNaN(vervalt.getTime())) return true
   return vervalt.getTime() > nu.getTime()
 }
+
+/** Staat dit stuk fysiek buiten? Geboekt en buiten zijn twee verschillende dingen. */
+export const isUit = (reservatie) => reservatie?.status === 'uit'
 
 /** Hoogstens drie jaar aan dagen: een tikfout in een datum hoort niet het geheugen op te eten. */
 const MAX_DAGEN = 1100
@@ -48,7 +60,17 @@ const MAX_DAGEN = 1100
  */
 export function dagenVanReservatie(reservatie, uitloopDagen = 0) {
   const van = sleutel(reservatie?.van)
-  const tot = sleutel(reservatie?.tot) || van
+  /*
+    Vroeger terug is eerder vrij.
+
+    Komt een tent op zaterdag binnen terwijl ze tot maandag geboekt stond,
+    dan is ze zondag beschikbaar — en dat hoort de kalender te weten, want
+    anders staat ze er twee dagen voor niets. De uitlooptijd telt wél nog
+    vanaf de dag dat ze echt terugkwam: ze moet nog altijd schoongemaakt.
+  */
+  const geboekt = sleutel(reservatie?.tot) || van
+  const terug = sleutel(reservatie?.teruggebrachtOp)
+  const tot = terug && terug < geboekt ? terug : geboekt
   if (!van) return []
 
   const dagen = []
