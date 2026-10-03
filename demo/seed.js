@@ -1019,15 +1019,21 @@ const dicht = [...archiefstand.values()].filter((v) => v.afgesloten)
   materiaalscherm te zien hoe een overboeking eruitziet: niet als foutmelding,
   maar als iets wat iemand moet oplossen.
 */
+/*
+  De laatste twee kolommen zijn waarborg en "mag zonder offerte de deur uit".
+  Alleen wat iemand zelf kan komen halen staat op `true`: statafels, koelkasten
+  en terrasverwarmers passen in een bestelwagen. Een partytent moet geplaatst
+  worden en een chalet moet op een camion — die horen bij een gesprek.
+*/
 const MATERIAAL = [
-  ['m-bar', 'Mobiele bar Vue — 3 m', 'Bar en toog', 4, 1, 185, 260, 650],
-  ['m-tent', 'Partytent 6 × 12 m', 'Tenten', 2, 2, 320, 640, 1400],
-  ['m-koeling', 'Koelkast glasdeur 380 l', 'Koeling', 9, 1, 45, 70, 180],
-  ['m-statafel', 'Statafel zwart Ø 80', 'Meubilair', 40, 1, 9, 14, 32],
-  ['m-verwarmer', 'Terrasverwarmer gas', 'Verwarming', 6, 1, 35, 55, 140],
-  ['m-chalet', 'Chalet 3 × 2 m', 'Tenten', 8, 2, 210, 420, 900],
+  ['m-bar', 'Mobiele bar Vue — 3 m', 'Bar en toog', 4, 1, 185, 260, 650, 150, false],
+  ['m-tent', 'Partytent 6 × 12 m', 'Tenten', 2, 2, 320, 640, 1400, null, false],
+  ['m-koeling', 'Koelkast glasdeur 380 l', 'Koeling', 9, 1, 45, 70, 180, 50, true],
+  ['m-statafel', 'Statafel zwart Ø 80', 'Meubilair', 40, 1, 9, 14, 32, null, true],
+  ['m-verwarmer', 'Terrasverwarmer gas', 'Verwarming', 6, 1, 35, 55, 140, 40, true],
+  ['m-chalet', 'Chalet 3 × 2 m', 'Tenten', 8, 2, 210, 420, 900, null, false],
 ]
-MATERIAAL.forEach(([id, naam, categorie, aantal, uitloop, perDag, weekend, week], i) =>
+MATERIAAL.forEach(([id, naam, categorie, aantal, uitloop, perDag, weekend, week, borg, los], i) =>
   seedDoc('materiaal', id, {
     naam,
     categorie,
@@ -1037,6 +1043,9 @@ MATERIAAL.forEach(([id, naam, categorie, aantal, uitloop, perDag, weekend, week]
     prijsPerDag: perDag,
     prijsWeekend: weekend,
     prijsWeek: week,
+    waarborg: borg,
+    directTeHuren: los,
+    minDagen: 1,
     vervangwaarde: null,
     inkoopwaarde: null,
     leverancier: '',
@@ -1075,6 +1084,68 @@ RESERVATIES.forEach(([id, materiaalId, materiaalNaam, aantal, vanaf, tot, status
     createdAt: dag(-10),
     updatedAt: dag(-10),
   }))
+
+/*
+  Drie online afgerekende huren, één per stand die ertoe doet.
+
+  De derde staat op `nakijken`: daar kwam een ander bedrag binnen dan wij
+  berekend hadden. Dat hoort zichtbaar te zijn vóór de camion vertrekt, en
+  daarom staat het blok op het magazijnscherm en niet in een boekhoudmap.
+*/
+const HUURORDERS = [
+  ['ho-1', 'betaald', 'Lies Vandeputte', 'lies.vandeputte@telenet.be', 2, 4, [['m-statafel', 'Statafel zwart Ø 80', 10]], 0],
+  ['ho-2', 'wacht_op_betaling', 'Tom Smeets', 'tom@smeetsbvba.be', 12, 14, [['m-koeling', 'Koelkast glasdeur 380 l', 2]], 0],
+  ['ho-3', 'nakijken', 'Feestcomité Kortessem', 'feest@kortessem.be', 20, 22, [['m-verwarmer', 'Terrasverwarmer gas', 3]], 10],
+]
+HUURORDERS.forEach(([id, status, naam, email, vanaf, tot, stuks, korting]) => {
+  const dagen = tot - vanaf + 1
+  const regels = stuks.map(([materiaalId, materiaalNaam, aantal]) => {
+    const stuk = MATERIAAL.find((m) => m[0] === materiaalId)
+    const bruto = Math.round(aantal * dagen * stuk[5] * 100) / 100
+    const af = Math.round(bruto * (korting / 100) * 100) / 100
+    return {
+      materiaalId,
+      naam: materiaalNaam,
+      aantal,
+      dagen,
+      perStuk: dagen * stuk[5],
+      bruto,
+      korting: af,
+      netto: Math.round((bruto - af) * 100) / 100,
+      waarborg: (stuk[8] ?? 0) * aantal,
+      geenTarief: false,
+      opbouw: [],
+    }
+  })
+  const netto = Math.round(regels.reduce((s, r) => s + r.netto, 0) * 100) / 100
+  const btw = Math.round(netto * 0.21 * 100) / 100
+  const waarborg = regels.reduce((s, r) => s + r.waarborg, 0)
+  const teBetalen = Math.round((netto + btw + waarborg) * 100) / 100
+
+  seedDoc('huurorders', id, {
+    status,
+    van: dagsleutel(dag(vanaf)),
+    tot: dagsleutel(dag(tot)),
+    dagen,
+    klant: { naam, email, telefoon: '', opmerking: '' },
+    customerId: null,
+    customerName: null,
+    kortingPercent: korting,
+    regels,
+    exclBtw: netto,
+    btw,
+    inclBtw: Math.round((netto + btw) * 100) / 100,
+    waarborg,
+    teBetalen,
+    teBetalenCent: Math.round(teBetalen * 100),
+    reservatieIds: [],
+    sessionId: null,
+    betaaldOp: status === 'betaald' ? dag(-2) : null,
+    optieVervalt: status === 'wacht_op_betaling' ? dag(0) : null,
+    createdAt: dag(-3),
+    updatedAt: dag(-2),
+  })
+})
 
 seedDoc('config', 'kosten', {
   statuutTarief: { vast: 32, flexi: 18, student: 15, extern: 45 },

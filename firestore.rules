@@ -596,6 +596,19 @@ service cloud.firestore {
       allow read:  if isTeam();
       allow write: if false;
     }
+    /*
+      Online afgerekende verhuur.
+
+      Lezen mag het team — het magazijn moet zien wat er verkocht is. Schrijven
+      kan niemand: deze rijen komen uit `functions-betaling/`, dat met de
+      beheerdersrechten werkt en dus langs deze regels heen gaat. Zou de
+      browser hier mogen schrijven, dan kon iemand met de ontwikkelaarsconsole
+      zijn eigen order op "betaald" zetten.
+    */
+    match /huurorders/{id} {
+      allow read:  if isTeam();
+      allow write: if false;
+    }
 
     // Vaste formules (winter bbq aan 29,90 met hapjes, drank en dessert): het
     // team kiest er een bij een nieuw event, een beheerder bepaalt de prijs en

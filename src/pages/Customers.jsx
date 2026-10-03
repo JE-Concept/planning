@@ -345,6 +345,24 @@ function KlantPaneel({ id, onClose, toast }) {
           <Field label={t('klant.website')} className="sm:col-span-2">
             <Input defaultValue={klant.website} onBlur={(e) => zet({ website: e.target.value.trim() })} />
           </Field>
+          {/*
+            De korting staat hier en niet op de offerte, zodat dezelfde klant
+            hetzelfde bedrag ziet of hij nu belt of zelf op de verhuursite
+            afrekent. Alleen op materiaal: op catering is de marge te dun om er
+            een vast percentage af te halen.
+          */}
+          <Field label={t('klant.korting_materiaal')} hint={t('klant.korting_materiaal_hint')}>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              defaultValue={klant.kortingMateriaal ?? 0}
+              onBlur={(e) =>
+                zet({ kortingMateriaal: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) })
+              }
+            />
+          </Field>
         </section>
 
         <section className="grid gap-2 sm:grid-cols-4">

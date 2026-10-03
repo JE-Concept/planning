@@ -171,6 +171,23 @@ jobs:
             echo "::warning::Geheim SMTP_URL bestaat niet in dit project — er wordt niet gemaild, alleen gepusht."
           fi
 
+          # En nog eens hetzelfde voor het afrekenen. Stripe hangt aan twee
+          # geheimen — de API-sleutel en het ondertekeningsgeheim van het
+          # webhook-adres — en zonder allebei heeft uitrollen geen zin: een
+          # webhook zonder handtekeningcontrole zou erger zijn dan geen webhook.
+          #
+          # Ontbreekt er een, dan staat alleen de knop "online huren" stil. Het
+          # magazijn, de reservaties van eigen events en de rest van de tool
+          # merken er niets van, want die schrijven niet in `huurorders`.
+          if scripts/ci/geheim.sh STRIPE_SECRET "$PROJECT" \
+            && scripts/ci/geheim.sh STRIPE_WEBHOOK_SECRET "$PROJECT"; then
+            ( cd functions-betaling && npm install --no-audit --no-fund )
+            scripts/ci/deploy.sh "$PROJECT" --only functions:betaling \
+              || echo "::warning::Het afrekenen is niet uitgerold; de rest staat wel live."
+          else
+            echo "::warning::Stripe-geheimen ontbreken in dit project — online afrekenen staat uit, de rest draait."
+          fi
+
 
       - name: Basisgegevens
         if: inputs.seed && inputs.what != 'alleen de applicatie'

@@ -54,6 +54,18 @@ export const COL = {
   materiaal: 'materiaal',
   reservaties: 'reservaties',
   materiaalDag: 'materiaalDag',
+  /*
+    Een losse verhuur die online afgerekend wordt.
+
+    Aparte collectie en geen stand op de reservatie, want een order en een
+    reservatie zijn niet hetzelfde ding: één order legt meerdere stukken vast,
+    en de order blijft bestaan wanneer de reservaties weggaan omdat er niet
+    betaald is. Wat er met het geld gebeurde, hoort op één rij te staan.
+
+    Geschreven door `functions-betaling/`, nergens anders — zie
+    `firestore.rules`. De browser rekent niets af.
+  */
+  huurorders: 'huurorders',
   shifts: 'shifts',
   /*
     De planning uit AAPI staat naast `shifts` en niet erin. Dat rooster is met

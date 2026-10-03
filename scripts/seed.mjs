@@ -217,6 +217,8 @@ async function main() {
 
   await vulKlantveldenAan()
 
+  await vulVerhuurveldenAan()
+
   await zetArchiefstand()
 
   await seedFacturatieRegel()
@@ -378,10 +380,46 @@ async function vulKlantveldenAan() {
     const patch = {}
     if (data.billingAddress === undefined) patch.billingAddress = LEEG_ADRES
     if (data.billingEmail === undefined) patch.billingEmail = ''
+    // Zonder percentage rekent de verhuursite met nul korting. Dat klopt, maar
+    // het veld moet er wél staan: een scherm dat een leeg vak toont in plaats
+    // van een 0 nodigt uit om er iets in te typen dat er al hoorde te staan.
+    if (data.kortingMateriaal === undefined) patch.kortingMateriaal = 0
     if (Object.keys(patch).length === 0) continue
 
     await snap.ref.set({ ...patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
     aangevuld.push(`klant ${data.name ?? snap.id}: ${Object.keys(patch).join(', ')}`)
+  }
+}
+
+/**
+ * De nieuwe verhuurvelden op bestaand materiaal.
+ *
+ * ── Waarom dit niet "later wel" kan ──────────────────────────────────────
+ * Omdat Firestore een document niet vindt met `where('directTeHuren', '==',
+ * false)` zolang dat veld er niet op staat. De verhuursite vraagt straks om
+ * wat wél los te huren is, en een artikel zonder het veld zou daar niet in
+ * voorkomen — wat toevallig goed uitkomt — maar een vraag naar het
+ * tegenovergestelde zou een stuk missen dat er wel degelijk is. Eén keer
+ * recht zetten is goedkoper dan er elke query omheen schrijven.
+ *
+ * `false` en niet `true` als beginwaarde: niets gaat ongevraagd online.
+ * Aanvullend en herhaalbaar, net als `vulKlantveldenAan`.
+ */
+async function vulVerhuurveldenAan() {
+  const stukken = await db.collection('materiaal').get()
+
+  for (const snap of stukken.docs) {
+    const data = snap.data()
+    const patch = {}
+    if (data.directTeHuren === undefined) patch.directTeHuren = false
+    // Leeg en niet nul: geen waarborg en "nog niet ingevuld" zijn twee dingen,
+    // en `lib/huurprijs.js` rekent daar ook mee.
+    if (data.waarborg === undefined) patch.waarborg = null
+    if (data.minDagen === undefined) patch.minDagen = 1
+    if (Object.keys(patch).length === 0) continue
+
+    await snap.ref.set({ ...patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    aangevuld.push(`materiaal ${data.naam ?? snap.id}: ${Object.keys(patch).join(', ')}`)
   }
 }
 

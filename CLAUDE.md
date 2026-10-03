@@ -46,12 +46,27 @@ AAPI invoert. Ze mag nooit op planning lijken en nooit een shift worden.
   `tests/queries-indexen.test.js` (elke samengestelde query naast haar index),
   `tests/rollen.test.js` (`firestore.rules` naast `demo/regels.js`),
   `tests/taalbundels.test.js` (elk scherm naast zijn woordenlijsten),
-  `tests/archief.test.js` en `tests/aapi-grens.test.js`.
+  `tests/archief.test.js`, `tests/aapi-grens.test.js` en
+  `tests/betaalmotor.test.js` (de twee prijsmotoren en de twee
+  beschikbaarheidsmodules naast elkaar).
 
 ## Waar je op stuk loopt
 
-- **Drie aparte functies-codebases** (`functions`, `functions-meetings`,
-  `functions-mail`). Ze kunnen niets uit elkaar of uit `src/` importeren.
+- **Vier aparte functies-codebases** (`functions`, `functions-meetings`,
+  `functions-mail`, `functions-betaling`). Ze kunnen niets uit elkaar of uit
+  `src/` importeren.
+- **Een `defineSecret` hoort nooit in `functions/` (default).** Een
+  functions-uitrol faalt in zijn geheel op één ontbrekend geheim, en het
+  uitroldienstaccount heeft `roles/secretmanager.admin` nog altijd niet. Zet
+  je er een geheim bij, dan nemen de archieffuncties, de agendafeed, AAPI, het
+  portaal en het inloggen van de ploeg dat mee. Alles wat aan een geheim hangt
+  krijgt een **eigen codebase** plus een `scripts/ci/geheim.sh`-wacht met
+  `|| echo "::warning::..."` in `ci.yml` én `go-live.yml` — zoals `mail`,
+  `meetings` en `betaling`.
+- **Een bedrag dat uit de browser komt, is een wens.** De verhuursite stuurt
+  artikelnummers en aantallen; `functions-betaling/` zoekt de prijzen zelf op
+  en rekent zelf na. `src/lib/huurprijs.js` staat daarom letterlijk twee keer
+  op schijf; `tests/betaalmotor.test.js` eist dat de kopieën gelijk zijn.
 - **CI draait alleen `npm ci` in de wortel.** `functions/node_modules` bestaat
   daar niet. Een test die een bestand importeert dat `firebase-functions` of
   `firebase-admin` binnenhaalt, slaagt lokaal en faalt in CI. Reken erop dat

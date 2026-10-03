@@ -7,7 +7,8 @@ import PageHeader from '@components/layout/PageHeader'
 import { EmptyState, Spinner } from '@ui/index'
 import { useTaal } from '@context/TaalProvider'
 import { useAuth } from '@context/AuthProvider'
-import { useBezet, useMateriaal, useReservaties } from '@data/materiaal'
+import { useBezet, useHuurorders, useMateriaal, useReservaties } from '@data/materiaal'
+import ArtikelDialoog from '@components/materiaal/ArtikelDialoog'
 
 /**
  * Het magazijn: wat er is, en wanneer het vrij is.
@@ -34,6 +35,8 @@ export default function Materiaal() {
   const [start, setStart] = useState(() => dayKey(startOfDay()))
   const [dagen, setDagen] = useState(14)
   const [categorie, setCategorie] = useState('alle')
+  // `null` is dicht, `{}` is een nieuw artikel, een artikel is wijzigen.
+  const [bewerken, setBewerken] = useState(null)
 
   const eind = useMemo(() => dayKey(addDays(new Date(`${start}T12:00:00`), dagen - 1)), [start, dagen])
 
@@ -76,7 +79,7 @@ export default function Materiaal() {
         title={t('materiaal.titel')}
         actions={
           isAdmin ? (
-            <Button size="sm" iconLeft="plus" onClick={() => undefined} disabled>
+            <Button size="sm" iconLeft="plus" onClick={() => setBewerken({})}>
               {t('materiaal.toevoegen')}
             </Button>
           ) : null
@@ -177,10 +180,25 @@ export default function Materiaal() {
                     const rij = reeks(m, { van: start, dagen }, bezet.get(m.id))
                     return (
                       <div key={m.id} className="je-materiaal__rij">
-                        <span className="je-materiaal__naam">
-                          <span>{m.naam}</span>
+                        {/* De naam is de knop naar de fiche: een apart
+                            potloodje per rij zou in een kalender met veertig
+                            rijen veertig keer om aandacht vragen. */}
+                        <button
+                          type="button"
+                          className="je-materiaal__naam je-materiaal__naam--knop"
+                          onClick={() => isAdmin && setBewerken(m)}
+                          disabled={!isAdmin}
+                        >
+                          <span>
+                            {m.naam}
+                            {m.directTeHuren ? (
+                              <span className="je-materiaal__los" title={t('materiaal.los_uitleg')}>
+                                {t('materiaal.los')}
+                              </span>
+                            ) : null}
+                          </span>
                           <span className="je-muted-caption">{m.aantal}×</span>
-                        </span>
+                        </button>
                         {rij.map((d) => (
                           <span
                             key={d.dag}
@@ -208,8 +226,80 @@ export default function Materiaal() {
             </section>
           </>
         )}
+        {isAdmin ? <Huurorders /> : null}
       </div>
+
+      <ArtikelDialoog
+        open={bewerken !== null}
+        artikel={bewerken?.id ? bewerken : null}
+        categorieen={categorieen}
+        onClose={() => setBewerken(null)}
+      />
     </div>
+  )
+}
+
+/**
+ * Wat er online afgerekend is.
+ *
+ * ── Waarom dit op het magazijnscherm staat ────────────────────────────────
+ * Omdat het magazijn de gevolgen draagt. Een order die 's nachts binnenkomt,
+ * legt stukken vast die vrijdag klaar moeten staan, en de eerste die dat moet
+ * weten is wie de camion laadt — niet de boekhouding. De bedragen staan erbij
+ * omdat een order die op "nakijken" staat, iemand moet bellen.
+ */
+function Huurorders() {
+  const { t } = useTaal()
+  const { orders, laadt } = useHuurorders()
+
+  if (laadt || orders.length === 0) return null
+
+  return (
+    <section className="je-panel">
+      <div className="je-panel__head">
+        <span className="je-eyebrow">{t('huurorder.titel')}</span>
+        <span className="je-panel__sub">{t('huurorder.uitleg')}</span>
+      </div>
+      {orders.map((o) => (
+        <div key={o.id} className="je-resvrij">
+          <span className="je-resvrij__aantal">{euro(o.teBetalen)}</span>
+          <span className="je-resvrij__wie">
+            <span className="je-resvrij__naam">{o.klant?.naam || o.klant?.email || t('huurorder.onbekend')}</span>
+            <span className="je-resvrij__onder">
+              {t('huurorder.regel', {
+                stuks: (o.regels ?? []).map((r) => `${r.aantal}× ${r.naam}`).join(', ') || '—',
+                van: o.van,
+                tot: o.tot,
+              })}
+            </span>
+          </span>
+          <OrderStand stand={o.status} />
+        </div>
+      ))}
+    </section>
+  )
+}
+
+const euro = (n) => `€ ${(Number(n) || 0).toFixed(2).replace('.', ',')}`
+
+/*
+  Dezelfde standenreeks als bij een reservatie — zie Reservatiestand in het
+  design system. "Nakijken" is de enige die rood is: dat is een order waarvan
+  het betaalde bedrag niet klopt met wat wij berekenden, en daar moet iemand
+  naar kijken voor de camion vertrekt.
+*/
+function OrderStand({ stand }) {
+  const { t } = useTaal()
+  const klasse =
+    stand === 'betaald' ? 'vast'
+    : stand === 'wacht_op_betaling' ? 'optie'
+    : stand === 'nakijken' ? 'over'
+    : 'weg'
+  return (
+    <span className={`je-resv je-resv--${klasse}`}>
+      <span className="je-resv__dot" />
+      {t(`huurorder.stand.${stand ?? 'wacht_op_betaling'}`)}
+    </span>
   )
 }
 

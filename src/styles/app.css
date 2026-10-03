@@ -3574,6 +3574,75 @@ button.je-paneel-kaart:hover {
   margin-left: auto;
   white-space: nowrap;
 }
+/*
+  De naam is de knop naar de fiche. Een knop en geen rij met een onClick,
+  zodat hij met de tab-toets te bereiken is en een schermlezer hem aankondigt
+  als iets wat je kunt indrukken.
+*/
+.je-materiaal__naam--knop {
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  font: var(--type-body-sm);
+}
+.je-materiaal__naam--knop:disabled {
+  cursor: default;
+}
+.je-materiaal__naam--knop:not(:disabled):hover > span:first-child {
+  color: var(--accent);
+}
+/* Een los te huren stuk draagt dat zichtbaar: het staat op een openbare
+   pagina met een prijs erbij, en dat hoort niet te verrassen. */
+.je-materiaal__los {
+  margin-left: var(--space-2);
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font: var(--type-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/*
+  Het artikelformulier: twee kolommen, en op een telefoon één.
+
+  Geen `grid-template-columns: repeat(2, auto)` zoals de reservatieregel ooit
+  had — `auto`-kolommen kunnen niet krimpen en lopen dan buiten de dialoog.
+  Hier staat `minmax(0, 1fr)`, en dat is precies de reparatie die bij
+  `.je-resvrij` nodig was.
+*/
+.je-artikelvorm {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.je-artikelvorm__breed {
+  grid-column: 1 / -1;
+}
+.je-artikelvorm__los {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-4);
+}
+@media (max-width: 559px) {
+  .je-artikelvorm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /*
+    Op een telefoon is de naam een knop die met een duim geraakt moet worden,
+    en 22 pixels hoog is dat niet. De rij groeit mee — de kalendervakjes staan
+    er gecentreerd in, dus de balken blijven op één lijn. Alleen hier en niet
+    overal: op een scherm met veertig artikelen kost elke pixel rijhoogte
+    overzicht, en daar wijs je met een muis.
+  */
+  .je-materiaal__naam--knop {
+    min-height: 32px;
+  }
+}
 .je-materiaal__cel {
   height: 24px;
   border-radius: 2px;

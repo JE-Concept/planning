@@ -387,6 +387,11 @@ export default {
   'klant.email': { nl: 'E-mail', en: 'Email' },
   'klant.telefoon': { nl: 'Telefoon', en: 'Phone' },
   'klant.website': { nl: 'Website', en: 'Website' },
+  'klant.korting_materiaal': { nl: 'Korting verhuur (%)', en: 'Rental discount (%)' },
+  'klant.korting_materiaal_hint': {
+    nl: 'Geldt op verhuurmateriaal, ook wanneer deze klant zelf op de verhuursite afrekent. Niet op catering.',
+    en: 'Applies to rental equipment, including when this customer checks out on the rental site. Not to catering.',
+  },
   'klant.straat': { nl: 'Straat en nummer', en: 'Street and number' },
   'klant.postcode': { nl: 'Postcode', en: 'Postcode' },
   'klant.gemeente': { nl: 'Gemeente', en: 'Town' },

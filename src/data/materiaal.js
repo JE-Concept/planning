@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   deleteDoc,
   doc,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -154,6 +155,34 @@ export function useBezet(materiaal = [], reservatiesPerMateriaal, nu = undefined
   }, [materiaal, reservatiesPerMateriaal, nu])
 }
 
+/**
+ * De laatste online afgerekende huren.
+ *
+ * Alleen lezen: deze rijen komen uit `functions-betaling/` en de browser mag
+ * er niet aan — zie `firestore.rules`. Een beperkt aantal, want dit is een
+ * blok op een scherm en geen boekhouding; wat er met het geld gebeurde, staat
+ * bij Stripe en straks op de factuur.
+ */
+export function useHuurorders({ hoeveel = 12 } = {}) {
+  const [orders, setOrders] = useState([])
+  const [laadt, setLaadt] = useState(true)
+
+  useEffect(
+    () =>
+      onSnapshot(
+        query(col(COL.huurorders), orderBy('createdAt', 'desc'), limit(hoeveel)),
+        (snap) => {
+          setOrders(fromQuery(snap))
+          setLaadt(false)
+        },
+        () => setLaadt(false)
+      ),
+    [hoeveel]
+  )
+
+  return { orders, laadt }
+}
+
 // ─── Schrijven ──────────────────────────────────────────────────────────────
 
 export function maakMateriaal(velden) {
@@ -170,6 +199,20 @@ export function maakMateriaal(velden) {
     prijsPerDag: null,
     prijsWeekend: null,
     prijsWeek: null,
+    /*
+      Mag dit stuk zonder gesprek de deur uit?
+
+      Standaard niet, en dat is met opzet de veilige kant: een tent moet
+      geplaatst worden en een mobiele bar moet op een camion. Wie dit aanzet,
+      zegt "dit kan een vreemde zelf komen halen en zelf afrekenen" — en dan
+      doet de verhuursite dat ook, zonder dat er nog iemand naar kijkt.
+    */
+    directTeHuren: false,
+    // Wat de klant vooruitbetaalt en terugkrijgt. Staat buiten de btw en
+    // buiten de omzet — zie `lib/huurprijs.js`.
+    waarborg: null,
+    // Een glas voor één dag verhuren kost meer aan wassen dan het opbrengt.
+    minDagen: 1,
     vervangwaarde: null,
     // Intern. Gaat nooit mee in de publieke feed — zie `firestore.rules`.
     inkoopwaarde: null,

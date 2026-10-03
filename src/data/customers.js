@@ -170,6 +170,16 @@ export function createCustomer(data) {
     billingEmail: data.billingEmail ?? '',
     contacts: data.contacts ?? [],
     notes: data.notes ?? '',
+    /*
+      Vaste korting op verhuurmateriaal, in procent.
+
+      Alleen op materiaal en niet op catering: daar zit de marge al dun, en
+      een korting die overal geldt wordt stilletjes een verlies. Het staat op
+      de klant en niet op de offerte, zodat hetzelfde percentage geldt of hij
+      nu belt of zelf op de verhuursite afrekent — anders is het antwoord op
+      "wat kost dat" een ander naargelang wie het vraagt.
+    */
+    kortingMateriaal: Number(data.kortingMateriaal) || 0,
     brandId: data.brandId ?? null,
     archived: false,
     createdBy: doorWie(),

@@ -304,6 +304,44 @@ Wat met opzet **niet** naar de verhuursite gaat: de inkoopwaarde en de leveranci
 
 ---
 
+## Online afrekenen voor losse verhuur
+
+Een deel van het magazijn kan een klant zelf huren: statafels, koelkasten, terrasverwarmers — wat iemand met een bestelwagen komt halen. Een partytent niet, want die moet geplaatst worden. Dat onderscheid staat **per artikel** (`directTeHuren`) en niet per bedrag, want niet alles wat goedkoop is, is eenvoudig. Zonder dagprijs kan het vinkje niet aan: er valt dan niets af te rekenen.
+
+**De prijsstaffel heeft één regel die niemand verwacht: je betaalt nooit meer dan de eerstvolgende grotere staffel.** Zes dagen kost hoogstens een week, en een periode van drie dagen die in een weekend valt kost hoogstens het weekendtarief. De vanzelfsprekende som — dagen maal dagprijs — maakt zes dagen duurder dan zeven, en een klant die dat nareekent belt. Hij heeft gelijk. `src/lib/huurprijs.js` geeft daarom altijd de goedkoopste geldige combinatie, en in het artikelformulier staat een voorbeeldrij die laat zien wat 1, 3, 6 en 7 dagen kosten — zodat een verkeerd gezette weekprijs opvalt vóór ze online staat.
+
+**De waarborg staat buiten de btw en buiten de omzet.** Het is geld dat je vasthoudt en teruggeeft, geen opbrengst. Bij het factuurbedrag optellen is een boekhoudkundige fout die pas bij de afsluiting opvalt. In de afrekening staat hij wél, als aparte regel met de btw ernaast — tel je de regels op, dan staat er precies wat er van de kaart gaat.
+
+**De korting staat op de klant** (*Klanten → Korting verhuur*) en geldt alleen op materiaal; op catering is de marge te dun voor een vast percentage. Ze geldt ook wanneer die klant zelf op de verhuursite afrekent — anders is het antwoord op "wat kost dat" een ander naargelang wie het vraagt.
+
+> **Eén open rand, met opzet zo gelaten.** De korting wordt online opgezocht op het e-mailadres dat de bezoeker intikt, en dat adres is nog niet bewezen. Wie het adres van een klant met korting kent, krijgt diens percentage. Het gaat om vijf tot vijftien procent op een huur die in de backoffice zichtbaar binnenkomt, dus de schade is klein en zichtbaar — maar het is een gat. Het sluit zodra de verhuursite het klantenlogin uit het ontwerp krijgt. De andere keuze, online géén korting geven, levert een prijs op die niet klopt met wat aan de telefoon gezegd wordt, en dát merkt de klant wél.
+
+### Hoe het afrekenen loopt
+
+De betaalfuncties staan in een **vierde codebase**, `functions-betaling/`, om dezelfde reden als de mail en het overleg: ze hangen aan een geheim, en een functions-uitrol faalt in zijn geheel op één ontbrekend geheim. Stond Stripe bij de andere functies, dan nam een ontbrekende sleutel het archief, de agendafeed, AAPI, het portaal en het inloggen van de ploeg mee. Nu staat alleen de knop "online huren" stil, en zegt de uitrol dat ook.
+
+Twee geheimen, allebei nodig:
+
+```
+firebase functions:secrets:set STRIPE_SECRET --project je-planning
+firebase functions:secrets:set STRIPE_WEBHOOK_SECRET --project je-planning
+```
+
+De gang van zaken:
+
+1. De verhuursite stuurt **artikelnummers, aantallen en een periode** — geen bedragen.
+2. De server zoekt de prijzen zelf op, kijkt na of het past, en rekent zelf na. **Wat er uit de browser komt is een wens, geen bedrag.** Wie het formulier openzet in zijn browser kan elk veld veranderen dat meegestuurd wordt; zat de prijs daarbij, dan huurt iemand een tent voor één euro en heeft hij een geldig betaalbewijs.
+3. Het materiaal gaat meteen **in optie**, met een vervaldatum een halfuur later. Reserveren pas ná de betaling zou betekenen dat in die minuten iemand anders dezelfde laatste tent koopt — en dan hebben er twee betaald voor één.
+4. Stripe meldt de afloop via een webhook. Betaald → de optie wordt vast. Niet betaald → de optie vervalt, en de voorraad komt vanzelf terug.
+
+**De handtekening op de webhook is het halve verhaal.** Dat adres is openbaar; zonder controle kan iedereen die het kent een "betaald" posten voor een order die nooit betaald is. En een geldige handtekening zegt alleen dat Stripe het stuurde, niet dat het juiste bedrag binnenkwam — klopt het bedrag niet met wat wij berekenden, dan gaat de order naar **Nakijken** in plaats van door. Liever een telefoontje dan een stille fout in de boekhouding.
+
+**De kassa is strenger dan de backoffice, en dat is geen inconsistentie maar het punt.** In de backoffice mág je overboeken: je huurt bij of je belt de andere klant. Een vreemde op zijn telefoon kan geen van beide, dus daar is "te weinig" een weigering. Twee modules met opzet — `src/lib/voorraad.js` en `functions-betaling/vrij.js` — want het verschil zit niet in een instelling maar in wat het antwoord betekent. Wat wél gelijk moet blijven is het *tellen*, en `tests/betaalmotor.test.js` legt beide implementaties dezelfde gevallen voor. Die test heeft zich meteen terugbetaald: de serverversie liet een teruggebrachte tent zijn wasdag vallen en zou hem die dag verkocht hebben.
+
+De prijsmotor staat twee keer op schijf — `src/lib/huurprijs.js` en `functions-betaling/huurprijs.js` — omdat een Cloud Functions-codebase niets uit `src/` mag halen. Dezelfde test eist dat de twee bestanden **letterlijk gelijk** zijn. Pas je er een aan, kopieer dan; pas ze niet allebei aan.
+
+---
+
 ## Wat een event opbracht, en wat het kostte
 
 Van elk dossier stond vast wat het opbracht en van geen enkel wat het kostte. Daardoor was "verdient een BBQ van veertig personen eigenlijk iets" een gesprek over gevoel. Op de fiche staat nu, onder de velden, **Opbrengst en kosten**: het offertebedrag min de ploeg, de inkoop en de eigen uren, alles exclusief btw.

@@ -116,6 +116,9 @@ export const REGELS = {
   materiaal:      { lezen: isTeam, schrijven: isAdmin },
   reservaties:    { lezen: isTeam, schrijven: isMember },
   materiaalDag:   { lezen: isTeam, schrijven: () => false },
+  // Online afgerekende verhuur komt uit `functions-betaling/`; de browser
+  // schrijft hier niets, anders zet iemand zijn eigen order op betaald.
+  huurorders:     { lezen: isTeam, schrijven: () => false },
   formules:       { lezen: isTeam, schrijven: isAdmin },
   checklists:     { lezen: isBistro, schrijven: isAdmin },
   checklistRuns:  { lezen: isBistro, schrijven: isBistro },

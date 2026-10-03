@@ -88,4 +88,70 @@ export default {
   'eventmat.stand.uit': { nl: 'Uit', en: 'Out' },
   'eventmat.stand.terug': { nl: 'Terug', en: 'Back' },
   'eventmat.stand.geannuleerd': { nl: 'Afgezegd', en: 'Cancelled' },
+
+  // ─── Een artikel beheren ──────────────────────────────────────────────────
+  'materiaal.los': { nl: 'Los te huren', en: 'Instant rental' },
+  'materiaal.los_uitleg': {
+    nl: 'Dit stuk kan een klant zelf op de verhuursite reserveren en afrekenen.',
+    en: 'A customer can reserve and pay for this item themselves on the rental site.',
+  },
+
+  'artikel.nieuw': { nl: 'Nieuw artikel', en: 'New item' },
+  'artikel.wijzigen': { nl: 'Artikel wijzigen', en: 'Edit item' },
+  'artikel.naam': { nl: 'Naam', en: 'Name' },
+  'artikel.categorie': { nl: 'Categorie', en: 'Category' },
+  'artikel.categorie_plaats': { nl: 'Tenten, meubilair, koeling…', en: 'Tents, furniture, cooling…' },
+  'artikel.omschrijving': { nl: 'Omschrijving', en: 'Description' },
+  'artikel.aantal': { nl: 'Aantal in huis', en: 'Owned' },
+  'artikel.aantal_hint': { nl: 'Hoeveel stuks we er werkelijk hebben.', en: 'How many we actually own.' },
+  'artikel.per_dag': { nl: 'Per dag (€)', en: 'Per day (€)' },
+  'artikel.weekend': { nl: 'Weekend (€)', en: 'Weekend (€)' },
+  'artikel.weekend_hint': { nl: 'Vrijdag tot maandag.', en: 'Friday to Monday.' },
+  'artikel.week': { nl: 'Per week (€)', en: 'Per week (€)' },
+  'artikel.waarborg': { nl: 'Waarborg (€)', en: 'Deposit (€)' },
+  'artikel.waarborg_hint': {
+    nl: 'Wordt vooruitbetaald en teruggestort. Staat buiten de btw.',
+    en: 'Paid up front and refunded. Outside VAT.',
+  },
+  'artikel.leeg_is_geen_prijs': {
+    nl: 'Leeg laten betekent "geen tarief", niet "gratis".',
+    en: 'Leaving this empty means "no rate", not "free".',
+  },
+  'artikel.uitloop': { nl: 'Uitloopdagen', en: 'Turnaround days' },
+  'artikel.uitloop_hint': {
+    nl: 'Dagen na de huur waarop het stuk nog niet opnieuw kan: wassen, nakijken, terugrijden.',
+    en: 'Days after the hire when the item is not yet available again: washing, checking, return transport.',
+  },
+  'artikel.min_dagen': { nl: 'Minstens … dagen', en: 'Minimum days' },
+  'artikel.min_dagen_hint': {
+    nl: 'Korter verhuren kost meer aan behandeling dan het opbrengt.',
+    en: 'A shorter hire costs more in handling than it brings in.',
+  },
+  'artikel.vervangwaarde': { nl: 'Vervangwaarde (€)', en: 'Replacement value (€)' },
+  'artikel.vervangwaarde_hint': {
+    nl: 'Wat een nieuw stuk kost. Nodig bij schade en voor de verzekering.',
+    en: 'What a new one costs. Needed for damage and insurance.',
+  },
+  'artikel.direct': { nl: 'Mag zonder offerte gehuurd worden', en: 'Can be rented without a quote' },
+  'artikel.direct_uitleg': {
+    nl: 'Het stuk komt op de verhuursite te staan en een klant kan het zelf reserveren en betalen. Zet dit alleen aan voor wat iemand zelf kan komen halen.',
+    en: 'The item appears on the rental site and a customer can reserve and pay for it themselves. Only switch this on for what someone can collect themselves.',
+  },
+  'artikel.direct_geen_prijs': {
+    nl: 'Kan pas met een dagprijs: zonder tarief valt er niets af te rekenen.',
+    en: 'Needs a daily rate first: without one there is nothing to charge.',
+  },
+  'artikel.voorbeeld': { nl: 'Wat een klant zou betalen —', en: 'What a customer would pay —' },
+  'artikel.voorbeeld_dagen': { nl: '{aantal} d.', en: '{aantal} d.' },
+  'artikel.mislukt': { nl: 'Het artikel is niet bewaard.', en: 'The item was not saved.' },
+
+  // ─── Online afgerekende verhuur ───────────────────────────────────────────
+  'huurorder.titel': { nl: 'Online afgerekend', en: 'Paid online' },
+  'huurorder.uitleg': { nl: 'De laatste huren van de verhuursite', en: 'The latest hires from the rental site' },
+  'huurorder.onbekend': { nl: 'Zonder naam', en: 'No name' },
+  'huurorder.regel': { nl: '{stuks} · {van} tot {tot}', en: '{stuks} · {van} to {tot}' },
+  'huurorder.stand.wacht_op_betaling': { nl: 'Wacht op betaling', en: 'Awaiting payment' },
+  'huurorder.stand.betaald': { nl: 'Betaald', en: 'Paid' },
+  'huurorder.stand.vervallen': { nl: 'Vervallen', en: 'Expired' },
+  'huurorder.stand.nakijken': { nl: 'Nakijken', en: 'Needs checking' },
 }

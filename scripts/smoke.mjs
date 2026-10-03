@@ -1231,6 +1231,69 @@ await test('het magazijn toont per dag wat vrij is, en meldt een overboeking', a
   await page.close()
 })
 
+await test('het magazijn toont wat online afgerekend is, met de standen erbij', async () => {
+  const page = await tabblad('/materiaal')
+  const tekst = await inhoud(page)
+
+  zouden(bevat(tekst, 'Online afgerekend'), 'het blok met huurorders staat er niet')
+  zouden(bevat(tekst, 'Lies Vandeputte'), 'de betaalde huur staat er niet')
+
+  /*
+    De derde order kreeg een ander bedrag binnen dan wij berekend hadden. Dat
+    is de enige stand die rood is, en hij hoort op het magazijnscherm te staan
+    omdat iemand moet bellen vóór de camion vertrekt.
+  */
+  zouden(bevat(tekst, 'Nakijken'), 'een order met een afwijkend bedrag wordt niet als nakijken getoond')
+  zouden(bevat(tekst, 'Wacht op betaling'), 'een lopende afrekening staat er niet bij')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een artikel wijzigen toont de staffel en weigert los verhuur zonder prijs', async () => {
+  const page = await tabblad('/materiaal')
+
+  // De naam is de knop naar de fiche — zie `.je-materiaal__naam--knop`.
+  await page.getByRole('button', { name: /Mobiele bar Vue/ }).first().click()
+  await page.waitForTimeout(300)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Artikel wijzigen'), `de dialoog gaat niet open: ${tekst.slice(0, 200)}`)
+  zouden(bevat(tekst, 'Waarborg'), 'het waarborgveld staat er niet')
+  zouden(bevat(tekst, 'Mag zonder offerte gehuurd worden'), 'het vinkje voor losse verhuur staat er niet')
+
+  /*
+    De mobiele bar heeft een dagprijs maar staat in de demo niet op "los te
+    huren" — ze moet geplaatst worden. Het vinkje hoort dus aan te staan als
+    keuze, en de uitleg eronder hoort te zeggen wat het betekent.
+  */
+  /*
+    Het label aanklikken en niet het invoerveld: `.je-choice__native` is nul bij
+    nul pixels groot met `opacity: 0` — het vakje dat je ziet, is een span. Een
+    `check()` op het invoerveld wacht dan tot de tijd om is.
+  */
+  const keuze = page.locator('label.je-choice').filter({ hasText: 'Mag zonder offerte gehuurd worden' }).first()
+  const vinkje = keuze.locator('input[type=checkbox]')
+  zouden(!(await vinkje.isDisabled()), 'het vinkje staat op slot terwijl er een dagprijs is')
+  zouden(!(await vinkje.isChecked()), 'de mobiele bar staat ten onrechte als los te huren')
+
+  await keuze.click()
+  await page.waitForTimeout(300)
+  zouden(await vinkje.isChecked(), 'het vinkje gaat niet aan')
+
+  /*
+    En dan de staffel, het hele punt van dit voorbeeld: zes dagen mogen niet
+    duurder zijn dan een week. Met 185 per dag en 650 per week is dat 1110
+    tegen 650 — en wat er moet staan is 650.
+  */
+  const na = await inhoud(page)
+  zouden(bevat(na, 'Wat een klant zou betalen'), `het prijsvoorbeeld staat er niet: ${na.slice(0, 300)}`)
+  zouden(bevat(na, '650,00'), `zes dagen worden niet afgetopt op de weekprijs: ${na.slice(0, 400)}`)
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de marge van een event rekent, en zegt wat ze mist', async () => {
   const page = await tabblad('/events/t-trouw')
   const tekst = await inhoud(page)

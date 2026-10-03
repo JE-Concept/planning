@@ -310,6 +310,11 @@ const ONGEBRUIKT = [
   'socialPosts: brandId,scheduledAt', // de kalender haalt alle merken op en splitst in de browser
   'socialPosts: status,scheduledAt', // geen scherm filtert posts op status
   'auditLog: soort,actorId,at', // useLogboek laat die twee filters bewust niet samengaan
+  // Deze is niet van de app maar van `functions-betaling/`: de ronde die
+  // verlopen huuropties opruimt, vraagt om stand én vervaldatum. Hij staat
+  // hier omdat deze test alleen in `src/data/` kijkt — een index die alleen
+  // een functie gebruikt, lijkt daar ongebruikt.
+  'huurorders: status,optieVervalt',
 ]
 
 const omschrijf = (index) =>
@@ -375,7 +380,7 @@ describe('nieuwe queries', () => {
     zijn eigen veldindexen. Daarom staan ze wel hier en niet in de tabel
     hierboven.
   */
-  const QUERIES_IN_DE_APP = 77
+  const QUERIES_IN_DE_APP = 78
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [
