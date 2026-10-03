@@ -28,7 +28,8 @@
     "test:rules": "npx --yes firebase-tools@13 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules.test.js\"",
     "build:verhuur": "vite build --config vite.verhuur.config.js",
     "dev:verhuur": "vite --config vite.verhuur.config.js",
-    "smoke:verhuur": "npm run build:verhuur && node scripts/verhuur-smoke.mjs"
+    "smoke:verhuur": "npm run build:verhuur && node scripts/verhuur-smoke.mjs",
+    "build:verhuur:demo": "vite build --config vite.verhuur.config.js --mode demo && node scripts/verhuur-preview.mjs"
   },
   "dependencies": {
     "firebase": "^11.0.2",

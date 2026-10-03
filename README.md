@@ -386,6 +386,8 @@ Gemeten, niet beweerd — `npm run smoke:verhuur` drukt het af bij elke run: eer
 
 Wat er nog te halen valt: de 30 kB stijlen van het design system, waarvan de site het meeste niet gebruikt. Bewust gelaten — een gesnoeide kopie is precies het soort kopie dat verloopt.
 
+**Een preview om op te commenten** maak je met `npm run build:verhuur:demo`: dezelfde bundel, met `verhuur/src/lib/api.demo.js` in de plaats van de echte `/api` — zes artikelen, bezette dagen, een ingelogde klant (`/#/login/demo`) met twee huren en 10% korting, en een afrekening die niet naar Stripe gaat. Hekje-routes en relatieve paden, zodat het als artifact onder een willekeurig pad werkt. Het is de echte site tegen een nagebootste server, niet een tekening ervan.
+
 `npm run smoke:verhuur` loopt de site door zoals een klant dat doet — catalogus, artikel, mand, afrekenen, de aanvraag — met een nagebouwde `/api` die precies de vorm teruggeeft die de functies geven, want die vorm is het contract. De laatste vijf tests doen hetzelfde op 390 pixels: deze site wordt vaker in een tuin op een telefoon geopend dan achter een bureau.
 
 ---

@@ -24,17 +24,25 @@ const resolve = (p) => fileURLToPath(new URL(p, import.meta.url))
  * Firebase staat met opzet niet in deze bundel. Deze site praat met één
  * HTTP-adres en kent geen projectsleutel — zie `verhuur/src/lib/api.js`.
  */
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: resolve('./verhuur'),
   plugins: [react()],
+  /*
+    Modus `demo`: de preview die als artifact gepubliceerd wordt. Relatieve
+    paden (het artifact staat niet op de wortel van een domein), en
+    `api.js` wordt vervangen door `api.demo.js` — dezelfde bundel, met een
+    nagebootste server in de browser. Zie dat bestand.
+  */
+  base: mode === 'demo' ? './' : '/',
   resolve: {
-    alias: {
-      '@styles': resolve('./src/styles'),
-      '@lib': resolve('./src/lib'),
-    },
+    alias: [
+      { find: '@styles', replacement: resolve('./src/styles') },
+      { find: '@lib', replacement: resolve('./src/lib') },
+      ...(mode === 'demo' ? [{ find: /^(\.\.?\/)+lib\/api$/, replacement: resolve('./verhuur/src/lib/api.demo.js') }] : []),
+    ],
   },
   build: {
-    outDir: resolve('./dist-verhuur'),
+    outDir: resolve(mode === 'demo' ? './dist-verhuur-demo' : './dist-verhuur'),
     emptyOutDir: true,
     // Een etalage hoort snel te zijn op een telefoon aan de rand van een
     // weiland. Alles in één brok is hier sneller dan slim splitsen: de site is
@@ -42,4 +50,4 @@ export default defineConfig({
     chunkSizeWarningLimit: 300,
   },
   server: { port: 5174 },
-})
+}))
