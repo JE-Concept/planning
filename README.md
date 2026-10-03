@@ -282,6 +282,20 @@ De stand kies je op de fiche en ze komt terug op het bord, in de lijst, op het d
 
 ---
 
+## Personeel komt uit AAPI, en alleen daaruit
+
+**Beschikbaarheid, contracten, statuten, Dimona, arbeidsuren en loon horen in AAPI.** JE Plan leest die gegevens en toont ze; het schrijft ze niet, rekent ze niet opnieuw uit en biedt er geen eigen invulscherm voor.
+
+Dat is een harde regel en geen voorkeur. Twee bronnen voor dezelfde vraag betekent dat er een dag komt waarop ze verschillen, en dan is niet meer te zeggen wie gelijk had. Bij een planningsconflict kost dat een misverstand; bij een contract of een Dimona-aangifte kost het een boete, en dan staat er in twee systemen iets anders over wat iemand gewerkt heeft.
+
+In de code: `aapiShifts`, `aapiEmployees`, `aapiImportRuns` en `aapiImportQueue` staan op `allow write: if false` — schrijven doet alleen de import, server-side. Er komt geen collectie voor beschikbaarheid, contracten, uurroosters, Dimona of loon bij. `tests/aapi-grens.test.js` bewaakt allebei, en `CLAUDE.md` legt uit waarom, zodat de volgende die het handig vindt eerst de reden leest.
+
+Wat JE Plan wél doet: tonen wie er volgens AAPI gepland staat, daar een event aan koppelen (via een functie, met wie het koppelde in het log), en de **loonkost van een event ramen** op basis van wat AAPI zegt. Ramen is niet vastleggen — de marge hieronder is een planningscijfer, geen loonstaat.
+
+De tijdsregistratie in JE Plan gaat over *waar* iemand aan gewerkt heeft — welk event, welke taak. Dat is een planningsgegeven, geen prestatiestaat, en het wordt niet naar AAPI geschreven.
+
+---
+
 ## De locatie van een event
 
 Het locatieveld is een tekstveld met Google Maps eronder. Typen mag altijd — "bij de klant thuis" en "nog te bepalen" zijn geldige antwoorden — maar wie een echt adres kiest, koppelt de plek eraan vast. Naast de tekst komen dan `locationPlaceId`, `locationLat` en `locationLng` op het event te staan, en opent de knop *Op de kaart* exact die zaal in plaats van de eerste met dezelfde naam. Typt iemand de tekst daarna met de hand over, dan gaan die drie mee weg: coördinaten die niet meer bij de tekst horen, sturen het team naar het verkeerde adres.

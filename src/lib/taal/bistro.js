@@ -88,4 +88,72 @@ export default {
   'rapport.afdrukken': { nl: 'Afdrukken of PDF', en: 'Print or PDF' },
   'rapport.leeg_titel': { nl: 'Nog niets te tonen', en: 'Nothing to show yet' },
   'rapport.leeg_tekst': { nl: 'Deze maand is nog niet begonnen.', en: 'This month has not started yet.' },
+
+  /*
+    Het maandverslag van de registraties.
+
+    Het scherm volgt de taal; de CSV-export niet. Die staat in vaste
+    Nederlandse kolomkoppen (zie `naarCsv` in `lib/checklist-report.js`), want
+    twee exports van dezelfde maand horen hetzelfde bestand te zijn — en een
+    FAVV-controleur leest Nederlands. Hetzelfde geldt voor de kop die alleen
+    op papier staat.
+  */
+  'rapport.eyebrow': { nl: 'Registraties', en: 'Records' },
+  'rapport.ondertitel': {
+    nl: 'Wat er afgevinkt is, door wie, en wat er gemeten werd.',
+    en: 'What was ticked off, by whom, and what was measured.',
+  },
+
+  'rapport.vak.afgevinkt': { nl: 'Afgevinkt', en: 'Ticked off' },
+  'rapport.vak.punten': { nl: '{gedaan} van {totaal} punten', en: '{gedaan} of {totaal} items' },
+  'rapport.vak.volledige_dagen': { nl: 'Volledige dagen', en: 'Complete days' },
+  'rapport.vak.alles_afgevinkt': { nl: 'alles afgevinkt', en: 'everything ticked off' },
+  'rapport.vak.overschrijdingen': { nl: 'Overschrijdingen', en: 'Out of range' },
+  'rapport.vak.buiten': { nl: 'buiten de grens', en: 'outside the limit' },
+  'rapport.vak.binnen': { nl: 'alles binnen de grens', en: 'everything within the limit' },
+
+  'rapport.buiten.titel': { nl: 'Metingen buiten de grens', en: 'Readings outside the limit' },
+  'rapport.kol.datum': { nl: 'Datum', en: 'Date' },
+  'rapport.kol.wat': { nl: 'Wat', en: 'What' },
+  'rapport.kol.gemeten': { nl: 'Gemeten', en: 'Measured' },
+  'rapport.kol.grens': { nl: 'Grens', en: 'Limit' },
+  'rapport.kol.ingevuld_door': { nl: 'Ingevuld door', en: 'Entered by' },
+  'rapport.kol.lijst': { nl: 'Lijst', en: 'List' },
+  'rapport.kol.afgevinkt': { nl: 'Afgevinkt', en: 'Ticked off' },
+  'rapport.kol.afgerond_door': { nl: 'Afgerond door', en: 'Completed by' },
+  'rapport.kol.open': { nl: 'Wat open bleef', en: 'What was left open' },
+  'rapport.grens.max': { nl: 'max', en: 'max' },
+  'rapport.grens.min': { nl: 'min', en: 'min' },
+
+  'rapport.dag.titel': { nl: 'Dag per dag', en: 'Day by day' },
+  'rapport.dagen_een': { nl: '{aantal} dag', en: '{aantal} day' },
+  'rapport.dagen_meer': { nl: '{aantal} dagen', en: '{aantal} days' },
+  'rapport.om': { nl: 'om {tijd}', en: 'at {tijd}' },
+  'rapport.niet_afgerond': { nl: 'niet afgerond', en: 'not completed' },
+  'rapport.niet_begonnen': { nl: 'niet begonnen', en: 'not started' },
+  'rapport.niets_afgevinkt': { nl: 'niets afgevinkt', en: 'nothing ticked off' },
+
+  'rapport.grafiek.samenvatting': {
+    nl: '{aantal} metingen · laagste {min} {eenheid} · hoogste {max} {eenheid}',
+    en: '{aantal} readings · lowest {min} {eenheid} · highest {max} {eenheid}',
+  },
+  'rapport.grafiek.aria': { nl: '{label} per dag', en: '{label} per day' },
+  'rapport.grafiek.grens': { nl: 'grens {waarde} {eenheid}', en: 'limit {waarde} {eenheid}' },
+  'rapport.grafiek.gaten': {
+    nl: 'Op {zonder} van de {totaal} dagen is er niets gemeten.',
+    en: 'On {zonder} of the {totaal} days nothing was measured.',
+  },
+
+  'rapport.voet': {
+    nl: 'Dit verslag komt rechtstreeks uit de afvinklijsten van JE Plan. Elk vinkje draagt de naam van wie het zette en het tijdstip; de gemeten waarden staan zoals ze ingevuld zijn.',
+    en: 'This report comes straight from the JE Plan checklists. Every tick carries the name of whoever set it and the time; the measured values are shown as they were entered.',
+  },
+  'rapport.voet_admin': {
+    nl: 'De lijsten zelf zijn aan te passen in Instellingen → Dagelijkse lijsten.',
+    en: 'The lists themselves can be changed under Settings → Daily lists.',
+  },
+  'rapport.csv_blijft_nl': {
+    nl: 'De CSV-export staat altijd in het Nederlands: dezelfde maand hoort altijd hetzelfde bestand te geven.',
+    en: 'The CSV export is always in Dutch: the same month should always produce the same file.',
+  },
 }

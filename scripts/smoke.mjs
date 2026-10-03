@@ -159,16 +159,19 @@ await test('een verdwenen pagina geeft geen wit scherm maar een uitleg', async (
   const page = await tabblad('/')
   verdwenen.add('/assets/Goals-')
 
-  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Tasks/ }).first().click()
-  await page.getByRole('link', { name: 'Goals', exact: true }).first().click()
-  await page.waitForTimeout(2500)
+  // Vrijgeven in een `finally`; zie de volgende test voor waarom.
+  try {
+    await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Tasks/ }).first().click()
+    await page.getByRole('link', { name: 'Goals', exact: true }).first().click()
+    await page.waitForTimeout(2500)
 
-  const tekst = await inhoud(page)
-  zouden(tekst.length > 40, 'het scherm is wit geworden')
-  zouden(tekst.includes('opnieuw laden'), `geen uitleg, wel: ${tekst.slice(0, 80)}`)
-  zouden(tekst.includes('Tasks'), 'de zijbalk is verdwenen; je kunt nergens heen')
-
-  verdwenen.delete('/assets/Goals-')
+    const tekst = await inhoud(page)
+    zouden(tekst.length > 40, 'het scherm is wit geworden')
+    zouden(tekst.includes('opnieuw laden'), `geen uitleg, wel: ${tekst.slice(0, 80)}`)
+    zouden(tekst.includes('Tasks'), 'de zijbalk is verdwenen; je kunt nergens heen')
+  } finally {
+    verdwenen.delete('/assets/Goals-')
+  }
   await page.close()
 })
 
@@ -183,19 +186,39 @@ await test('een kapotte pagina laat de rest van de tool staan', async () => {
   const page = await tabblad('/')
   verdwenen.add('/assets/TimeTracking-')
 
-  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Team/ }).first().click()
-  await page.getByRole('link', { name: 'Uren' }).first().click()
-  await page.waitForTimeout(2200)
-  zouden((await inhoud(page)).includes('opnieuw laden'), 'geen uitleg na de fout')
+  /*
+    De brok weer vrijgeven hoort in een `finally`.
 
-  // En je kunt gewoon verder: een andere pagina hoort de melding weg te halen.
-  await page.getByRole('link', { name: /^Tasks/ }).first().click()
-  await page.waitForTimeout(1200)
-  const tekst = await inhoud(page)
-  zouden(!tekst.includes('opnieuw laden'), 'de foutmelding bleef staan na het wegklikken')
-  zouden(tekst.includes('Te laat') || tekst.includes('Vandaag'), 'Tasks opende niet')
+    Zonder dat bleef ze geblokkeerd zodra een assertie hieronder omviel, en
+    dan faalden alle tests erna op een pagina die in werkelijkheid niets
+    mankeert. Eén echte fout werd zo drie meldingen, en de tweede en derde
+    wezen de verkeerde kant op.
+  */
+  try {
+    await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Team/ }).first().click()
+    await page.getByRole('link', { name: 'Uren' }).first().click()
+    await page.waitForTimeout(2200)
+    zouden((await inhoud(page)).includes('opnieuw laden'), 'geen uitleg na de fout')
 
-  verdwenen.delete('/assets/TimeTracking-')
+    // En je kunt gewoon verder: een andere pagina hoort de melding weg te halen.
+    await page.getByRole('link', { name: /^Tasks/ }).first().click()
+    await page.waitForTimeout(1200)
+    const tekst = await inhoud(page)
+    zouden(!tekst.includes('opnieuw laden'), 'de foutmelding bleef staan na het wegklikken')
+    /*
+      Op het meubilair van de pagina en niet op haar inhoud.
+
+      Hier stond "Te laat of Vandaag". Dat zijn deadlinegroepen, en in welke
+      groep een demotaak valt hangt af van de echte datum van vandaag tegenover
+      de vaste datum waarop de demo geseed is. Die test viel dus vanzelf om op
+      een ochtend waarop niemand iets veranderd had — precies het soort rode
+      test waar je naar leert kijken zonder te kijken.
+    */
+    zouden(bevat(tekst, 'Nieuwe taak'), 'Tasks opende niet')
+    zouden(bevat(tekst, 'Mijn taken'), 'Tasks opende niet volledig')
+  } finally {
+    verdwenen.delete('/assets/TimeTracking-')
+  }
   await page.close()
 })
 

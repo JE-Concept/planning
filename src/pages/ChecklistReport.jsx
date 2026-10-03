@@ -69,11 +69,9 @@ export default function ChecklistReport() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }} className="je-report">
       <PageHeader
-        // Kop en ondertitel horen bij het document: de afdrukstijl laat ze staan
-        // en verbergt alleen de knoppen ernaast. Dus Nederlands, in beide talen.
-        eyebrow="Registraties"
+        eyebrow={t('rapport.eyebrow')}
         title={formatMonth(maand)}
-        subtitle="Wat er afgevinkt is, door wie, en wat er gemeten werd."
+        subtitle={t('rapport.ondertitel')}
         actions={
           <>
             <Button
@@ -107,7 +105,13 @@ export default function ChecklistReport() {
       />
 
       <div className="je-pagebody">
-        {/* Alleen op papier: een blad zonder kop zegt niet waarover het gaat. */}
+        {/*
+          Alleen op papier: een blad zonder kop zegt niet waarover het gaat.
+
+          Deze twee regels blijven Nederlands in beide talen. Ze staan nooit op
+          het scherm — de afdrukstijl haalt ze tevoorschijn — en ze zijn de kop
+          van het blad dat bij een FAVV-controle op tafel ligt.
+        */}
         <div className="je-report__kop">
           <strong>JE Concept — registraties {formatMonth(maand)}</strong>
           <span>Afgedrukt op {formatDate(new Date())}</span>
@@ -121,15 +125,26 @@ export default function ChecklistReport() {
           <EmptyState title={t('rapport.leeg_titel')} description={t('rapport.leeg_tekst')} />
         ) : (
           <>
-            {/* Vanaf hier is alles document en niets scherm: vaste Nederlandse
-                tekst, zodat dezelfde maand altijd hetzelfde blad oplevert. */}
+            {/*
+              Het scherm volgt de taal; het bestand dat je downloadt niet. De
+              CSV houdt vaste Nederlandse kolomkoppen, want twee exports van
+              dezelfde maand horen hetzelfde bestand te zijn — zie `naarCsv`.
+            */}
             <div className="je-dash__cijfers">
-              <Vak label="Afgevinkt" waarde={`${Math.round(verslag.ratio * 100)}%`} onder={`${verslag.gedaan} van ${verslag.verplicht} punten`} />
-              <Vak label="Volledige dagen" waarde={`${verslag.volledigeDagen}/${verslag.dagenMetWerk}`} onder="alles afgevinkt" />
               <Vak
-                label="Overschrijdingen"
+                label={t('rapport.vak.afgevinkt')}
+                waarde={`${Math.round(verslag.ratio * 100)}%`}
+                onder={t('rapport.vak.punten', { gedaan: verslag.gedaan, totaal: verslag.verplicht })}
+              />
+              <Vak
+                label={t('rapport.vak.volledige_dagen')}
+                waarde={`${verslag.volledigeDagen}/${verslag.dagenMetWerk}`}
+                onder={t('rapport.vak.alles_afgevinkt')}
+              />
+              <Vak
+                label={t('rapport.vak.overschrijdingen')}
                 waarde={verslag.overschrijdingen.length}
-                onder={verslag.overschrijdingen.length ? 'buiten de grens' : 'alles binnen de grens'}
+                onder={verslag.overschrijdingen.length ? t('rapport.vak.buiten') : t('rapport.vak.binnen')}
                 slecht={verslag.overschrijdingen.length > 0}
               />
             </div>
@@ -138,17 +153,17 @@ export default function ChecklistReport() {
               <section className="je-panel je-report__blok">
                 <div className="je-panel__head" style={{ padding: 'var(--space-4) var(--space-5)' }}>
                   <span className="je-eyebrow" style={{ color: 'var(--danger)' }}>
-                    Metingen buiten de grens
+                    {t('rapport.buiten.titel')}
                   </span>
                 </div>
                 <table className="je-table">
                   <thead>
                     <tr>
-                      <th>Datum</th>
-                      <th>Wat</th>
-                      <th>Gemeten</th>
-                      <th>Grens</th>
-                      <th>Ingevuld door</th>
+                      <th>{t('rapport.kol.datum')}</th>
+                      <th>{t('rapport.kol.wat')}</th>
+                      <th>{t('rapport.kol.gemeten')}</th>
+                      <th>{t('rapport.kol.grens')}</th>
+                      <th>{t('rapport.kol.ingevuld_door')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -160,7 +175,7 @@ export default function ChecklistReport() {
                           {o.waarde} {o.eenheid}
                         </td>
                         <td>
-                          {o.richting === 'boven' ? 'max' : 'min'} {o.grens} {o.eenheid}
+                          {o.richting === 'boven' ? t('rapport.grens.max') : t('rapport.grens.min')} {o.grens} {o.eenheid}
                         </td>
                         <td>{o.door ?? '—'}</td>
                       </tr>
@@ -176,17 +191,17 @@ export default function ChecklistReport() {
 
             <section className="je-panel je-report__blok">
               <div className="je-panel__head" style={{ padding: 'var(--space-4) var(--space-5)' }}>
-                <span className="je-eyebrow">Dag per dag</span>
-                <span className="je-panel__right">{verslag.dagen.length} dagen</span>
+                <span className="je-eyebrow">{t('rapport.dag.titel')}</span>
+                <span className="je-panel__right">{t('rapport.dagen', { aantal: verslag.dagen.length })}</span>
               </div>
               <table className="je-table">
                 <thead>
                   <tr>
-                    <th>Datum</th>
-                    <th>Lijst</th>
-                    <th>Afgevinkt</th>
-                    <th>Afgerond door</th>
-                    <th>Wat open bleef</th>
+                    <th>{t('rapport.kol.datum')}</th>
+                    <th>{t('rapport.kol.lijst')}</th>
+                    <th>{t('rapport.kol.afgevinkt')}</th>
+                    <th>{t('rapport.kol.afgerond_door')}</th>
+                    <th>{t('rapport.kol.open')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -200,10 +215,15 @@ export default function ChecklistReport() {
                         </td>
                         <td>
                           {lijst.afgerondDoor
-                            ? `${lijst.afgerondDoor}${lijst.afgerondOm ? ` om ${formatTime(lijst.afgerondOm)}` : ''}`
+                            ? [
+                                lijst.afgerondDoor,
+                                lijst.afgerondOm ? t('rapport.om', { tijd: formatTime(lijst.afgerondOm) }) : null,
+                              ]
+                                .filter(Boolean)
+                                .join(' ')
                             : lijst.begonnen
-                              ? 'niet afgerond'
-                              : 'niet begonnen'}
+                              ? t('rapport.niet_afgerond')
+                              : t('rapport.niet_begonnen')}
                         </td>
                         {/*
                           Een dag die niet begonnen is, alle punten laten
@@ -218,7 +238,7 @@ export default function ChecklistReport() {
                           {lijst.ontbreekt.length === 0 ? (
                             '—'
                           ) : !lijst.begonnen ? (
-                            <em>niets afgevinkt</em>
+                            <em>{t('rapport.niets_afgevinkt')}</em>
                           ) : (
                             <span className="je-report__kort">
                               {lijst.ontbreekt.map((p) => p.label).join(', ')}
@@ -233,9 +253,8 @@ export default function ChecklistReport() {
             </section>
 
             <p className="je-report__voet">
-              Dit verslag komt rechtstreeks uit de afvinklijsten van JE Plan. Elk vinkje draagt de naam van
-              wie het zette en het tijdstip; de gemeten waarden staan zoals ze ingevuld zijn.
-              {isAdmin ? ' De lijsten zelf zijn aan te passen in Instellingen → Dagelijkse lijsten.' : ''}
+              {t('rapport.voet')}
+              {isAdmin ? ` ${t('rapport.voet_admin')}` : ''} {t('rapport.csv_blijft_nl')}
             </p>
           </>
         )}
@@ -268,6 +287,7 @@ function Vak({ label, waarde, onder, slecht }) {
  * met gaten tonen als een maand waarin elke dag gemeten is.
  */
 function Grafiek({ reeks }) {
+  const { t } = useTaal()
   const B = 640
   const H = 150
   const marge = { links: 40, rechts: 12, boven: 12, onder: 20 }
@@ -310,11 +330,21 @@ function Grafiek({ reeks }) {
       <div className="je-panel__head" style={{ padding: 'var(--space-4) var(--space-5)' }}>
         <span className="je-eyebrow">{reeks.label}</span>
         <span className="je-panel__right">
-          {reeks.aantal} metingen · laagste {reeks.min} {reeks.eenheid} · hoogste {reeks.max} {reeks.eenheid}
+          {t('rapport.grafiek.samenvatting', {
+            aantal: reeks.aantal,
+            min: reeks.min,
+            max: reeks.max,
+            eenheid: reeks.eenheid,
+          })}
         </span>
       </div>
       <div className="je-report__grafiek">
-        <svg viewBox={`0 0 ${B} ${H}`} role="img" aria-label={`${reeks.label} per dag`} preserveAspectRatio="none">
+        <svg
+          viewBox={`0 0 ${B} ${H}`}
+          role="img"
+          aria-label={t('rapport.grafiek.aria', { label: reeks.label })}
+          preserveAspectRatio="none"
+        >
           {[hoog, (hoog + laag) / 2, laag].map((waarde) => (
             <g key={waarde}>
               <line x1={marge.links} x2={B - marge.rechts} y1={y(waarde)} y2={y(waarde)} stroke="var(--border-hairline)" strokeWidth="1" />
@@ -336,7 +366,7 @@ function Grafiek({ reeks }) {
                 strokeDasharray="4 3"
               />
               <text x={B - marge.rechts} y={y(grens) - 4} textAnchor="end" fontSize="9" fill="var(--danger)">
-                grens {grens} {reeks.eenheid}
+                {t('rapport.grafiek.grens', { waarde: grens, eenheid: reeks.eenheid })}
               </text>
             </>
           ) : null}
@@ -365,7 +395,10 @@ function Grafiek({ reeks }) {
       {reeks.aantal < reeks.punten.length ? (
         <p className="je-report__gat">
           <Icon name="alert-triangle" size={14} />
-          Op {reeks.punten.length - reeks.aantal} van de {reeks.punten.length} dagen is er niets gemeten.
+          {t('rapport.grafiek.gaten', {
+            zonder: reeks.punten.length - reeks.aantal,
+            totaal: reeks.punten.length,
+          })}
         </p>
       ) : null}
     </section>
