@@ -1,13 +1,14 @@
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore'
-import { onRequest } from 'firebase-functions/v2/https'
+import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { defineSecret } from 'firebase-functions/params'
 import { logger } from 'firebase-functions'
 import Stripe from 'stripe'
 
 import { huurTotaal, isLosTeHuren, regelPrijs } from './huurprijs.js'
-import { dagenTussen, past } from './vrij.js'
+import { past } from './vrij.js'
+import { bevestiging, centen, leesAanvraag, melding, stripeRegels } from './order.js'
 
 /**
  * Afrekenen voor losse verhuur.
@@ -102,54 +103,6 @@ function zetCors(req, res) {
   res.set('Access-Control-Allow-Headers', 'Content-Type')
   res.set('Access-Control-Max-Age', '3600')
   return Boolean(origin) && ORIGINS.has(origin)
-}
-
-const centen = (euro) => Math.round(Number(euro) * 100)
-
-const tekst = (waarde, max = 200) => String(waarde ?? '').trim().slice(0, max)
-
-/**
- * Wat de browser stuurt, uitgepakt en nagekeken.
- *
- * Alles wat hier niet doorheen komt, krijgt een nette 400 in plaats van een
- * stacktrace: een formulier dat half ingevuld verstuurd wordt, is geen storing.
- */
-function leesAanvraag(body) {
-  const regels = Array.isArray(body?.regels) ? body.regels : []
-  const van = tekst(body?.van, 10)
-  const tot = tekst(body?.tot, 10) || van
-
-  if (regels.length === 0) return { fout: 'geen_regels' }
-  if (regels.length > 40) return { fout: 'te_veel_regels' }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(van) || !/^\d{4}-\d{2}-\d{2}$/.test(tot)) return { fout: 'geen_datum' }
-  if (tot < van) return { fout: 'omgekeerde_datum' }
-
-  const dagen = dagenTussen(van, tot)
-  if (dagen.length === 0 || dagen.length > 180) return { fout: 'rare_periode' }
-
-  const gevraagd = []
-  for (const regel of regels) {
-    const materiaalId = tekst(regel?.materiaalId, 60)
-    const aantal = Math.round(Number(regel?.aantal) || 0)
-    if (!materiaalId || aantal <= 0 || aantal > 500) return { fout: 'rare_regel' }
-    gevraagd.push({ materiaalId, aantal })
-  }
-
-  const email = tekst(body?.klant?.email, 160)
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { fout: 'geen_email' }
-
-  return {
-    van,
-    tot,
-    dagen,
-    regels: gevraagd,
-    klant: {
-      naam: tekst(body?.klant?.naam, 120),
-      email,
-      telefoon: tekst(body?.klant?.telefoon, 40),
-      opmerking: tekst(body?.klant?.opmerking, 1000),
-    },
-  }
 }
 
 /**
@@ -350,6 +303,11 @@ export const verhuurAfrekenen = onRequest(
       const sessie = await stripe.checkout.sessions.create(
         {
           mode: 'payment',
+          // Vraag 2 in `docs/vragen-productie.md`: kaart én Bancontact, want
+          // dit is België. Bancontact moet ook in het Stripe-dashboard
+          // aanstaan, anders weigert Stripe de sessie met een duidelijke fout.
+          payment_method_types: ['card', 'bancontact'],
+          locale: 'nl',
           customer_email: klant.email,
           client_reference_id: order.id,
           metadata: { orderId: order.id },
@@ -379,51 +337,6 @@ export const verhuurAfrekenen = onRequest(
     }
   }
 )
-
-/**
- * De regels zoals Stripe ze toont.
- *
- * Btw en waarborg staan als aparte regel en zitten niet in de stukprijs
- * verwerkt. Dat is eerlijker op het scherm — een huurder ziet waarvoor hij
- * tekent — en het maakt de som exact: tel je de regels op, dan staat er wat
- * wij `teBetalen` noemen, zonder afrondingsverschil van een cent.
- */
-function stripeRegels(totaal) {
-  const regels = totaal.regels.map((r) => ({
-    quantity: 1,
-    price_data: {
-      currency: 'eur',
-      unit_amount: centen(r.netto),
-      product_data: {
-        name: `${r.aantal}× ${r.naam}`,
-        description: `${r.dagen} ${r.dagen === 1 ? 'dag' : 'dagen'} huur`,
-      },
-    },
-  }))
-
-  if (totaal.btw > 0) {
-    regels.push({
-      quantity: 1,
-      price_data: { currency: 'eur', unit_amount: centen(totaal.btw), product_data: { name: 'Btw 21%' } },
-    })
-  }
-
-  if (totaal.waarborg > 0) {
-    regels.push({
-      quantity: 1,
-      price_data: {
-        currency: 'eur',
-        unit_amount: centen(totaal.waarborg),
-        product_data: {
-          name: 'Waarborg',
-          description: 'Wordt teruggestort bij onbeschadigde teruggave.',
-        },
-      },
-    })
-  }
-
-  return regels
-}
 
 /**
  * Stripe meldt wat er met de betaling gebeurd is.
@@ -486,15 +399,15 @@ export const verhuurWebhook = onRequest(
  * niets — en dat is het goede antwoord, geen fout.
  */
 async function betaald(orderId, sessie) {
-  await db.runTransaction(async (transactie) => {
+  const omgezet = await db.runTransaction(async (transactie) => {
     const orderRef = db.collection('huurorders').doc(orderId)
     const snap = await transactie.get(orderRef)
     if (!snap.exists) {
       logger.warn('Betaling voor een order die niet bestaat', orderId)
-      return
+      return null
     }
     const order = snap.data()
-    if (order.status === 'betaald' || order.status === 'nakijken') return
+    if (order.status === 'betaald' || order.status === 'nakijken') return null
 
     const binnen = Number(sessie.amount_total)
     if (Number.isFinite(binnen) && binnen !== order.teBetalenCent) {
@@ -504,7 +417,7 @@ async function betaald(orderId, sessie) {
         betaaldCent: binnen,
         updatedAt: FieldValue.serverTimestamp(),
       })
-      return
+      return { ...order, id: orderId, status: 'nakijken' }
     }
 
     for (const id of order.reservatieIds ?? []) {
@@ -525,7 +438,129 @@ async function betaald(orderId, sessie) {
       optieVervalt: null,
       updatedAt: FieldValue.serverTimestamp(),
     })
+    return { ...order, id: orderId, status: 'betaald' }
   })
+
+  /*
+    Het nawerk staat buiten de transactie en gebeurt alleen wanneer die iets
+    veranderd heeft. Stripe stuurt hetzelfde bericht gerust twee keer; de
+    tweede keer geeft de transactie `null` terug en krijgt de klant geen
+    tweede mail. Gaat hier iets mis, dan is de betaling al verwerkt en blijft
+    het bij een regel in de log — een mail die niet vertrok is een telefoontje,
+    een order die niet omgezet werd is een tent die niet klaarstaat.
+  */
+  if (!omgezet) return
+  try {
+    const klantId = await klantfiche(omgezet)
+    await Promise.all([bevestigingsmail(omgezet), meldingAanTeam(omgezet, klantId)])
+  } catch (err) {
+    logger.error('Nawerk na betaling mislukt', { orderId, fout: String(err?.message ?? err) })
+  }
+}
+
+/**
+ * De klant in het klantenboek — vraag 13 in `docs/vragen-productie.md`.
+ *
+ * Wie online betaald heeft, is een klant, en volgend jaar wil iemand weten
+ * wat hij toen huurde. Gezocht op e-mailadres; bestaat hij al, dan koppelen
+ * we alleen. De korting blijft op nul: dat is een beslissing van Jasper, geen
+ * gevolg van een eerste huur.
+ */
+async function klantfiche(order) {
+  const email = String(order.klant?.email ?? '').toLowerCase()
+  if (!email) return null
+
+  const bestaand = await db.collection('customers').where('email', '==', email).limit(1).get()
+  let klantId = order.customerId ?? null
+
+  if (!bestaand.empty) {
+    klantId = bestaand.docs[0].id
+  } else {
+    const leegAdres = { street: '', postalCode: '', city: '', country: 'België' }
+    const ref = await db.collection('customers').add({
+      name: order.klant?.naam?.trim() || email,
+      vatNumber: '',
+      email,
+      phone: order.klant?.telefoon ?? '',
+      website: '',
+      address: leegAdres,
+      billingAddress: leegAdres,
+      billingEmail: '',
+      contacts: [],
+      notes: 'Aangemaakt bij de eerste online huur.',
+      kortingMateriaal: 0,
+      brandId: null,
+      archived: false,
+      createdBy: null,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+    klantId = ref.id
+  }
+
+  await db.collection('huurorders').doc(order.id).update({
+    customerId: klantId,
+    updatedAt: FieldValue.serverTimestamp(),
+  })
+  return klantId
+}
+
+/**
+ * De bevestiging aan de klant — vraag 14.
+ *
+ * Via `mailQueue`, zodat ze pas vertrekt zodra de mailverzender uitgerold is.
+ * Platte tekst en geen opmaak: deze mail wordt gelezen op een telefoon in een
+ * tuin, en wat erin moet staan is wát, wannéér en wáár — niet hoe mooi.
+ */
+async function bevestigingsmail(order) {
+  const { onderwerp, tekst } = bevestiging(order)
+
+  await db.collection('mailQueue').add({
+    aan: order.klant.email,
+    soort: 'verhuur-bevestiging',
+    onderwerp,
+    tekst,
+    klantMail: true,
+    orderId: order.id,
+    status: 'wachtend',
+    pogingen: 0,
+    createdAt: FieldValue.serverTimestamp(),
+  })
+}
+
+/**
+ * Eén mail aan de beheerders — vraag 15.
+ *
+ * Een order die 's nachts binnenkomt, legt stukken vast die vrijdag klaar
+ * moeten staan, en de eerste die dat moet weten is wie de camion laadt. Ze
+ * staat ook in het magazijnscherm, maar een scherm moet je openen en een
+ * mail komt naar je toe.
+ */
+async function meldingAanTeam(order, klantId) {
+  const beheerders = await db.collection('profiles').where('role', 'in', ['owner', 'admin']).get()
+  const adressen = beheerders.docs
+    .map((d) => d.data())
+    .filter((p) => p.active !== false && p.email)
+    .map((p) => p.email)
+  if (adressen.length === 0) return
+
+  const { onderwerp, tekst } = melding(order, klantId)
+
+  await Promise.all(
+    adressen.map((aan) =>
+      db.collection('mailQueue').add({
+        aan,
+        soort: 'verhuur-order',
+        onderwerp,
+        tekst,
+        klantMail: false,
+        orderId: order.id,
+        status: 'wachtend',
+        pogingen: 0,
+        createdAt: FieldValue.serverTimestamp(),
+      })
+    )
+  )
 }
 
 /** De klant rekende niet af. De optie gaat weg en de voorraad komt terug. */
@@ -577,5 +612,99 @@ export const verlopenOptiesOpruimen = onSchedule(
     }
 
     if (!snap.empty) logger.info(`${snap.size} verlopen huuropties opgeruimd.`)
+  }
+)
+
+/**
+ * De waarborg terugstorten — vraag 3 in `docs/vragen-productie.md`.
+ *
+ * ── Waarom een knop en geen automatisme ───────────────────────────────────
+ * Terugstorten zodra het stuk terug is, klinkt vriendelijk en is het niet:
+ * het moment van "is terug" is het moment waarop iemand de tent uitrolt en
+ * de scheur ziet. De waarborg is er precies voor dat moment. Dus een knop,
+ * met een bedrag dat ingehouden kan worden, en de rest gaat terug — in één
+ * keer, langs Stripe, op dezelfde kaart.
+ *
+ * ── Wie het mag ───────────────────────────────────────────────────────────
+ * Alleen een beheerder. Dit is de enige functie in de tool die geld laat
+ * vertrekken, en "wie mag geld laten vertrekken" is geen vraag om in een
+ * Firestore-regel te beantwoorden: ze staat hier, met naam, en het logboek
+ * (`huurorders` in `functions/audit.js`) legt vast wie het was.
+ */
+export const verhuurWaarborgTerug = onCall(
+  { region, secrets: [STRIPE_SECRET] },
+  async (request) => {
+    const uid = request.auth?.uid
+    if (!uid) throw new HttpsError('unauthenticated', 'Meld je eerst aan.')
+
+    const profiel = await db.collection('profiles').doc(uid).get()
+    const rol = profiel.data()?.role
+    if (!profiel.exists || (rol !== 'owner' && rol !== 'admin')) {
+      throw new HttpsError('permission-denied', 'Alleen een beheerder kan een waarborg terugstorten.')
+    }
+
+    const orderId = String(request.data?.orderId ?? '').trim().slice(0, 60)
+    const schadeCent = Math.max(0, Math.round(Number(request.data?.schadeCent) || 0))
+    if (!orderId) throw new HttpsError('invalid-argument', 'Welke order?')
+
+    const orderRef = db.collection('huurorders').doc(orderId)
+    const snap = await orderRef.get()
+    if (!snap.exists) throw new HttpsError('not-found', 'Deze order bestaat niet.')
+    const order = snap.data()
+
+    if (order.status !== 'betaald') throw new HttpsError('failed-precondition', 'Alleen een betaalde order heeft een waarborg om terug te storten.')
+    if (order.waarborgTerugOp) throw new HttpsError('failed-precondition', 'De waarborg van deze order is al teruggestort.')
+    if (!order.paymentIntentId) throw new HttpsError('failed-precondition', 'Er is geen betaling om op terug te storten.')
+
+    const waarborgCent = centen(order.waarborg ?? 0)
+    if (waarborgCent <= 0) throw new HttpsError('failed-precondition', 'Deze order had geen waarborg.')
+    if (schadeCent > waarborgCent) throw new HttpsError('invalid-argument', 'De schade kan niet meer zijn dan de waarborg.')
+
+    const terugCent = waarborgCent - schadeCent
+
+    /*
+      Eerst het document, dan Stripe — en niet omgekeerd. Zou Stripe eerst
+      gaan en het schrijven daarna mislukken, dan staat er geld bij de klant
+      zonder spoor bij ons, en een tweede klik stort het nóg eens terug. Nu
+      claimt het document de terugstorting; mislukt Stripe, dan zetten we
+      het terug en kan het opnieuw.
+    */
+    await orderRef.update({
+      waarborgTerugOp: FieldValue.serverTimestamp(),
+      waarborgTerugCent: terugCent,
+      waarborgSchadeCent: schadeCent,
+      updatedBy: uid,
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    if (terugCent === 0) {
+      logger.info('Waarborg volledig ingehouden', { orderId, schadeCent, door: uid })
+      return { terugCent: 0, schadeCent }
+    }
+
+    try {
+      const stripe = new Stripe(STRIPE_SECRET.value())
+      const refund = await stripe.refunds.create(
+        {
+          payment_intent: order.paymentIntentId,
+          amount: terugCent,
+          reason: 'requested_by_customer',
+          metadata: { orderId, wat: 'waarborg', schadeCent: String(schadeCent) },
+        },
+        { idempotencyKey: `waarborg-${orderId}` }
+      )
+      await orderRef.update({ refundId: refund.id, updatedAt: FieldValue.serverTimestamp() })
+      logger.info('Waarborg teruggestort', { orderId, terugCent, schadeCent, door: uid })
+      return { terugCent, schadeCent, refundId: refund.id }
+    } catch (err) {
+      await orderRef.update({
+        waarborgTerugOp: null,
+        waarborgTerugCent: null,
+        waarborgSchadeCent: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+      logger.error('Terugstorten mislukt', { orderId, fout: String(err?.message ?? err) })
+      throw new HttpsError('internal', 'Stripe weigerde de terugstorting. Er is niets veranderd; probeer het opnieuw of doe het in het Stripe-dashboard.')
+    }
   }
 )

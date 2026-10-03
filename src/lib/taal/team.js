@@ -382,6 +382,11 @@ export default {
     nl: 'Om half acht, en alleen op de dagen dat er iets op jouw naam over tijd staat.',
     en: 'At half past seven, and only on the days when something in your name is over time.',
   },
+  'melding.verhuur_titel': { nl: 'Verhuursite', en: 'Rental site' },
+  'melding.verhuur_uitleg': {
+    nl: 'Een online betaalde huur of een offerteaanvraag van rental.jeconcept.be. Alleen voor beheerders.',
+    en: 'A rental paid online or a quote request from rental.jeconcept.be. Admins only.',
+  },
 
   'melding.push_niet_ingesteld': {
     nl: 'Meldingen op je toestel zijn voor deze installatie nog niet ingesteld. Tot dat gebeurt komt alles per e-mail binnen.',

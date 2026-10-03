@@ -32,6 +32,7 @@ export const SOORT_UITLEG = [
   { key: 'reactie', titel: 'melding.reactie_titel', uitleg: 'melding.reactie_uitleg' },
   { key: 'deadline', titel: 'melding.deadline_titel', uitleg: 'melding.deadline_uitleg' },
   { key: 'telaat', titel: 'melding.telaat_titel', uitleg: 'melding.telaat_uitleg' },
+  { key: 'verhuur', titel: 'melding.verhuur_titel', uitleg: 'melding.verhuur_uitleg' },
 ]
 
 export const KANALEN = [

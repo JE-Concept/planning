@@ -9,6 +9,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useAuth } from '@context/AuthProvider'
 import { useBezet, useHuurorders, useMateriaal, useReservaties } from '@data/materiaal'
 import ArtikelDialoog from '@components/materiaal/ArtikelDialoog'
+import Laadlijst from '@components/materiaal/Laadlijst'
 
 /**
  * Het magazijn: wat er is, en wanneer het vrij is.
@@ -226,6 +227,8 @@ export default function Materiaal() {
             </section>
           </>
         )}
+        {/* Voor iedereen die laadt, niet alleen voor de beheerder. */}
+        {materiaal.length > 0 ? <Laadlijst /> : null}
         {isAdmin ? <Huurorders /> : null}
       </div>
 

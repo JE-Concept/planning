@@ -5,7 +5,12 @@
   "targets": {
     "je-planning": {
       "hosting": {
-        "app": ["je-planning"]
+        "app": [
+          "je-planning"
+        ],
+        "verhuur": [
+          "je-planning-verhuur"
+        ]
       }
     }
   }

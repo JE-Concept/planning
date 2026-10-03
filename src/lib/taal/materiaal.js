@@ -154,4 +154,16 @@ export default {
   'huurorder.stand.betaald': { nl: 'Betaald', en: 'Paid' },
   'huurorder.stand.vervallen': { nl: 'Vervallen', en: 'Expired' },
   'huurorder.stand.nakijken': { nl: 'Nakijken', en: 'Needs checking' },
+
+  // ─── De laadlijst ─────────────────────────────────────────────────────────
+  'laadlijst.titel': { nl: 'Laadlijst', en: 'Loading list' },
+  'laadlijst.datum': { nl: 'Dag van de laadlijst', en: 'Day of the loading list' },
+  'laadlijst.vorige': { nl: 'Vorige dag', en: 'Previous day' },
+  'laadlijst.volgende': { nl: 'Volgende dag', en: 'Next day' },
+  'laadlijst.afdrukken': { nl: 'Afdrukken', en: 'Print' },
+  'laadlijst.printkop': { nl: 'Laadlijst {dag} — JE Concept', en: 'Loading list {dag} — JE Concept' },
+  'laadlijst.gaat_uit': { nl: 'Gaat buiten', en: 'Going out' },
+  'laadlijst.komt_terug': { nl: 'Komt terug', en: 'Coming back' },
+  'laadlijst.niets_uit': { nl: 'Er gaat die dag niets buiten.', en: 'Nothing goes out that day.' },
+  'laadlijst.niets_terug': { nl: 'Er komt die dag niets terug.', en: 'Nothing comes back that day.' },
 }

@@ -10,7 +10,7 @@
   "scripts": {
     "build": "vite build",
     "build:demo": "vite build --mode demo",
-    "controleer": "npm run lint && npm test && npm run build && npm run smoke && npm run mobiel && npm run taalcheck",
+    "controleer": "npm run lint && npm test && npm run build && npm run smoke && npm run smoke:verhuur && npm run mobiel && npm run taalcheck",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
@@ -25,7 +25,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "offerte:voorbeeld": "npm run build:demo && node scripts/offerte-voorbeeld.mjs",
-    "test:rules": "npx --yes firebase-tools@13 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules.test.js\""
+    "test:rules": "npx --yes firebase-tools@13 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules.test.js\"",
+    "build:verhuur": "vite build --config vite.verhuur.config.js",
+    "dev:verhuur": "vite --config vite.verhuur.config.js",
+    "smoke:verhuur": "npm run build:verhuur && node scripts/verhuur-smoke.mjs"
   },
   "dependencies": {
     "firebase": "^11.0.2",

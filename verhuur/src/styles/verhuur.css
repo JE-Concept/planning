@@ -1,0 +1,475 @@
+/*
+  De verhuursite.
+
+  Bouwt op `src/styles/je-ds.css` — dezelfde tokens, dezelfde knoppen, dezelfde
+  typografie als de backoffice. Rechtstreeks geïmporteerd en niet gekopieerd:
+  een design system dat op twee plekken staat, staat na een maand op twee
+  manieren.
+
+  Wat hier bij komt, is wat een publieke pagina nodig heeft en een backoffice
+  niet: een etalage, een productraster, een mand. Alles met het voorvoegsel
+  `vh__`, zodat in één oogopslag te zien is wat van deze site is en wat uit het
+  systeem komt.
+*/
+
+.vh {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  color: var(--text-1);
+}
+
+/* ── Kop en voet ──────────────────────────────────────────────────────── */
+
+.vh__kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-0);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.vh__merk {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+}
+.vh__merk-naam {
+  font: var(--type-h4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.vh__merk-sub {
+  font: var(--type-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.vh__nav {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.vh__body {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.vh__voet {
+  border-top: 1px solid var(--line);
+  padding: var(--space-6);
+  text-align: center;
+  font: var(--type-body-sm);
+  color: var(--text-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.vh__voet-klein {
+  font: var(--type-micro);
+  color: var(--text-3);
+}
+/*
+  Bellen en mailen zijn op een telefoon geen voetnoot maar de snelste weg naar
+  een afspraak. Ze krijgen daarom de ruimte van een knop, ook al zien ze eruit
+  als een link.
+*/
+/*
+  Elk telefoonnummer en elk mailadres op deze site, waar het ook staat. Een
+  nummer midden in een zin is op een telefoon precies even goed een knop als
+  eentje in de voet — en van alle dingen die een bezoeker hier kan doen, is
+  bellen de kortste weg naar een afspraak.
+*/
+.vh a[href^='tel:'],
+.vh a[href^='mailto:'] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+}
+.vh__voet a {
+  padding: 0 var(--space-2);
+}
+
+/* ── Etalage ──────────────────────────────────────────────────────────── */
+
+.vh__hero h1 {
+  font: var(--type-h1);
+  text-transform: uppercase;
+  margin: 0 0 var(--space-3);
+}
+.vh__hero p {
+  margin: 0;
+  max-width: 54ch;
+  color: var(--text-2);
+}
+
+/*
+  De periodekiezer staat in een eigen kader en niet los boven de lijst: hij is
+  het enige veld op de pagina dat alles eronder verandert, en dat hoort te
+  zien te zijn.
+*/
+.vh__periode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  align-items: flex-end;
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-0);
+}
+.vh__periode > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.vh__periode input {
+  min-width: 160px;
+}
+.vh__periode-uitleg {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+.vh__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.vh__filter {
+  border: 1px solid var(--line);
+  background: none;
+  border-radius: 2px;
+  padding: 6px 12px;
+  min-height: 32px;
+  font: var(--type-caps);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.vh__filter--aan {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.vh__raster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.vh__kaart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-0);
+}
+/*
+  Volzet wordt lichter, niet rood. Rood zegt "er is iets fout"; hier is niets
+  fout — het is op die datum gewoon weg, en een andere datum kan prima.
+*/
+.vh__kaart--volzet {
+  opacity: 0.66;
+}
+/*
+  De kop van een kaart is de link naar het artikel, en op een telefoon tik je
+  daarop met een duim. Ruimte eronder, zodat het raakvlak niet eindigt waar de
+  letters eindigen.
+*/
+.vh__kaart-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  padding-bottom: var(--space-2);
+  min-height: 34px;
+}
+.vh__kaart-link h3 {
+  font: var(--type-h4);
+  margin: 0 0 var(--space-2);
+}
+.vh__kaart-link:hover h3 {
+  color: var(--accent);
+}
+.vh__kaart-tekst {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+.vh__kaart-voet {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.vh__prijs strong {
+  font: var(--type-h4);
+}
+.vh__vrij {
+  font: var(--type-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}
+.vh__vrij--weinig {
+  color: var(--warning, #9a6b00);
+}
+.vh__vrij--volzet {
+  color: var(--text-3);
+}
+
+.vh__anders {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-6);
+}
+.vh__anders h2 {
+  font: var(--type-h3);
+  text-transform: uppercase;
+  margin: 0 0 var(--space-3);
+}
+.vh__anders p {
+  margin: 0 0 var(--space-5);
+  max-width: 60ch;
+  color: var(--text-2);
+}
+
+/* ── Artikel ──────────────────────────────────────────────────────────── */
+
+.vh__artikel,
+.vh__mand,
+.vh__offerte,
+.vh__afloop,
+.vh__leeg-mand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.vh__artikel h1,
+.vh__mand h1,
+.vh__offerte h1,
+.vh__afloop h1,
+.vh__leeg-mand h1 {
+  font: var(--type-h1);
+  text-transform: uppercase;
+  margin: 0;
+}
+.vh__terug {
+  font: var(--type-body-sm);
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  align-self: flex-start;
+}
+.vh__artikel-tekst {
+  margin: var(--space-3) 0 0;
+  max-width: 60ch;
+  color: var(--text-2);
+}
+
+.vh__staffel table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 460px;
+}
+.vh__staffel th,
+.vh__staffel td {
+  text-align: left;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+.vh__staffel td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.vh__staffel h2,
+.vh__klantvorm h2 {
+  font: var(--type-h3);
+  text-transform: uppercase;
+  margin: 0 0 var(--space-4);
+}
+
+.vh__bestel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-0);
+}
+.vh__bestel-regel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+.vh__bestel-regel input {
+  width: 90px;
+}
+.vh__totaal {
+  margin: 0;
+}
+
+/* ── Mand ─────────────────────────────────────────────────────────────── */
+
+.vh__mandlijst {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+/*
+  Buigen en niet in vaste kolommen. Dezelfde reparatie als bij de
+  reservatieregel in de backoffice: `auto`-kolommen kunnen niet krimpen, en
+  dan loopt de knop op een smal scherm buiten de rij.
+*/
+.vh__mandregel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+.vh__mandregel-naam {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* De naam is de weg terug naar het artikel; een duim moet hem kunnen raken. */
+.vh__mandregel-naam > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+}
+.vh__mandregel-aantal {
+  width: 80px;
+}
+.vh__mandregel-bedrag {
+  min-width: 90px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.vh__som {
+  margin: 0;
+  max-width: 420px;
+  margin-left: auto;
+}
+.vh__som > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-2) 0;
+}
+.vh__som dt,
+.vh__som dd {
+  margin: 0;
+}
+.vh__som dd {
+  font-variant-numeric: tabular-nums;
+}
+.vh__som-totaal {
+  border-top: 1px solid var(--ink, var(--text-1));
+  margin-top: var(--space-2);
+  padding-top: var(--space-3) !important;
+  font: var(--type-h4);
+}
+
+.vh__velden {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.vh__velden label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.vh__veld-breed {
+  grid-column: 1 / -1;
+}
+
+.vh__mandknoppen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+/* ── Meldingen ────────────────────────────────────────────────────────── */
+
+.vh__klein {
+  font: var(--type-micro);
+  color: var(--text-3);
+}
+.vh__laden,
+.vh__leeg {
+  color: var(--text-2);
+}
+.vh__waarschuwing,
+.vh__fout {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--danger);
+  background: var(--surface-2);
+  font: var(--type-body-sm);
+}
+
+/*
+  Het lokvakje van het offerteformulier. Buiten beeld maar niet `display:
+  none` — dat laatste is precies waar een bot op controleert voor hij een veld
+  overslaat.
+*/
+.vh__lokvak {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+@media (max-width: 559px) {
+  .vh__body {
+    padding: var(--space-5) var(--space-5) var(--space-7);
+    gap: var(--space-6);
+  }
+  .vh__kop {
+    padding: var(--space-4);
+  }
+  .vh__velden {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vh__som {
+    max-width: none;
+  }
+  .vh__raster {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

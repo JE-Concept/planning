@@ -609,6 +609,19 @@ service cloud.firestore {
       allow read:  if isTeam();
       allow write: if false;
     }
+    /*
+      Offerteaanvragen van de verhuursite.
+
+      Aanmaken doet de functie, met beheerdersrechten en dus langs deze regels
+      heen — de bezoeker heeft geen account. Het team leest ze en mag de stand
+      bijwerken ("gebeld", "offerte verstuurd"); dat is backofficewerk.
+    */
+    match /verhuuraanvragen/{id} {
+      allow read:   if isTeam();
+      allow create: if false;
+      allow update: if isMember();
+      allow delete: if isAdmin();
+    }
 
     // Vaste formules (winter bbq aan 29,90 met hapjes, drank en dessert): het
     // team kiest er een bij een nieuw event, een beheerder bepaalt de prijs en

@@ -69,6 +69,13 @@ jobs:
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
 
+      # De verhuursite is een eigen bundel met een eigen uitgang. Geen enkele
+      # VITE_FIREBASE-sleutel: die site praat niet met Firestore maar met één
+      # HTTP-adres, en een projectsleutel die nergens voor nodig is, hoort niet
+      # in een publieke bundel. Zie `vite.verhuur.config.js`.
+      - name: Build verhuursite
+        run: npm run build:verhuur
+
   deploy:
     name: Deploy to Firebase
     needs: check

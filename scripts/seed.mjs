@@ -408,6 +408,29 @@ async function vulKlantveldenAan() {
 async function vulVerhuurveldenAan() {
   const stukken = await db.collection('materiaal').get()
 
+  /*
+    Vraag 5 in `docs/vragen-productie.md` — beantwoord: alles met een dagprijs
+    mag online. Eén keer, en niet bij elke uitrol: daarna beslist het vinkje
+    per artikel, en een backfill die het vinkje telkens weer aanzet zou een
+    bewust uitgezette tent de volgende ochtend weer online zetten. De
+    merkpaal staat in `config/verhuur`.
+  */
+  const paal = db.collection('config').doc('verhuur')
+  const gezet = (await paal.get()).data()?.directTeHurenGezet === true
+  if (!gezet) {
+    let aan = 0
+    for (const snap of stukken.docs) {
+      const data = snap.data()
+      const prijs = Number(data.prijsPerDag)
+      if (data.archived === true || !Number.isFinite(prijs) || prijs <= 0) continue
+      if (data.directTeHuren === true) continue
+      await snap.ref.set({ directTeHuren: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+      aan += 1
+    }
+    await paal.set({ directTeHurenGezet: true, gezetOp: FieldValue.serverTimestamp(), aantal: aan }, { merge: true })
+    if (aan) aangevuld.push(`materiaal: ${aan} artikel(en) met een dagprijs online gezet (eenmalig)`)
+  }
+
   for (const snap of stukken.docs) {
     const data = snap.data()
     const patch = {}

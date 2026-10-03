@@ -342,6 +342,50 @@ De prijsmotor staat twee keer op schijf — `src/lib/huurprijs.js` en `functions
 
 ---
 
+## De verhuursite
+
+`rental.jeconcept.be` is een eigen applicatie: `verhuur/` in deze repository, een eigen Vite-build (`npm run build:verhuur`), een eigen uitgang (`dist-verhuur`) en een tweede hosting-site. Ontwikkelen doe je met `npm run dev:verhuur` op poort 5174.
+
+**Waarom één repository en twee builds.** JE Plan gaat er overal van uit dat wie kijkt erbij hoort; deze pagina is van iedereen. Eén bundel van beide zou de logica van onze marges, loonkosten en leveranciers meeleveren aan elke bezoeker — niet leesbaar als gegevens, wel als code, en dat is genoeg om er conclusies uit te trekken. Twee builds kunnen dat niet: wat niet geïmporteerd wordt, staat er niet in.
+
+Maar een eigen repository zou betekenen dat het design system en de prijsmotor gekopieerd worden, en een kopie staat na een maand op twee manieren. Nu deelt de site `src/styles/je-ds.css` en `src/lib/huurprijs.js` rechtstreeks — precies de twee dingen die hetzelfde móéten zijn. **`tests/verhuur-bundel.test.js` is wat die keuze verantwoord maakt:** het weigert elke import uit `@data/`, `@components/`, `@context/` of `@ui/`, en elke verwijzing naar de Firebase-SDK.
+
+**De site praat niet met Firestore.** Ze kent geen projectsleutel en heeft geen SDK aan boord. Ze stelt vragen aan `/api`, en de hosting-site schrijft die door naar de functies — dus alles is van dezelfde herkomst en er is geen CORS-lijst te onderhouden. Dat is geen stijlkeuze: een browser leest altijd een *heel* document, dus een directe Firestore-lezing zou de inkoopwaarde en de leverancier van elk artikel in het netwerkpaneel van elke bezoeker zetten, ook met de strengste regels — die gaan over documenten, niet over velden.
+
+Welke velden het pand verlaten, staat op één plek: `functions/verhuur-aanbod.js`, als een **witte lijst**. Dat is met opzet de omgekeerde kant op van wat vanzelf gaat. Een zwarte lijst is één veld achter: zet iemand volgende maand `marge` op een artikel, dan staat dat de dag erna op een openbare pagina en merkt niemand het.
+
+Drie adressen, allemaal in de standaard-codebase omdat er geen geheim aan hangt:
+
+| | |
+|---|---|
+| `GET /api/verhuur/aanbod` | wat er los te huren is, gesorteerd op categorie |
+| `GET /api/verhuur/beschikbaar?van=&tot=` | per artikel het aantal vrije stuks, het **minimum over de dagen** |
+| `POST /api/verhuur/aanvraag` | een offerteaanvraag, voor alles wat niet zomaar de deur uit kan |
+
+Ze staan er los van `functions-betaling/` omdat die aan Stripe-geheimen hangt: een verhuursite die níéts toont is erger dan een die toont maar nog niet laat afrekenen, en een offerteaanvraag is vaak het begin van een opdracht van duizenden euro's. Ontbreekt Stripe, dan blijft de etalage gewoon staan.
+
+**Een vol artikel verdwijnt niet.** Het blijft in de lijst met "volzet op deze datum". Weg laten zou de bezoeker laten denken dat we het niet hébben, en dan belt hij niet eens — terwijl een andere datum of bijhuren vaak gewoon kan.
+
+**Aanvragen komen in het postvak**, naast de losse mail, en niet op een eigen scherm: het is hetzelfde werk, namelijk bellen en er een dossier van maken als het doorgaat. Ze worden niet meteen een event — de meeste worden een telefoontje en een deel wordt niets, en een bord dat je moet wegfilteren gebruikt niemand meer.
+
+Het formulier heeft een **lokvakje** in plaats van een captcha: een verborgen veld dat een mens nooit invult. Vult iets het toch in, dan zeggen we vriendelijk "dank u" en schrijven we niets weg — een bot die een fout krijgt, probeert het opnieuw met een andere vorm. Een captcha kost elke eerlijke bezoeker tijd, en voor dit volume is dat middel erger dan de kwaal. Loopt het uit de hand, dán is het moment om er een te zetten.
+
+**De laadlijst** staat op het magazijnscherm: per dag wat buiten gaat en wat terugkomt, gegroepeerd per klant en niet per artikel — zes statafels voor Peeters en vier voor Blum zijn geen tien statafels maar twee stapels op twee plekken in de camion. Ze is printbaar: een telefoon in een nat magazijn is een telefoon die valt, een A4 op een klembord is wat er werkelijk gebruikt wordt.
+
+**Na een betaling** gebeuren drie dingen buiten de transactie, en alleen als die werkelijk iets omzette (Stripe stuurt hetzelfde bericht gerust twee keer): de klant komt in het klantenboek als hij er nog niet staat, hij krijgt een bevestiging met kenmerk en afhaalafspraak, en de beheerders krijgen een mail. Alles via `mailQueue`, dus pas verstuurd zodra `SMTP_URL` er is — tot dan lees je ze daar.
+
+Wat er daarna in JE Plan gebeurt, staat niet bij de betaling maar in `functions/verhuur-orders.js`, in de standaard-codebase: **een betaalde huur wordt een event in de kolom *planning ongoing***, met de reservaties op zijn tabblad Materiaal — er is geen aanvraag, offerte of akkoord meer af te wachten, er is betaald. En de beheerders krijgen een **pushmelding**, net als bij een aanvraag van de site (meldingsoort *Verhuursite*, standaard aan). Twee redenen om dat daar te zetten en niet bij Stripe: die codebase wordt overgeslagen zolang de sleutels ontbreken, en een aanvraag die dan geen melding oplevert is een gemiste opdracht; en het bord, zijn kolommen en de pushtokens zijn de wereld van de standaard-codebase.
+
+**Snelheid.** De lettertypes staan in `verhuur/public/fonts/` en komen niet van Google: dat scheelt een DNS-opzoeking en een verbinding vóór er één letter staat, en het scheelt een privacyvraag. De pagina's na de catalogus laden pas wanneer iemand erheen gaat.
+
+Gemeten, niet beweerd — `npm run smoke:verhuur` drukt het af bij elke run: eerste verf na **80 ms** op de testmachine, en **niets van buiten**. Over de lijn gaat gecomprimeerd zo'n 180 kB: 58 kB JavaScript (bijna alles React en de router; de eigen code is een paar kilobyte), 7 kB stijlen en 115 kB lettertypes. Die lettertypes zijn nu het grootste stuk, en dat is een bewuste afweging: de huisstijl heeft drie gewichten Oswald en twee Source Sans nodig, en ze blijven een jaar in de cache. Het cijfer dat de test zelf toont (284 kB) is zónder compressie, want de testserver doet die niet; Hosting wel.
+
+Wat er nog te halen valt: de 30 kB stijlen van het design system, waarvan de site het meeste niet gebruikt. Bewust gelaten — een gesnoeide kopie is precies het soort kopie dat verloopt.
+
+`npm run smoke:verhuur` loopt de site door zoals een klant dat doet — catalogus, artikel, mand, afrekenen, de aanvraag — met een nagebouwde `/api` die precies de vorm teruggeeft die de functies geven, want die vorm is het contract. De laatste vijf tests doen hetzelfde op 390 pixels: deze site wordt vaker in een tuin op een telefoon geopend dan achter een bureau.
+
+---
+
 ## Wat een event opbracht, en wat het kostte
 
 Van elk dossier stond vast wat het opbracht en van geen enkel wat het kostte. Daardoor was "verdient een BBQ van veertig personen eigenlijk iets" een gesprek over gevoel. Op de fiche staat nu, onder de velden, **Opbrengst en kosten**: het offertebedrag min de ploeg, de inkoop en de eigen uren, alles exclusief btw.

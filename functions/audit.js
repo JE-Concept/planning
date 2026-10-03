@@ -85,6 +85,14 @@ export const AUDIT = {
     naam: (d) => d.name,
     velden: ['name', 'enabled', 'entity', 'trigger', 'conditions', 'actions', 'table'],
   },
+  huurorders: {
+    soort: 'huurorder',
+    naam: (d) => d.klant?.naam || d.klant?.email || d.id || '',
+    // De stand en wat er met de waarborg gebeurde: dat is wat je een half
+    // jaar later wil kunnen navragen wanneer een klant zegt dat hij nooit
+    // iets terugkreeg.
+    velden: ['status', 'waarborgTerugCent', 'waarborgSchadeCent', 'customerId', 'eventId'],
+  },
   offertes: {
     soort: 'offerte',
     naam: (d) => `${d.nummer ?? ''} ${d.eventNaam ?? ''}`.trim(),

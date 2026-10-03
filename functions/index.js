@@ -30,6 +30,8 @@ import { maakAapiFuncties } from './aapi-import.js'
 import { AUDIT, regelVan, teOud } from './audit.js'
 import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
+import { maakVerhuur } from './verhuur.js'
+import { maakVerhuurOrders } from './verhuur-orders.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
 import { maakPloegFuncties } from './ploeg.js'
@@ -760,6 +762,30 @@ export const agenda = maakAgendaFeed({ db, region: REGION })
  */
 export const portaal = maakPortaal({ db, region: REGION })
 
+/**
+ * De etalage van de verhuur: wat er los te huren is, en wat er vrij is.
+ *
+ * Staat hier en niet bij de betaling, omdat die codebase aan Stripe-geheimen
+ * hangt en overgeslagen wordt zolang die er niet zijn. Een verhuursite die
+ * niets toont is erger dan een die toont maar nog niet laat afrekenen. Welke
+ * velden het pand verlaten, staat in `verhuur-aanbod.js` — een witte lijst,
+ * zodat een nieuw veld op een artikel niet vanzelf openbaar wordt.
+ */
+export const verhuur = maakVerhuur({ db, region: REGION })
+
+/*
+  Wat er in JE Plan gebeurt wanneer de verhuursite iets binnenbrengt: een
+  betaalde huur wordt een event in "planning ongoing" en de beheerders krijgen
+  een pushmelding; een aanvraag levert een melding op. Zie `verhuur-orders.js`
+  voor waarom dit hier staat en niet bij de betaling.
+*/
+export const { verhuurOrderBetaald, verhuurAanvraagBinnen } = maakVerhuurOrders({
+  db,
+  region: REGION,
+  verstuur,
+  alleProfielen,
+})
+
 /* Werk dat vanzelf terugkomt; zie `herhalingen.js` voor waarom het 's nachts
    gebeurt en niet zodra iemand de tool opent. */
 export const herhalingen = maakHerhalingen({ db, region: REGION })
@@ -989,6 +1015,7 @@ export const logboekFormules = logboekTrigger('formules')
 export const logboekTemplates = logboekTrigger('templates')
 export const logboekRegels = logboekTrigger('automations')
 export const logboekOffertes = logboekTrigger('offertes')
+export const logboekHuurorders = logboekTrigger('huurorders')
 export const logboekAfvinklijsten = logboekTrigger('checklists')
 export const logboekDiensten = logboekTrigger('shifts')
 export const logboekInstellingen = logboekTrigger('config')

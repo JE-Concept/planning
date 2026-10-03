@@ -1231,6 +1231,95 @@ await test('het magazijn toont per dag wat vrij is, en meldt een overboeking', a
   await page.close()
 })
 
+await test('een aanvraag van de verhuursite staat in het postvak en wordt een event', async () => {
+  const page = await tabblad('/aanvragen')
+  const tekst = await inhoud(page)
+
+  /*
+    Aanvragen van de site staan in hetzelfde postvak als losse mail, want het
+    is hetzelfde werk: bellen, en er een dossier van maken als het doorgaat.
+    Een eigen scherm zou een tweede plek zijn om te onthouden.
+  */
+  zouden(bevat(tekst, 'Lotte Vrancken'), `de aanvraag staat er niet: ${tekst.slice(0, 300)}`)
+  zouden(bevat(tekst, 'Verhuursite'), 'er staat niet bij waar de aanvraag vandaan komt')
+  zouden(bevat(tekst, '60 personen'), 'het aantal personen uit het formulier staat er niet')
+
+  /*
+    De knop ín de kaart van Lotte, niet "de eerste knop": er staan twee
+    aanvragen van de site en de volgorde daarvan hangt af van de seconde
+    waarop ze aangemaakt zijn. De eerste knop pakken was in de helft van de
+    runs die van Blum — en dan bleef Lotte terecht staan.
+  */
+  await page.locator('.je-aanvraag', { hasText: 'Lotte Vrancken' }).getByRole('button', { name: 'Event maken' }).click()
+  await page.waitForTimeout(1200)
+
+  zouden(/\/events\//.test(page.url()), `er is geen event gemaakt: ${page.url()}`)
+  const fiche = await inhoud(page)
+  zouden(bevat(fiche, 'Lotte Vrancken'), 'de naam uit de aanvraag staat niet op het event')
+
+  /*
+    En de aanvraag is uit het postvak: afgehandeld, niet verwijderd. Terug via
+    de zijbalk en niet via een nieuw tabblad — de demo bewaart niets tussen
+    bezoeken, dus een nieuw tabblad begint weer met de verse seed en laat de
+    aanvraag opnieuw zien.
+  */
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /^Events/ }).first().click()
+  await page.waitForTimeout(400)
+  // Het postvak hangt aan een envelopje rechtsboven op de eventpagina.
+  await page.getByRole('button', { name: /Postvak|Aanvragen/ }).first().click()
+  await page.waitForTimeout(500)
+  zouden(/\/aanvragen$/.test(page.url()), `het postvak gaat niet open: ${page.url()}`)
+  /*
+    Alleen de kaarten in het postvak, niet de hele pagina: de naam staat na het
+    aanmaken ook nog in de melding "event gemaakt" en in de recente lijst van
+    de zoekbalk, en dat is juist. De vraag is of de kaart weg is.
+  */
+  /*
+    Alleen de kop van elke kaart. De kaart van een mail draagt een keuzelijst
+    "koppel aan event" met álle events erin — ook het event dat we net voor
+    Lotte maakten. Wie de hele kaart leest, vindt haar naam dus terecht
+    terug, maar niet omdat haar aanvraag er nog staat.
+  */
+  const koppen = await page.locator('.je-aanvraag .je-aanvraag__van').allInnerTexts()
+  zouden(!koppen.some((k) => bevat(k, 'Lotte Vrancken')), `de aanvraag staat nog in het postvak: ${koppen.join(' ‖ ')}`)
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de laadlijst zegt per dag wat buiten gaat en wat terugkomt, per klant', async () => {
+  const page = await tabblad('/materiaal')
+
+  /*
+    In de demo begint het trouwfeest over vier dagen: bar, koelkasten,
+    statafels en verwarmers gaan die dag buiten. Blum heeft op dag vijf ook
+    verwarmers — die mogen niet bij het trouwfeest op de lijst komen, want je
+    laadt per adres.
+  */
+  const dag = (n) => {
+    const d = new Date(2026, 8, 28 + n)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  await page.getByLabel('Dag van de laadlijst').fill(dag(4))
+  await page.waitForTimeout(500)
+
+  const lijst = await page.locator('.je-laadlijst').innerText()
+  zouden(bevat(lijst, 'Gaat buiten'), 'de laadlijst heeft geen kolom "gaat buiten"')
+  zouden(bevat(lijst, 'Trouw Niels en Inez'), `het trouwfeest staat niet op de laadlijst: ${lijst.slice(0, 300)}`)
+  zouden(bevat(lijst, 'Mobiele bar'), 'de bar van het trouwfeest staat er niet')
+  zouden(!bevat(lijst, 'Blum'), 'de verwarmers van Blum staan op de dag van het trouwfeest')
+
+  // Twee dagen later komt alles van het trouwfeest terug.
+  await page.getByLabel('Dag van de laadlijst').fill(dag(6))
+  await page.waitForTimeout(500)
+  const terug = await page.locator('.je-laadlijst').innerText()
+  zouden(bevat(terug, 'Komt terug'), 'de kolom "komt terug" ontbreekt')
+  zouden(bevat(terug, 'Trouw Niels en Inez'), 'het trouwfeest komt niet terug op zijn einddag')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('het magazijn toont wat online afgerekend is, met de standen erbij', async () => {
   const page = await tabblad('/materiaal')
   const tekst = await inhoud(page)

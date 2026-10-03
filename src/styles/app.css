@@ -3699,3 +3699,110 @@ button.je-paneel-kaart:hover {
 .je-resvrij__onder { font: var(--type-caption); font-weight: 400; color: var(--text-2); }
 .je-resvrij__aantal { flex: 0 0 auto; font: var(--type-body-sm); font-variant-numeric: tabular-nums; }
 .je-resvrij__acties { margin-left: auto; display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* ── De laadlijst ───────────────────────────────────────────────────────── */
+
+.je-laadlijst__kop {
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.je-laadlijst__dag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.je-laadlijst__dag input {
+  width: 150px;
+}
+.je-laadlijst__printkop {
+  display: none;
+}
+.je-laadlijst__kolommen {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-6);
+}
+.je-laadlijst__kolom h3 {
+  margin: 0 0 var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+.je-laadlijst__groep + .je-laadlijst__groep {
+  margin-top: var(--space-4);
+}
+.je-laadlijst__wie {
+  font: var(--type-body-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+.je-laadlijst__kolom ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.je-laadlijst__kolom li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 4px 0;
+  font: var(--type-body-sm);
+}
+.je-laadlijst__vakje {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--text-2);
+  border-radius: 2px;
+  flex: none;
+}
+.je-laadlijst__aantal {
+  font-variant-numeric: tabular-nums;
+  min-width: 2.5ch;
+  text-align: right;
+  color: var(--text-2);
+}
+@media (max-width: 559px) {
+  .je-laadlijst__kolommen {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+  Afdrukken: alleen de laadlijst, op één A4, zwart op wit.
+
+  Alles wat niet de lijst is verdwijnt — zijbalk, kop, kalender, de andere
+  panelen. Het blad krijgt een kop met de datum, want een laadlijst zonder
+  datum op een klembord is van gisteren of van morgen en niemand weet welk.
+*/
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .je-laadlijst,
+  .je-laadlijst * {
+    visibility: visible;
+  }
+  .je-laadlijst {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    border: 0;
+    box-shadow: none;
+  }
+  .je-laadlijst__kop {
+    display: none;
+  }
+  .je-laadlijst__printkop {
+    display: block;
+    font: var(--type-h3);
+    text-transform: uppercase;
+    margin: 0 0 var(--space-5);
+    padding: 0 var(--space-6);
+  }
+  .je-laadlijst__kolommen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .je-laadlijst__vakje {
+    border-color: #000;
+  }
+}

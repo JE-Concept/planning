@@ -52,7 +52,7 @@ export function kort(tekst, max = 80) {
  * en in het schermpje waar je ze aan- en uitzet. Een tikfout in één daarvan
  * zou stil betekenen "dit bericht wil niemand".
  */
-export const SOORTEN = ['toewijzing', 'reactie', 'deadline', 'telaat', 'systeem']
+export const SOORTEN = ['toewijzing', 'reactie', 'deadline', 'telaat', 'systeem', 'verhuur']
 
 /**
  * Wat je krijgt zolang je niets instelt.
@@ -80,6 +80,13 @@ export const STANDAARD = {
     er iets tegenover staat.
   */
   systeem: { push: true, email: true },
+  /*
+    Een online huur of een aanvraag van de verhuursite. Staat aan op beide
+    kanalen en gaat alleen naar beheerders — zie `functions/verhuur-orders.js`.
+    Een order die 's nachts binnenkomt legt stukken vast die vrijdag klaar
+    moeten staan, en de eerste die dat moet weten is wie de camion laadt.
+  */
+  verhuur: { push: true, email: true },
 }
 
 /**

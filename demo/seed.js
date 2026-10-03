@@ -1147,6 +1147,34 @@ HUURORDERS.forEach(([id, status, naam, email, vanaf, tot, stuks, korting]) => {
   })
 })
 
+/*
+  Twee aanvragen van de verhuursite, zodat het postvak laat zien hoe ze
+  binnenkomen: één met alles ingevuld en één van iemand die alleen een vraag
+  stelde. Allebei nieuw — afgehandelde staan er met opzet niet tussen.
+*/
+;[
+  ['va-1', 'Lotte Vrancken', 'lotte.vrancken@gmail.com', '0479 12 34 56', 24, 60,
+   'Tuinfeest voor de zestigste verjaardag van mijn vader. Een tent, statafels en iets van catering — we denken aan een walking dinner.'],
+  ['va-2', '', 'events@blumbelgie.be', '', null, null,
+   'Goedendag, wij zoeken voor een personeelsdag in september een mobiele bar met bediening. Kunnen jullie een voorstel doen?'],
+].forEach(([id, naam, email, telefoon, overDagen, gasten, wat]) =>
+  seedDoc('verhuuraanvragen', id, {
+    naam,
+    email,
+    telefoon,
+    datum: overDagen ? dagsleutel(dag(overDagen)) : null,
+    gasten,
+    wat,
+    status: 'nieuw',
+    bron: 'verhuursite',
+    eventId: null,
+    customerId: null,
+    // Twee verschillende tijdstippen: de lijst sorteert hierop, en twee
+    // gelijke stempels geven een volgorde die per run verschilt.
+    createdAt: dag(id === 'va-1' ? -1 : -2),
+    updatedAt: dag(id === 'va-1' ? -1 : -2),
+  }))
+
 seedDoc('config', 'kosten', {
   statuutTarief: { vast: 32, flexi: 18, student: 15, extern: 45 },
   updatedBy: 'u-jasper',

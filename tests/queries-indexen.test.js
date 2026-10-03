@@ -290,6 +290,14 @@ const VRAGEN = [
     eq: [['eventRef', EQ]],
     sorteer: [['start', ASC]],
   },
+
+  // ── verhuur ─────────────────────────────────────────────────────────────
+  {
+    naam: 'useVerhuuraanvragen — het postvak van de verhuursite (src/data/verhuuraanvragen.js)',
+    col: 'verhuuraanvragen',
+    eq: [['status', EQ]],
+    sorteer: [['createdAt', DESC]],
+  },
 ]
 
 /**
@@ -380,7 +388,7 @@ describe('nieuwe queries', () => {
     zijn eigen veldindexen. Daarom staan ze wel hier en niet in de tabel
     hierboven.
   */
-  const QUERIES_IN_DE_APP = 78
+  const QUERIES_IN_DE_APP = 79
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

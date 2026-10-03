@@ -63,6 +63,21 @@ AAPI invoert. Ze mag nooit op planning lijken en nooit een shift worden.
   krijgt een **eigen codebase** plus een `scripts/ci/geheim.sh`-wacht met
   `|| echo "::warning::..."` in `ci.yml` én `go-live.yml` — zoals `mail`,
   `meetings` en `betaling`.
+- **De verhuursite (`verhuur/`) mag niets uit de backoffice halen.** Geen
+  `@data/`, `@components/`, `@context/`, `@ui/`, en geen Firebase-SDK. Alleen
+  `@lib/` en `@styles/` zijn gedeeld. `tests/verhuur-bundel.test.js` weigert de
+  rest. Welke velden het pand verlaten, staat als **witte lijst** in
+  `functions/verhuur-aanbod.js` — nooit een zwarte lijst, want die is altijd
+  één nieuw veld achter.
+- **`npm run mobiel` dekt de verhuursite niet**; die heeft zijn eigen
+  telefooncontrole aan het eind van `npm run smoke:verhuur`. En `mobiel`
+  bouwt niet zelf — draai eerst `npm run build:demo`, anders meet je de
+  vorige build.
+- **Alles van de kassa wat zonder Stripe te zeggen is, staat in
+  `functions-betaling/order.js`** (aanvraag lezen, Stripe-regels, mailteksten)
+  en heeft nul imports buiten de prijsmotor — zodat `tests/betaling-order.test.js`
+  het in CI kan draaien. `index.js` doet alleen lezen, schrijven en betalen.
+  Nieuwe rekenregels horen in `order.js`, niet in `index.js`.
 - **Een bedrag dat uit de browser komt, is een wens.** De verhuursite stuurt
   artikelnummers en aantallen; `functions-betaling/` zoekt de prijzen zelf op
   en rekent zelf na. `src/lib/huurprijs.js` staat daarom letterlijk twee keer

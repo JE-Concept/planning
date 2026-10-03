@@ -41,6 +41,15 @@ export default {
   'mail.postvak.aantal_meer': { nl: '{aantal} berichten', en: '{aantal} messages' },
   'mail.postvak.laden': { nl: 'Post ophalen…', en: 'Loading mail…' },
   'mail.postvak.leeg': { nl: 'Het postvak is leeg', en: 'The inbox is empty' },
+
+  // Aanvragen van rental.jeconcept.be. Ze staan in hetzelfde postvak als
+  // losse mail, want het is hetzelfde werk.
+  'verhuuraanvraag.bron': { nl: 'Verhuursite', en: 'Rental site' },
+  'verhuuraanvraag.datum': { nl: 'Datum: {datum}', en: 'Date: {datum}' },
+  'verhuuraanvraag.gasten': { nl: '{aantal} personen', en: '{aantal} guests' },
+  'verhuuraanvraag.event_maken': { nl: 'Event maken', en: 'Create event' },
+  'verhuuraanvraag.afgehandeld': { nl: 'Afgehandeld', en: 'Handled' },
+  'verhuuraanvraag.mailen': { nl: 'Mailen', en: 'Email' },
   'mail.postvak.leeg_uitleg': {
     nl: 'Alles wat binnenkwam, hangt aan een event. Wat hier komt te staan is post die nergens bij hoorde — meestal een nieuwe aanvraag.',
     en: 'Everything that came in is linked to an event. What lands here is mail that fitted nowhere — usually a new request.',

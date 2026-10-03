@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 375" role="img" aria-label="JE Concept">
+<!--
+  Het merk van JE Concept, verkleind voor klein formaat.
+
+  De zes hoekpunten van beide zeshoeken komen letterlijk uit
+  `brand/je-concept-logo.svg`. Twee dingen zijn wél aangepast, en met opzet:
+
+  1. De letters staan er niet op. Onder de 48px zijn "JE" en het schrift een
+     vlek — zie de verkleiningsproef; het logo zelf blijft het volledige
+     bestand.
+  2. De lijn is dikker. In het logo is de omtrek een haarlijn van ongeveer 1,6%
+     van de breedte; op 16px is dat een derde van een pixel en verdwijnt ze.
+     Hier is ze 4,3%, de dunste dikte die op 16px nog leest.
+
+  Dat is wat een favicon is: dezelfde vorm, zwaarder gezet omdat hij klein
+  getekend wordt. Het is geen tweede versie van het merk.
+-->
+<rect width="375" height="375" rx="48" fill="#003366"/>
+<path d="M 97.1836 278.742 L 32.2852 168.168 L 95.6094 56.6641 L 223.816 55.75 L 288.715 166.324 L 225.391 277.832 Z" fill="none" stroke="#d5e2f1" stroke-opacity="0.4" stroke-width="16" stroke-linejoin="round"/>
+<path d="M 187.5 303.469 L 76.4648 239.363 L 76.4648 111.129 L 187.5 47.0273 L 298.535 111.129 L 298.535 239.363 Z" fill="none" stroke="#d5e2f1" stroke-width="16" stroke-linejoin="round"/>
+</svg>

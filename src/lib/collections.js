@@ -66,6 +66,17 @@ export const COL = {
     `firestore.rules`. De browser rekent niets af.
   */
   huurorders: 'huurorders',
+  /*
+    Offerteaanvragen van de verhuursite.
+
+    Niet in `tasks` als event, want een aanvraag is nog geen dossier: de
+    meeste worden een telefoontje en een deel wordt niets. Zou elke aanvraag
+    meteen een event zijn, dan staat het bord binnen een maand vol met dingen
+    die nooit doorgaan, en dan vertrouwt niemand het bord nog.
+
+    Geschreven door `functions/verhuur.js`; de backoffice leest en werkt bij.
+  */
+  verhuuraanvragen: 'verhuuraanvragen',
   shifts: 'shifts',
   /*
     De planning uit AAPI staat naast `shifts` en niet erin. Dat rooster is met

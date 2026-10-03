@@ -83,6 +83,17 @@ export default function ArtikelDialoog({ open, artikel, categorieen = [], onClos
   */
   const magDirect = bedrag(vorm.prijsPerDag) != null
 
+  /*
+    Vraag 5 in `docs/vragen-productie.md`: alles met een dagprijs mag online.
+    Dus zodra iemand bij een níéuw artikel een dagprijs intikt, gaat het
+    vinkje vanzelf aan — hij kan het nog uitzetten voor hij bewaart. Bij een
+    bestaand artikel blijft staan wat er stond: dat is een beslissing die
+    iemand al genomen heeft.
+  */
+  useEffect(() => {
+    if (!artikel && magDirect) setVorm((oud) => (oud.directTeHuren ? oud : { ...oud, directTeHuren: true }))
+  }, [artikel, magDirect])
+
   const bewaren = async () => {
     const naam = vorm.naam.trim()
     if (!naam) return

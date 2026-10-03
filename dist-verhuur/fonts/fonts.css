@@ -1,0 +1,56 @@
+/*
+  De lettertypes van de site, zelf gehost.
+
+  ── Waarom niet gewoon Google Fonts ─────────────────────────────────────
+  Twee redenen, allebei meetbaar. Snelheid: een verwijzing naar
+  fonts.googleapis.com is een extra DNS-opzoeking, een extra verbinding en
+  een tweede wachtronde vóór er één letter staat — op een telefoon aan de
+  rand van een weiland is dat een halve seconde wit scherm. En privacy: elke
+  bezoeker meldt zich dan bij Google, en in Europa is dat sinds 2022 een
+  reden voor een boete geweest. Zelf hosten kost 160 kB eenmalig en daarna
+  een jaar cache.
+
+  Alleen de latin-subset: de site is Nederlands. Geen cursief: nergens in de
+  stijl staat `font-style: italic`, dus dat bestand zou alleen meereizen. `font-display: swap` zodat
+  de tekst er meteen staat in een systeemletter en daarna omwisselt.
+*/
+
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Oswald-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Oswald-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Oswald';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Oswald-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/SourceSans3-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/SourceSans3-600.woff2') format('woff2');
+}
