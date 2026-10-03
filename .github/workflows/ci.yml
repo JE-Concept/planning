@@ -255,7 +255,19 @@ jobs:
             echo "::warning::Stripe-geheimen ontbreken in dit project — online afrekenen staat uit, de rest draait."
           fi
           node scripts/seed.mjs
-          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting
+          # De backoffice eerst en los van de verhuursite. Eén `--only hosting`
+          # rolt beide sites in één beweging uit, en toen de tweede site nog niet
+          # bestond (404 op sites/je-planning-verhuur) ging daarmee óók de
+          # backoffice niet live — terwijl die er niets mee te maken had.
+          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting:app
+
+          # De verhuursite: eerst proberen de site aan te maken (doet niets als
+          # ze er al is), dan uitrollen. Mislukt het, dan staat de backoffice
+          # wél live en zegt de uitrol wat eraan scheelt.
+          npx --yes firebase-tools@13 hosting:sites:create "$FIREBASE_PROJECT-verhuur" --project "$FIREBASE_PROJECT" >/dev/null 2>&1 \
+            || echo "::notice::Site $FIREBASE_PROJECT-verhuur niet aangemaakt (bestaat al, of de sleutel mag het niet)."
+          scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting:verhuur \
+            || echo "::warning::De verhuursite is niet uitgerold — bestaat de site $FIREBASE_PROJECT-verhuur in Firebase Hosting? De backoffice staat wel live."
 
       - name: Sleutel opruimen
         if: always()

@@ -208,20 +208,29 @@ jobs:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
+          # Waaraan een openstaand tabblad ziet dat er iets nieuws uitgerold is.
+          BUILD_ID: ${{ github.sha }}
+        run: npm run build
 
       # De verhuursite is een eigen bundel met een eigen uitgang. Geen enkele
       # VITE_FIREBASE-sleutel: die site praat niet met Firestore maar met één
       # HTTP-adres, en een projectsleutel die nergens voor nodig is, hoort niet
       # in een publieke bundel. Zie `vite.verhuur.config.js`.
       - name: Build verhuursite
+        if: inputs.what != 'alleen rules en indexes'
         run: npm run build:verhuur
-          # Waaraan een openstaand tabblad ziet dat er iets nieuws uitgerold is.
-          BUILD_ID: ${{ github.sha }}
-        run: npm run build
 
       - name: Publiceren
         if: inputs.what != 'alleen rules en indexes'
-        run: scripts/ci/deploy.sh "$PROJECT" --only hosting
+        run: |
+          # De backoffice eerst en los van de verhuursite: één `--only hosting`
+          # rolt beide sites in één beweging uit, en als de tweede site nog niet
+          # bestaat gaat daarmee óók de backoffice niet live. Zie ci.yml.
+          scripts/ci/deploy.sh "$PROJECT" --only hosting:app
+          npx --yes firebase-tools@13 hosting:sites:create "$PROJECT-verhuur" --project "$PROJECT" >/dev/null 2>&1 \
+            || echo "::notice::Site $PROJECT-verhuur niet aangemaakt (bestaat al, of de sleutel mag het niet)."
+          scripts/ci/deploy.sh "$PROJECT" --only hosting:verhuur \
+            || echo "::warning::De verhuursite is niet uitgerold — bestaat de site $PROJECT-verhuur in Firebase Hosting? De backoffice staat wel live."
 
       - name: Sleutel opruimen
         if: always()
