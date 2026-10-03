@@ -166,4 +166,32 @@ export default {
   'laadlijst.komt_terug': { nl: 'Komt terug', en: 'Coming back' },
   'laadlijst.niets_uit': { nl: 'Er gaat die dag niets buiten.', en: 'Nothing goes out that day.' },
   'laadlijst.niets_terug': { nl: 'Er komt die dag niets terug.', en: 'Nothing comes back that day.' },
+
+  'huurorder.waarborg_terug': { nl: 'Waarborg terugstorten', en: 'Refund deposit' },
+  'huurorder.waarborg_terug_op': { nl: 'Waarborg terug: {bedrag}', en: 'Deposit refunded: {bedrag}' },
+  'huurorder.waarborg_uitleg': {
+    nl: '{klant} betaalde {bedrag} waarborg. Wat je hier niet inhoudt, gaat terug naar dezelfde kaart.',
+    en: '{klant} paid a {bedrag} deposit. Whatever you do not withhold here goes back to the same card.',
+  },
+  'huurorder.schade': { nl: 'In te houden voor schade (€)', en: 'Withheld for damage (€)' },
+  'huurorder.schade_hint': { nl: 'Leeg of 0: alles gaat terug.', en: 'Empty or 0: everything goes back.' },
+  'huurorder.schade_te_veel': { nl: 'Meer dan de waarborg kan niet.', en: 'Cannot exceed the deposit.' },
+  'huurorder.waarborg_bevestig': { nl: 'Stort {bedrag} terug', en: 'Refund {bedrag}' },
+  'huurorder.waarborg_gelukt': { nl: '{bedrag} gaat terug naar de klant.', en: '{bedrag} goes back to the customer.' },
+  'huurorder.waarborg_mislukt': { nl: 'Het terugstorten is niet gelukt. Er is niets veranderd.', en: 'The refund did not go through. Nothing changed.' },
+
+  'artikel.foto': { nl: 'Foto', en: 'Photo' },
+  'artikel.geen_foto': {
+    nl: 'Nog geen foto. Op de verhuursite staat dan de categorie als plaatshouder.',
+    en: 'No photo yet. The rental site shows the category as a placeholder.',
+  },
+  'artikel.foto_kiezen': { nl: 'Foto kiezen', en: 'Choose photo' },
+  'artikel.foto_vervangen': { nl: 'Andere foto', en: 'Replace photo' },
+  'artikel.foto_weg': { nl: 'Foto weghalen', en: 'Remove photo' },
+  'artikel.foto_bezig': { nl: 'Bezig…', en: 'Uploading…' },
+  'artikel.foto_mislukt': { nl: 'De foto is niet opgeslagen.', en: 'The photo was not saved.' },
+
+  'artikel.foto_geen_bestand': { nl: 'Kies eerst een bestand.', en: 'Choose a file first.' },
+  'artikel.foto_geen_beeld': { nl: 'Dat is geen afbeelding. JPEG, PNG, WebP of HEIC kan.', en: 'That is not an image. JPEG, PNG, WebP or HEIC will do.' },
+  'artikel.foto_te_groot': { nl: 'De foto is groter dan 10 MB.', en: 'The photo is larger than 10 MB.' },
 }

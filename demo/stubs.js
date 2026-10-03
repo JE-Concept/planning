@@ -58,6 +58,10 @@ export const httpsCallable = (_functions, naam) => async (gegevens) => {
     return { data: { code: DEMO_PLOEG.find((m) => m.id === gegevens?.medewerkerId)?.code ?? null } }
   }
   if (naam === 'ploegCodeWijzigen') return { data: { ok: true } }
+  // De demo heeft geen Stripe; ze zegt ja en laat de rest aan het scherm.
+  if (naam === 'verhuurWaarborgTerug') {
+    return { data: { terugCent: Math.max(0, 15000 - (gegevens?.schadeCent ?? 0)), schadeCent: gegevens?.schadeCent ?? 0 } }
+  }
   if (naam === 'ploegAanmelden') {
     /*
       De demo meldt niemand echt aan — er is geen Firebase Auth. Ze doet wel

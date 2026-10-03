@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BTW_VERHUUR, huurTotaal, regelPrijs } from '@lib/huurprijs'
-import { afrekenen } from '../lib/api'
+import { afrekenen, mijnHuren, sessie } from '../lib/api'
 import { dagenTussen } from '../lib/mand'
 import Periode from '../onderdelen/Periode'
 import { CONTACT } from '../lib/instellingen'
@@ -27,6 +27,23 @@ export default function Mand({ opId, mand, zetAantal, weg, zetPeriode, leegmaken
   const [klant, setKlant] = useState({ naam: '', email: '', telefoon: '', opmerking: '' })
   const [bezig, setBezig] = useState(false)
   const [fout, setFout] = useState(null)
+  // Ingelogd: het adres en de korting komen van de server, niet uit het formulier.
+  const [account, setAccount] = useState(null)
+
+  useEffect(() => {
+    if (!sessie()) return undefined
+    let geldig = true
+    mijnHuren()
+      .then((uit) => {
+        if (!geldig) return
+        setAccount(uit)
+        setKlant((oud) => ({ ...oud, email: uit.email, naam: oud.naam || uit.naam || '' }))
+      })
+      .catch(() => geldig && setAccount(null))
+    return () => {
+      geldig = false
+    }
+  }, [])
 
   const dagen = useMemo(() => dagenTussen(mand.van, mand.tot), [mand.van, mand.tot])
 
@@ -38,9 +55,9 @@ export default function Mand({ opId, mand, zetAantal, weg, zetPeriode, leegmaken
         .map(({ r, artikel }) => ({
           artikel,
           aantal: r.aantal,
-          prijs: regelPrijs({ materiaal: artikel, aantal: r.aantal, dagen }),
+          prijs: regelPrijs({ materiaal: artikel, aantal: r.aantal, dagen, kortingPercent: account?.kortingPercent ?? 0 }),
         })),
-    [mand.regels, opId, dagen]
+    [mand.regels, opId, dagen, account?.kortingPercent]
   )
 
   const totaal = useMemo(() => huurTotaal(regels.map((x) => x.prijs)), [regels])
@@ -144,6 +161,12 @@ export default function Mand({ opId, mand, zetAantal, weg, zetPeriode, leegmaken
               <dd>{euro(totaal.waarborg)}</dd>
             </div>
           ) : null}
+          {totaal.korting > 0 ? (
+            <div>
+              <dt>Je klantenkorting ({account?.kortingPercent}%)</dt>
+              <dd>− {euro(totaal.korting)}</dd>
+            </div>
+          ) : null}
           <div className="vh__som-totaal">
             <dt>Te betalen</dt>
             <dd>{euro(totaal.teBetalen)}</dd>
@@ -174,6 +197,8 @@ export default function Mand({ opId, mand, zetAantal, weg, zetPeriode, leegmaken
               value={klant.email}
               onChange={(e) => setKlant({ ...klant, email: e.target.value })}
               autoComplete="email"
+              readOnly={Boolean(account)}
+              title={account ? 'Je bent ingelogd met dit adres.' : undefined}
             />
           </label>
           <label>
@@ -208,6 +233,12 @@ export default function Mand({ opId, mand, zetAantal, weg, zetPeriode, leegmaken
           {bezig ? 'Een ogenblik…' : `Betalen${dagen.length ? ` — ${euro(totaal.teBetalen)}` : ''}`}
         </button>
       </div>
+
+      {!account ? (
+        <p className="vh__klein">
+          Klant bij ons met een korting? <Link to="/login" className="vh__inlink">Log in</Link>, dan rekenen we ze mee.
+        </p>
+      ) : null}
 
       <p className="vh__klein">
         Je betaalt bij Stripe. Wij zien je kaartgegevens niet. Zodra de betaling rond is, staat het

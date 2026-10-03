@@ -12,6 +12,7 @@
  * `index.js` doet wat hier niet kan: lezen, schrijven, betalen.
  */
 
+import { createHash } from 'node:crypto'
 import { dagenTussen } from './vrij.js'
 
 /**
@@ -228,4 +229,20 @@ export function melding(order, klantId = null) {
     onderwerp: `${nakijken ? 'Nakijken: ' : ''}Online huur van ${order.klant?.naam || order.klant?.email}`,
     tekst,
   }
+}
+
+/**
+ * De sessie van een ingelogde klant herkennen — vraag 11.
+ *
+ * Dezelfde twee regels als in `functions/verhuur-login.js`, hier opnieuw
+ * omdat deze codebase daar niet bij kan. Ze zijn klein genoeg om tweemaal te
+ * bestaan, en `tests/betaling-order.test.js` houdt ze gelijk aan die kant:
+ * dezelfde hash voor hetzelfde token, anders vindt de kassa de sessie niet
+ * die de leeskant aanmaakte.
+ */
+export const hashVan = (token) => createHash('sha256').update(String(token)).digest('hex')
+
+export function bearerVan(kop) {
+  const m = /^Bearer\s+([A-Za-z0-9_-]{20,})$/.exec(String(kop ?? '').trim())
+  return m ? m[1] : null
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { huurTotaal, regelPrijs } from '../src/lib/huurprijs'
-import { bevestiging, centen, leesAanvraag, melding, stripeRegels } from '../functions-betaling/order'
+import { bearerVan, bevestiging, centen, hashVan, leesAanvraag, melding, stripeRegels } from '../functions-betaling/order'
+import { bearerVan as bearerLeeskant, hashVan as hashLeeskant, nieuwToken } from '../functions/verhuur-login'
 
 /**
  * De kassa, voor zover ze zonder Stripe te testen is.
@@ -188,5 +189,20 @@ describe('de mails', () => {
     const anoniem = { ...order, klant: { ...order.klant, naam: '' } }
     expect(bevestiging(anoniem).tekst).toContain('Beste klant')
     expect(melding(anoniem).onderwerp).toBe('Online huur van lies@voorbeeld.be')
+  })
+})
+
+describe('de sessie aan de kassa', () => {
+  /*
+    De leeskant maakt de sessie, de kassa leest ze. Twee codebases, dus twee
+    keer dezelfde twee regels — en dit is wat ze gelijk houdt. Wijkt de hash
+    af, dan vindt de kassa geen enkele sessie en krijgt niemand nog korting,
+    zonder foutmelding.
+  */
+  it('hasht precies zoals de leeskant', () => {
+    const t = nieuwToken()
+    expect(hashVan(t)).toBe(hashLeeskant(t))
+    expect(bearerVan(`Bearer ${t}`)).toBe(bearerLeeskant(`Bearer ${t}`))
+    expect(bearerVan('Bearer x')).toBe(null)
   })
 })

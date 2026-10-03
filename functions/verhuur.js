@@ -3,6 +3,17 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { logger } from 'firebase-functions'
 import { beschikbaarheidVan, catalogusVan, categorieenVan } from './verhuur-aanbod.js'
 import { leesAanvraag } from './verhuur-aanvraag.js'
+import {
+  LINK_MINUTEN,
+  SESSIE_DAGEN,
+  bearerVan,
+  beoordeelLink,
+  hashVan,
+  leesEmail,
+  loginMail,
+  nieuwToken,
+  sessieGeldig,
+} from './verhuur-login.js'
 
 /**
  * De leeskant van de verhuur: wat er is, en wanneer het vrij is.
@@ -103,6 +114,23 @@ export function maakVerhuur({ db, region }) {
       */
       if (verzoek.method === 'POST' && pad === 'aanvraag') {
         return await aanvraagBinnen({ db, verzoek, antwoord })
+      }
+
+      /*
+        Inloggen — vraag 11 en 12. Drie adressen: de link aanvragen, de link
+        gebruiken, en "wat heb ik gehuurd". Zie `verhuur-login.js` voor
+        waarom dit een eigen magische link is en geen Firebase Auth.
+      */
+      if (verzoek.method === 'POST' && pad === 'login') {
+        return await linkAanvragen({ db, verzoek, antwoord })
+      }
+      if (verzoek.method === 'GET' && pad.startsWith('login/')) {
+        antwoord.set('Cache-Control', 'no-store')
+        return await linkGebruiken({ db, token: pad.slice('login/'.length), antwoord })
+      }
+      if (verzoek.method === 'GET' && pad === 'mijn') {
+        antwoord.set('Cache-Control', 'no-store')
+        return await mijnHuren({ db, verzoek, antwoord })
       }
 
       if (verzoek.method !== 'GET') return antwoord.status(405).json({ fout: 'alleen_get' })
@@ -213,4 +241,128 @@ async function aanvraagBinnen({ db, verzoek, antwoord }) {
   })
 
   return antwoord.json({ ok: true })
+}
+
+/**
+ * Een inloglink mailen.
+ *
+ * Het antwoord is altijd "ok", ook voor een adres dat we niet kennen. Zou het
+ * verschil maken, dan is dit adres een manier om onze klantenlijst na te
+ * lopen. De mail gaat overigens ook naar een onbekend adres: wie inlogt
+ * zonder klant te zijn, ziet gewoon een lege lijst — en zijn volgende huur
+ * staat er dan wél.
+ */
+async function linkAanvragen({ db, verzoek, antwoord }) {
+  const email = leesEmail(verzoek.body)
+  if (!email) return antwoord.status(400).json({ fout: 'geen_email' })
+
+  const token = nieuwToken()
+  await db.collection('verhuurSessies').doc(hashVan(token)).set({
+    email,
+    linkVervalt: new Date(Date.now() + LINK_MINUTEN * 60 * 1000),
+    gebruiktOp: null,
+    sessieHash: null,
+    sessieVervalt: null,
+    createdAt: FieldValue.serverTimestamp(),
+  })
+
+  const link = `https://rental.jeconcept.be/login/${token}`
+  const { onderwerp, tekst } = loginMail({ link })
+  await db.collection('mailQueue').add({
+    aan: email,
+    soort: 'verhuur-login',
+    onderwerp,
+    tekst,
+    klantMail: true,
+    status: 'wachtend',
+    pogingen: 0,
+    createdAt: FieldValue.serverTimestamp(),
+  })
+
+  return antwoord.json({ ok: true })
+}
+
+/**
+ * De link gebruiken: één keer, binnen de tijd, en dan een sessie terug.
+ *
+ * In een transactie, want twee tabbladen die dezelfde link openen mogen niet
+ * allebei een sessie krijgen. De tweede ziet "al gebruikt" — en heeft, als
+ * het dezelfde persoon is, in zijn eerste tabblad al een sessie.
+ */
+async function linkGebruiken({ db, token, antwoord }) {
+  if (!/^[A-Za-z0-9_-]{20,}$/.test(token)) return antwoord.status(400).json({ fout: 'onbekend' })
+  const ref = db.collection('verhuurSessies').doc(hashVan(token))
+
+  const uit = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref)
+    const oordeel = beoordeelLink(snap.exists ? snap.data() : null)
+    if (!oordeel.ok) return oordeel
+
+    const sessie = nieuwToken()
+    tx.update(ref, {
+      gebruiktOp: FieldValue.serverTimestamp(),
+      sessieHash: hashVan(sessie),
+      sessieVervalt: new Date(Date.now() + SESSIE_DAGEN * 24 * 60 * 60 * 1000),
+    })
+    return { ok: true, sessie, email: snap.data().email }
+  })
+
+  if (!uit.ok) return antwoord.status(410).json({ fout: uit.reden })
+
+  const klant = await klantBijEmail(db, uit.email)
+  return antwoord.json({ sessie: uit.sessie, email: uit.email, naam: klant?.name ?? null })
+}
+
+/** De sessie achter een Authorization-kop, of niets. */
+export async function sessieVan(db, kop) {
+  const token = bearerVan(kop)
+  if (!token) return null
+  const snap = await db.collection('verhuurSessies').where('sessieHash', '==', hashVan(token)).limit(1).get()
+  if (snap.empty) return null
+  const sessie = snap.docs[0].data()
+  return sessieGeldig(sessie) ? { email: sessie.email } : null
+}
+
+async function klantBijEmail(db, email) {
+  const snap = await db.collection('customers').where('email', '==', email).limit(1).get()
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+}
+
+/**
+ * Wat deze klant huurde, en huurt.
+ *
+ * Alleen zijn eigen orders, gezocht op het adres van de sessie en niet op
+ * iets wat de browser meestuurt. En alleen wat hij ervan hoeft te zien: geen
+ * Stripe-ids, geen reservatie-ids, geen interne stand.
+ */
+async function mijnHuren({ db, verzoek, antwoord }) {
+  const sessie = await sessieVan(db, verzoek.get('authorization'))
+  if (!sessie) return antwoord.status(401).json({ fout: 'niet_ingelogd' })
+
+  const klant = await klantBijEmail(db, sessie.email)
+  const orders = await db
+    .collection('huurorders')
+    .where('klant.email', '==', sessie.email)
+    .orderBy('createdAt', 'desc')
+    .limit(50)
+    .get()
+
+  return antwoord.json({
+    email: sessie.email,
+    naam: klant?.name ?? null,
+    kortingPercent: Math.max(0, Math.min(100, Number(klant?.kortingMateriaal) || 0)),
+    huren: orders.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((o) => o.status === 'betaald' || o.status === 'nakijken')
+      .map((o) => ({
+        id: o.id,
+        van: o.van,
+        tot: o.tot,
+        status: o.status,
+        regels: (o.regels ?? []).map((r) => ({ naam: r.naam, aantal: r.aantal })),
+        teBetalen: o.teBetalen,
+        waarborg: o.waarborg,
+        waarborgTerug: o.waarborgTerugOp ? (o.waarborgTerugCent ?? 0) / 100 : null,
+      })),
+  })
 }

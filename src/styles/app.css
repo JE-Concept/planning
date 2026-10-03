@@ -3628,6 +3628,21 @@ button.je-paneel-kaart:hover {
   border-top: 1px solid var(--line);
   padding-top: var(--space-4);
 }
+.je-artikelvorm__foto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-4);
+}
+.je-artikelvorm__fotobeeld {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+}
 @media (max-width: 559px) {
   .je-artikelvorm {
     grid-template-columns: minmax(0, 1fr);

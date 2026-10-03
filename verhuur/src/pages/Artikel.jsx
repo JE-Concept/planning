@@ -4,6 +4,7 @@ import { prijsVoorPeriode, regelPrijs } from '@lib/huurprijs'
 import { dagenTussen } from '../lib/mand'
 import Periode from '../onderdelen/Periode'
 import Prijs from '../onderdelen/Prijs'
+import Foto from '../onderdelen/Foto'
 
 /**
  * Eén artikel, met de staffel erbij.
@@ -39,6 +40,8 @@ export default function Artikel({ opId, mand, zetPeriode, erbij, vrij, laadtVrij
       <Link to="/" className="vh__terug">
         ← Alle artikelen
       </Link>
+
+      <Foto artikel={artikel} groot />
 
       <header>
         <span className="je-eyebrow">{artikel.categorie}</span>

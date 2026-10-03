@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react'
 import { addDays, dayKey, formatDate, startOfDay } from '@lib/dates'
 import { conflicten, reeks, vrijInPeriode } from '@lib/voorraad'
 import { useNarrow } from '@lib/useNarrow'
-import { Button, Icon, Select } from '@components/ds'
+import { Button, Dialog, Field, Icon, Input, Select } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { EmptyState, Spinner } from '@ui/index'
 import { useTaal } from '@context/TaalProvider'
 import { useAuth } from '@context/AuthProvider'
-import { useBezet, useHuurorders, useMateriaal, useReservaties } from '@data/materiaal'
+import { useToast } from '@context/ToastProvider'
+import { useBezet, useHuurorders, useMateriaal, useReservaties, waarborgTerug } from '@data/materiaal'
 import ArtikelDialoog from '@components/materiaal/ArtikelDialoog'
 import Laadlijst from '@components/materiaal/Laadlijst'
 
@@ -254,6 +255,8 @@ export default function Materiaal() {
 function Huurorders() {
   const { t } = useTaal()
   const { orders, laadt } = useHuurorders()
+  // De order waarvan de waarborg teruggaat; `null` is dicht.
+  const [terug, setTerug] = useState(null)
 
   if (laadt || orders.length === 0) return null
 
@@ -277,9 +280,93 @@ function Huurorders() {
             </span>
           </span>
           <OrderStand stand={o.status} />
+          {/*
+            Alleen bij een betaalde order met een waarborg die nog niet terug
+            is. Is ze terug, dan staat dát er — een knop die niets meer kan
+            doen, hoort niet te blijven staan.
+          */}
+          {o.status === 'betaald' && (o.waarborg ?? 0) > 0 ? (
+            <span className="je-resvrij__acties">
+              {o.waarborgTerugOp ? (
+                <span className="je-muted-caption">
+                  {t('huurorder.waarborg_terug_op', { bedrag: euro((o.waarborgTerugCent ?? 0) / 100) })}
+                </span>
+              ) : (
+                <Button size="sm" variant="secondary" onClick={() => setTerug(o)}>
+                  {t('huurorder.waarborg_terug')}
+                </Button>
+              )}
+            </span>
+          ) : null}
         </div>
       ))}
+      <WaarborgDialoog order={terug} onClose={() => setTerug(null)} />
     </section>
+  )
+}
+
+/**
+ * De waarborg terugstorten, met wat er ingehouden wordt.
+ *
+ * ── Waarom er een bedrag gevraagd wordt en niet alleen een knop ──────────
+ * Het moment waarop het stuk terug is, is het moment waarop iemand de tent
+ * uitrolt en de scheur ziet. De waarborg bestaat voor dat moment. Standaard
+ * staat de schade op nul en gaat alles terug; wie iets inhoudt, typt het hier
+ * en ziet meteen wat er dan nog vertrekt.
+ */
+function WaarborgDialoog({ order, onClose }) {
+  const { t } = useTaal()
+  const toast = useToast()
+  const [schade, setSchade] = useState('')
+  const [bezig, setBezig] = useState(false)
+
+  const waarborg = Number(order?.waarborg ?? 0)
+  const schadeBedrag = Math.max(0, Number(String(schade).replace(',', '.')) || 0)
+  const gaatTerug = Math.max(0, Math.round((waarborg - schadeBedrag) * 100) / 100)
+  const teVeel = schadeBedrag > waarborg
+
+  const bevestig = async () => {
+    setBezig(true)
+    try {
+      await waarborgTerug(order.id, schadeBedrag)
+      toast.success(t('huurorder.waarborg_gelukt', { bedrag: euro(gaatTerug) }))
+      setSchade('')
+      onClose()
+    } catch (err) {
+      toast.error(err?.message || t('huurorder.waarborg_mislukt'))
+    } finally {
+      setBezig(false)
+    }
+  }
+
+  return (
+    <Dialog
+      open={Boolean(order)}
+      title={t('huurorder.waarborg_terug')}
+      onClose={onClose}
+      width={460}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            {t('alg.annuleren')}
+          </Button>
+          <Button onClick={bevestig} disabled={bezig || teVeel}>
+            {t('huurorder.waarborg_bevestig', { bedrag: euro(gaatTerug) })}
+          </Button>
+        </>
+      }
+    >
+      {order ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <p style={{ margin: 0 }}>
+            {t('huurorder.waarborg_uitleg', { klant: order.klant?.naam || order.klant?.email, bedrag: euro(waarborg) })}
+          </p>
+          <Field label={t('huurorder.schade')} hint={t('huurorder.schade_hint')} error={teVeel ? t('huurorder.schade_te_veel') : null}>
+            <Input inputMode="decimal" value={schade} onChange={(e) => setSchade(e.target.value)} placeholder="0" />
+          </Field>
+        </div>
+      ) : null}
+    </Dialog>
   )
 }
 

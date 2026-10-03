@@ -8,7 +8,7 @@ import Stripe from 'stripe'
 
 import { huurTotaal, isLosTeHuren, regelPrijs } from './huurprijs.js'
 import { past } from './vrij.js'
-import { bevestiging, centen, leesAanvraag, melding, stripeRegels } from './order.js'
+import { bearerVan, bevestiging, centen, hashVan, leesAanvraag, melding, stripeRegels } from './order.js'
 
 /**
  * Afrekenen voor losse verhuur.
@@ -127,36 +127,37 @@ async function reservatiesRond(transactie, van, tot) {
 }
 
 /**
- * De korting van een bekende klant.
+ * De korting van een ingelogde klant — vraag 11, beantwoord: via login.
  *
- * Een klant die al in het boek staat, krijgt op de verhuursite dezelfde
- * korting als op een offerte — anders is het antwoord op "wat kost dat" een
- * ander naargelang wie het vraagt, en dat is precies het soort verschil waar
- * een telefoontje van komt. Gezocht op e-mailadres, want dat is wat een
- * bezoeker intikt.
+ * Eerder werd de korting opgezocht op het e-mailadres dat de bezoeker
+ * intikte, en dat adres bewees niemand: wie het adres van een klant met
+ * korting kende, kreeg diens percentage. Nu komt ze alleen van een sessie —
+ * een link die in de mailbox van die klant aankwam en één keer gebruikt is.
+ * Zonder sessie is de korting nul, wat de bezoeker ook intikt.
  *
- * ── Wat hieraan nog niet klopt, en waarom het er toch zo staat ────────────
- * Het e-mailadres is niet bewezen. Wie het adres van een klant met korting
- * kent en intikt, krijgt diens percentage. Dat is geen gat waar iemand rijk
- * van wordt — het gaat om vijf tot vijftien procent op een huur die in de
- * backoffice zichtbaar binnenkomt — maar het is wél een gat, en het hoort
- * hier te staan in plaats van stilletjes mee te gaan.
- *
- * Het sluit zichzelf zodra de verhuursite het klantenlogin krijgt dat in het
- * ontwerp staat: dan komt de korting van de ingelogde klant en niet van een
- * ingetikt veld. Tot dan is dit de minste van twee fouten, want de andere —
- * online een andere prijs tonen dan aan de telefoon — merkt de klant zelf en
- * daar belt hij over.
+ * De sessie bepaalt ook het adres op de order: wie ingelogd is, kan geen
+ * huur op andermans naam zetten.
  */
-async function kortingVoor(email) {
-  const snap = await db.collection('customers').where('email', '==', email).limit(1).get()
-  if (snap.empty) return { kortingPercent: 0, customerId: null, customerName: null }
+async function kortingVoor(kop) {
+  const token = bearerVan(kop)
+  if (!token) return { kortingPercent: 0, customerId: null, customerName: null, email: null }
+
+  const sessies = await db.collection('verhuurSessies').where('sessieHash', '==', hashVan(token)).limit(1).get()
+  if (sessies.empty) return { kortingPercent: 0, customerId: null, customerName: null, email: null }
+  const sessie = sessies.docs[0].data()
+  const vervalt = sessie.sessieVervalt?.toDate?.() ?? null
+  if (!sessie.gebruiktOp || !vervalt || vervalt <= new Date()) {
+    return { kortingPercent: 0, customerId: null, customerName: null, email: null }
+  }
+
+  const snap = await db.collection('customers').where('email', '==', sessie.email).limit(1).get()
+  if (snap.empty) return { kortingPercent: 0, customerId: null, customerName: null, email: sessie.email }
   const klant = snap.docs[0]
-  const percent = Number(klant.get('kortingMateriaal')) || 0
   return {
-    kortingPercent: Math.max(0, Math.min(100, percent)),
+    kortingPercent: Math.max(0, Math.min(100, Number(klant.get('kortingMateriaal')) || 0)),
     customerId: klant.id,
     customerName: klant.get('name') ?? null,
+    email: sessie.email,
   }
 }
 
@@ -174,8 +175,10 @@ export const verhuurAfrekenen = onRequest(
     const aanvraag = leesAanvraag(req.body)
     if (aanvraag.fout) return res.status(400).json({ fout: aanvraag.fout })
 
-    const { van, tot, dagen, klant } = aanvraag
-    const korting = await kortingVoor(klant.email)
+    const { van, tot, dagen } = aanvraag
+    const korting = await kortingVoor(req.get('authorization'))
+    // Ingelogd: het adres van de sessie wint van wat er getypt werd.
+    const klant = korting.email ? { ...aanvraag.klant, email: korting.email } : aanvraag.klant
 
     let order = null
     try {

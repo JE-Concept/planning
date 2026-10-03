@@ -622,6 +622,14 @@ service cloud.firestore {
       allow update: if isMember();
       allow delete: if isAdmin();
     }
+    /*
+      Inlogsessies van klanten op de verhuursite. Niemand in de browser:
+      niet de klant (die praat via HTTP met de functie) en niet het team
+      (er staat niets in wat een mens moet lezen — hashes en vervaldagen).
+    */
+    match /verhuurSessies/{id} {
+      allow read, write: if false;
+    }
 
     // Vaste formules (winter bbq aan 29,90 met hapjes, drank en dessert): het
     // team kiest er een bij een nieuw event, een beheerder bepaalt de prijs en

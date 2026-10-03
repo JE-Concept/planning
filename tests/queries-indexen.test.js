@@ -323,6 +323,9 @@ const ONGEBRUIKT = [
   // hier omdat deze test alleen in `src/data/` kijkt — een index die alleen
   // een functie gebruikt, lijkt daar ongebruikt.
   'huurorders: status,optieVervalt',
+  // Ook van een functie: "wat huurde deze klant" op de verhuursite
+  // (`mijnHuren` in functions/verhuur.js) zoekt op het adres van de sessie.
+  'huurorders: klant.email,createdAt',
 ]
 
 const omschrijf = (index) =>

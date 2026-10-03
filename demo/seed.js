@@ -1093,7 +1093,9 @@ RESERVATIES.forEach(([id, materiaalId, materiaalNaam, aantal, vanaf, tot, status
   daarom staat het blok op het magazijnscherm en niet in een boekhoudmap.
 */
 const HUURORDERS = [
-  ['ho-1', 'betaald', 'Lies Vandeputte', 'lies.vandeputte@telenet.be', 2, 4, [['m-statafel', 'Statafel zwart Ø 80', 10]], 0],
+  // Koelkasten en geen statafels: die dragen een waarborg, en dat is wat de
+  // knop "Waarborg terugstorten" nodig heeft om te bestaan.
+  ['ho-1', 'betaald', 'Lies Vandeputte', 'lies.vandeputte@telenet.be', 2, 4, [['m-koeling', 'Koelkast glasdeur 380 l', 3]], 0],
   ['ho-2', 'wacht_op_betaling', 'Tom Smeets', 'tom@smeetsbvba.be', 12, 14, [['m-koeling', 'Koelkast glasdeur 380 l', 2]], 0],
   ['ho-3', 'nakijken', 'Feestcomité Kortessem', 'feest@kortessem.be', 20, 22, [['m-verwarmer', 'Terrasverwarmer gas', 3]], 10],
 ]

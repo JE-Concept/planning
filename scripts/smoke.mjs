@@ -1339,6 +1339,33 @@ await test('het magazijn toont wat online afgerekend is, met de standen erbij', 
   await page.close()
 })
 
+await test('de waarborg terugstorten vraagt wat je inhoudt en toont wat er teruggaat', async () => {
+  const page = await tabblad('/materiaal')
+
+  // Alleen de betaalde order van Lies heeft een knop; de twee andere niet.
+  const knoppen = page.getByRole('button', { name: 'Waarborg terugstorten' })
+  zouden((await knoppen.count()) === 1, `er horen één knop te zijn, er zijn er ${await knoppen.count()}`)
+  await knoppen.first().click()
+  await page.waitForTimeout(300)
+
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Lies Vandeputte'), 'de dialoog noemt de klant niet')
+  zouden(bevat(tekst, 'In te houden voor schade'), 'er wordt niet gevraagd wat er ingehouden wordt')
+
+  // Drie koelkasten à € 50 waarborg: 150 in, 20 ingehouden, 130 terug.
+  await page.getByLabel('In te houden voor schade (€)').fill('20')
+  await page.waitForTimeout(200)
+  const na = await inhoud(page)
+  zouden(bevat(na, 'Stort € 130,00 terug'), `de knop zegt niet wat er teruggaat: ${na.slice(0, 300)}`)
+
+  await page.getByLabel('In te houden voor schade (€)').fill('99999')
+  await page.waitForTimeout(200)
+  zouden(bevat(await inhoud(page), 'Meer dan de waarborg kan niet'), 'meer inhouden dan de waarborg wordt niet tegengehouden')
+
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een artikel wijzigen toont de staffel en weigert los verhuur zonder prijs', async () => {
   const page = await tabblad('/materiaal')
 
@@ -1349,6 +1376,9 @@ await test('een artikel wijzigen toont de staffel en weigert los verhuur zonder 
   const tekst = await inhoud(page)
   zouden(bevat(tekst, 'Artikel wijzigen'), `de dialoog gaat niet open: ${tekst.slice(0, 200)}`)
   zouden(bevat(tekst, 'Waarborg'), 'het waarborgveld staat er niet')
+  // De foto (vraag 9): nog geen foto in de demo, dus de uitleg en de knop.
+  zouden(bevat(tekst, 'Nog geen foto'), 'het fotoveld staat er niet')
+  zouden((await page.getByRole('button', { name: 'Foto kiezen' }).count()) === 1, 'de knop om een foto te kiezen ontbreekt')
   zouden(bevat(tekst, 'Mag zonder offerte gehuurd worden'), 'het vinkje voor losse verhuur staat er niet')
 
   /*

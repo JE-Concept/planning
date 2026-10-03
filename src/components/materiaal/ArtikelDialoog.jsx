@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Checkbox, Dialog, Field, Input, Textarea } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
-import { maakMateriaal, wijzigMateriaal } from '@data/materiaal'
+import { maakMateriaal, uploadFoto, verwijderFoto, wijzigMateriaal } from '@data/materiaal'
 import { prijsVoorPeriode } from '@lib/huurprijs'
 
 /**
@@ -51,6 +51,8 @@ export default function ArtikelDialoog({ open, artikel, categorieen = [], onClos
   const toast = useToast()
   const [vorm, setVorm] = useState(leeg)
   const [bezig, setBezig] = useState(false)
+  const [fotoBezig, setFotoBezig] = useState(false)
+  const bestandsveld = useRef(null)
 
   useEffect(() => {
     if (!open) return
@@ -190,6 +192,52 @@ export default function ArtikelDialoog({ open, artikel, categorieen = [], onClos
         <Field label={t('artikel.vervangwaarde')} hint={t('artikel.vervangwaarde_hint')} className="je-artikelvorm__breed">
           <Input inputMode="decimal" value={vorm.vervangwaarde} onChange={(e) => zet({ vervangwaarde: e.target.value })} />
         </Field>
+
+        {/*
+          De foto staat alleen bij een bestaand artikel: ze hoort aan een id
+          te hangen, en dat is er pas na het bewaren. Een nieuw artikel krijgt
+          daarom eerst zijn naam en zijn prijs, en dan zijn foto.
+        */}
+        {artikel ? (
+          <div className="je-artikelvorm__breed je-artikelvorm__foto">
+            <span className="je-caps">{t('artikel.foto')}</span>
+            {artikel.foto ? (
+              <img src={artikel.foto} alt="" className="je-artikelvorm__fotobeeld" />
+            ) : (
+              <p className="je-muted-caption" style={{ margin: 0 }}>{t('artikel.geen_foto')}</p>
+            )}
+            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+              <input
+                ref={bestandsveld}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (!file) return
+                  setFotoBezig(true)
+                  try {
+                    await uploadFoto(artikel.id, file)
+                  } catch (err) {
+                    // Een klacht uit `keurBestand` is een tekstsleutel; al de rest is een storing.
+                    toast.error(/^artikel\./.test(err?.message ?? '') ? t(err.message) : t('artikel.foto_mislukt'))
+                  } finally {
+                    setFotoBezig(false)
+                  }
+                }}
+              />
+              <Button size="sm" variant="secondary" onClick={() => bestandsveld.current?.click()} disabled={fotoBezig}>
+                {fotoBezig ? t('artikel.foto_bezig') : artikel.foto ? t('artikel.foto_vervangen') : t('artikel.foto_kiezen')}
+              </Button>
+              {artikel.foto ? (
+                <Button size="sm" variant="ghost" onClick={() => verwijderFoto(artikel.id)} disabled={fotoBezig}>
+                  {t('artikel.foto_weg')}
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <div className="je-artikelvorm__breed je-artikelvorm__los">
           <Checkbox

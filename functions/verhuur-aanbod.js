@@ -32,6 +32,9 @@ export const PUBLIEKE_VELDEN = [
   'waarborg',
   'minDagen',
   'gerelateerd',
+  // Een download-URL uit Storage (vraag 9). Geen pad: de site heeft geen
+  // Storage-SDK en hoort die ook niet te krijgen.
+  'foto',
 ]
 
 /** Wat er nooit mee naar buiten mag. Alleen om het in een test te kunnen zeggen. */

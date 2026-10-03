@@ -10,6 +10,13 @@ import { doc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { app, db } from '@lib/firebase'
 import { AVATARMAAT, keurBestand, vierkanteFoto } from '@lib/beeld'
 
+/* De klachten van `keurBestand`, in de woorden van dit scherm. */
+const KLACHT = {
+  geen_bestand: 'profiel.foto_geen_bestand',
+  geen_beeld: 'profiel.foto_geen_beeld',
+  te_groot: 'profiel.foto_te_groot',
+}
+
 /** Het pad in de opslag. Eén bestand per persoon: een nieuwe foto vervangt de vorige. */
 export const avatarPad = (uid) => `avatars/${uid}`
 
@@ -28,7 +35,7 @@ export async function updateMyProfile(uid, { fullName }) {
  */
 export async function uploadAvatar(uid, file) {
   const klacht = keurBestand(file)
-  if (klacht) throw new Error(klacht)
+  if (klacht) throw new Error(KLACHT[klacht])
 
   const blob = await vierkanteFoto(file, AVATARMAAT)
 

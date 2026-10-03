@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AVATARMAAT, MAX_BYTES, keurBestand, vierkantPlan } from '../src/lib/beeld'
+import { AVATARMAAT, FOTOMAAT, MAX_BYTES, keurBestand, verkleinPlan, vierkantPlan } from '../src/lib/beeld'
 
 /*
   Een profielfoto komt van een telefoon en is staand. Het rekenwerk van het
@@ -49,13 +49,30 @@ describe('wat er door mag', () => {
   })
 
   it('zegt welke klacht het is in plaats van alleen nee', () => {
-    expect(keurBestand(null)).toBe('profiel.foto_geen_bestand')
-    expect(keurBestand(bestand('application/pdf', 1000))).toBe('profiel.foto_geen_beeld')
-    expect(keurBestand(bestand('image/jpeg', MAX_BYTES + 1))).toBe('profiel.foto_te_groot')
+    expect(keurBestand(null)).toBe('geen_bestand')
+    expect(keurBestand(bestand('application/pdf', 1000))).toBe('geen_beeld')
+    expect(keurBestand(bestand('image/jpeg', MAX_BYTES + 1))).toBe('te_groot')
   })
 
   // Safari geeft 'IMAGE/JPEG' terug op een foto uit de bibliotheek.
   it('trekt zich niets aan van hoofdletters in het type', () => {
     expect(keurBestand(bestand('IMAGE/JPEG', 1000))).toBeNull()
+  })
+})
+
+describe('een productfoto verkleinen', () => {
+  it('maakt alleen kleiner, nooit groter', () => {
+    expect(verkleinPlan(800, 600)).toEqual({ breedte: 800, hoogte: 600 })
+    expect(verkleinPlan(1600, 1200)).toEqual({ breedte: 1600, hoogte: 1200 })
+  })
+
+  /*
+    De verhouding blijft: een tent die 4:3 gefotografeerd is, blijft 4:3. De
+    kaart op de site snijdt zelf bij; de opslag hoort niets te vervormen.
+  */
+  it('houdt de verhouding en zet de langste zijde op de maat', () => {
+    expect(verkleinPlan(4000, 3000)).toEqual({ breedte: FOTOMAAT, hoogte: 1200 })
+    expect(verkleinPlan(3000, 4000)).toEqual({ breedte: 1200, hoogte: FOTOMAAT })
+    expect(verkleinPlan(5000, 1000, 1000)).toEqual({ breedte: 1000, hoogte: 200 })
   })
 })

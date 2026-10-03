@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
-import { aanbod, beschikbaar } from './lib/api'
+import { aanbod, beschikbaar, sessie } from './lib/api'
 import { useMand } from './lib/mand'
 import { CONTACT } from './lib/instellingen'
 import Catalogus from './pages/Catalogus'
@@ -15,6 +15,8 @@ const Artikel = lazy(() => import('./pages/Artikel'))
 const Mand = lazy(() => import('./pages/Mand'))
 const Offerte = lazy(() => import('./pages/Offerte'))
 const Afloop = lazy(() => import('./pages/Afloop'))
+const Login = lazy(() => import('./pages/Login'))
+const Mijn = lazy(() => import('./pages/Mijn'))
 
 /**
  * De verhuursite van JE Concept.
@@ -42,6 +44,8 @@ export default function App() {
   const { mand, erbij, zetAantal, weg, zetPeriode, leegmaken, stuks } = useMand()
   const [vrij, setVrij] = useState(new Map())
   const [laadtVrij, setLaadtVrij] = useState(false)
+  // Alleen óf er een sessie is; wie het is, zegt de server bij elk verzoek.
+  const [ingelogd, setIngelogd] = useState(() => Boolean(sessie()))
 
   useEffect(() => {
     aanbod()
@@ -94,7 +98,7 @@ export default function App() {
 
   return (
     <div className="vh">
-      <Kop stuks={stuks} />
+      <Kop stuks={stuks} ingelogd={ingelogd} />
       <main className="vh__body">
         {fout ? (
           <p className="vh__fout">
@@ -110,6 +114,9 @@ export default function App() {
               <Route path="/offerte" element={<Offerte />} />
               <Route path="/gelukt" element={<Afloop gelukt />} />
               <Route path="/afgebroken" element={<Afloop />} />
+              <Route path="/login" element={<Login onIngelogd={() => setIngelogd(true)} />} />
+              <Route path="/login/:token" element={<Login onIngelogd={() => setIngelogd(true)} />} />
+              <Route path="/mijn" element={<Mijn onUitgelogd={() => setIngelogd(false)} />} />
               <Route path="*" element={<Catalogus {...gedeeld} />} />
             </Routes>
           </Suspense>
@@ -120,7 +127,7 @@ export default function App() {
   )
 }
 
-function Kop({ stuks }) {
+function Kop({ stuks, ingelogd }) {
   const { pathname } = useLocation()
   useOmhoogBijWissel(pathname)
 
@@ -131,6 +138,9 @@ function Kop({ stuks }) {
         <span className="vh__merk-sub">Verhuur</span>
       </Link>
       <nav className="vh__nav">
+        <Link to={ingelogd ? '/mijn' : '/login'} className="je-btn je-btn--ghost je-btn--sm">
+          {ingelogd ? 'Mijn huren' : 'Inloggen'}
+        </Link>
         <Link to="/offerte" className="je-btn je-btn--ghost je-btn--sm">
           Offerte vragen
         </Link>

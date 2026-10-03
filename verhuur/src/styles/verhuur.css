@@ -51,9 +51,19 @@
   letter-spacing: 0.14em;
   color: var(--accent);
 }
+/*
+  Drie knoppen passen op een telefoon niet naast het merk. Buigen en niet
+  krimpen: een knop die smaller wordt dan zijn woord, is een knop die je
+  niet meer leest. De kop wordt dan twee regels hoog, en dat is goed.
+*/
 .vh__nav {
   display: flex;
-  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
+}
+.vh__kop {
+  flex-wrap: wrap;
 }
 
 .vh__body {
@@ -205,6 +215,30 @@
 .vh__kaart-link h3 {
   font: var(--type-h4);
   margin: 0 0 var(--space-2);
+}
+.vh__foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 2px;
+  margin-bottom: var(--space-3);
+  background: var(--surface-2);
+}
+.vh__foto--groot {
+  aspect-ratio: 16 / 9;
+  max-height: 420px;
+}
+/* De plaatshouder: de categorie in de huisletter, als keuze en niet als gat. */
+.vh__foto--leeg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  font: var(--type-h4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
 }
 .vh__kaart-link:hover h3 {
   color: var(--accent);
@@ -421,6 +455,27 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   justify-content: space-between;
+}
+
+/* Een knop die eruitziet als een woord in een zin — uitloggen is geen actie
+   die een knop verdient, maar hij moet wel te raken zijn. */
+/* Een link in een zin die met een duim geraakt moet worden. */
+.vh__inlink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  min-width: 34px;
+  justify-content: center;
+}
+.vh__tekstknop {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 34px;
 }
 
 /* ── Meldingen ────────────────────────────────────────────────────────── */

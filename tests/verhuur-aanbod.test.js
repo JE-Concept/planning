@@ -30,6 +30,7 @@ const statafel = {
   prijsWeek: 32,
   waarborg: null,
   minDagen: 1,
+  foto: 'https://firebasestorage.googleapis.com/v0/b/x/o/materiaal%2Fm-statafel%2Ffoto.jpg?alt=media&token=abc',
   directTeHuren: true,
   archived: false,
   // Alles hieronder is van ons en van niemand anders.
@@ -65,6 +66,7 @@ describe('wat een bezoeker van een artikel ziet', () => {
       voorraad: 40,
       uitloopDagen: 1,
     })
+    expect(uit.foto).toMatch(/^https:\/\/firebasestorage/)
   })
 
   /*

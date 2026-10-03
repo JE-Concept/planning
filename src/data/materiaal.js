@@ -11,9 +11,11 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
-import { auth, db } from '@lib/firebase'
+import { app, auth, db } from '@lib/firebase'
 import { bezetPerDag } from '@lib/voorraad'
+import { keurBestand, verkleinFoto } from '@lib/beeld'
 
 /**
  * Het verhuurmateriaal en wat erop gereserveerd staat.
@@ -295,3 +297,53 @@ export function wijzigReservatie(id, patch) {
 export function verwijderReservatie(id) {
   return deleteDoc(doc(db, COL.reservaties, id))
 }
+
+/**
+ * De waarborg terugstorten — via de server, nooit vanuit de browser.
+ *
+ * Dit is de enige handeling in het magazijn die geld laat vertrekken, en
+ * daarom gebeurt ze in `functions-betaling/` met de Stripe-sleutel die de
+ * browser niet heeft. Wat hier gebeurt is één vraag stellen: deze order, dit
+ * bedrag aan schade ingehouden. De server beslist of dat mag (alleen een
+ * beheerder, alleen een betaalde order, nooit twee keer) en schrijft het
+ * resultaat op de order; het scherm leest dat terug via de snapshot.
+ */
+export function waarborgTerug(orderId, schadeEuro = 0) {
+  const aanroep = httpsCallable(getFunctions(app, 'europe-west1'), 'verhuurWaarborgTerug')
+  const schadeCent = Math.max(0, Math.round((Number(String(schadeEuro).replace(',', '.')) || 0) * 100))
+  return aanroep({ orderId, schadeCent }).then((r) => r.data)
+}
+
+/**
+ * De productfoto erop — vraag 9 in `docs/vragen-productie.md`.
+ *
+ * Eerst verkleinen in de browser, dan naar de opslag, dan pas het veld op het
+ * artikel: een `foto` die naar een bestand wijst dat er niet staat, is een
+ * gebroken plaatje op een openbare pagina. Eén bestand per artikel — een
+ * nieuwe foto vervangt de vorige, en de download-URL blijft dezelfde vorm.
+ *
+ * De site krijgt de URL met token en geen pad: ze heeft geen Storage-SDK en
+ * hoort die niet te krijgen (zie `tests/verhuur-bundel.test.js`).
+ */
+/* De klachten van `keurBestand`, in de woorden van het magazijn. */
+const FOTOKLACHT = {
+  geen_bestand: 'artikel.foto_geen_bestand',
+  geen_beeld: 'artikel.foto_geen_beeld',
+  te_groot: 'artikel.foto_te_groot',
+}
+
+export async function uploadFoto(id, file) {
+  const klacht = keurBestand(file)
+  if (klacht) throw new Error(FOTOKLACHT[klacht])
+
+  const blob = await verkleinFoto(file)
+  const { getStorage, ref: storageRef, uploadBytes, getDownloadURL } = await import('firebase/storage')
+  const bestand = storageRef(getStorage(app), `materiaal/${id}/foto.jpg`)
+  await uploadBytes(bestand, blob, { contentType: 'image/jpeg' })
+  const url = await getDownloadURL(bestand)
+  await wijzigMateriaal(id, { foto: url })
+  return url
+}
+
+/** De foto weg. Het bestand mag blijven; het veld is wat de site leest. */
+export const verwijderFoto = (id) => wijzigMateriaal(id, { foto: null })

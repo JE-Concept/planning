@@ -4,6 +4,7 @@ import { prijsVoorPeriode } from '@lib/huurprijs'
 import { dagenTussen } from '../lib/mand'
 import Periode from '../onderdelen/Periode'
 import Prijs from '../onderdelen/Prijs'
+import Foto from '../onderdelen/Foto'
 
 /**
  * De etalage: wat er te huren is, en wat er vrij is op jouw datum.
@@ -98,6 +99,7 @@ function Kaart({ artikel, dagen, vrij, laadtVrij, onErbij }) {
   return (
     <li className={`vh__kaart${volzet ? ' vh__kaart--volzet' : ''}`}>
       <Link to={`/artikel/${artikel.id}`} className="vh__kaart-link">
+        <Foto artikel={artikel} />
         <h3>{artikel.naam}</h3>
         {artikel.omschrijving ? <p className="vh__kaart-tekst">{artikel.omschrijving}</p> : null}
       </Link>

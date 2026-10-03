@@ -671,6 +671,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "huurorders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "klant.email",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

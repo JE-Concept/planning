@@ -49,6 +49,9 @@ In JE Plan → **Materiaal**, klik op een artikelnaam.
   die hoger is dan zeven dagprijzen en kijk of de voorbeeldrij dat laat zien.
 - [ ] Zet een waarborg en bewaar. De rij in de kalender krijgt het label
   *Los te huren*.
+- [ ] Open het artikel opnieuw en kies een foto van je telefoon (vraag 9). Na
+  een paar seconden staat ze in het formulier; op de site staat ze op de
+  kaart. Een artikel zonder foto toont zijn categorie als plaatshouder.
 
 ## 2. De site
 
@@ -89,6 +92,11 @@ Vul je eigen e-mailadres in en klik op *Betalen*.
   (vraag 15).
 - [ ] In `mailQueue` (of in je mailbox, als SMTP er is) staan twee mails: een
   bevestiging aan jou als klant, en een melding aan de beheerders.
+
+- [ ] Op de betaalde order in het magazijn staat *Waarborg terugstorten*
+  (vraag 3). Klik, hou € 1 in voor schade en bevestig. In Stripe → Payments
+  staat een gedeeltelijke terugbetaling; op de order staat *Waarborg terug:
+  € …*; in het **logboek** staat wie het deed.
 
 ## 4. Afbreken en verlopen
 

@@ -18,8 +18,38 @@
  * en één adres dat in de browser te volgen is.
  */
 
-const haal = async (pad, opties) => {
-  const antwoord = await fetch(`/api${pad}`, opties)
+/**
+ * De sessie van een ingelogde klant — vraag 11 en 12.
+ *
+ * Eén token in localStorage, nergens anders. Het gaat als `Authorization`
+ * mee op elk verzoek; de server beslist wat het waard is. Verdwijnt het uit
+ * de browser, dan is de klant gewoon uitgelogd — er is geen cookie die
+ * stilletjes blijft hangen.
+ */
+const SESSIE = 'je-verhuur-sessie'
+
+export function sessie() {
+  try {
+    return localStorage.getItem(SESSIE) || null
+  } catch {
+    return null
+  }
+}
+
+export function zetSessie(token) {
+  try {
+    if (token) localStorage.setItem(SESSIE, token)
+    else localStorage.removeItem(SESSIE)
+  } catch {
+    // Zonder opslag blijft de klant deze pagina ingelogd en daarna niet; dat
+    // is wat een privévenster hoort te doen.
+  }
+}
+
+const haal = async (pad, opties = {}) => {
+  const token = sessie()
+  const headers = { ...(opties.headers ?? {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+  const antwoord = await fetch(`/api${pad}`, { ...opties, headers })
   if (!antwoord.ok) {
     const uit = await antwoord.json().catch(() => ({}))
     throw Object.assign(new Error(uit.fout ?? 'mislukt'), { code: uit.fout, status: antwoord.status, uit })
@@ -56,3 +86,13 @@ export const aanvragen = (aanvraag) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(aanvraag),
   })
+
+/** Een inloglink vragen. Altijd "ok" — zie `linkAanvragen` in de functie. */
+export const loginVragen = (email) =>
+  haal('/verhuur/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+
+/** De link uit de mail gebruiken; geeft de sessie terug. */
+export const loginGebruiken = (token) => haal(`/verhuur/login/${encodeURIComponent(token)}`)
+
+/** Wat deze klant huurde. 401 wanneer de sessie weg of verlopen is. */
+export const mijnHuren = () => haal('/verhuur/mijn')

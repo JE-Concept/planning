@@ -47,6 +47,8 @@ const AANBOD = {
       id: 'm-koeling', naam: 'Koelkast glasdeur 380 l', omschrijving: '',
       categorie: 'Koeling', prijsPerDag: 45, prijsWeekend: 70, prijsWeek: 180,
       waarborg: 50, minDagen: 2, voorraad: 9, uitloopDagen: 1,
+      // Eén artikel mét foto, zodat beide wegen — foto en plaatshouder — lopen.
+      foto: '/favicon.svg',
     },
     {
       id: 'm-verwarmer', naam: 'Terrasverwarmer gas', omschrijving: '',
@@ -80,6 +82,34 @@ const server = createServer((req, res) => {
         vrij: AANBOD.artikelen.map((m) => ({ id: m.id, vrij: VRIJ[m.id], voorraad: m.voorraad })),
       })
     )
+  }
+
+  // Inloggen: het formulier zegt altijd ok; de link 'goed' werkt, 'oud' is verlopen.
+  if (url.pathname === '/api/verhuur/login' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (stuk) => (body += stuk))
+    return req.on('end', () => {
+      laatsteAfrekening = { pad: url.pathname, body: JSON.parse(body || '{}') }
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ ok: true }))
+    })
+  }
+  if (url.pathname.startsWith('/api/verhuur/login/')) {
+    const token = url.pathname.split('/').pop()
+    res.writeHead(token === 'goedetoken-goedetoken-goed' ? 200 : 410, { 'Content-Type': 'application/json' })
+    return res.end(JSON.stringify(token === 'goedetoken-goedetoken-goed' ? { sessie: 'sessie-sessie-sessie-sessie', email: 'lies@voorbeeld.be', naam: 'Lies' } : { fout: 'verlopen' }))
+  }
+  if (url.pathname === '/api/verhuur/mijn') {
+    const kop = req.headers.authorization ?? ''
+    if (kop !== 'Bearer sessie-sessie-sessie-sessie') {
+      res.writeHead(401, { 'Content-Type': 'application/json' })
+      return res.end(JSON.stringify({ fout: 'niet_ingelogd' }))
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    return res.end(JSON.stringify({
+      email: 'lies@voorbeeld.be', naam: 'Lies', kortingPercent: 10,
+      huren: [{ id: 'ho-1', van: '2027-02-12', tot: '2027-02-14', status: 'betaald', regels: [{ naam: 'Koelkast', aantal: 2 }], teBetalen: 213.35, waarborg: 100, waarborgTerug: 100 }],
+    }))
   }
 
   if (url.pathname === '/api/afrekenen' || url.pathname === '/api/verhuur/aanvraag') {
@@ -160,7 +190,8 @@ const ga = async (page, pad) => {
   eens als verschil ziet.
 */
 const tekst = async (page) => (await page.locator('body').innerText()).toLowerCase()
-const bevat = (t, stuk) => t.includes(stuk.toLowerCase())
+// Allebei de kanten klein, zodat het ook klopt voor tekst die niet via `tekst()` kwam.
+const bevat = (t, stuk) => String(t).toLowerCase().includes(stuk.toLowerCase())
 
 /* ── De etalage ──────────────────────────────────────────────────────── */
 
@@ -172,6 +203,21 @@ await test('de catalogus toont het aanbod met een prijs erbij', async (page) => 
   // Zonder datum een vanafprijs, want een bedrag zonder periode is geen prijs.
   zouden(/vanaf/i.test(t), `er staat geen vanafprijs: ${t.slice(0, 300)}`)
   zouden(bevat(t, '€ 9,00'), 'de dagprijs staat er niet')
+})
+
+await test('een artikel met foto toont ze, een artikel zonder krijgt zijn categorie als plaatshouder', async (page) => {
+  await ga(page, '/')
+  const fotos = page.locator('img.vh__foto')
+  zouden((await fotos.count()) === 1, `er horen één foto te zijn, er zijn er ${await fotos.count()}`)
+  zouden((await fotos.first().getAttribute('alt')) === 'Koelkast glasdeur 380 l', 'de foto heeft de naam van het artikel niet als alt')
+  zouden((await fotos.first().getAttribute('loading')) === 'lazy', 'de kaartfoto laadt niet lui')
+  const lege = page.locator('.vh__foto--leeg')
+  zouden((await lege.count()) === 2, 'de artikelen zonder foto hebben geen plaatshouder')
+  const plaatshouders = await lege.allTextContents()
+  zouden(
+    plaatshouders.some((t) => bevat(t, 'meubilair')) && plaatshouders.some((t) => bevat(t, 'verwarming')),
+    `de plaatshouder draagt de categorie niet: ${JSON.stringify(plaatshouders)}`
+  )
 })
 
 await test('zonder gekozen datum staat er nergens een aantal vrije stuks', async (page) => {
@@ -368,6 +414,69 @@ await test('de site vraagt beschikbaarheid alleen op met een datum', async (page
   const metDatum = verzoeken.filter((v) => v.includes('/api/verhuur/beschikbaar'))
   zouden(metDatum.length === 0, `er wordt beschikbaarheid opgevraagd zonder datum: ${metDatum[0]}`)
   zouden(verzoeken.some((v) => v.includes('/api/verhuur/aanbod')), 'het aanbod wordt niet opgehaald')
+})
+
+/* ── Inloggen ────────────────────────────────────────────────────────── */
+
+await test('een inloglink vragen zegt "kijk in je mail", wat het adres ook is', async (page) => {
+  await ga(page, '/login')
+  await page.locator('input[type=email]').fill('iemand@voorbeeld.be')
+  await page.getByRole('button', { name: /inloglink/ }).click()
+  await page.waitForTimeout(300)
+  zouden(bevat(await tekst(page), 'Kijk in je mail'), 'na het versturen staat er geen "kijk in je mail"')
+  zouden(laatsteAfrekening?.pad === '/api/verhuur/login', 'de aanvraag is niet verstuurd')
+  zouden(laatsteAfrekening.body.email === 'iemand@voorbeeld.be', 'het adres ging niet mee')
+})
+
+await test('een verlopen link zegt dat, en biedt een nieuwe aan', async (page) => {
+  await ga(page, '/login/oudetoken-oudetoken-oud')
+  await page.waitForTimeout(400)
+  const t = await tekst(page)
+  zouden(bevat(t, 'verlopen'), `de reden staat er niet: ${t.slice(0, 200)}`)
+  zouden((await page.getByRole('link', { name: /Nieuwe link/ }).count()) === 1, 'er is geen weg naar een nieuwe link')
+})
+
+/*
+  De link werkt, de sessie staat in de browser, en daarna: de eigen huren,
+  het adres vast in de mand, en de korting in de som. Dat is wat het inloggen
+  oplevert — en het sluit de rand uit vraag 11: korting alleen na een link
+  die in de mailbox van déze klant aankwam.
+*/
+await test('de link gebruiken logt in: eigen huren, adres vast, korting in de mand', async (page) => {
+  await ga(page, '/login/goedetoken-goedetoken-goed')
+  await page.waitForURL(/\/mijn$/, { timeout: 5000 })
+  await page.waitForTimeout(400)
+
+  const mijn = await tekst(page)
+  zouden(bevat(mijn, 'Mijn huren'), 'de pagina met eigen huren komt niet')
+  zouden(bevat(mijn, 'lies@voorbeeld.be'), 'het adres van de sessie staat er niet')
+  zouden(bevat(mijn, '2 × Koelkast'), 'de eigen huur staat er niet')
+  zouden(bevat(mijn, 'waarborg € 100,00 terug'), 'de teruggestorte waarborg staat er niet')
+  zouden(bevat(await page.locator('.vh__kop').innerText(), 'Mijn huren'), 'de kop zegt niet dat je ingelogd bent')
+
+  // In de mand: adres vast en de korting zichtbaar.
+  await ga(page, '/')
+  await page.fill('#van', '2027-03-16')
+  await page.fill('#tot', '2027-03-18')
+  await page.waitForTimeout(300)
+  await page.locator('.vh__kaart', { hasText: 'Koelkast' }).getByRole('button', { name: 'In de mand' }).click()
+  await ga(page, '/mand')
+  await page.waitForTimeout(500)
+  const mand = await tekst(page)
+  zouden((await page.locator('input[type=email]').inputValue()) === 'lies@voorbeeld.be', 'het adres staat niet vooraf ingevuld')
+  zouden(await page.locator('input[type=email]').evaluate((el) => el.readOnly), 'het adres is nog te wijzigen terwijl je ingelogd bent')
+  // 3 × 45 = 135, min 10% = 121,50; btw 25,52; waarborg 50; samen 197,02.
+  zouden(bevat(mand, 'klantenkorting (10%)'), `de korting staat niet in de som: ${mand.slice(0, 400)}`)
+  zouden(bevat(mand, '€ 197,02'), `het totaal met korting klopt niet: ${mand.slice(0, 600)}`)
+})
+
+await test('uitloggen haalt de sessie weg', async (page) => {
+  await ga(page, '/login/goedetoken-goedetoken-goed')
+  await page.waitForURL(/\/mijn$/, { timeout: 5000 })
+  await page.getByRole('button', { name: 'uitloggen' }).click()
+  await page.waitForTimeout(200)
+  zouden((await page.evaluate(() => localStorage.getItem('je-verhuur-sessie'))) === null, 'de sessie staat nog in de browser')
+  zouden(bevat(await page.locator('.vh__kop').innerText(), 'Inloggen'), 'de kop zegt nog dat je ingelogd bent')
 })
 
 /* ── Hoe snel ────────────────────────────────────────────────────────── */

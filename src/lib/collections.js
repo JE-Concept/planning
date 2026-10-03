@@ -77,6 +77,12 @@ export const COL = {
     Geschreven door `functions/verhuur.js`; de backoffice leest en werkt bij.
   */
   verhuuraanvragen: 'verhuuraanvragen',
+  /*
+    Inlogsessies van klanten op de verhuursite: een link in de mail en de
+    sessie die eruit volgt, allebei als hash. Alleen de functies komen hier;
+    de backoffice heeft er niets te zoeken en de site praat via HTTP.
+  */
+  verhuurSessies: 'verhuurSessies',
   shifts: 'shifts',
   /*
     De planning uit AAPI staat naast `shifts` en niet erin. Dat rooster is met
