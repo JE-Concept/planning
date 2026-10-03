@@ -282,6 +282,20 @@ De stand kies je op de fiche en ze komt terug op het bord, in de lijst, op het d
 
 ---
 
+## Wat een event opbracht, en wat het kostte
+
+Van elk dossier stond vast wat het opbracht en van geen enkel wat het kostte. Daardoor was "verdient een BBQ van veertig personen eigenlijk iets" een gesprek over gevoel. Op de fiche staat nu, onder de velden, **Opbrengst en kosten**: het offertebedrag min de ploeg, de inkoop en de eigen uren, alles exclusief btw.
+
+De drie kosten komen uit gegevens die er al stonden. **De ploeg** zijn de shifts uit AAPI die aan het event hangen, per statuut opgeteld en vermenigvuldigd met een uurkost die je zet in *Instellingen → Marge*. **De inkoop** is de bestellijst maal de inkoopprijs per besteleenheid, een veld dat nu bij elke bestelregel staat, samen met de leverancier. **De eigen uren** zijn wat het team op dit event boekte, tegen het uurtarief op hun profiel.
+
+**Een ontbrekend bedrag telt niet als nul.** Dat is de regel waar het hele blok op staat. Een bestellijstregel zonder inkoopprijs kost niet niets — we weten alleen niet wat ze kost. Zou ze als nul meetellen, dan ziet een half ingevuld dossier er winstgevender uit dan een volledig ingevuld, en dat is precies de kant op waarin niemand de fout merkt. Dus telt ze niet mee, heet het blok *Onvolledig*, en staat de marge er als **"hoogstens"** met eronder wat er ontbreekt en waar je het zet.
+
+**De loonkost is een raming, geen loonstaat.** De uurkost per statuut is een kengetal — wat een uur van een flexi de zaak kost, alles inbegrepen — en geen bedrag dat iemand uitbetaald krijgt. Daarom staat het altijd per statuut opgeteld en nooit per persoon, en daarom staat er standaard niets ingevuld: een verzonnen uurkost geeft een marge die eruitziet als een meting. Wie wat verdient staat in AAPI en blijft daar.
+
+Het blok is zichtbaar voor beheerders. Uurkosten liggen dicht genoeg bij personeelsgegevens om ze niet voor het hele team open te zetten; wil je dat anders, dan is dat één regel in `EventDetail.jsx`.
+
+---
+
 ## Personeel komt uit AAPI, en alleen daaruit
 
 **Beschikbaarheid, contracten, statuten, Dimona, arbeidsuren en loon horen in AAPI.** JE Plan leest die gegevens en toont ze; het schrijft ze niet, rekent ze niet opnieuw uit en biedt er geen eigen invulscherm voor.

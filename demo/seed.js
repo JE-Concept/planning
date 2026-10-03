@@ -183,6 +183,20 @@ function mail(id, o) {
   })
 }
 
+/*
+  De bestellijst van het trouwfeest, met inkoopprijzen.
+
+  Eén regel draagt met opzet geen prijs: zo toont de demo ook wat er gebeurt
+  als er iets ontbreekt — de marge telt die regel niet als gratis mee maar
+  noemt zichzelf onvolledig. Zie `lib/marge.js`.
+*/
+const BESTELLIJST_TROUW = [
+  { id: 'b1', item: 'Rundsfilet', categorie: 'Keuken', eenheid: 'kg', inhoud: 1, verpakking: '', perPersoon: 0.18, vast: 0, personen: 140, nodig: 25.2, verpakkingen: 26, bestellen: 26, inkoopprijs: 23.4, leverancier: 'Slagerij Vandeweyer', besteld: false },
+  { id: 'b2', item: 'Cava brut', categorie: 'Bar', eenheid: 'flessen', inhoud: 6, verpakking: 'bak', perPersoon: 0.4, vast: 0, personen: 140, nodig: 56, verpakkingen: 10, bestellen: 60, inkoopprijs: 6.8, leverancier: 'Drankencentrale Haspengouw', besteld: false },
+  { id: 'b3', item: 'Aardappelgratin', categorie: 'Keuken', eenheid: 'kg', inhoud: 1, verpakking: '', perPersoon: 0.22, vast: 0, personen: 140, nodig: 30.8, verpakkingen: 31, bestellen: 31, inkoopprijs: 4.15, leverancier: 'Vanhove Groenten', besteld: true },
+  { id: 'b4', item: 'Bruidstaart', categorie: 'Keuken', eenheid: 'stuks', inhoud: 1, verpakking: '', perPersoon: 0, vast: 1, personen: 140, nodig: 1, verpakkingen: 1, bestellen: 1, inkoopprijs: null, leverancier: '', besteld: false },
+]
+
 // ─── Taken ──────────────────────────────────────────────────────────────────
 let pos = 0
 
@@ -236,6 +250,7 @@ function taak(id, listId, statuses, statusName, o = {}) {
     pax: o.pax ?? null, kids: o.kids ?? null, formule: o.formule ?? null,
     eventType: o.eventType ?? null, quoteAmount: o.budget ?? null,
     draaiboek: o.draaiboek ?? null, checklist: o.checklist ?? [], repeat: o.repeat ?? null,
+    bestellijst: o.bestellijst ?? [],
     socialWanted: o.socialWanted ?? null,
     position: (pos += 1024),
     archived: false, completedAt: s.kind === 'closed' || s.kind === 'done' ? dag(-20) : null,
@@ -302,7 +317,7 @@ function spiegelSocial(id, kaart) {
   seedDoc('socialEvents', id, { ...kaart, taskId: id, bijgewerkt: NU })
 }
 
-taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { planning: 'bezig', pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],
+taak('t-trouw', 'l-overview', OVERVIEW, 'create offer', { bestellijst: BESTELLIJST_TROUW, planning: 'bezig', pax: 140, kids: 12, formule: 'Walking dinner + dessertbuffet', eventType: 'Huwelijk', eventDate: dag(12), draaiboek: [{ tijd: '09:00', wat: 'Opbouw tent, vloer en verlichting', wie: 'Jasper · verhuur' }, { tijd: '13:00', wat: 'Levering sanitair en koeling', wie: 'Elke' }, { tijd: '15:00', wat: 'Ceremonie klaarzetten in de boomgaard', wie: 'Anneleen' }, { tijd: '15:30', wat: 'Ceremonie', wie: 'Anneleen' }, { tijd: '16:30', wat: 'Receptie met bubbels', wie: 'bar' }, { tijd: '18:30', wat: 'Walking dinner', wie: 'traiteur' }, { tijd: '21:30', wat: 'Dessertbuffet + openingsdans', wie: 'Anneleen' }, { tijd: '22:00', wat: 'Avondbar tot 03:00', wie: 'Jasper' }],
   title: 'Trouw Niels en Inez', assignees: ['u-jasper'], medewerkers: ['u-lotte', 'u-sam'], priority: 2, customerId: 'k-niels-inez',
   dueDate: dag(6), budget: 16399, location: 'Hoeve Vanhove, Kortessem',
   // Eén event met een echte plek erachter, zodat de kaartlink op de fiche te
@@ -983,6 +998,20 @@ seedDoc('config', 'access', {
   bijkomt of van jaar verschuift.
 */
 const dicht = [...archiefstand.values()].filter((v) => v.afgesloten)
+/*
+  De uurkost per statuut, waarmee de marge op een eventfiche gerekend wordt.
+
+  Echt zet een beheerder die in Instellingen → Marge. Hier staan ze zodat de
+  demo een marge kan tonen die ergens op slaat — en `zelfstandig` staat er met
+  opzet níét bij, zodat ook te zien is hoe de tool een ontbrekend tarief meldt
+  in plaats van het als nul te rekenen.
+*/
+seedDoc('config', 'kosten', {
+  statuutTarief: { vast: 32, flexi: 18, student: 15, extern: 45 },
+  updatedBy: 'u-jasper',
+  updatedAt: dag(-20),
+})
+
 seedDoc('config', 'archief', {
   jaren: [...new Set(dicht.map((v) => v.afgeslotenJaar).filter(Boolean))].sort((a, b) => b - a),
   aantal: dicht.length,

@@ -31,6 +31,16 @@ const regel = (id, item, categorie, eenheid, perPersoon, extra = {}) => ({
   inhoud: 1,
   verpakking: '',
   keuzeId: null,
+  /*
+    De inkoopprijs per besteleenheid, en bij wie je het haalt.
+
+    Allebei leeg in de sjablonen, en dat is met opzet: wat een kilo kip kost
+    weet de leverancier en niet dit bestand, en een verzonnen prijs geeft een
+    marge die eruitziet als een meting. Leeg betekent "nog niet gekend", niet
+    "gratis" — `lib/marge.js` rekent zo'n regel niet mee en meldt haar.
+  */
+  inkoopprijs: null,
+  leverancier: '',
   ...extra,
 })
 

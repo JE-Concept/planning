@@ -10,6 +10,7 @@ import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
 import EventFiche from '@components/events/EventFiche'
 import EventPersoneel, { useEventPersoneel } from '@components/events/EventPersoneel'
+import EventMarge from '@components/events/EventMarge'
 import OfferteTab from '@components/events/OfferteTab'
 import MailDraad from '@components/events/MailDraad'
 import EventOmschrijving from '@components/events/EventOmschrijving'
@@ -76,7 +77,7 @@ export default function EventDetail() {
 
   const taskIds = useMemo(() => [id, ...tasks.map((taak) => taak.id)], [id, tasks])
   const time = useEventTime(taskIds)
-  const { uid } = useAuth()
+  const { uid, isAdmin } = useAuth()
   const { timer } = useRunningTimer(uid)
 
   if (!ev) {
@@ -271,6 +272,12 @@ export default function EventDetail() {
                 onTab={setTab}
               />
               <EventFiche ev={ev} />
+              {/*
+                De marge staat onder de fiche en alleen voor beheerders: er
+                staan uurkosten in, en dat ligt dicht genoeg bij
+                personeelsgegevens om het niet voor iedereen open te zetten.
+              */}
+              {isAdmin ? <EventMarge event={ev} shifts={personeel.shifts} uren={time} /> : null}
               <EventOmschrijving ev={ev} />
             </>
           ) : tab === 'personeel' ? (

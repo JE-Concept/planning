@@ -37,6 +37,9 @@ export const nieuweBestelregel = (keuzeId = null) => ({
   vast: 0,
   inhoud: 1,
   verpakking: '',
+  // Leeg, niet nul: zie `lib/formule-templates.js`.
+  inkoopprijs: null,
+  leverancier: '',
   keuzeId,
 })
 

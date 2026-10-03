@@ -436,6 +436,8 @@ export default function FormuleSettings() {
             <span>{t('inst.formule.vast_kort')}</span>
             <span>{t('inst.formule.per_verpakking')}</span>
             <span>{t('inst.formule.verpakking')}</span>
+            <span>{t('inst.formule.inkoop_kort')}</span>
+            <span>{t('inst.formule.leverancier')}</span>
             <span>{t('inst.formule.hoort_bij')}</span>
             <span />
           </div>
@@ -478,6 +480,25 @@ export default function FormuleSettings() {
                 value={r.verpakking ?? ''}
                 onChange={(e) => zetRegel(r.id, { verpakking: e.target.value })}
                 aria-label={t('inst.formule.verpakking_naam')}
+              />
+              {/*
+                De inkoopprijs per besteleenheid. Leeg is "nog niet gekend" en
+                niet "gratis": `lib/marge.js` laat zo'n regel buiten de kost en
+                meldt haar, want een ontbrekende prijs die als nul meetelt
+                maakt elke marge te mooi.
+              */}
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={r.inkoopprijs ?? ''}
+                onChange={(e) => zetRegel(r.id, { inkoopprijs: e.target.value === '' ? null : getal(e.target.value) })}
+                aria-label={t('inst.formule.inkoopprijs')}
+              />
+              <Input
+                value={r.leverancier ?? ''}
+                onChange={(e) => zetRegel(r.id, { leverancier: e.target.value })}
+                aria-label={t('inst.formule.leverancier')}
               />
               <Select
                 value={r.keuzeId ?? ''}

@@ -11,6 +11,7 @@ import PageHeader from '@components/layout/PageHeader'
 import BusinessRules from '@components/settings/BusinessRules'
 import HerhalingenPaneel from '@components/settings/HerhalingenPaneel'
 import SysteemPaneel from '@components/settings/SysteemPaneel'
+import MargePaneel from '@components/settings/MargePaneel'
 import ChecklistEditor from '@components/settings/ChecklistEditor'
 import FormuleSettings from '@components/settings/FormuleSettings'
 import { BrandSettings, StructureSettings } from '@components/settings/LegacySettings'
@@ -53,6 +54,7 @@ const TABS = [
   { value: 'dagelijks', sleutel: 'inst.tab.dagelijks' },
   { value: 'regels', sleutel: 'inst.tab.regels' },
   { value: 'herhalingen', sleutel: 'inst.tab.herhalingen' },
+  { value: 'marge', sleutel: 'inst.tab.marge' },
   { value: 'systeem', sleutel: 'inst.tab.systeem' },
 ]
 
@@ -130,6 +132,7 @@ export default function Settings() {
             {tab === 'dagelijks' ? <ChecklistEditor isAdmin /> : null}
             {tab === 'regels' ? <BusinessRules isAdmin /> : null}
             {tab === 'herhalingen' ? <HerhalingenPaneel /> : null}
+            {tab === 'marge' ? <MargePaneel /> : null}
             {tab === 'systeem' ? <SysteemPaneel /> : null}
           </div>
         )}

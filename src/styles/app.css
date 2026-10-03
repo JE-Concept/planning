@@ -1881,7 +1881,7 @@ select.je-compact { padding-right: 24px; }
 
 .je-formule-regel {
   display: grid;
-  grid-template-columns: minmax(120px, 1.6fr) 110px 90px 80px 80px 110px 100px minmax(120px, 1.2fr) 32px;
+  grid-template-columns: minmax(120px, 1.6fr) 110px 86px 72px 72px 96px 96px 92px minmax(110px, 1fr) minmax(110px, 1.1fr) 32px;
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-3) var(--space-6);
@@ -3445,4 +3445,71 @@ button.je-paneel-kaart:hover {
 .je-installbalk__uitleg {
   font: var(--type-caption);
   color: var(--text-2);
+}
+
+/* ── De marge van een event ──
+
+   Drie cijfers naast elkaar, de opsplitsing eronder, en wat er ontbreekt
+   daar weer onder. Die laatste staat met opzet in het blok en niet in een
+   voetnoot: zolang er een bedrag mist, is de marge een bovengrens, en dat
+   hoort naast het getal te staan en niet eronder. */
+.je-marge__cijfers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+}
+.je-marge__vak {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.je-marge__waarde {
+  font: var(--type-h3);
+  font-variant-numeric: tabular-nums;
+}
+.je-marge__regels {
+  border-top: 1px solid var(--border-hairline);
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.je-marge__regel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  gap: var(--space-4);
+  align-items: baseline;
+  font: var(--type-body-sm);
+}
+.je-marge__bedrag {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.je-marge__mist {
+  border-top: 1px solid var(--border-hairline);
+  padding: var(--space-4) var(--space-6) var(--space-5);
+  background: color-mix(in srgb, var(--warning) 6%, transparent);
+}
+.je-marge__mist ul {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+
+@media (max-width: 559px) {
+  .je-marge__cijfers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .je-marge__regel {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .je-marge__regel > .je-muted-caption {
+    grid-column: 1 / -1;
+  }
 }

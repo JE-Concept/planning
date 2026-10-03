@@ -252,6 +252,10 @@ export function bestellijstVoorEvent(formule, keuzes, personen) {
     verpakking: regel.verpakking,
     perPersoon: regel.perPersoon,
     vast: regel.vast,
+    // Mee op het event, zodat de marge van dit dossier met de prijs van
+    // vandaag rekent en niet met die van volgend seizoen.
+    inkoopprijs: regel.inkoopprijs ?? null,
+    leverancier: regel.leverancier ?? '',
     personen: regel.personen,
     nodig: regel.nodig,
     verpakkingen: regel.verpakkingen,

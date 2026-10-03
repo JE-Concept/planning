@@ -468,4 +468,50 @@ export default {
     en: 'Without a record: no history, no VAT number.',
   },
   'klant.kiezen.vrije_plaats': { nl: 'bv. Familie Peeters', en: 'e.g. the Peeters family' },
+
+  /*
+    De marge van een event.
+
+    Alleen zichtbaar voor beheerders: er staan uurkosten in, en dat ligt dicht
+    genoeg bij personeelsgegevens om het niet standaard open te zetten.
+  */
+  'marge.titel': { nl: 'Opbrengst en kosten', en: 'Revenue and costs' },
+  'marge.excl_btw': { nl: 'alles excl. btw', en: 'all excl. VAT' },
+  'marge.onvolledig': { nl: 'Onvolledig', en: 'Incomplete' },
+  'marge.opbrengst': { nl: 'Opbrengst', en: 'Revenue' },
+  'marge.kost': { nl: 'Kosten', en: 'Costs' },
+  'marge.marge': { nl: 'Marge', en: 'Margin' },
+  'marge.marge_hoogstens': { nl: 'Marge, hoogstens', en: 'Margin, at most' },
+  'marge.loon': { nl: 'Ploeg', en: 'Crew' },
+  'marge.inkoop': { nl: 'Inkoop', en: 'Purchasing' },
+  'marge.eigen': { nl: 'Eigen uren', en: 'Own hours' },
+  'marge.uren_ploeg': { nl: '{uren} u uit AAPI', en: '{uren} h from AAPI' },
+  'marge.uren_team': { nl: '{uren} u geboekt', en: '{uren} h logged' },
+  'marge.regels_een': { nl: '{aantal} regel', en: '{aantal} line' },
+  'marge.regels_meer': { nl: '{aantal} regels', en: '{aantal} lines' },
+  'marge.wat_mist': { nl: 'Zolang dit ontbreekt, is de marge een bovengrens', en: 'While this is missing, the margin is an upper bound' },
+  'marge.mist.opbrengst': {
+    nl: 'Er staat nog geen offertebedrag op dit event.',
+    en: 'This event has no quoted amount yet.',
+  },
+  'marge.mist.tarief': {
+    nl: 'Geen uurkost ingesteld voor: {statuten}. Dat zet je in Instellingen → Marge.',
+    en: 'No hourly cost set for: {statuten}. You set that under Settings → Margin.',
+  },
+  'marge.mist.inkoopprijs_een': {
+    nl: '{aantal} bestellijstregel heeft geen inkoopprijs.',
+    en: '{aantal} order line has no purchase price.',
+  },
+  'marge.mist.inkoopprijs_meer': {
+    nl: '{aantal} bestellijstregels hebben geen inkoopprijs.',
+    en: '{aantal} order lines have no purchase price.',
+  },
+  'marge.mist.uurtarief': {
+    nl: 'Geen uurtarief op het profiel van: {mensen}.',
+    en: 'No hourly rate on the profile of: {mensen}.',
+  },
+  'marge.mist.geen_ploeg': {
+    nl: 'Er hangt nog geen ploeg uit AAPI aan dit event, dus de loonkost is nul.',
+    en: 'No AAPI crew is linked to this event yet, so the labour cost is zero.',
+  },
 }

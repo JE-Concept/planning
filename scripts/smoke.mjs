@@ -1188,6 +1188,40 @@ await test('dezelfde waarde opnieuw kiezen levert geen tweede regel op', async (
   await page.close()
 })
 
+await test('de marge van een event rekent, en zegt wat ze mist', async () => {
+  const page = await tabblad('/events/t-trouw')
+  const tekst = await inhoud(page)
+
+  zouden(bevat(tekst, 'Opbrengst en kosten'), 'het margeblok staat er niet')
+
+  /*
+    Het trouwfeest heeft drie shifts uit AAPI, waarvan één `zelfstandig` — en
+    voor dat statuut staat er in de demo met opzet geen uurkost. De marge
+    hoort dus te zeggen dat ze onvolledig is in plaats van die uren gratis te
+    rekenen, en dat is het hele punt van dit blok.
+  */
+  zouden(bevat(tekst, 'Onvolledig'), 'een ontbrekend tarief wordt niet gemeld')
+  zouden(bevat(tekst, 'zelfstandig'), 'er staat niet bij welk statuut geen tarief heeft')
+  zouden(bevat(tekst, 'inkoopprijs'), 'de bestellijstregel zonder prijs wordt niet gemeld')
+  zouden(bevat(tekst, 'Marge, hoogstens'), 'de marge heet geen bovengrens terwijl er iets mist')
+
+  // En de ploeguren komen echt uit de shifts, niet uit een vast getal.
+  zouden(/\d+(?:[.,]\d+)? u uit AAPI/.test(tekst), `geen ploeguren: ${tekst.slice(0, 120)}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de uurkost per statuut staat in Instellingen', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Marge' }).click()
+  await page.waitForTimeout(700)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Uurkost per statuut'), 'het margepaneel opent niet')
+  zouden(bevat(tekst, 'niet ingesteld') || bevat(tekst, 'Zelfstandig'), 'de statuten staan er niet')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('het archief toont de afgesloten events, met een filter op jaar', async () => {
   const page = await tabblad('/?weergave=bord')
   const bord = await inhoud(page)
