@@ -111,6 +111,14 @@ jobs:
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
 
+      # De verhuursite is een eigen bundel met een eigen uitgang (`dist-verhuur`).
+      # Ze stond ooit in git en rolde daardoor "vanzelf" mee uit; sinds ze
+      # bouwuitvoer is zoals het hoort, moet ze hier gebouwd worden, anders
+      # meldt de uitrol dat de map niet bestaat. Geen VITE_FIREBASE-sleutel:
+      # die site praat niet met Firestore. Zie `vite.verhuur.config.js`.
+      - name: Build verhuursite
+        run: npm run build:verhuur
+
       # De functions hebben hun eigen node_modules. Zonder deze install vindt
       # de CLI firebase-functions niet, mislukt het parsen van de triggers, en
       # landt ensureProfile niet — waarna niemand meer kan inloggen.

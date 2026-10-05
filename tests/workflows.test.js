@@ -49,4 +49,18 @@ describe('de workflows', () => {
       expect(src).toMatch(/--only hosting:verhuur[^\n]*\\\n\s*\|\| echo "::warning::/)
     }
   })
+
+  it('bouwen de verhuursite vóór ze haar uitrollen', () => {
+    // CI 123: de deploy-job bouwde alleen de backoffice; `dist-verhuur` stond
+    // vroeger in git en rolde daardoor "vanzelf" mee. Sinds het bouwuitvoer
+    // is, moet elke job die hosting:verhuur uitrolt haar ook zelf bouwen.
+    for (const naam of ['ci.yml', 'go-live.yml']) {
+      const src = readFileSync(new URL(naam, MAP), 'utf8')
+      const uitrol = src.indexOf('--only hosting:verhuur')
+      const bouw = src.lastIndexOf('npm run build:verhuur', uitrol)
+      expect(bouw, `${naam} rolt de verhuursite uit zonder ze te bouwen`).toBeGreaterThan(-1)
+      // In dezelfde job: tussen de bouw en de uitrol begint geen nieuwe job.
+      expect(src.slice(bouw, uitrol), `${naam}: de bouw zit in een andere job dan de uitrol`).not.toMatch(/\n {2}[a-z-]+:\n/)
+    }
+  })
 })
