@@ -24,6 +24,7 @@ De eerdere handover (`docs/handover-claude-in-chrome.md`) zette het project en `
 - Toegang tot het **Stripe-account** van JE Concept, in **live-modus** (Jasper besliste: geen testronde, zie `docs/vragen-productie.md` vraag 1)
 - Toegang tot **DNS-beheer** van `jeconcept.be` (waarschijnlijk Cloudflare — zie de vorige handover, stap A7)
 - **Admin op de GitHub-repo** `Kenjeklanten/planning` (Settings → Secrets)
+- Het **Google Workspace-account** van JE Concept dat gedeelde Drives mag aanmaken (voor de documenten, A6)
 - Het **app-wachtwoord** van `plan@jeconcept.be` voor IMAP (of het recht om er een te maken in Google Workspace)
 - Optioneel: een Anthropic-account voor de overlegfuncties, en een Google Maps-sleutel
 
@@ -83,6 +84,19 @@ Zonder deze sleutel is het locatieveld op een event een gewoon tekstveld. Met: e
 ## A5. Pushmeldingen (optioneel, maar beslist: vraag 15)
 
 Jasper wil een pushmelding bij een online huur of aanvraag. Daarvoor ontbreekt één sleutel; de volledige uitleg staat in `docs/push-notificaties-aanzetten.md`. Kort: Firebase Console → Project settings → **Cloud Messaging** → *Web Push certificates* → **Generate key pair** → de getoonde sleutel wordt de GitHub-secret `VITE_FIREBASE_VAPID_KEY` (Deel C). Ook publiek, dus GitHub en niet Secret Manager.
+
+## A6. Google Drive voor de documenten bij events en klanten
+
+De bestanden bij een event of een klant staan niet in Firebase Storage maar in een gedeelde Google Drive. JE Plan maakt daar per event en per klant een map in. Drie dingen zijn nodig, in deze volgorde:
+
+1. **Drive API aanzetten.** Google Cloud Console → project `je-planning` → *APIs & Services* → *Library* → zoek **Google Drive API** → **Enable**.
+2. **De service-account vinden.** Cloud Console → *Cloud Functions* (of *Cloud Run*) → functie **drive** → tabblad *Details* → noteer de **service-account** (vorm `<nummer>-compute@developer.gserviceaccount.com`). Dat is geen geheim; het is een adres.
+3. **Een gedeelde Drive maken en die account toevoegen.** Google Drive (ingelogd als het Workspace-account van JE Concept) → *Gedeelde Drives* → **Nieuw** → naam `JE Plan`. Open ze → *Leden beheren* → plak het adres uit stap 2 → rol **Contentmanager** → melding uitvinken → *Verzenden*. Kopieer daarna de link van de Drive uit de adresbalk (`https://drive.google.com/drive/folders/0A…`).
+4. **De link in JE Plan zetten.** planning.jeconcept.be → *Instellingen* → tabblad **Documenten** → plak de link → *Bewaren*. Het paneel toont de herkende id.
+
+Controle: open een event, voeg onder *Documenten* een klein bestand toe. In Drive verschijnt `JE Plan / Events / <datum — titel> / <bestand>`, en in JE Plan opent de naam een voorvertoning. Mislukt de upload met *geen toegang tot de Drive*, dan is stap 3 niet (goed) gezet of de API van stap 1 nog niet aan — rechten doen er soms een minuut over.
+
+Als de functie **drive** niet in de lijst staat, is de uitrol van na 5 oktober nog niet gelopen: eerst C2.
 
 ---
 
@@ -203,7 +217,8 @@ Alleen feiten, geen waarden:
 5. **B3**: welke betaalmethodes staan aan, en lukte de domeinregistratie voor Apple Pay?
 6. **C2**: is de uitrol groen, en welke waarschuwingen staan er nog?
 7. **D1**: staat de mail aan Lightspeed klaar?
-8. Bevestiging dat je **nergens** een geheime waarde geplakt hebt buiten Secret Manager en GitHub Secrets.
+8. **A6**: is de Drive API aan, bestaat de gedeelde Drive `JE Plan` met de service-account als Contentmanager, en staat de link in Instellingen → Documenten?
+9. Bevestiging dat je **nergens** een geheime waarde geplakt hebt buiten Secret Manager en GitHub Secrets.
 
 ---
 
@@ -212,6 +227,7 @@ Alleen feiten, geen waarden:
 | Wat je ziet | Wat er aan de hand is | Wat je doet |
 |---|---|---|
 | Uitrol: *Permission 'secretmanager.secrets.setIamPolicy' denied* | A1 is niet (goed) gezet | IAM nakijken: juiste principal (`firebase-adminsdk-…`), rol *Secret Manager Admin*, opgeslagen. Rechten doen er soms een minuut over. |
+| Upload van een document: *geen toegang tot de Drive* | de service-account zit niet in de gedeelde Drive, of de Drive API staat uit | A6 stap 1 en 3 nakijken; het adres moet dat van de functie **drive** zijn, rol Contentmanager |
 | Uitrol: *Geheim X bestaat niet* | naam wijkt af of verkeerd project | naam hoofdlettergevoelig vergelijken met de tabel in A2; project `je-planning` |
 | Uitrol: *Stripe-geheimen ontbreken* terwijl ze er staan | één van de twee ontbreekt — allebei zijn nodig | beide namen nakijken |
 | Stripe: *This payment method is not activated* bij afrekenen | Bancontact staat niet aan in live-modus | B3, in **live**-modus |

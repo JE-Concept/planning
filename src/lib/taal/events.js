@@ -195,6 +195,18 @@ export default {
   'events.bijlagen.bezig': { nl: 'Bezig met opladen…', en: 'Uploading…' },
   'events.bijlagen.sleep': { nl: 'Sleep een bestand hierheen', en: 'Drag a file here' },
   'events.doc.titel': { nl: 'Documenten', en: 'Documents' },
+  'events.doc.vernieuwen': { nl: 'Vernieuwen', en: 'Refresh' },
+  'events.doc.vernieuwen_uitleg': {
+    nl: 'Haalt de lijst opnieuw uit de map in Drive — ook wat er buiten de app om in gezet is.',
+    en: 'Re-reads the folder in Drive — including what was added outside the app.',
+  },
+  'events.doc.vernieuwd': { nl: 'Lijst vernieuwd: {aantal} bestand(en) in Drive.', en: 'List refreshed: {aantal} file(s) in Drive.' },
+  'events.doc.map': { nl: 'Map in Drive', en: 'Folder in Drive' },
+  'events.doc.in_drive': { nl: 'Openen in Drive', en: 'Open in Drive' },
+  'events.doc.geen_drive': {
+    nl: 'Google Drive is nog niet ingericht. Een beheerder zet de gedeelde Drive in Instellingen → Drive; daarna krijgt elk event en elke klant hier zijn map.',
+    en: 'Google Drive is not set up yet. An admin sets the shared drive in Settings → Drive; every event and customer then gets its folder here.',
+  },
   'events.doc.toevoegen': { nl: '+ Bestand', en: '+ File' },
   'events.doc.bezig': { nl: 'Bezig…', en: 'Working…' },
   'events.doc.kiezen': { nl: 'Bestand kiezen', en: 'Choose a file' },

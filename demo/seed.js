@@ -156,9 +156,16 @@ const LOGO =
   ['d-trouw-grondplan', null, 't-trouw', 'grondplan-hoeve-vanhove.pdf', 'application/pdf', 410_000, '#'],
 ].forEach(([id, customerId, taskId, name, contentType, size, url], i) =>
   seedDoc('attachments', id, {
-    customerId, taskId, postId: null, name, label: '', storagePath: `attachments/demo/${name}`,
+    customerId, taskId, postId: null, name, label: '',
+    // Zoals ze uit Drive komen: een id, een link, en of Drive ze kan tonen.
+    bron: 'drive', driveId: `demo-${id}`, soort: contentType === 'application/pdf' ? 'pdf' : 'afbeelding',
+    voorvertoning: contentType === 'application/pdf' ? `https://drive.google.com/file/d/demo-${id}/preview` : null,
+    iconLink: null, thumbnailLink: null,
     contentType, size, url, uploadedBy: 'u-jasper', createdAt: dag(-30 + i),
   }))
+
+// De gedeelde Drive is in de demo "ingericht"; het id gaat nergens heen.
+seedDoc('config', 'drive', { driveId: '0ADemoDriveId', updatedAt: dag(-40) })
 
 // ─── De post ────────────────────────────────────────────────────────────────
 

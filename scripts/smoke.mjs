@@ -1070,6 +1070,44 @@ await test('de bijlagen van een event staan in het paneel', async () => {
   zouden(bevat(tekst, 'Bijlagen bij dit event (1)'), `geen bijlagenblok: ${tekst.slice(0, 200)}`)
   zouden(bevat(tekst, 'grondplan-hoeve-vanhove.pdf'), 'de bijlage zelf staat er niet')
   zouden(bevat(tekst, '+ Bestand'), 'er is geen manier om er een bij te zetten')
+  // De bestanden staan in Drive: er is een knop naar de map en een om de lijst
+  // opnieuw uit Drive te halen, want een collega kan er buiten JE Plan om iets
+  // in gezet hebben.
+  zouden(bevat(tekst, 'Map in Drive'), 'de link naar de Drive-map ontbreekt')
+  zouden(bevat(tekst, 'Vernieuwen'), 'de lijst is niet opnieuw uit Drive te halen')
+  await page.close()
+})
+
+await test('een bijlage uit Drive opent in een voorvertoning, zonder de fiche te verlaten', async () => {
+  const page = await tabblad('/bord/l-overview')
+  // De voorvertoning zelf komt van Drive; in de demo bestaat dat bestand niet.
+  await page.route('**drive.google.com/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<p>voorvertoning</p>' })
+  )
+  const paneel = await opentTaak(page, 'Trouw Niels en Inez')
+  await paneel.getByRole('button', { name: 'grondplan-hoeve-vanhove.pdf' }).click()
+  const venster = page.getByRole('dialog', { name: 'grondplan-hoeve-vanhove.pdf' })
+  await venster.waitFor({ timeout: 3000 })
+  const kader = venster.locator('iframe')
+  zouden((await kader.count()) === 1, 'er is geen voorvertoning')
+  zouden(bevat(await venster.innerText(), 'Openen in Drive'), 'vanuit de voorvertoning kun je niet naar Drive')
+  await venster.getByRole('button', { name: 'Sluiten' }).click()
+  zouden((await page.getByRole('dialog', { name: 'grondplan-hoeve-vanhove.pdf' }).count()) === 0, 'de voorvertoning gaat niet dicht')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('de instellingen zeggen welke Drive de documenten draagt', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Documenten' }).click()
+  await page.waitForTimeout(600)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Gedeelde Drive voor documenten'), 'het Drive-paneel staat er niet')
+  const veld = page.locator('#drive-id')
+  zouden((await veld.inputValue()) === '0ADemoDriveId', 'de ingestelde Drive staat niet in het veld')
+  // Een link plakken volstaat; de id wordt eruit gehaald.
+  await veld.fill('https://drive.google.com/drive/u/0/folders/0AAndereDrive?usp=sharing')
+  zouden(bevat(await inhoud(page), 'Herkend als Drive-id 0AAndereDrive'), 'de id wordt niet uit de link herkend')
   await page.close()
 })
 

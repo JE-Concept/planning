@@ -3821,3 +3821,64 @@ button.je-paneel-kaart:hover {
     border-color: #000;
   }
 }
+
+/* ── Voorvertoning van een Drive-bestand ────────────────────────────────── */
+
+/*
+  Een venster over het scherm, geen nieuw tabblad: wie een grondplan wil
+  nakijken terwijl hij de bestellijst invult, wil niet wisselen tussen
+  tabbladen. Klikken buiten het kader sluit. De inhoud is van Drive zelf
+  (een iframe op drive.google.com/…/preview), dus wat je ziet is wat Drive
+  kan tonen — en voor wie geen toegang heeft tot de gedeelde Drive, zegt Drive
+  dat zelf.
+*/
+.je-voorvertoning {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+.je-voorvertoning__kader {
+  width: min(1100px, 100%);
+  height: min(86vh, 900px);
+  background: var(--surface-0);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.je-voorvertoning__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+.je-voorvertoning__naam {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--type-body-sm);
+  font-weight: 600;
+}
+.je-voorvertoning__venster {
+  flex: 1;
+  border: 0;
+  width: 100%;
+  background: var(--surface-2);
+}
+@media (max-width: 559px) {
+  .je-voorvertoning {
+    padding: 0;
+  }
+  .je-voorvertoning__kader {
+    height: 100%;
+    border-radius: 0;
+  }
+}

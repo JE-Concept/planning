@@ -32,6 +32,7 @@ import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
 import { maakVerhuur } from './verhuur.js'
 import { maakVerhuurOrders } from './verhuur-orders.js'
+import { maakDrive } from './drive.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
 import { maakPloegFuncties } from './ploeg.js'
@@ -1052,3 +1053,10 @@ export const logboekOpruimen = onSchedule(
     logger.info('Logboek opgeruimd', { verwijderd: weg, soorten: Object.keys(AUDIT).length })
   }
 )
+
+/*
+  Documenten op Google Drive: een map per event en per klant in de gedeelde
+  Drive van JE Concept, geschreven door het runtime-serviceaccount. Waarom
+  Drive en niet Storage, en waarom via de server, staat in `drive.js`.
+*/
+export const drive = maakDrive({ db, region: REGION })

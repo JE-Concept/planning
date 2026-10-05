@@ -2,7 +2,7 @@ import { Children, cloneElement, forwardRef, isValidElement, useEffect, useId, u
 import {
   AlertTriangle, ArrowRight, ArrowUp, Briefcase, Building2, CalendarDays, Check, CheckCircle, ChevronDown,
   ChevronLeft, ChevronRight, Circle, ClipboardCheck, Clock, CloudOff, Copy, CornerDownLeft, Download, Euro,
-  FileText, Info, Kanban, Keyboard, LayoutDashboard, Lightbulb, ListChecks, Loader, Lock, LogIn, LogOut,
+  ExternalLink, FileText, Info, Kanban, Keyboard, LayoutDashboard, Lightbulb, ListChecks, Loader, Lock, LogIn, LogOut,
   Mail, MapPin, Menu, MessageSquare, MessagesSquare, Music4, Package, Paperclip, Pencil, Play, Plus, Printer, Repeat, Search, Settings, Share2,
   ShieldCheck, Sparkles, Square, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
 } from 'lucide-react'
@@ -41,6 +41,7 @@ const ICONS = {
   'corner-down-left': CornerDownLeft,
   download: Download,
   euro: Euro,
+  'external-link': ExternalLink,
   'file-text': FileText,
   info: Info,
   kanban: Kanban,

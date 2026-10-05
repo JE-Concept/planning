@@ -71,6 +71,13 @@
           }
         },
         {
+          "source": "/api/drive/**",
+          "function": {
+            "functionId": "drive",
+            "region": "europe-west1"
+          }
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
