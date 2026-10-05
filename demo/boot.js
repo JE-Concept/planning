@@ -1,6 +1,8 @@
 /**
  * Start van de demobuild: vult de in-memory database.
  */
+// Eerst de klok, dan de gegevens: de seed rekent haar "nu" met deze klok.
+import './klok.js'
 import './seed.js'
 import { doc, updateDoc } from './firestore.js'
 

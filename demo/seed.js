@@ -11,8 +11,9 @@ import { DEFAULT_FORMULES } from '../src/lib/formule-templates.js'
 // geen document waar dat veld ontbreekt. Zonder dit is het bord in de demo leeg.
 import { archiefVelden } from '../functions/archief-stand.js'
 
+import { NU } from './klok.js'
+
 const D = (s) => new Date(s)
-const NU = D('2026-09-28T09:20:00')
 const dag = (n) => new Date(NU.getTime() + n * 86400000)
 // Reservaties lopen per dag en niet per tijdstip: 'YYYY-MM-DD', zoals
 // `lib/voorraad.js` ze leest.

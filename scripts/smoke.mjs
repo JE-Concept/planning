@@ -1834,9 +1834,12 @@ await test('het planningsbolletje staat ook op de kaarten en in de kalender', as
     await page.close()
   }
 
-  // En in de kalender, als derde stipje op de chip.
+  // En in de kalender, als derde stipje op de chip. Het trouwfeest valt in de
+  // maand ná de demodag, dus eerst één maand verder bladeren.
   const kal = await tabblad('/?weergave=kalender')
   await kal.waitForTimeout(1400)
+  await kal.getByRole('button', { name: 'Volgende maand' }).click()
+  await kal.waitForTimeout(600)
   zouden((await kal.locator('.je-calchip .je-bol').count()) >= 1, 'geen bolletje in de kalender')
   zouden(kal.fouten.length === 0, `fouten: ${kal.fouten[0]}`)
   await kal.close()
