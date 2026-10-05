@@ -23,7 +23,7 @@ De eerdere handover (`docs/handover-claude-in-chrome.md`) zette het project en `
 - Google-account met **Owner** op het Google Cloud-project `je-planning` (IAM, Secret Manager, Firebase Hosting)
 - Toegang tot het **Stripe-account** van JE Concept, in **live-modus** (Jasper besliste: geen testronde, zie `docs/vragen-productie.md` vraag 1)
 - Toegang tot **DNS-beheer** van `jeconcept.be` (waarschijnlijk Cloudflare — zie de vorige handover, stap A7)
-- **Admin op de GitHub-repo** `Kenjeklanten/planning` (Settings → Secrets)
+- **Admin op de GitHub-repo** `Kenjeklanten/planning` (Settings → Secrets), en voor A7 ook op `Kenjeklanten/feestbeest`
 - Het **Google Workspace-account** van JE Concept dat gedeelde Drives mag aanmaken (voor de documenten, A6)
 - Het **app-wachtwoord** van `plan@jeconcept.be` voor IMAP (of het recht om er een te maken in Google Workspace)
 - Optioneel: een Anthropic-account voor de overlegfuncties, en een Google Maps-sleutel
