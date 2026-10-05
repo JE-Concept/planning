@@ -352,6 +352,18 @@ De prijsmotor staat twee keer op schijf — `src/lib/huurprijs.js` en `functions
 
 ---
 
+## Aanvragen van wintermoods.jeconcept.be
+
+De seizoenssite van Wintermoods (repo `Kenjeklanten/feestbeest`) heeft een reservatieformulier. Elke inzending wordt daar gemaild én, als het geheim gezet is, naar `POST /api/wintermoods` op de backoffice-site gestuurd. Hier wordt ze **meteen een event in de kolom *request*** — geen aanvraagrij zoals bij de verhuur, want een Wintermoods-aanvraag ís al een datum met een aantal personen en een formule: het event, alleen nog niet bevestigd. Een aanvraag die in een tweede lijst wacht tot iemand ze overtypt, is een aanvraag die blijft liggen.
+
+De kaart krijgt `wm-<aanvraagId>` als id en wordt met `create` geschreven, niet met `set`: komt dezelfde inzending twee keer aan (dubbele klik, herhaling na een time-out die wél aankwam), dan blijft de bestaande kaart staan — en springt een kaart die het team intussen verplaatst had niet terug naar *request*. De velden zijn dezelfde als die `createEventFromTemplate` in de browser en `maakEvent` in `functions/verhuur-orders.js` schrijven. De sleutels van het formulier reizen mee (`formule: 'bbq'`, `gelegenheid: 'bedrijf'`), niet de vertaalde labels, zodat een Franse en een Nederlandse aanvraag onder dezelfde noemer staan; `gelegenheid: 'locatie'` zet de plek op "Op locatie, bij de klant", want dat is het enige antwoord dat de keuken iets anders laat doen.
+
+**Het geheim.** De aanroeper is een Cloudflare Pages Function, geen mens: er valt niemand in te loggen. Eén gedeeld geheim in de `Authorization`-header, aan deze kant `WINTERMOODS_TOKEN` in Secret Manager en aan de andere de GitHub-secret `WM_JEPLAN_TOKEN` van `Kenjeklanten/feestbeest` (met `WM_JEPLAN_URL` = `https://planning.jeconcept.be/api/wintermoods`). De vergelijking is tijdsconstant; een verkeerde token krijgt 401 en verder niets. Daarom staat dit in een **eigen codebase** `functions-wintermoods/` en niet bij de standaardfuncties (zie *Waar je op stuk loopt* in CLAUDE.md): zolang het geheim niet bestaat, slaat de uitrol deze codebase over met een waarschuwing, en blijft de rest gewoon live. `events-bron.js` is er een kopie van die in `functions/`; `tests/wintermoods.test.js` houdt de twee letterlijk gelijk, en `tests/codebases.test.js` bewaakt dat elke codebase met een geheim in beide workflows achter `geheim.sh` staat.
+
+Geen eventlijst is geen fout van de aanroeper: de site heeft de mail dan al verstuurd en de klant al bevestigd. Het antwoord blijft `ok`, de melding staat in ons logboek.
+
+---
+
 ## De verhuursite
 
 `rental.jeconcept.be` is een eigen applicatie: `verhuur/` in deze repository, een eigen Vite-build (`npm run build:verhuur`), een eigen uitgang (`dist-verhuur`) en een tweede hosting-site. Ontwikkelen doe je met `npm run dev:verhuur` op poort 5174.

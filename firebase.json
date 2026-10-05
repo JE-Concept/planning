@@ -50,6 +50,17 @@
         "firebase-debug.log",
         "*.local"
       ]
+    },
+    {
+      "source": "functions-wintermoods",
+      "codebase": "wintermoods",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "*.local"
+      ]
     }
   ],
   "hosting": [
@@ -74,6 +85,13 @@
           "source": "/api/drive/**",
           "function": {
             "functionId": "drive",
+            "region": "europe-west1"
+          }
+        },
+        {
+          "source": "/api/wintermoods/**",
+          "function": {
+            "functionId": "wintermoods",
             "region": "europe-west1"
           }
         },

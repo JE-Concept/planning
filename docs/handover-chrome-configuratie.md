@@ -98,6 +98,17 @@ Controle: open een event, voeg onder *Documenten* een klein bestand toe. In Driv
 
 Als de functie **drive** niet in de lijst staat, is de uitrol van na 5 oktober nog niet gelopen: eerst C2.
 
+## A7. Het gedeelde geheim voor Wintermoods-aanvragen
+
+Elke reservatie-aanvraag op wintermoods.jeconcept.be wordt een event in de kolom *request* van JE Plan — zodra beide kanten hetzelfde geheim kennen. Eén waarde, twee plekken, en nergens anders.
+
+1. **Een waarde maken.** Een wachtwoordbeheerder of een generator volstaat: minstens 32 willekeurige tekens, alleen letters en cijfers. Bewaar ze één keer in de wachtwoordkluis van JE Concept onder "WINTERMOODS_TOKEN". Plak ze nooit in een chat, een notitie of een logboek.
+2. **In Secret Manager van `je-planning`.** Google Cloud Console → project `je-planning` → *Security* → *Secret Manager* → **Create secret** → naam exact `WINTERMOODS_TOKEN` → bij *Secret value* de waarde plakken → **Create**. (Het uitrol-serviceaccount geeft de functie daarna zelf leesrecht, zoals bij de mailgeheimen in het uitrol-log te zien is.)
+3. **In GitHub, repo `Kenjeklanten/feestbeest`.** Settings → Secrets and variables → Actions → **New repository secret**: `WM_JEPLAN_TOKEN` met dezelfde waarde, en `WM_JEPLAN_URL` met `https://planning.jeconcept.be/api/wintermoods`. De deploy van die repo zet ze door naar Cloudflare Pages.
+4. **De uitrol van `Kenjeklanten/planning` opnieuw draaien** (Deel C2). In het log hoort nu `Geheim WINTERMOODS_TOKEN bestaat.` te staan, gevolgd door de uitrol van `functions:wintermoods` en de IAM-binding op `wintermoods`. Daarna ook de deploy van `Kenjeklanten/feestbeest` opnieuw draaien, zodat de site de twee nieuwe waarden krijgt.
+
+Controle: doe een proefaanvraag op de Wintermoods-site. Binnen enkele seconden staat er een kaart "Wintermoods — <naam> (<aantal>p)" in de kolom *request* op planning.jeconcept.be. Een tweede inzending met dezelfde aanvraag-id maakt geen tweede kaart. Zolang stap 2 niet gebeurd is, zegt de uitrol `Geheim WINTERMOODS_TOKEN bestaat niet` als waarschuwing en mailt de site gewoon verder, zonder kaart.
+
 ---
 
 # Deel B — Stripe (live)
@@ -218,7 +229,8 @@ Alleen feiten, geen waarden:
 6. **C2**: is de uitrol groen, en welke waarschuwingen staan er nog?
 7. **D1**: staat de mail aan Lightspeed klaar?
 8. **A6**: is de Drive API aan, bestaat de gedeelde Drive `JE Plan` met de service-account als Contentmanager, en staat de link in Instellingen → Documenten?
-9. Bevestiging dat je **nergens** een geheime waarde geplakt hebt buiten Secret Manager en GitHub Secrets.
+9. **A7**: bestaat `WINTERMOODS_TOKEN` in Secret Manager en staan `WM_JEPLAN_TOKEN` en `WM_JEPLAN_URL` in de GitHub-secrets van feestbeest? (ja/nee, geen waarden)
+10. Bevestiging dat je **nergens** een geheime waarde geplakt hebt buiten Secret Manager en GitHub Secrets.
 
 ---
 
