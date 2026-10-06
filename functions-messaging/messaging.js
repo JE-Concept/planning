@@ -3,7 +3,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { FieldValue } from 'firebase-admin/firestore'
 import { defineSecret } from 'firebase-functions/params'
 import { logger } from 'firebase-functions'
-import { berichtId, bronVanToken, effectieveBron, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from './envelop.js'
+import { berichtId, bronVanToken, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from './envelop.js'
 
 /**
  * Messaging: de ene ingang voor alles wat van buiten komt.
@@ -19,10 +19,11 @@ import { berichtId, bronVanToken, effectieveBron, leesEnvelop, leesTokens, winte
  * dan leest hij dezelfde log; valt er een om, dan staat het bericht er nog en
  * is het te herspelen.
  *
- * Dat is wat een berichtenbroker zou doen, zonder broker: het volume is een
- * handvol per dag, en Firestore-triggers zijn de consumers. Groeit het, dan
- * komt Pub/Sub tussen deze ingang en de log — de envelop en de verwerkers
- * blijven dezelfde.
+ * Achter de log zit een broker: een relay zet elke rij op het Pub/Sub-topic
+ * `messaging-berichten`, en elke verwerker is daar een abonnee met zijn
+ * eigen schaal en zijn eigen herkansing. Deze ingang weet daar niets van: ze
+ * schrijft alleen de rij, met `bus.stand: 'wacht'` (zie
+ * `functions/messaging-bus.js`, *Outbox*).
  *
  * ── Waarom één geheim met een token per bron ──────────────────────────────
  * De afzenders zijn servers, geen mensen: er is niemand om in te loggen. Elke
@@ -63,6 +64,9 @@ async function schrijf(db, envelop) {
       ontvangen: FieldValue.serverTimestamp(),
       // Per verwerker een eigen stand; leeg betekent "nog niet gezien".
       verwerking: {},
+      // Outbox: de relay in functions/ zet de rij op de bus en zet dit op
+      // `gepubliceerd`. Wat blijft hangen, vindt de herkansing hieraan terug.
+      bus: { stand: 'wacht' },
       versie: 1,
     })
     return { id: ref.id, herhaald: false }
@@ -98,10 +102,8 @@ export function maakMessaging({ db, region }) {
 
       // Het oude platte Wintermoods-contract blijft werken op zijn oude adres.
       const alias = /\/api\/wintermoods(\/|$)/.test(verzoek.path)
-      // Een platform (de boekingsapp, Cue) mag zeggen voor welke van zijn sites het bericht is.
-      const { bron: voor, via } = effectieveBron(bron, verzoek.body?.bron)
-      const gelezen = alias && bron === 'wintermoods' ? wintermoodsNaarEnvelop(verzoek.body) : leesEnvelop(verzoek.body, { bron: voor })
-      if (gelezen.envelop && via) gelezen.envelop.via = via
+      // De token beslist de bron; wat de afzender zelf in `bron` zet, telt niet.
+      const gelezen = alias && bron === 'wintermoods' ? wintermoodsNaarEnvelop(verzoek.body) : leesEnvelop(verzoek.body, { bron })
       if (gelezen.fout) return antwoord.status(400).json({ fout: gelezen.fout })
 
       const { id, herhaald } = await schrijf(db, gelezen.envelop)

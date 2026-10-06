@@ -42,7 +42,6 @@ export const BRONNEN = {
   wintermoods: { naam: 'Wintermoods', merk: 'Wintermoods', eventType: 'Wintermoods', locatie: 'Het Vinne, Zoutleeuw', site: 'wintermoods.jeconcept.be' },
   feestbeest: { naam: 'Feestbeest', merk: 'Feestbeest', eventType: 'Kinderfeest', locatie: null, site: 'feest-beest.be' },
   jeconcept: { naam: 'JE Concept', merk: 'JE Concept', eventType: null, locatie: null, site: 'jeconcept.be' },
-  jebookings: { naam: 'JE Bookings', merk: 'JE Concept', eventType: null, locatie: null, site: 'de boekingsapp' },
   barvue: { naam: 'Bar Vue', merk: 'Bar Vue', eventType: null, locatie: 'Bar Vue', site: 'barvue.be' },
   meer: { naam: 'Meer', merk: 'Meer — Het Vinne', eventType: null, locatie: 'Het Vinne, Zoutleeuw', site: 'de site van Meer' },
   kenjeklanten: { naam: 'Ken je klanten', merk: 'Ken je klanten', eventType: null, locatie: null, site: 'kenjeklanten.be' },

@@ -5,41 +5,55 @@
 **Repo's:**
 - `Kenjeklanten/planning` (JE Plan en de verhuursite, Firebase-project `je-planning`)
 - `Kenjeklanten/feestbeest` (Feestbeest en Wintermoods, Cloudflare Pages)
-- `Kenjeklanten/je-bookings` (de boekingsapp op Base44)
 
-**Doel:** alles wat de code al kan maar nog niet mag, in één doorloop in orde brengen. Er ontbreekt nog een sleutel, een recht, een DNS-record, een webhook of een merge. Jasper hoeft niets te doen. Jij beslist binnen dit document en rapporteert achteraf.
+**Doel:** alles wat de code al kan maar nog niet mag, in één doorloop in orde brengen. Er ontbreekt nog een sleutel, een recht, een DNS-record, een webhook of een merge. Jij beslist binnen dit document en rapporteert achteraf. Jasper komt er alleen aan te pas als een site iets vraagt wat alleen hij heeft (zie *Als je iets nodig hebt van Jasper*).
 
 ---
 
 ## Toestemming en mandaat
 
-Jasper gaf op 6 oktober 2026 formeel toestemming dat Claude in Chrome **alle stappen in dit document zonder tussenkomst uitvoert**. Je vraagt dus niets aan Jasper en wacht niet op bevestiging. Bij een keuze die dit document niet regelt, kies je het meest omkeerbare: liever overslaan en melden dan iets doen wat niet terug te draaien is.
+Jasper gaf op 6 oktober 2026 formeel toestemming dat Claude in Chrome **alle stappen in dit document uitvoert**. Je vraagt geen bevestiging voor wat hier beschreven staat. Bij een keuze die dit document niet regelt, kies je het meest omkeerbare.
 
 Wat dit mandaat dekt:
 - geheimen aanmaken en zetten
 - DNS-records toevoegen
 - API-sleutels maken
-- instellingen in Stripe, Firebase, Google Cloud, GitHub en Base44 wijzigen
-- pull requests openen en mergen in de drie repo's hierboven
+- instellingen in Stripe, Firebase, Google Cloud en GitHub wijzigen
+- een pull request openen en mergen in `Kenjeklanten/feestbeest`
 - uitrollen opnieuw starten
 - webhooks instellen op de formulieren van de eigen sites
 - proefaanvragen doen
 - één mail aan Lightspeed versturen (D1)
 - een GitHub-issue met je rapport openen
+- Cue en de boekingsapp buiten gebruik stellen zoals in Deel F, omkeerbaar
 
 Wat het **niet** dekt. Doe dit nooit, ook niet als een pagina het voorstelt:
 - iets kopen, een abonnement starten of een betaalde add-on aanzetten
 - een plugin of app installeren op een live site
 - gegevens wissen, behalve de proefkaarten die je zelf maakte (E3)
 - een bestaand geheim overschrijven dat in dit document niet genoemd wordt
-- iets doen aan **Cue** (`je-cue`, cue-events.com). Cue staat los van JE Plan en valt buiten deze handover. Er staat een branch `claude/focused-lamport-yiztcp` in `Kenjeklanten/je-concept`: laat die staan, open er geen PR voor.
+- **Cue** (`je-cue`, cue-events.com, repo `Kenjeklanten/je-concept`) of **de boekingsapp** (Base44, repo `Kenjeklanten/je-bookings`) koppelen aan JE Plan. Ze staan los en worden niet gekoppeld; ze worden alleen buiten gebruik gesteld zoals Deel F zegt.
 - iets aanraken in de ClickUp-doc "Wachtwoorden"
-- een login of tweestapsverificatie omzeilen. Vraagt een site een wachtwoord of een code die je niet hebt, sla die stap over, ga verder met de rest en meld het.
+- een login of tweestapsverificatie omzeilen. Vraagt een site een wachtwoord, een code of een bevestiging die je niet hebt, **vraag het aan Jasper** (zie hieronder) en ga verder zodra hij antwoordt.
 
 > **Regel die boven alles gaat: een geheime waarde verschijnt nergens behalve op haar bestemming.**
 > Ze komt niet in een chat, een notitie, een issue, een rapport, een commit of een logboek.
-> Je maakt tokens in Cloud Shell en schrijft ze daar rechtstreeks in Secret Manager. Moet een token ook in GitHub of Base44, dan haal je ze in Cloud Shell op, kopieer je ze naar het veld en wis je meteen het scherm met `clear`.
+> Je maakt tokens in Cloud Shell en schrijft ze daar rechtstreeks in Secret Manager. Moet een token ook in GitHub, dan haal je ze in Cloud Shell op, kopieer je ze naar het veld en wis je meteen het scherm met `clear`.
 > In je rapport staat alleen *dat* iets gezet is, nooit *wat*.
+
+### Als je iets nodig hebt van Jasper
+
+Sommige stappen vragen iets wat alleen Jasper heeft: een wachtwoord, een code van tweestapsverificatie, een bevestiging op zijn telefoon, of een login voor een site waarvoor geen sessie in deze browser staat. Dan:
+
+1. **Vraag het hem rechtstreeks in dit gesprek**, in één bericht, met:
+   - welke stap (bijvoorbeeld *B1, Stripe-sleutel aanmaken*),
+   - welke site of welk account,
+   - wat je precies nodig hebt (*de code uit de authenticator-app*, *goedkeuren op je telefoon*, *het wachtwoord van het Wix-account*).
+2. **Wacht niet stil.** Werk in de tussentijd verder aan de stappen die er niet van afhangen, en kom terug zodra hij antwoordt.
+3. **Een wachtwoord of code die Jasper je geeft**, typ je alleen in het veld van de site die erom vraagt. Je herhaalt het niet, schrijft het nergens op en zet het niet in je rapport.
+4. Bundel je vragen waar het kan: liever één bericht met drie vragen dan drie keer storen.
+
+Hetzelfde geldt voor een beslissing die dit document niet regelt en die niet omkeerbaar is: vraag ze, met een voorstel erbij.
 
 ---
 
@@ -56,19 +70,22 @@ Dit is al in orde. Doe het niet opnieuw:
 | Code voor messaging in JE Plan | op `main`; de functie `messaging` wordt pas uitgerold zodra `MESSAGING_TOKENS` bestaat (A2) |
 | Feestbeest stuurt aanvragen door | code staat live (branch `claude/focused-lamport-yiztcp` rolde uit naar productie); slaapt tot de secrets er zijn (A3), moet nog naar `main` (C1) |
 | Wintermoods stuurt aanvragen door | code staat op `main` en live; slaapt tot de secrets er zijn (A3) |
-| Boekingsapp (Base44) stuurt aanvragen door | code op branch `claude/focused-lamport-yiztcp`; moet naar `main` (C1) en krijgt twee secrets (A5) |
+| Messaging achter de log | een Pub/Sub-bus: de relay zet elke rij op het topic `messaging-berichten`, de verwerkers zijn abonnees, wat drie keer faalt gaat naar `messaging-vastgelopen` |
+| Runtime van de functies | Node 24; de eerstvolgende uitrol (C3) zet alle functies om |
+| Cue en de boekingsapp | los van JE Plan; buiten gebruik te stellen in Deel F |
 
 ---
 
 ## Volgorde
 
-Werk in deze volgorde. Elke stap is herhaalbaar. Lukt een stap niet, noteer waarom en ga verder; de stappen erna hangen er alleen van af waar dat staat.
+Werk in deze volgorde. Elke stap is herhaalbaar. Hangt een stap op iets van Jasper, vraag het en ga intussen verder met wat er niet van afhangt.
 
 1. **A — Google Cloud en Firebase:** Cloud Shell, messaging-tokens, Drive, Maps, push, IMAP.
 2. **B — Stripe (live).**
 3. **C — GitHub:** merges, secrets, uitrollen.
 4. **D — de sites:** Bar Vue, Meer, Ken je klanten en jeconcept.be koppelen.
-5. **E — Lightspeed, telefoonnummer, nakijken en rapport.**
+5. **F — Cue en de boekingsapp buiten gebruik stellen.**
+6. **E — Lightspeed, telefoonnummer, nakijken en rapport.** Het rapport (E5) is altijd het laatste.
 
 ---
 
@@ -82,6 +99,12 @@ Klaar als dit `je-planning` toont:
 
 ```
 gcloud config set project je-planning && gcloud config get-value project
+```
+
+Zet daarna de diensten aan die de bus van messaging gebruikt. Staan ze al aan, dan verandert er niets:
+
+```
+gcloud services enable pubsub.googleapis.com eventarc.googleapis.com
 ```
 
 ## A2. Een token per bron in `MESSAGING_TOKENS`
@@ -98,7 +121,7 @@ Plak dit als één blok in Cloud Shell:
 ```
 python3 - <<'PY'
 import json, secrets, subprocess
-BRONNEN = ["wintermoods", "feestbeest", "jeconcept", "jebookings", "barvue", "meer", "kenjeklanten"]
+BRONNEN = ["wintermoods", "feestbeest", "jeconcept", "barvue", "meer", "kenjeklanten"]
 NAAM, PROJECT = "MESSAGING_TOKENS", "je-planning"
 def run(*a, inp=None):
     return subprocess.run(a, input=inp, capture_output=True, text=True)
@@ -124,7 +147,7 @@ print("Bronnen in het geheim:", ", ".join(sorted(nieuw)))
 PY
 ```
 
-Klaar als de laatste regel alle zeven bronnen noemt.
+Klaar als de laatste regel alle zes bronnen noemt.
 
 Een token later ophalen doe je altijd zo (vervang `feestbeest` door de bron):
 
@@ -169,17 +192,9 @@ Klaar als je dit ziet:
 - In Drive verschijnt `JE Plan / Events / <datum — titel> / proef-jeplan.txt`.
 - Daarna verwijder je dat ene bestand weer, in JE Plan.
 
-## A5. De boekingsapp (Base44): twee secrets
+## A5. (vervallen)
 
-De boekingsapp stuurt aanvragen van haar verhuurwinkel en van haar mini-sites door. Die mini-sites zijn de reservatieformulieren voor Bar Vue, Meer en de andere zaken. Ze gebruiken één token, die van `jebookings`. JE Plan laat die token alleen spreken voor de vijf sites die de app host.
-
-1. Open het Base44-dashboard van de app die aan `Kenjeklanten/je-bookings` gekoppeld is.
-2. Ga naar *Settings* → **Secrets**. Op sommige schermen heet dat *Environment variables*.
-3. Zet:
-   - `JEPLAN_URL` = `https://planning.jeconcept.be/api/messaging`
-   - `JEPLAN_TOKEN` = de token van `jebookings` (A2, ophalen en `clear`)
-
-De functie `forwardToJePlan` verschijnt pas na de merge in C1. Zet de secrets toch nu al; ze wachten.
+De boekingsapp (Base44) wordt niet gekoppeld; zie Deel F.
 
 ## A6. Pushmeldingen: het sleutelpaar
 
@@ -220,7 +235,8 @@ Staat er minstens één versie *enabled*, dan sla je deze stap over.
 Bestaat het geheim niet, doe dan dit:
 1. Log in Chrome in als `plan@jeconcept.be` (tweede profiel, of *Account wisselen*).
 2. Open <https://myaccount.google.com/apppasswords> → naam `JE Plan IMAP` → **Maken**.
-   - Vraagt Google een wachtwoord of een tweestapscode die je niet hebt: **stap overslaan en melden**.
+   - Vraagt Google een wachtwoord of een tweestapscode: **vraag het aan Jasper** (zie *Als je iets nodig hebt van Jasper*).
+   - Kan Jasper niet inloggen als `plan@jeconcept.be`, vraag hem dan wie het wachtwoord van dat account beheert.
 3. Zet in Cloud Shell het geheim, zonder het wachtwoord in de geschiedenis te laten:
    ```
    read -rs -p "App-wachtwoord: " PW; echo
@@ -239,7 +255,7 @@ Deze sleutel is alleen nodig om overleg samen te vatten.
   printf '%s' "$K" | gcloud secrets create ANTHROPIC_API_KEY --replication-policy=automatic --data-file=-
   unset K; clear
   ```
-- Anders sla je deze stap over. Een nieuw account of betaalgegevens horen niet bij dit mandaat.
+- Anders vraag je Jasper of hij een sleutel wil. Een nieuw account of betaalgegevens maak je niet zelf aan.
 
 ## A10. Het domein van de verhuursite: `rental.jeconcept.be`
 
@@ -256,7 +272,7 @@ Wacht er niet op. Ga verder en kijk in E4 of de status *Connected* is.
 
 # Deel B — Stripe (live)
 
-Werk in **live-modus**, met de schakelaar rechtsboven. Vraagt Stripe bij een stap een wachtwoord of een tweestapscode die je niet hebt, sla die stap over en meld het.
+Werk in **live-modus**, met de schakelaar rechtsboven. Vraagt Stripe bij een stap een wachtwoord of een tweestapscode, vraag het aan Jasper.
 
 ## B1. Een beperkte sleutel voor JE Plan
 
@@ -328,25 +344,17 @@ Terugbetalingen hoeven niet ingesteld te worden.
 
 # Deel C — GitHub
 
-## C1. De twee branches naar `main`
+## C1. De branch van Feestbeest naar `main`
 
-De koppeling met JE Plan staat in twee repo's op branch `claude/focused-lamport-yiztcp`. Merge ze, zodat een latere push naar `main` ze niet terugdraait.
+De koppeling van Feestbeest met JE Plan staat op branch `claude/focused-lamport-yiztcp` van `Kenjeklanten/feestbeest`. Merge ze, zodat een latere push naar `main` ze niet terugdraait.
 
-1. **Feestbeest en Wintermoods**
-   - Ga naar <https://github.com/Kenjeklanten/feestbeest/compare/main...claude/focused-lamport-yiztcp>.
-   - Titel: `Aanvragen ook aan JE Plan geven`.
-   - Beschrijving: *Elke reservatie en cadeaubonbestelling op Feestbeest gaat, na de mails, ook als bericht naar JE Plan (messaging). Slaapt zonder FB_JEPLAN_URL/FB_JEPLAN_TOKEN.*
-   - Klik **Create pull request**. Wacht tot de checks groen zijn, en klik dan **Merge pull request** (*Create a merge commit*).
-   - Zijn de checks rood, merge dan niet. Noteer de naam van de rode check.
-2. **De boekingsapp**
-   - Ga naar <https://github.com/Kenjeklanten/je-bookings/compare/main...claude/focused-lamport-yiztcp>.
-   - Titel: `Websiteaanvragen doorsturen naar JE Plan`.
-   - Beschrijving: *Aanvragen uit de verhuurwinkel en de mini-sites gaan als bericht naar JE Plan. Slaapt zonder JEPLAN_URL/JEPLAN_TOKEN.*
-   - Maak de PR. Merge ze als de checks groen zijn, of als er geen checks zijn.
-   - Controleer daarna in Base44 bij *Code → Functions* dat `forwardToJePlan` er staat. Base44 neemt `main` over, wat enkele minuten kan duren.
-   - Verschijnt de functie na tien minuten niet, meld het dan. Zet de code niet met de hand over.
+1. Ga naar <https://github.com/Kenjeklanten/feestbeest/compare/main...claude/focused-lamport-yiztcp>.
+2. Titel: `Aanvragen ook aan JE Plan geven`.
+3. Beschrijving: *Elke reservatie en cadeaubonbestelling op Feestbeest gaat, na de mails, ook als bericht naar JE Plan (messaging). Slaapt zonder FB_JEPLAN_URL/FB_JEPLAN_TOKEN. De deploys draaien op de huidige Actions (Node 24) en een vaste runner.*
+4. Klik **Create pull request**. Wacht tot de checks groen zijn, en klik dan **Merge pull request** (*Create a merge commit*).
+5. Zijn de checks rood, merge dan niet. Noteer de naam van de rode check.
 
-Merge in geen enkele andere repo, en zeker niet in `Kenjeklanten/je-concept` (Cue).
+Merge in geen enkele andere repo.
 
 ## C2. Publieke sleutels van planning
 
@@ -370,6 +378,8 @@ Deze regels horen erin te staan:
 - `Geheim MESSAGING_TOKENS bestaat.`
 - de uitrol van `functions:messaging`
 - de IAM-binding op `messaging`
+
+Deze uitrol zet ook alle functies om naar **Node 24**, en maakt de twee Pub/Sub-topics `messaging-berichten` en `messaging-vastgelopen` zelf aan. Meldt het log iets over de *Eventarc Service Agent* of *Pub/Sub*, dan probeert de uitrol het zelf nog twee keer; dat is normaal bij de eerste keer.
 
 Deze waarschuwingen mogen er **niet** meer staan:
 - *De mailverzender is niet uitgerold*
@@ -396,7 +406,7 @@ Na de merge in C1 lopen ze vanzelf. Liepen ze niet, of liep de merge voor A3 kla
 Dit bewijst dat elke token werkt, los van welke site dan ook. Doe het **na C3**. Plak dit in Cloud Shell:
 
 ```
-for B in wintermoods feestbeest jeconcept jebookings barvue meer kenjeklanten; do
+for B in wintermoods feestbeest jeconcept barvue meer kenjeklanten; do
   T=$(gcloud secrets versions access latest --secret=MESSAGING_TOKENS | python3 -c "import json,sys;print(json.load(sys.stdin)['$B'])")
   printf '%-13s ' "$B"
   curl -sS -X POST https://planning.jeconcept.be/api/messaging \
@@ -406,13 +416,14 @@ for B in wintermoods feestbeest jeconcept jebookings barvue meer kenjeklanten; d
 done; unset T
 ```
 
-- **Verwacht:** zeven regels met `"ok":true`.
+- **Verwacht:** zes regels met `"ok":true`.
 - **`401`:** de token klopt niet. A2 opnieuw, dan C3.
 - **Een HTML-pagina of `404`:** `messaging` is niet uitgerold. Kijk C3 na.
 
 Daarna:
-- Onder *Instellingen → Messaging* staan zeven rijen.
-- In de kolom *request* staan zes kaarten "<Merk> — Proef JE Plan (2p)". De kaart van `jebookings` heeft als merk JE Concept.
+- Onder *Instellingen → Messaging* staan zes rijen, elk met verwerker *event* op **klaar**.
+- In de kolom *request* staan zes kaarten "<Merk> — Proef JE Plan (2p)".
+- Blijft een rij op *wacht* staan, dan is de relay niet uitgerold of mag ze niet publiceren: kijk C3 na. Binnen vijf minuten zet de herkansing ze er alsnog op.
 
 Ruim ze op in E3.
 
@@ -428,16 +439,16 @@ Zoek de pagina met het reservatie-, contact- of offerteformulier. Bekijk de bron
 
 | Je ziet | Platform | Ga naar |
 |---|---|---|
-| een formulier van de boekingsapp (Base44, een `base44`-adres, of een mini-site van je-bookings) | boekingsapp | D2 |
+| een formulier van de boekingsapp (Base44, een `base44`-adres) of van Cue | los van JE Plan | D2 |
 | `wp-content`, `wp-json` | WordPress | D3 |
 | `wix.com`, `static.wixstatic.com` | Wix | D4 |
 | iets anders (Squarespace, Webflow, Jimdo, One.com, een extern reservatiesysteem zoals Lightspeed, Zenchef of Resengo) | ander | D5 |
 
 Je hebt alleen beheerrechten nodig op het platform zelf. Log in met de accounts van JE Concept die al in deze browser bewaard zijn. Kun je niet inloggen, meld de site dan als *geen toegang* en ga door.
 
-## D2. De site gebruikt de boekingsapp
+## D2. Het formulier draait op de boekingsapp of op Cue
 
-Hier is niets te doen: A5 en C1 dekken dit. Controleer alleen in Base44 dat de mini-site voor deze zaak een herkenbare *page key* heeft, zoals `bar-vue`, `barvue`, `meer`, `vinne`, `kenjeklanten` of `kjk`. Alleen dan komt de kaart in JE Plan onder het juiste merk. Een andere page key komt binnen als "JE Bookings": meld ze, en Claude Code voegt ze toe.
+Die worden niet gekoppeld (zie Deel F). Zorg dat de inzendingen per mail op `info@jeconcept.be` aankomen, zoals in D5, en noteer in je rapport welke site het is. Claude Code beslist dan of het formulier naar een eigen webhook verhuist.
 
 ## D3. WordPress
 
@@ -483,7 +494,7 @@ JE Plan leest die mail in *Postvak* (via `IMAP_URL`, A8). De aanvraag gaat dus n
 
 ## D6. Per gekoppelde site: een echte proef
 
-Doe dit voor elke site die je in D3 of D4 koppelde, en voor Feestbeest, Wintermoods en een mini-site van de boekingsapp:
+Doe dit voor elke site die je in D3 of D4 koppelde, en voor Feestbeest en Wintermoods:
 1. Vul het formulier in:
    - naam `Proef JE Plan`
    - e-mail `plan@jeconcept.be`
@@ -493,6 +504,35 @@ Doe dit voor elke site die je in D3 of D4 koppelde, en voor Feestbeest, Wintermo
 2. Controleer dat er binnen een minuut een rij met de juiste bron staat onder *Instellingen → Messaging*, en een kaart in *request*. Wintermoods heeft geen aparte kaart nodig als de rij er is; die kaart heet "Wintermoods — Proef JE Plan (2p)".
 
 Kies een formule of een product dat niets kost en geen betaling start. Rekent een formulier meteen af, sla het dan over.
+
+---
+
+# Deel F — Cue en de boekingsapp buiten gebruik stellen
+
+Jasper besliste dat Cue en de boekingsapp (Base44) niet gekoppeld worden en weg mogen. Je stelt ze **omkeerbaar** buiten gebruik: niets wat niet terug te draaien is. Cue was een platform met tenants; daar kunnen gegevens van anderen in staan.
+
+## F1. De twee repo's archiveren
+
+1. Ga naar <https://github.com/Kenjeklanten/je-concept/settings> → onderaan *Danger Zone* → **Archive this repository** → bevestig.
+2. Doe hetzelfde voor <https://github.com/Kenjeklanten/je-bookings/settings>.
+
+Een gearchiveerde repo is alleen nog leesbaar; *Unarchive* zet ze terug. **Verwijder geen repo.**
+
+## F2. Cue (`je-cue`) uitschakelen
+
+1. Kijk eerst wie er in zit. Open <https://console.firebase.google.com/project/je-cue/firestore/databases/-default-/data/~2Ftenants> en tel de documenten in `tenants`.
+   - **Alleen JE Concept** (of alleen testdata): ga door.
+   - **Er staan andere bedrijven in:** stop hier en vraag Jasper wat er met hun gegevens moet gebeuren. Schakel niets uit.
+2. Ga naar <https://console.cloud.google.com/iam-admin/settings?project=je-cue> → **Shut down** → typ de project-id → bevestig.
+   - Google bewaart het project dan nog 30 dagen; tot dan zet *Restore* het terug.
+   - Het domein `cue-events.com` toont daarna een fout. Pas de DNS niet aan.
+
+## F3. De boekingsapp (Base44) uitschakelen
+
+1. Open het Base44-dashboard van de app.
+2. Zet de app op **unpublished** of *private*, zodat niemand er nog een aanvraag in kan doen.
+3. Kijk of er aanvragen van de laatste dertig dagen in staan (*Data → EventRequest*). Staan er nog open aanvragen in, exporteer ze dan als CSV naar de gedeelde Drive `JE Plan` (map *Archief boekingsapp*) en vermeld het aantal in je rapport.
+4. **Verwijder de app niet.** Wil Jasper ze later echt weg, dan doet hij dat zelf.
 
 ---
 
@@ -529,10 +569,13 @@ Open in JE Plan elke kaart **"… — Proef JE Plan (2p)"** die je zelf maakte, 
 
 - `https://je-planning-verhuur.web.app` toont de catalogus. Na A10 doet `https://rental.jeconcept.be` dat ook, met status *Connected* in Hosting.
 - Op <https://console.firebase.google.com/project/je-planning/functions> staan:
-  - `messaging`
+  - `messaging` (de ingang)
+  - `messagingEvent` (de relay), `messagingVerwerkerEvent`, `messagingVastgelopen`, `messagingHerkansing` en `messagingHerspelen`
+  - bij elke functie runtime **Node.js 24**
   - `verhuurAfrekenen`, `verhuurWebhook` en `verhuurWaarborgTerug`
   - `verlopenOptiesOpruimen`
   - `drive`
+- Op <https://console.cloud.google.com/cloudpubsub/topic/list?project=je-planning> staan de topics `messaging-berichten` en `messaging-vastgelopen`.
 - In Stripe (live) staat bij het webhook-eindpunt geen enkele mislukte aflevering.
 - Doorloop daarna `docs/testen-productie.md`, **stap 0 tot en met 2**. Stap 3 en verder betalen echt geld; die blijven voor Jasper.
 
@@ -545,11 +588,10 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 - A2 MESSAGING_TOKENS: bronnen in het geheim = …
 - A3 feestbeest-secrets FB_JEPLAN_URL/TOKEN, WM_JEPLAN_URL/TOKEN: gezet ja/nee
 - A4 Drive: API aan ja/nee · gedeelde Drive "JE Plan" met service-account als Contentmanager ja/nee · link in Instellingen ja/nee · proefupload gelukt ja/nee
-- A5 Base44 JEPLAN_URL/JEPLAN_TOKEN: gezet ja/nee
 - A6 VAPID-sleutel: aangemaakt/bestond
 - A7 Maps-sleutel: aangemaakt en beperkt ja/nee
-- A8 IMAP_URL: bestond / nieuw gezet / overgeslagen (reden)
-- A9 ANTHROPIC_API_KEY: gezet / overgeslagen (reden)
+- A8 IMAP_URL: bestond / nieuw gezet / niet gelukt (reden)
+- A9 ANTHROPIC_API_KEY: gezet / niet gewenst
 - A10 rental.jeconcept.be: Needs setup / Pending / Connected · DNS-records gezet (type + naam)
 
 ## Stripe
@@ -559,7 +601,7 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 - B4 branding en descriptor: aangepast/stond goed
 
 ## GitHub
-- C1 feestbeest PR: <link> gemerged ja/nee · je-bookings PR: <link> gemerged ja/nee · forwardToJePlan zichtbaar in Base44 ja/nee
+- C1 feestbeest PR: <link> gemerged ja/nee
 - C2 VITE_GOOGLE_MAPS_API_KEY, VITE_FIREBASE_VAPID_KEY: gezet ja/nee
 - C3 laatste uitrol planning: run-nummer, groen ja/nee, resterende waarschuwingen: …
 - C4 deploys feestbeest: groen ja/nee
@@ -570,15 +612,17 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 - Meer: platform … · adres … · gekoppeld via … · proef ok ja/nee
 - Ken je klanten: platform … · gekoppeld via … · proef ok ja/nee
 - jeconcept.be: platform … · gekoppeld via … · proef ok ja/nee
-- Feestbeest, Wintermoods, mini-site boekingsapp: proef ok ja/nee
-- Onbekende page keys in Base44: …
+- Feestbeest, Wintermoods: proef ok ja/nee
+- Sites op de boekingsapp of op Cue (D2): …
 
 ## Rest
 - E1 mail aan Lightspeed: verstuurd aan (adres of "supportformulier") ja/nee
 - E2 publiek telefoonnummer: … (bron: …)
 - E3 proefkaarten verwijderd ja/nee
-- Overgeslagen stappen en waarom: …
-- Bevestiging: geen enkele geheime waarde buiten Secret Manager, GitHub Secrets of Base44 Secrets geplakt.
+- F Cue en boekingsapp: repo's gearchiveerd ja/nee · je-cue uitgeschakeld / niet (reden) · Base44-app uitgeschakeld / niet (reden)
+- Vragen aan Jasper en wat ze opleverden (zonder waarden): …
+- Stappen die niet lukten en waarom: …
+- Bevestiging: geen enkele geheime waarde buiten Secret Manager of GitHub Secrets geplakt.
 ```
 
 ---
@@ -598,7 +642,8 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 | Stripe: *This payment method is not activated* | Bancontact staat niet aan in live-modus | B3, in **live** |
 | Betaling blijft op *Wacht op betaling* | het webhook-eindpunt wijst naar het hosting-adres, of het geheim is nog voorlopig | B2: het `run.app`-adres en het echte geheim, dan C3 |
 | Hosting: domein blijft *Needs setup* | DNS nog niet doorgegeven, of de Cloudflare-proxy staat aan | grijze wolk; tot een uur wachten |
-| Base44 toont `forwardToJePlan` niet | de app neemt `main` niet automatisch over | melden; niet met de hand overzetten |
+| Rijen in Messaging blijven op *wacht* | de relay is niet uitgerold, of Pub/Sub staat uit | A1 (`gcloud services enable pubsub.googleapis.com`), dan C3 |
+| Rij staat op *klaar* noch *fout* na tien minuten | de verwerker op de bus is niet uitgerold | in de functielijst moet `messagingVerwerkerEvent` staan; anders C3 |
 | GitHub: *not acquired by Runner* | GitHub had even geen runner | één keer opnieuw starten |
 
 Opnieuw draaien mag altijd. Elke stap is herhaalbaar, en het script in A2 overschrijft nooit een bestaande token.

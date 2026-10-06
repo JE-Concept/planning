@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { SPREEKT_VOOR, STANDAARD_SOORT, berichtId, bronVanToken, effectieveBron, kenmerkVan, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
+import { STANDAARD_SOORT, berichtId, bronVanToken, kenmerkVan, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
 import { BRONNEN, KAART_VOOR_SOORT, kaartId, kaartVelden, leesAanvraag, leesDatum, leesWintermoods, omschrijving, titelVan, wordtKaart } from '../functions/messaging-kaart.js'
-import { HERKANSING_DAGEN, MAX_POGINGEN, herkansbaar, isVastgelopen, samenvatting } from '../functions/messaging-stand.js'
+import { HERKANSING_DAGEN, MAX_POGINGEN, RELAY_MINUTEN, WACHTTIJD_MINUTEN, herkansbaar, isVastgelopen, samenvatting, wachtOpDeBus } from '../functions/messaging-stand.js'
+import { BUS_VERSIE, TOPIC_BERICHTEN, TOPIC_VASTGELOPEN, busBericht, isVoor, leesBusBericht, vastgelopenBericht } from '../functions/messaging-bus.js'
 
 /*
   Messaging: de ene ingang voor berichten van buiten, en de verwerker die er
@@ -167,7 +168,7 @@ describe('de stand per verwerker', () => {
 
 describe('elke bron op het bord', () => {
   it('kent elke site van JE Concept, en de verhuursite krijgt geen tweede kaart', () => {
-    for (const bron of ['wintermoods', 'feestbeest', 'jeconcept', 'jebookings', 'barvue', 'meer', 'kenjeklanten']) {
+    for (const bron of ['wintermoods', 'feestbeest', 'jeconcept', 'barvue', 'meer', 'kenjeklanten']) {
       expect(wordtKaart({ bron, soort: 'offerte.aangevraagd' }), bron).toBe(true)
     }
     expect(wordtKaart({ bron: 'verhuur', soort: 'offerte.aangevraagd' })).toBe(false)
@@ -218,19 +219,72 @@ describe('elke bron op het bord', () => {
   })
 })
 
-describe('een platform dat voor meer sites spreekt', () => {
-  it('laat de boekingsapp afleveren voor de sites die ze host, en zegt via wie', () => {
-    expect(effectieveBron('jebookings', 'barvue')).toEqual({ bron: 'barvue', via: 'jebookings' })
-    expect(effectieveBron('jebookings', undefined)).toEqual({ bron: 'jebookings', via: null })
+describe('de token beslist de bron', () => {
+  it('negeert wat de afzender zelf in bron zet', () => {
+    // Er is geen platform meer dat voor andere sites mag spreken: een gelekte
+    // token kan nooit namens een andere site afleveren.
+    const { envelop } = leesEnvelop({ bron: 'barvue', soort: 'offerte.aangevraagd', sleutel: 'x1', inhoud: { naam: 'An' } }, { bron: 'feestbeest' })
+    expect(envelop.bron).toBe('feestbeest')
+    expect(envelop.via).toBeUndefined()
+  })
+})
+
+describe('de bus', () => {
+  const min = 60000
+  const nu = Date.parse('2026-10-06T12:00:00Z')
+  const rij = { bron: 'barvue', soort: 'offerte.aangevraagd', sleutel: 'h1', inhoud: { naam: 'An', email: 'an@example.be', telefoon: '0470' } }
+
+  it('zet alleen een verwijzing op de bus, nooit de inhoud', () => {
+    const { json, attributes } = busBericht('barvue-h1', rij)
+    expect(json).toEqual({ v: BUS_VERSIE, id: 'barvue-h1', bron: 'barvue', soort: 'offerte.aangevraagd', sleutel: 'h1' })
+    expect(JSON.stringify(json)).not.toContain('an@example.be')
+    expect(attributes).toEqual({ id: 'barvue-h1', bron: 'barvue', soort: 'offerte.aangevraagd' })
+    expect(Object.values(attributes).every((w) => typeof w === 'string')).toBe(true)
+    expect(TOPIC_BERICHTEN).not.toBe(TOPIC_VASTGELOPEN)
   })
 
-  it('laat een site nooit spreken voor een andere, en een platform niet voor wie niet in zijn lijst staat', () => {
-    expect(effectieveBron('wintermoods', 'barvue')).toEqual({ bron: 'wintermoods', via: null })
-    expect(effectieveBron('feestbeest', 'jeconcept')).toEqual({ bron: 'feestbeest', via: null })
-    expect(effectieveBron('jebookings', 'verhuur')).toEqual({ bron: 'jebookings', via: null })
-    expect(effectieveBron('jebookings', 'wintermoods')).toEqual({ bron: 'jebookings', via: null })
-    // Cue staat los van JE Plan: de token van jeconcept.be spreekt alleen voor zichzelf.
-    expect(effectieveBron('jeconcept', 'barvue')).toEqual({ bron: 'jeconcept', via: null })
-    expect(SPREEKT_VOOR.jebookings).not.toContain('verhuur')
+  it('stuurt een herkansing naar één verwerker, en de andere laten ze liggen', () => {
+    const { json, attributes } = busBericht('barvue-h1', rij, { verwerker: 'event' })
+    expect(attributes.verwerker).toBe('event')
+    const gelezen = leesBusBericht(json)
+    expect(isVoor(gelezen, 'event')).toBe(true)
+    expect(isVoor(gelezen, 'boekhouding')).toBe(false)
+    expect(isVoor(leesBusBericht(busBericht('x', rij).json), 'boekhouding')).toBe(true)
+  })
+
+  it('laat liggen wat het niet begrijpt', () => {
+    expect(leesBusBericht(null)).toBeNull()
+    expect(leesBusBericht({ v: 1 })).toBeNull()
+    expect(leesBusBericht({ v: BUS_VERSIE + 1, id: 'x' })).toBeNull()
+    expect(isVoor(null, 'event')).toBe(false)
+  })
+
+  it('geeft de dead-letter-topic de reden mee, begrensd', () => {
+    const { json, attributes } = vastgelopenBericht('barvue-h1', 'event', 'x'.repeat(500))
+    expect(json.fout).toHaveLength(200)
+    expect(attributes).toEqual({ id: 'barvue-h1', verwerker: 'event' })
+  })
+
+  it('wacht steeds langer tussen twee pogingen', () => {
+    expect(WACHTTIJD_MINUTEN(1)).toBe(5)
+    expect(WACHTTIJD_MINUTEN(2)).toBe(15)
+    const fout = (pogingen, minutenGeleden) => ({
+      ontvangen: new Date(nu - 60 * min),
+      verwerking: { event: { stand: 'fout', pogingen, op: new Date(nu - minutenGeleden * min) } },
+    })
+    expect(herkansbaar(fout(1, 4), 'event', nu)).toBe(false)
+    expect(herkansbaar(fout(1, 5), 'event', nu)).toBe(true)
+    expect(herkansbaar(fout(2, 10), 'event', nu)).toBe(false)
+    expect(herkansbaar(fout(2, 15), 'event', nu)).toBe(true)
+    expect(herkansbaar(fout(MAX_POGINGEN, 600), 'event', nu)).toBe(false)
+  })
+
+  it('zet zelf op de bus wat de relay miste, maar geeft de relay eerst de tijd', () => {
+    const wacht = (minutenGeleden, stand = 'wacht') => ({ ontvangen: new Date(nu - minutenGeleden * min), bus: { stand } })
+    expect(wachtOpDeBus(wacht(RELAY_MINUTEN - 1), nu)).toBe(false)
+    expect(wachtOpDeBus(wacht(RELAY_MINUTEN), nu)).toBe(true)
+    expect(wachtOpDeBus(wacht(30, 'gepubliceerd'), nu)).toBe(false)
+    expect(wachtOpDeBus({ ontvangen: new Date(nu - 30 * min) }, nu)).toBe(false)
+    expect(wachtOpDeBus(wacht((HERKANSING_DAGEN + 1) * 24 * 60), nu)).toBe(false)
   })
 })

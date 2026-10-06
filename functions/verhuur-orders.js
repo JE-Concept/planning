@@ -50,6 +50,8 @@ async function spiegelNaarLog(db, { soort, sleutel, inhoud }) {
       inhoud,
       ontvangen: FieldValue.serverTimestamp(),
       verwerking: {},
+      // Outbox, net als de ingang van messaging: de relay zet de rij op de bus.
+      bus: { stand: 'wacht' },
       versie: 1,
     })
   } catch (err) {

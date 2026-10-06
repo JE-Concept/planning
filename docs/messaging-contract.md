@@ -1,6 +1,6 @@
 # Messaging: hoe een site een aanvraag aan JE Plan geeft
 
-Eén adres voor elke site van JE Concept. Wat hier binnenkomt, staat in Instellingen → Messaging en wordt een kaart in de kolom *request*. Zie de README (*Messaging*) voor waarom het zo gebouwd is.
+Eén adres voor elke site van JE Concept. Wat hier binnenkomt, staat in Instellingen → Messaging, gaat over de Pub/Sub-bus naar de verwerkers en wordt een kaart in de kolom *request*. Voor de afzender verandert de bus niets: het antwoord komt zodra de rij in de log staat. Zie de README (*Messaging*) voor waarom het zo gebouwd is.
 
 ## Adres en toegang
 
@@ -19,14 +19,13 @@ De token bepaalt de bron. Elke site heeft er haar eigen; ze staan samen in het g
 | `wintermoods` | wintermoods.jeconcept.be |
 | `feestbeest` | feest-beest.be |
 | `jeconcept` | jeconcept.be |
-| `jebookings` | de boekingsapp (Base44) |
 | `barvue` | barvue.be |
 | `meer` | de site van Meer — Het Vinne |
 | `kenjeklanten` | kenjeklanten.be |
 
 `verhuur` bestaat ook, maar schrijft rechtstreeks in de log; ze heeft geen token.
 
-**Platformen.** De boekingsapp (`jebookings`) host meer dan één site. Haar token mag in `bron` zeggen voor welke site het bericht is, maar alleen voor de bronnen in `SPREEKT_VOOR` (in `functions-messaging/envelop.js`): barvue, meer, kenjeklanten, feestbeest en jeconcept. Cue staat los van JE Plan en heeft geen token. De log noteert dan `via` met het platform. Elke andere waarde van `bron` wordt genegeerd: de token beslist.
+**De token beslist de bron.** Wat een afzender zelf in `bron` zet, telt niet: een token spreekt alleen voor haar eigen site, zodat een gelekte token nooit namens een andere site kan afleveren.
 
 ## Twee vormen
 

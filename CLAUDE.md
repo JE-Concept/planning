@@ -64,6 +64,14 @@ AAPI invoert. Ze mag nooit op planning lijken en nooit een shift worden.
   krijgt een **eigen codebase** plus een `scripts/ci/geheim.sh`-wacht met
   `|| echo "::warning::..."` in `ci.yml` én `go-live.yml` — zoals `mail`,
   `meetings`, `betaling` en `messaging`.
+- **Geen `retry: true` op een functie, en een functie verandert niet van
+  soort trigger.** De uitrol draait zonder `--force`: een nieuwe functie met
+  platformherkansing, een andere soort trigger onder dezelfde naam of een
+  verdwenen functie laten ze dan afbreken. Herkansen gaat via de bus van
+  messaging (zie `functions/messaging-bus.js`); daarom heet de relay daar nog
+  `messagingEvent`.
+- **Op de messaging-bus staat nooit inhoud**, alleen de verwijzing naar de rij
+  in de log (claim check). Een verwerker leest de rij zelf.
 - **De verhuursite (`verhuur/`) mag niets uit de backoffice halen.** Geen
   `@data/`, `@components/`, `@context/`, `@ui/`, en geen Firebase-SDK. Alleen
   `@lib/` en `@styles/` zijn gedeeld. `tests/verhuur-bundel.test.js` weigert de

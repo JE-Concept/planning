@@ -10,7 +10,7 @@
     {
       "source": "functions",
       "codebase": "default",
-      "runtime": "nodejs22",
+      "runtime": "nodejs24",
       "ignore": [
         "node_modules",
         ".git",
@@ -21,7 +21,7 @@
     {
       "source": "functions-meetings",
       "codebase": "meetings",
-      "runtime": "nodejs22",
+      "runtime": "nodejs24",
       "ignore": [
         "node_modules",
         ".git",
@@ -32,7 +32,7 @@
     {
       "source": "functions-mail",
       "codebase": "mail",
-      "runtime": "nodejs22",
+      "runtime": "nodejs24",
       "ignore": [
         "node_modules",
         ".git",
@@ -43,7 +43,7 @@
     {
       "source": "functions-betaling",
       "codebase": "betaling",
-      "runtime": "nodejs22",
+      "runtime": "nodejs24",
       "ignore": [
         "node_modules",
         ".git",
@@ -54,7 +54,7 @@
     {
       "source": "functions-messaging",
       "codebase": "messaging",
-      "runtime": "nodejs22",
+      "runtime": "nodejs24",
       "ignore": [
         "node_modules",
         ".git",

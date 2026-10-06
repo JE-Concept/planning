@@ -789,11 +789,18 @@ export const { verhuurOrderBetaald, verhuurAanvraagBinnen } = maakVerhuurOrders(
 })
 
 /*
-  De verwerkers van messaging: een bericht dat in de log `messaging` komt (via
-  functions-messaging/) wordt hier een kaart op het bord. Zie
-  `messaging-verwerking.js` voor de stand per verwerker en het herspelen.
+  Messaging achter de log: de relay naar het Pub/Sub-topic, de verwerker die
+  er een kaart op het bord van maakt, de dead-letter-topic met de melding, de
+  herkansing en de herspeelknop. Zie `messaging-bus.js` voor waarom er een bus
+  is, en `messaging-verwerking.js` voor de stand per verwerker.
 */
-export const { messagingEvent, messagingHerkansing, messagingHerspelen } = maakMessagingVerwerking({
+export const {
+  messagingEvent,
+  messagingVerwerkerEvent,
+  messagingVastgelopen,
+  messagingHerkansing,
+  messagingHerspelen,
+} = maakMessagingVerwerking({
   db,
   region: REGION,
   verstuur,
