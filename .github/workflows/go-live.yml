@@ -92,7 +92,11 @@ jobs:
       - name: Cloud Functions
         if: inputs.what == 'alles'
         run: |
-          ( cd functions && npm install --no-audit --no-fund )
+          ( cd functions && npm ci --no-audit --no-fund )
+          # Zie ci.yml: zonder opruimregel sluit firebase-tools 15 de uitrol niet af.
+          npx --yes firebase-tools@15 functions:artifacts:setpolicy --location europe-west1 --days 7 \
+            --force --project "$PROJECT" --non-interactive \
+            || echo "::warning::Opruimregel voor function-images niet gezet; de uitrol gaat door."
           scripts/ci/deploy.sh "$PROJECT" --only functions:default
 
           # Een callable v2-functie draait op Cloud Run en moet publiek
@@ -148,7 +152,7 @@ jobs:
           # Claude-sleutel werkt het samenvatten niet, maar inloggen wel — en
           # dat is precies de volgorde die eerder omgekeerd lag.
           if scripts/ci/geheim.sh ANTHROPIC_API_KEY "$PROJECT"; then
-            ( cd functions-meetings && npm install --no-audit --no-fund )
+            ( cd functions-meetings && npm ci --no-audit --no-fund )
             scripts/ci/deploy.sh "$PROJECT" --only functions:meetings \
               || echo "::warning::De overlegfuncties zijn niet uitgerold; de rest staat wel live."
           else
@@ -164,7 +168,7 @@ jobs:
           # en dan werd de mailverzender maanden overgeslagen met de melding dat
           # het geheim niet bestond. Zie het script.
           if scripts/ci/geheim.sh SMTP_URL "$PROJECT"; then
-            ( cd functions-mail && npm install --no-audit --no-fund )
+            ( cd functions-mail && npm ci --no-audit --no-fund )
             scripts/ci/deploy.sh "$PROJECT" --only functions:mail \
               || echo "::warning::De mailverzender is niet uitgerold; de rest staat wel live."
           else
@@ -181,7 +185,7 @@ jobs:
           # merken er niets van, want die schrijven niet in `huurorders`.
           if scripts/ci/geheim.sh STRIPE_SECRET "$PROJECT" \
             && scripts/ci/geheim.sh STRIPE_WEBHOOK_SECRET "$PROJECT"; then
-            ( cd functions-betaling && npm install --no-audit --no-fund )
+            ( cd functions-betaling && npm ci --no-audit --no-fund )
             scripts/ci/deploy.sh "$PROJECT" --only functions:betaling \
               || echo "::warning::Het afrekenen is niet uitgerold; de rest staat wel live."
           else
@@ -191,7 +195,7 @@ jobs:
           # De ontvanger van Wintermoods-aanvragen: zelfde wacht, zelfde reden.
           # Zie ci.yml en functions-messaging/messaging.js.
           if scripts/ci/geheim.sh MESSAGING_TOKENS "$PROJECT"; then
-            ( cd functions-messaging && npm install --no-audit --no-fund )
+            ( cd functions-messaging && npm ci --no-audit --no-fund )
             scripts/ci/deploy.sh "$PROJECT" --only functions:messaging \
               || echo "::warning::De messaging-ingang is niet uitgerold; de rest staat wel live."
             gcloud run services add-iam-policy-binding messaging \

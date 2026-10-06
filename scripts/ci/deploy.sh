@@ -36,6 +36,30 @@ for poging in $(seq 1 "$POGINGEN"); do
     continue
   fi
 
+  # Sinds firebase-tools 15 bouwt de CLI één image per codebase en hangen alle
+  # functies eraan. Cloud Run begint soms aan een functie voor dat image klaar
+  # staat ("Image … not found", "Container import failed"); die functie houdt
+  # dan haar vorige versie, de rest is bijgewerkt. Een tweede ronde vindt het
+  # image wel. Een echte fout in de code geeft een andere melding en valt
+  # hier niet onder.
+  if grep -qi "Container import failed\|Image '[^']*' not found" "$log" \
+     && [ "$poging" -lt "$POGINGEN" ]; then
+    echo "::warning::Cloud Run vond het nieuwe image nog niet voor een deel van de functies (poging $poging van $POGINGEN). Over 30s opnieuw." >&2
+    sleep 30
+    continue
+  fi
+
+  # De CLI zet na een geslaagde uitrol een opruimregel op de oude images, en
+  # zonder --force (dat we niet geven: het laat de CLI ook functies wissen)
+  # maakt ze er een rode build van terwijl alles live staat. De workflow zet
+  # die regel vooraf zelf; lukt dat niet, dan is dit een waarschuwing en
+  # geen mislukte uitrol.
+  if grep -qi 'Functions successfully deployed but could not set up cleanup policy' "$log" \
+     && ! grep -qi 'Functions deploy had errors' "$log"; then
+    echo "::warning::Functies staan live, maar de opruimregel voor oude images ontbreekt. Zie functions:artifacts:setpolicy." >&2
+    exit 0
+  fi
+
   break
 done
 
