@@ -47,19 +47,19 @@ function client() {
   return auth.getClient()
 }
 
-async function drive(url, opties = {}) {
+async function driveEcht(url, opties = {}) {
   const c = await client()
   const r = await c.request({ url, ...opties })
   return r.data
 }
 
 /** Wie klopt er aan, en mag die dat? Alleen het team: wie een profiel heeft. */
-async function wieBent(db, req) {
+async function wieBent(db, req, verifieer) {
   const kop = String(req.get('authorization') ?? '')
   const token = /^Bearer\s+(\S+)$/.exec(kop)?.[1]
   if (!token) return null
   try {
-    const { uid } = await getAuth().verifyIdToken(token)
+    const { uid } = await verifieer(token)
     const profiel = await db.collection('profiles').doc(uid).get()
     if (!profiel.exists || profiel.data().active === false) return null
     const rol = profiel.data().role
@@ -85,7 +85,7 @@ async function instelling(db) {
  * weet waarheen. Wordt een event hernoemd, dan blijft de map heten zoals ze
  * heette: hernoemen in Drive is iets wat een mens doet, met de reden erbij.
  */
-async function mapVoor(db, driveId, { taskId, customerId }) {
+async function mapVoor(drive, db, driveId, { taskId, customerId }) {
   const col = taskId ? 'tasks' : 'customers'
   const id = taskId ?? customerId
   const ref = db.collection(col).doc(id)
@@ -95,7 +95,7 @@ async function mapVoor(db, driveId, { taskId, customerId }) {
   if (data.driveFolderId) return { id: data.driveFolderId, webViewLink: data.driveFolderLink ?? null }
 
   const naam = taskId ? mapnaamVoorEvent(data) : mapnaamVoorKlant(data, id)
-  const ouder = await submap(driveId, taskId ? 'Events' : 'Klanten')
+  const ouder = await submap(drive, driveId, taskId ? 'Events' : 'Klanten')
   const map = await drive(`${DRIVE}/files?supportsAllDrives=true&fields=id,webViewLink`, {
     method: 'POST',
     data: { name: naam, mimeType: MAP, parents: [ouder] },
@@ -105,7 +105,7 @@ async function mapVoor(db, driveId, { taskId, customerId }) {
 }
 
 /** `Events/` en `Klanten/` bovenin de gedeelde Drive; eenmalig aangemaakt. */
-async function submap(driveId, naam) {
+async function submap(drive, driveId, naam) {
   const q = encodeURIComponent(`name = '${naam}' and mimeType = '${MAP}' and '${driveId}' in parents and trashed = false`)
   const uit = await drive(`${DRIVE}/files?q=${q}&corpora=drive&driveId=${driveId}&includeItemsFromAllDrives=true&supportsAllDrives=true&fields=files(id)`)
   if (uit.files?.[0]) return uit.files[0].id
@@ -117,7 +117,7 @@ async function submap(driveId, naam) {
 }
 
 /** Alles in een map, zonder prullenbak. */
-async function bestandenIn(driveId, mapId) {
+async function bestandenIn(drive, driveId, mapId) {
   const q = encodeURIComponent(`'${mapId}' in parents and trashed = false and mimeType != '${MAP}'`)
   const uit = await drive(
     `${DRIVE}/files?q=${q}&corpora=drive&driveId=${driveId}&includeItemsFromAllDrives=true&supportsAllDrives=true&pageSize=200&orderBy=modifiedTime desc&fields=files(${VELDEN})`
@@ -132,10 +132,10 @@ async function bestandenIn(driveId, mapId) {
  * meer: weg. Wat allebei bestaat: de naam en de grootte bijwerken, want ook
  * die veranderen in Drive zonder dat de app het ziet.
  */
-async function sync(db, driveId, { taskId, customerId }, uid) {
-  const map = await mapVoor(db, driveId, { taskId, customerId })
+async function sync(drive, db, driveId, { taskId, customerId }, uid) {
+  const map = await mapVoor(drive, db, driveId, { taskId, customerId })
   if (!map) return { fout: 'onbekend' }
-  const inDrive = await bestandenIn(driveId, map.id)
+  const inDrive = await bestandenIn(drive, driveId, map.id)
 
   const veld = taskId ? 'taskId' : 'customerId'
   const bestaand = await db.collection('attachments').where(veld, '==', taskId ?? customerId).get()
@@ -168,14 +168,19 @@ async function sync(db, driveId, { taskId, customerId }, uid) {
   return { map, aantal: inDrive.length, erbij, weg }
 }
 
-export function maakDrive({ db, region }) {
+/**
+ * `drive` en `verifieer` staan erin zodat tests/drive.test.js de echte handler
+ * kan laten lopen tegen een nagebootste Drive en de Firestore-emulator; in
+ * productie zijn het de Drive API en Firebase Auth.
+ */
+export function maakDrive({ db, region, drive = driveEcht, verifieer = (token) => getAuth().verifyIdToken(token) }) {
   return onRequest(
     { region, cors: false, invoker: 'private', memory: '512MiB', timeoutSeconds: 120, concurrency: 20, maxInstances: 10 },
     async (req, res) => {
       const pad = String(req.path ?? '').replace(/^\/api\/drive/, '').replace(/^\/+|\/+$/g, '')
       res.set('Cache-Control', 'no-store')
 
-      const wie = await wieBent(db, req)
+      const wie = await wieBent(db, req, verifieer)
       if (!wie) return res.status(401).json({ fout: 'niet_aangemeld' })
 
       const driveId = await instelling(db)
@@ -187,12 +192,12 @@ export function maakDrive({ db, region }) {
 
       try {
         if (req.method === 'POST' && pad === 'map') {
-          const map = await mapVoor(db, driveId, { taskId, customerId })
+          const map = await mapVoor(drive, db, driveId, { taskId, customerId })
           return map ? res.json(map) : res.status(404).json({ fout: 'onbekend' })
         }
 
         if (req.method === 'POST' && pad === 'sync') {
-          const uit = await sync(db, driveId, { taskId, customerId }, wie.uid)
+          const uit = await sync(drive, db, driveId, { taskId, customerId }, wie.uid)
           return uit.fout ? res.status(404).json(uit) : res.json(uit)
         }
 
@@ -208,7 +213,7 @@ export function maakDrive({ db, region }) {
           if (!bytes || bytes.length === 0) return res.status(400).json({ fout: 'leeg' })
           if (bytes.length > MAX_BYTES) return res.status(413).json({ fout: 'te_groot' })
 
-          const map = await mapVoor(db, driveId, { taskId, customerId })
+          const map = await mapVoor(drive, db, driveId, { taskId, customerId })
           if (!map) return res.status(404).json({ fout: 'onbekend' })
 
           const grens = `je-plan-${Date.now()}`
