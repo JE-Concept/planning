@@ -52,8 +52,8 @@
       ]
     },
     {
-      "source": "functions-wintermoods",
-      "codebase": "wintermoods",
+      "source": "functions-messaging",
+      "codebase": "messaging",
       "runtime": "nodejs22",
       "ignore": [
         "node_modules",
@@ -89,9 +89,16 @@
           }
         },
         {
+          "source": "/api/messaging/**",
+          "function": {
+            "functionId": "messaging",
+            "region": "europe-west1"
+          }
+        },
+        {
           "source": "/api/wintermoods/**",
           "function": {
-            "functionId": "wintermoods",
+            "functionId": "messaging",
             "region": "europe-west1"
           }
         },

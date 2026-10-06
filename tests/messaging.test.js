@@ -1,0 +1,117 @@
+import { describe, expect, it } from 'vitest'
+import { berichtId, bronVanToken, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
+import { KAART_VOOR_SOORT, kaartId, kaartVelden, leesWintermoods, omschrijving, titelVan } from '../functions/messaging-kaart.js'
+
+/*
+  Messaging: de ene ingang voor berichten van buiten, en de verwerker die er
+  een kaart van maakt. Alleen de delen zonder imports, want CI installeert enkel
+  de wortel — dezelfde reden waarom `order.js` in functions-betaling los staat.
+*/
+const gelijk = (a, b) => a === b
+
+describe('de envelop', () => {
+  const goed = { soort: 'reservatie.aangevraagd', sleutel: 'abc-123', taal: 'fr', tijdstip: '2026-12-01T10:00:00Z', inhoud: { naam: 'Lies' } }
+
+  it('neemt precies de velden over die in de log horen, en niets anders', () => {
+    const { envelop, fout } = leesEnvelop({ ...goed, iets: 'anders' }, { bron: 'wintermoods' })
+    expect(fout).toBeUndefined()
+    expect(envelop).toEqual({
+      bron: 'wintermoods', soort: 'reservatie.aangevraagd', sleutel: 'abc-123',
+      tijdstip: '2026-12-01T10:00:00.000Z', taal: 'fr', inhoud: { naam: 'Lies' },
+    })
+    expect(Object.keys(envelop)).not.toContain('iets')
+  })
+
+  it('weigert zonder bron, soort, sleutel of inhoud — elk met een eigen code', () => {
+    expect(leesEnvelop(goed, {})).toEqual({ fout: 'geen_bron' })
+    expect(leesEnvelop({ ...goed, soort: 'Reservatie' }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_soort' })
+    expect(leesEnvelop({ ...goed, sleutel: '' }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_sleutel' })
+    expect(leesEnvelop({ ...goed, inhoud: 'tekst' }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_inhoud' })
+    expect(leesEnvelop({ ...goed, inhoud: [1] }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_inhoud' })
+  })
+
+  it('laat een onleesbaar tijdstip weg en valt terug op Nederlands', () => {
+    const { envelop } = leesEnvelop({ ...goed, tijdstip: 'gisteren', taal: 'de' }, { bron: 'barvue' })
+    expect(envelop.tijdstip).toBeNull()
+    expect(envelop.taal).toBe('nl')
+  })
+
+  it('geeft dezelfde inzending hetzelfde id, zodat een herhaling één rij blijft', () => {
+    expect(berichtId({ bron: 'wintermoods', sleutel: 'abc-123' })).toBe('wintermoods-abc-123')
+  })
+
+  it('steekt het oude platte Wintermoods-formulier in de envelop', () => {
+    const { envelop } = wintermoodsNaarEnvelop({ aanvraagId: '0f1c', taal: 'nl', naam: 'Jasper', email: 'j@example.be', personen: 24, bron: 'wintermoods' })
+    expect(envelop.bron).toBe('wintermoods')
+    expect(envelop.soort).toBe('reservatie.aangevraagd')
+    expect(envelop.sleutel).toBe('0f1c')
+    expect(envelop.inhoud).toEqual({ naam: 'Jasper', email: 'j@example.be', personen: 24 })
+    expect(wintermoodsNaarEnvelop({ naam: 'zonder id' })).toEqual({ fout: 'geen_sleutel' })
+  })
+})
+
+describe('de tokens per bron', () => {
+  it('leest één geheim met een token per bron, en laat te korte of vreemde regels weg', () => {
+    const tokens = leesTokens(JSON.stringify({ wintermoods: 'a'.repeat(32), barvue: 'kort', 'Raar Naam': 'b'.repeat(32) }))
+    expect(Object.keys(tokens)).toEqual(['wintermoods'])
+  })
+
+  it('geeft niets terug op een kapot of leeg geheim, in plaats van te crashen', () => {
+    expect(leesTokens('')).toEqual({})
+    expect(leesTokens('{niet json')).toEqual({})
+    expect(leesTokens('[1,2]')).toEqual({})
+  })
+
+  it('herkent de bron aan de token, met of zonder Bearer', () => {
+    const tokens = { wintermoods: 'w'.repeat(32), barvue: 'b'.repeat(32) }
+    expect(bronVanToken(tokens, `Bearer ${'b'.repeat(32)}`, gelijk)).toBe('barvue')
+    expect(bronVanToken(tokens, 'w'.repeat(32), gelijk)).toBe('wintermoods')
+    expect(bronVanToken(tokens, 'Bearer verkeerd', gelijk)).toBeNull()
+    expect(bronVanToken(tokens, undefined, gelijk)).toBeNull()
+  })
+})
+
+describe('de kaart uit een Wintermoods-aanvraag', () => {
+  const bericht = {
+    bron: 'wintermoods', soort: 'reservatie.aangevraagd', sleutel: '0f1c', taal: 'fr',
+    inhoud: { naam: 'Jasper Eyckmans', email: 'jasper@example.be', telefoon: '012 28 01 00', datum: '2026-12-19', moment: 'avond', personen: '24', formule: 'bbq', formuleLabel: 'Winter BBQ (€ 44,50)', gelegenheid: 'bedrijf', dieet: '2 vegetarisch', bericht: 'Teamfeest.' },
+  }
+
+  it('wordt een kaart in request, met een afleidbaar id', () => {
+    expect(KAART_VOOR_SOORT[bericht.soort]).toBe('request')
+    expect(kaartId(bericht)).toBe('wm-0f1c')
+    expect(kaartId({ ...bericht, bron: 'barvue' })).toBeNull()
+  })
+
+  it('normaliseert de inhoud: aantal, datum, grenzen', () => {
+    const a = leesWintermoods(bericht.inhoud, 'fr')
+    expect(a.personen).toBe(24)
+    expect(a.datum).toBe('2026-12-19')
+    expect(leesWintermoods({ ...bericht.inhoud, personen: 5000 }).personen).toBe(1000)
+    expect(leesWintermoods({ ...bericht.inhoud, datum: '19/12/2026' }).datum).toBeNull()
+  })
+
+  it('heet naar de klant en het aantal, en leest in de omschrijving wat de klant invulde', () => {
+    const a = leesWintermoods(bericht.inhoud, 'fr')
+    expect(titelVan(a)).toBe('Wintermoods — Jasper Eyckmans (24p)')
+    const tekst = omschrijving(a)
+    expect(tekst).toContain('(FR)')
+    expect(tekst).toContain('Formule: Winter BBQ')
+    expect(tekst).toContain('Gelegenheid: Bedrijfsfeest')
+    expect(omschrijving(leesWintermoods({ ...bericht.inhoud, dieet: '', bericht: '', formule: null, formuleLabel: null }, 'nl'))).not.toContain('Dieet')
+  })
+
+  it('zet "op locatie" op de kaart als plek, want dat laat de keuken iets anders doen', () => {
+    expect(kaartVelden(bericht).location).toBe('Het Vinne, Zoutleeuw')
+    expect(kaartVelden({ ...bericht, inhoud: { ...bericht.inhoud, gelegenheid: 'locatie' } }).location).toBe('Op locatie, bij de klant')
+  })
+
+  it('draagt het bericht mee waar het van komt', () => {
+    const velden = kaartVelden(bericht)
+    expect(velden.bron).toBe('wintermoods')
+    expect(velden.berichtId).toBe('wintermoods-0f1c')
+    expect(velden.pax).toBe(24)
+    expect(velden.eventDate).toEqual(new Date('2026-12-19T12:00:00'))
+    expect(velden.tags).toEqual(['wintermoods'])
+  })
+})

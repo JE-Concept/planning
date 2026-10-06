@@ -33,6 +33,7 @@ import { maakPortaal } from './portaal.js'
 import { maakVerhuur } from './verhuur.js'
 import { maakVerhuurOrders } from './verhuur-orders.js'
 import { maakDrive } from './drive.js'
+import { maakMessagingVerwerking } from './messaging-verwerking.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
 import { maakPloegFuncties } from './ploeg.js'
@@ -786,6 +787,13 @@ export const { verhuurOrderBetaald, verhuurAanvraagBinnen } = maakVerhuurOrders(
   verstuur,
   alleProfielen,
 })
+
+/*
+  De verwerkers van messaging: een bericht dat in de log `messaging` komt (via
+  functions-messaging/) wordt hier een kaart op het bord. Zie
+  `messaging-verwerking.js` voor de stand per verwerker en het herspelen.
+*/
+export const { messagingEvent } = maakMessagingVerwerking({ db, region: REGION })
 
 /* Werk dat vanzelf terugkomt; zie `herhalingen.js` voor waarom het 's nachts
    gebeurt en niet zodra iemand de tool opent. */

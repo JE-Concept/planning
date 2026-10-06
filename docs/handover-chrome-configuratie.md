@@ -29,7 +29,7 @@ Uit het uitrol-log van CI-run 123 blijkt dat een deel intussen in orde is. Dit h
 | Verhuursite op `je-planning-verhuur.web.app` | **live** (CI 124) |
 | Functie `drive` (documenten) | **uitgerold**; A6 is nog te doen |
 
-Nog open: A2 (`STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, optioneel `ANTHROPIC_API_KEY`), A3, A4, A5, A6, A7, heel Deel B, C1, C2, D1, D2.
+Nog open: A2 (`STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, optioneel `ANTHROPIC_API_KEY`), A3, A4, A5, A6, A7 (`MESSAGING_TOKENS`), heel Deel B, C1, C2, D1, D2.
 
 **Eerst dit:** de laatste twee uitrollen (runs 125 en 126) kregen geen runner van GitHub en zijn geannuleerd zonder dat er iets liep. Open <https://github.com/Kenjeklanten/planning/actions/runs/37369347749> en klik **Re-run all jobs** vóór je aan de rest begint; dan staat de Wintermoods-ontvanger klaar tegen dat A7 gezet is.
 
@@ -115,16 +115,16 @@ Controle: open een event, voeg onder *Documenten* een klein bestand toe. In Driv
 
 Als de functie **drive** niet in de lijst staat, is de uitrol van na 5 oktober nog niet gelopen: eerst C2.
 
-## A7. Het gedeelde geheim voor Wintermoods-aanvragen
+## A7. Het geheim van messaging: een token per bron
 
-Elke reservatie-aanvraag op wintermoods.jeconcept.be wordt een event in de kolom *request* van JE Plan — zodra beide kanten hetzelfde geheim kennen. Eén waarde, twee plekken, en nergens anders.
+Alles wat van buiten binnenkomt (eerst Wintermoods, straks Bar Vue en Feestbeest) gaat door één ingang, `/api/messaging`, met per bron een eigen token. De tokens staan samen in één geheim als JSON. Eén waarde per bron, op twee plekken, en nergens anders.
 
-1. **Een waarde maken.** Een wachtwoordbeheerder of een generator volstaat: minstens 32 willekeurige tekens, alleen letters en cijfers. Bewaar ze één keer in de wachtwoordkluis van JE Concept onder "WINTERMOODS_TOKEN". Plak ze nooit in een chat, een notitie of een logboek.
-2. **In Secret Manager van `je-planning`.** Google Cloud Console → project `je-planning` → *Security* → *Secret Manager* → **Create secret** → naam exact `WINTERMOODS_TOKEN` → bij *Secret value* de waarde plakken → **Create**. (Het uitrol-serviceaccount geeft de functie daarna zelf leesrecht, zoals bij de mailgeheimen in het uitrol-log te zien is.)
-3. **In GitHub, repo `Kenjeklanten/feestbeest`.** Settings → Secrets and variables → Actions → **New repository secret**: `WM_JEPLAN_TOKEN` met dezelfde waarde, en `WM_JEPLAN_URL` met `https://planning.jeconcept.be/api/wintermoods`. De deploy van die repo zet ze door naar Cloudflare Pages.
-4. **De uitrol van `Kenjeklanten/planning` opnieuw draaien** (Deel C2). In het log hoort nu `Geheim WINTERMOODS_TOKEN bestaat.` te staan, gevolgd door de uitrol van `functions:wintermoods` en de IAM-binding op `wintermoods`. Daarna ook de deploy van `Kenjeklanten/feestbeest` opnieuw draaien, zodat de site de twee nieuwe waarden krijgt.
+1. **Een token maken voor Wintermoods.** Een wachtwoordbeheerder of een generator: minstens 32 willekeurige letters en cijfers. Bewaar ze één keer in de wachtwoordkluis van JE Concept onder "MESSAGING wintermoods". Plak ze nooit in een chat, een notitie of een logboek.
+2. **In Secret Manager van `je-planning`.** Google Cloud Console → project `je-planning` → *Security* → *Secret Manager* → **Create secret** → naam exact `MESSAGING_TOKENS` → bij *Secret value* precies dit, met de token in plaats van de puntjes: `{"wintermoods": "…"}` → **Create**. Komt er later een bron bij, dan **New version** met een extra regel in hetzelfde object, bijvoorbeeld `{"wintermoods": "…", "barvue": "…"}`.
+3. **In GitHub, repo `Kenjeklanten/feestbeest`.** Settings → Secrets and variables → Actions → **New repository secret**: `WM_JEPLAN_TOKEN` met dezelfde Wintermoods-token (alleen de token, niet de JSON), en `WM_JEPLAN_URL` met `https://planning.jeconcept.be/api/wintermoods`. De deploy van die repo zet ze door naar Cloudflare Pages.
+4. **De uitrol van `Kenjeklanten/planning` opnieuw draaien** (Deel C2). In het log hoort nu `Geheim MESSAGING_TOKENS bestaat.` te staan, gevolgd door de uitrol van `functions:messaging` en de IAM-binding op `messaging`. Daarna ook de deploy van `Kenjeklanten/feestbeest` opnieuw draaien, zodat de site de twee nieuwe waarden krijgt.
 
-Controle: doe een proefaanvraag op de Wintermoods-site. Binnen enkele seconden staat er een kaart "Wintermoods — <naam> (<aantal>p)" in de kolom *request* op planning.jeconcept.be. Een tweede inzending met dezelfde aanvraag-id maakt geen tweede kaart. Zolang stap 2 niet gebeurd is, zegt de uitrol `Geheim WINTERMOODS_TOKEN bestaat niet` als waarschuwing en mailt de site gewoon verder, zonder kaart.
+Controle: doe een proefaanvraag op de Wintermoods-site. Binnen enkele seconden staat er een kaart "Wintermoods — <naam> (<aantal>p)" in de kolom *request* op planning.jeconcept.be. Een tweede inzending met dezelfde aanvraag-id maakt geen tweede kaart. Zolang stap 2 niet gebeurd is, zegt de uitrol `Geheim MESSAGING_TOKENS bestaat niet` als waarschuwing en mailt de site gewoon verder, zonder kaart.
 
 ---
 
@@ -246,7 +246,7 @@ Alleen feiten, geen waarden:
 6. **C2**: is de uitrol groen, en welke waarschuwingen staan er nog?
 7. **D1**: staat de mail aan Lightspeed klaar?
 8. **A6**: is de Drive API aan, bestaat de gedeelde Drive `JE Plan` met de service-account als Contentmanager, en staat de link in Instellingen → Documenten?
-9. **A7**: bestaat `WINTERMOODS_TOKEN` in Secret Manager en staan `WM_JEPLAN_TOKEN` en `WM_JEPLAN_URL` in de GitHub-secrets van feestbeest? (ja/nee, geen waarden)
+9. **A7**: bestaat `MESSAGING_TOKENS` in Secret Manager (met een regel voor wintermoods) en staan `WM_JEPLAN_TOKEN` en `WM_JEPLAN_URL` in de GitHub-secrets van feestbeest? (ja/nee, geen waarden)
 10. Bevestiging dat je **nergens** een geheime waarde geplakt hebt buiten Secret Manager en GitHub Secrets.
 
 ---

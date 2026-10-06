@@ -57,6 +57,6 @@ describe('de functies-codebases', () => {
         expect(exports, `${site.target}: rewrite ${rw.source} wijst naar een onbekende functie`).toContain(rw.function.functionId)
       }
     }
-    expect(existsSync(new URL('functions-wintermoods/index.js', wortel))).toBe(true)
+    expect(existsSync(new URL('functions-messaging/index.js', wortel))).toBe(true)
   })
 })

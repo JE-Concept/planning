@@ -122,6 +122,7 @@ export const REGELS = {
   // Aanvragen komen van de verhuursite via een functie; het team leest ze en
   // werkt de stand bij.
   verhuuraanvragen: { lezen: isTeam, schrijven: isMember },
+  messaging:      { lezen: isAdmin, schrijven: () => false },
   verhuurSessies:   { lezen: () => false, schrijven: () => false },
   formules:       { lezen: isTeam, schrijven: isAdmin },
   checklists:     { lezen: isBistro, schrijven: isAdmin },

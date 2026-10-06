@@ -610,6 +610,18 @@ service cloud.firestore {
       allow write: if false;
     }
     /*
+      Messaging: de log van alles wat van buiten binnenkomt (Wintermoods, de
+      verhuursite, straks Bar Vue en Feestbeest). Schrijven doet alleen de
+      functie `messaging`, met beheerdersrechten en dus langs deze regels
+      heen; de rijen zijn onveranderlijk, alleen de stand per verwerker
+      verandert — en ook dat doet een functie. Lezen mag een beheerder, voor
+      het scherm dat zegt of een bericht aankwam en wat ermee gebeurde.
+    */
+    match /messaging/{id} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+    /*
       Offerteaanvragen van de verhuursite.
 
       Aanmaken doet de functie, met beheerdersrechten en dus langs deze regels

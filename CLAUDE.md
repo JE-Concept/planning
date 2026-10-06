@@ -53,7 +53,7 @@ AAPI invoert. Ze mag nooit op planning lijken en nooit een shift worden.
 ## Waar je op stuk loopt
 
 - **Vijf aparte functies-codebases** (`functions`, `functions-meetings`,
-  `functions-mail`, `functions-betaling`, `functions-wintermoods`). Ze kunnen
+  `functions-mail`, `functions-betaling`, `functions-messaging`). Ze kunnen
   niets uit elkaar of uit `src/` importeren; `tests/codebases.test.js` bewaakt
   dat elke codebase met een geheim in beide workflows achter `geheim.sh` staat.
 - **Een `defineSecret` hoort nooit in `functions/` (default).** Een
@@ -63,7 +63,7 @@ AAPI invoert. Ze mag nooit op planning lijken en nooit een shift worden.
   portaal en het inloggen van de ploeg dat mee. Alles wat aan een geheim hangt
   krijgt een **eigen codebase** plus een `scripts/ci/geheim.sh`-wacht met
   `|| echo "::warning::..."` in `ci.yml` én `go-live.yml` — zoals `mail`,
-  `meetings`, `betaling` en `wintermoods`.
+  `meetings`, `betaling` en `messaging`.
 - **De verhuursite (`verhuur/`) mag niets uit de backoffice halen.** Geen
   `@data/`, `@components/`, `@context/`, `@ui/`, en geen Firebase-SDK. Alleen
   `@lib/` en `@styles/` zijn gedeeld. `tests/verhuur-bundel.test.js` weigert de

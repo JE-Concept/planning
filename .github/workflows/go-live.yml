@@ -189,17 +189,17 @@ jobs:
           fi
 
           # De ontvanger van Wintermoods-aanvragen: zelfde wacht, zelfde reden.
-          # Zie ci.yml en functions-wintermoods/wintermoods.js.
-          if scripts/ci/geheim.sh WINTERMOODS_TOKEN "$PROJECT"; then
-            ( cd functions-wintermoods && npm install --no-audit --no-fund )
-            scripts/ci/deploy.sh "$PROJECT" --only functions:wintermoods \
-              || echo "::warning::De Wintermoods-ontvanger is niet uitgerold; de rest staat wel live."
-            gcloud run services add-iam-policy-binding wintermoods \
+          # Zie ci.yml en functions-messaging/messaging.js.
+          if scripts/ci/geheim.sh MESSAGING_TOKENS "$PROJECT"; then
+            ( cd functions-messaging && npm install --no-audit --no-fund )
+            scripts/ci/deploy.sh "$PROJECT" --only functions:messaging \
+              || echo "::warning::De messaging-ingang is niet uitgerold; de rest staat wel live."
+            gcloud run services add-iam-policy-binding messaging \
               --region europe-west1 --project "$PROJECT" \
               --member allUsers --role roles/run.invoker --quiet \
-              || echo "::warning::Kon allUsers/run.invoker niet zetten op wintermoods."
+              || echo "::warning::Kon allUsers/run.invoker niet zetten op messaging."
           else
-            echo "::warning::Geheim WINTERMOODS_TOKEN bestaat niet in dit project — Wintermoods-aanvragen komen niet op het bord, de rest draait."
+            echo "::warning::Geheim MESSAGING_TOKENS bestaat niet in dit project — berichten van buiten (Wintermoods) komen niet binnen, de rest draait."
           fi
 
 
