@@ -3,7 +3,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { FieldValue } from 'firebase-admin/firestore'
 import { defineSecret } from 'firebase-functions/params'
 import { logger } from 'firebase-functions'
-import { berichtId, bronVanToken, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from './envelop.js'
+import { berichtId, bronVanToken, effectieveBron, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from './envelop.js'
 
 /**
  * Messaging: de ene ingang voor alles wat van buiten komt.
@@ -98,7 +98,10 @@ export function maakMessaging({ db, region }) {
 
       // Het oude platte Wintermoods-contract blijft werken op zijn oude adres.
       const alias = /\/api\/wintermoods(\/|$)/.test(verzoek.path)
-      const gelezen = alias && bron === 'wintermoods' ? wintermoodsNaarEnvelop(verzoek.body) : leesEnvelop(verzoek.body, { bron })
+      // Een platform (de boekingsapp, Cue) mag zeggen voor welke van zijn sites het bericht is.
+      const { bron: voor, via } = effectieveBron(bron, verzoek.body?.bron)
+      const gelezen = alias && bron === 'wintermoods' ? wintermoodsNaarEnvelop(verzoek.body) : leesEnvelop(verzoek.body, { bron: voor })
+      if (gelezen.envelop && via) gelezen.envelop.via = via
       if (gelezen.fout) return antwoord.status(400).json({ fout: gelezen.fout })
 
       const { id, herhaald } = await schrijf(db, gelezen.envelop)

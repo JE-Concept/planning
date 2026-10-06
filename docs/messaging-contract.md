@@ -26,6 +26,8 @@ De token bepaalt de bron. Elke site heeft er haar eigen; ze staan samen in het g
 
 `verhuur` bestaat ook, maar schrijft rechtstreeks in de log; ze heeft geen token.
 
+**Platformen.** De boekingsapp (`jebookings`) en Cue (`jeconcept`) hosten meer dan één site. Hun token mag in `bron` zeggen voor welke site het bericht is, maar alleen voor de bronnen in `SPREEKT_VOOR` (in `functions-messaging/envelop.js`): de boekingsapp voor barvue, meer, kenjeklanten, feestbeest en jeconcept; Cue voor barvue, meer en kenjeklanten. De log noteert dan `via` met het platform. Elke andere waarde van `bron` wordt genegeerd: de token beslist.
+
 ## Twee vormen
 
 **1. De envelop** — voor een site waar we zelf code op draaien:

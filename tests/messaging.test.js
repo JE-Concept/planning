@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { STANDAARD_SOORT, berichtId, bronVanToken, kenmerkVan, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
+import { SPREEKT_VOOR, STANDAARD_SOORT, berichtId, bronVanToken, effectieveBron, kenmerkVan, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
 import { BRONNEN, KAART_VOOR_SOORT, kaartId, kaartVelden, leesAanvraag, leesDatum, leesWintermoods, omschrijving, titelVan, wordtKaart } from '../functions/messaging-kaart.js'
 import { HERKANSING_DAGEN, MAX_POGINGEN, herkansbaar, isVastgelopen, samenvatting } from '../functions/messaging-stand.js'
 
@@ -215,5 +215,20 @@ describe('elke bron op het bord', () => {
     expect(v.pax).toBe(12)
     expect(v.title).toBe('Feestbeest — Lou (12p)')
     expect(omschrijving(leesAanvraag({ naam: 'Lou' }, 'fr'), 'feestbeest')).toContain('feest-beest.be (FR)')
+  })
+})
+
+describe('een platform dat voor meer sites spreekt', () => {
+  it('laat de boekingsapp afleveren voor de sites die ze host, en zegt via wie', () => {
+    expect(effectieveBron('jebookings', 'barvue')).toEqual({ bron: 'barvue', via: 'jebookings' })
+    expect(effectieveBron('jebookings', undefined)).toEqual({ bron: 'jebookings', via: null })
+  })
+
+  it('laat een site nooit spreken voor een andere, en een platform niet voor wie niet in zijn lijst staat', () => {
+    expect(effectieveBron('wintermoods', 'barvue')).toEqual({ bron: 'wintermoods', via: null })
+    expect(effectieveBron('feestbeest', 'jeconcept')).toEqual({ bron: 'feestbeest', via: null })
+    expect(effectieveBron('jebookings', 'verhuur')).toEqual({ bron: 'jebookings', via: null })
+    expect(effectieveBron('jebookings', 'wintermoods')).toEqual({ bron: 'jebookings', via: null })
+    expect(SPREEKT_VOOR.jebookings).not.toContain('verhuur')
   })
 })
