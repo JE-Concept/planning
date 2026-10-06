@@ -141,7 +141,9 @@ export function leesAanvraag(inhoud, taal = 'nl') {
   const extra = Object.entries(inhoud ?? {})
     .filter(([k, v]) => !gebruikt.has(k) && v !== null && v !== undefined && typeof v !== 'object' && String(v).trim() !== '')
     .slice(0, 30)
-    .map(([k, v]) => [tekst(k, 60), tekst(v, 500)])
+    // Een veld dat de kaart niet kent, krijgt toch een kop met een hoofdletter:
+    // "Thema: Licornes" leest als een formulier, "thema: Licornes" als een dump.
+    .map(([k, v]) => [tekst(k.charAt(0).toUpperCase() + k.slice(1), 60), tekst(v, 500)])
   return { ...velden, extra }
 }
 

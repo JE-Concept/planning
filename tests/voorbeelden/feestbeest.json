@@ -1,0 +1,36 @@
+{
+  "uitleg": "Het gedeelde voorbeeld van Feestbeest: wat de site bouwt uit dit formulier, en wat JE Plan ervan moet maken. Staat identiek in Kenjeklanten/feestbeest en in Kenjeklanten/planning (tests/voorbeelden/); de test aan elke kant leest het. Verander het aan beide kanten tegelijk.",
+  "bron": "feestbeest",
+  "adres": "/api/messaging",
+  "invoer": {
+    "name": " Lou Peeters ",
+    "email": "lou@example.be",
+    "lang": "fr",
+    "raw": {
+      "phone": "0470 00 00 00",
+      "type": "Pyjamaparty",
+      "count": "12",
+      "date": "2026-11-21",
+      "theme": "Licornes",
+      "message": "Pour ses 8 ans",
+      "newsletter": ""
+    },
+    "fields": {
+      "Prénom": "Lou"
+    }
+  },
+  "verzonden": {
+    "soort": "reservatie.aangevraagd",
+    "taal": "fr",
+    "inhoud": {
+      "naam": "Lou Peeters",
+      "email": "lou@example.be",
+      "telefoon": "0470 00 00 00",
+      "datum": "2026-11-21",
+      "personen": 12,
+      "gelegenheid": "Pyjamaparty",
+      "thema": "Licornes",
+      "bericht": "Pour ses 8 ans"
+    }
+  }
+}
