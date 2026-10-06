@@ -26,10 +26,24 @@ jobs:
           java-version: '21'
       - run: npm ci --no-audit --no-fund
       # Een paar tests laten de echte functions-code lopen (de bedrading van
-      # messaging), en die importeert firebase-functions uit haar eigen map.
+      # messaging, de ingang en de Stripe-webhook tegen de emulator), en die
+      # importeert firebase-functions en stripe uit haar eigen map.
       - run: npm ci --no-audit --no-fund --prefix functions
+      - run: npm ci --no-audit --no-fund --prefix functions-messaging
+      - run: npm ci --no-audit --no-fund --prefix functions-betaling
       - run: npm run lint
       - run: npm test
+
+      # Geen bekende lekken van niveau hoog in wat er live draait: de bundel en
+      # elke functions-codebase. Ontwikkeltools (vite, vitest) tellen hier niet
+      # mee; die draaien nooit bij een bezoeker. Dependabot stelt elke week de
+      # upgrades voor (.github/dependabot.yml).
+      - name: Audit
+        run: |
+          npm audit --omit=dev --audit-level=high
+          for d in functions functions-mail functions-meetings functions-betaling functions-messaging; do
+            echo "── $d"; ( cd "$d" && npm audit --omit=dev --audit-level=high )
+          done
 
       # De echte `firestore.rules` tegen een echte database. Dit draait niet
       # mee in `npm test` omdat het een emulator nodig heeft (en dus Java);

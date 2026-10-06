@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { STANDAARD_SOORT, berichtId, bronVanToken, kenmerkVan, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
+import { BEWAAR_MAANDEN, STANDAARD_SOORT, berichtId, bewaarTot, bronVanToken, kenmerkVan, leesEnvelop, leesTokens, maakLimiet, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
 import { BRONNEN, KAART_VOOR_SOORT, kaartId, kaartVelden, leesAanvraag, leesDatum, leesWintermoods, omschrijving, titelVan, wordtKaart } from '../functions/messaging-kaart.js'
-import { HERKANSING_DAGEN, MAX_POGINGEN, RELAY_MINUTEN, WACHTTIJD_MINUTEN, herkansbaar, isVastgelopen, samenvatting, wachtOpDeBus } from '../functions/messaging-stand.js'
+import { BEWAAR_MAANDEN as BEWAAR_MAANDEN_FUNCTIES, HERKANSING_DAGEN, MAX_POGINGEN, RELAY_MINUTEN, WACHTTIJD_MINUTEN, herkansbaar, isVastgelopen, samenvatting, wachtOpDeBus } from '../functions/messaging-stand.js'
 import { BUS_VERSIE, TOPIC_BERICHTEN, TOPIC_VASTGELOPEN, busBericht, isVoor, leesBusBericht, vastgelopenBericht } from '../functions/messaging-bus.js'
 
 /*
@@ -84,6 +84,68 @@ describe('de tokens per bron', () => {
     expect(bronVanToken(tokens, 'w'.repeat(32), gelijk)).toBe('wintermoods')
     expect(bronVanToken(tokens, 'Bearer verkeerd', gelijk)).toBeNull()
     expect(bronVanToken(tokens, undefined, gelijk)).toBeNull()
+  })
+
+  it('aanvaardt twee tokens voor één bron, zodat een wissel geen stilstand geeft', () => {
+    const oud = 'o'.repeat(32)
+    const nieuw = 'n'.repeat(32)
+    const tokens = leesTokens(JSON.stringify({ wintermoods: [oud, nieuw, 'kort'] }))
+    expect(tokens).toEqual({ wintermoods: [oud, nieuw] })
+    expect(bronVanToken(tokens, oud, gelijk)).toBe('wintermoods')
+    expect(bronVanToken(tokens, nieuw, gelijk)).toBe('wintermoods')
+    // De oude eruit: vanaf dan geldt alleen de nieuwe.
+    const daarna = leesTokens(JSON.stringify({ wintermoods: [nieuw] }))
+    expect(bronVanToken(daarna, oud, gelijk)).toBeNull()
+  })
+
+  it('laat een bron zonder één geldige token helemaal weg', () => {
+    expect(leesTokens(JSON.stringify({ barvue: ['kort', 42] }))).toEqual({})
+  })
+
+  it('vergelijkt met elke token, ook na een treffer, zodat de tijd niets verraadt', () => {
+    let vergeleken = 0
+    const tellend = (a, b) => (vergeleken += 1) && a === b
+    bronVanToken({ a: ['x'.repeat(16)], b: ['y'.repeat(16), 'z'.repeat(16)] }, 'x'.repeat(16), tellend)
+    expect(vergeleken).toBe(3)
+  })
+})
+
+describe('de limiet per bron', () => {
+  it('laat er zoveel per minuut door en weigert de volgende', () => {
+    const binnen = maakLimiet(3)
+    const t = 1_000_000
+    expect([binnen('wm', t), binnen('wm', t + 1), binnen('wm', t + 2), binnen('wm', t + 3)]).toEqual([true, true, true, false])
+  })
+
+  it('telt per bron: een lek bij de ene legt de andere niet stil', () => {
+    const binnen = maakLimiet(1)
+    expect(binnen('wm', 0)).toBe(true)
+    expect(binnen('wm', 1)).toBe(false)
+    expect(binnen('barvue', 1)).toBe(true)
+  })
+
+  it('gaat na een minuut weer open', () => {
+    const binnen = maakLimiet(1)
+    expect(binnen('wm', 0)).toBe(true)
+    expect(binnen('wm', 59_999)).toBe(false)
+    expect(binnen('wm', 60_000)).toBe(true)
+  })
+})
+
+describe('de bewaartermijn', () => {
+  it('is twee jaar na ontvangst', () => {
+    expect(bewaarTot(new Date('2026-10-06T12:00:00Z')).toISOString()).toBe('2028-10-06T12:00:00.000Z')
+  })
+
+  it('is dezelfde in de ingang en in de spiegel van de verhuursite', () => {
+    // Twee codebases, twee kopieën van het getal: dit houdt ze gelijk.
+    expect(BEWAAR_MAANDEN_FUNCTIES).toBe(BEWAAR_MAANDEN)
+  })
+
+  it('staat als TTL-regel op de log', async () => {
+    const { readFileSync } = await import('node:fs')
+    const json = JSON.parse(readFileSync(new URL('../firestore.indexes.json', import.meta.url), 'utf8'))
+    expect(json.fieldOverrides).toContainEqual(expect.objectContaining({ collectionGroup: 'messaging', fieldPath: 'bewaarTot', ttl: true }))
   })
 })
 

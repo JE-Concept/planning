@@ -3,7 +3,7 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { FieldValue } from 'firebase-admin/firestore'
 import { defineSecret } from 'firebase-functions/params'
 import { logger } from 'firebase-functions'
-import { berichtId, bronVanToken, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from './envelop.js'
+import { berichtId, bewaarTot, bronVanToken, leesEnvelop, leesTokens, maakLimiet, wintermoodsNaarEnvelop } from './envelop.js'
 
 /**
  * Messaging: de ene ingang voor alles wat van buiten komt.
@@ -40,7 +40,8 @@ import { berichtId, bronVanToken, leesEnvelop, leesTokens, wintermoodsNaarEnvelo
  * ── Eén antwoord op elke mislukking ───────────────────────────────────────
  * Een verkeerde token krijgt 401 en verder niets. Een bericht dat al bestaat
  * krijgt `ok` met `herhaald: true`: de afzender hoeft niet te weten dat hij
- * dubbel stuurde, en mag het gerust nog eens doen.
+ * dubbel stuurde, en mag het gerust nog eens doen. Wie boven de limiet per
+ * bron gaat, krijgt 429 met `Retry-After`; zie `maakLimiet`.
  *
  *   firebase functions:secrets:set MESSAGING_TOKENS --project je-planning
  */
@@ -64,6 +65,8 @@ async function schrijf(db, envelop) {
       ontvangen: FieldValue.serverTimestamp(),
       // Per verwerker een eigen stand; leeg betekent "nog niet gezien".
       verwerking: {},
+      // De GDPR-termijn: Firestore wist de rij zelf op deze datum. Zie BEWAAR_MAANDEN.
+      bewaarTot: bewaarTot(),
       // Outbox: de relay in functions/ zet de rij op de bus en zet dit op
       // `gepubliceerd`. Wat blijft hangen, vindt de herkansing hieraan terug.
       bus: { stand: 'wacht' },
@@ -77,7 +80,11 @@ async function schrijf(db, envelop) {
   }
 }
 
-export function maakMessaging({ db, region }) {
+/** Berichten per minuut per bron en per instantie; zie `maakLimiet`. */
+export const PER_MINUUT = 120
+
+export function maakMessaging({ db, region, perMinuut = PER_MINUUT }) {
+  const binnenLimiet = maakLimiet(perMinuut)
   return onRequest(
     {
       region,
@@ -99,6 +106,10 @@ export function maakMessaging({ db, region }) {
       // mag `X-Messaging-Token` gebruiken. Nooit in de URL: die belandt in logboeken.
       const bron = bronVanToken(tokens, verzoek.get('authorization') || verzoek.get('x-messaging-token'), gelijk)
       if (!bron) return antwoord.status(401).json({ fout: 'geen_toegang' })
+      if (!binnenLimiet(bron)) {
+        logger.warn('Bron boven de limiet', { bron })
+        return antwoord.set('Retry-After', '60').status(429).json({ fout: 'te_veel' })
+      }
 
       // Het oude platte Wintermoods-contract blijft werken op zijn oude adres.
       const alias = /\/api\/wintermoods(\/|$)/.test(verzoek.path)

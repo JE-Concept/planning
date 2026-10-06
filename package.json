@@ -25,22 +25,22 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "offerte:voorbeeld": "npm run build:demo && node scripts/offerte-voorbeeld.mjs",
-    "test:rules": "npx --yes firebase-tools@15 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules.test.js\"",
+    "test:rules": "npx --yes firebase-tools@15 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules tests/messaging-ingang tests/stripe-webhook tests/verhuur-event\"",
     "build:verhuur": "vite build --config vite.verhuur.config.js",
     "dev:verhuur": "vite --config vite.verhuur.config.js",
     "smoke:verhuur": "npm run build:verhuur && node scripts/verhuur-smoke.mjs",
     "build:verhuur:demo": "vite build --config vite.verhuur.config.js --mode demo && node scripts/verhuur-preview.mjs"
   },
   "dependencies": {
-    "firebase": "^11.0.2",
+    "firebase": "^12.19.0",
     "lucide-react": "^0.454.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
-    "@firebase/rules-unit-testing": "^4.0.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.2",
@@ -55,5 +55,8 @@
     "tailwindcss": "^3.4.13",
     "vite": "^5.4.8",
     "vitest": "^2.1.2"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.5"
   }
 }

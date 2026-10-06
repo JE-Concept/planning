@@ -1,6 +1,7 @@
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore'
 import { FieldValue } from 'firebase-admin/firestore'
 import { logger } from 'firebase-functions'
+import { bewaarTot } from './messaging-stand.js'
 
 /**
  * Wat er in JE Plan gebeurt wanneer de verhuursite iets binnenbrengt.
@@ -50,6 +51,7 @@ async function spiegelNaarLog(db, { soort, sleutel, inhoud }) {
       inhoud,
       ontvangen: FieldValue.serverTimestamp(),
       verwerking: {},
+      bewaarTot: bewaarTot(),
       // Outbox, net als de ingang van messaging: de relay zet de rij op de bus.
       bus: { stand: 'wacht' },
       versie: 1,
@@ -89,9 +91,11 @@ export function maakVerhuurOrders({ db, region, verstuur, alleProfielen }) {
       })
 
       /*
-        Idempotent op het document zelf: Firestore levert een trigger soms
-        twee keer af, en twee events voor één huur is precies wat het bord
-        onbetrouwbaar maakt. Het eerste wat we doen is de koppeling claimen.
+        Firestore levert een trigger soms twee keer af, en twee events voor
+        één huur is precies wat het bord onbetrouwbaar maakt. `na.eventId`
+        alleen helpt daar niet: een tweede aflevering draagt dezelfde
+        momentopname, waarin eventId nog leeg is. Wat het wel sluit, is het
+        vaste id van het event in `maakEvent`: de tweede `create` weigert.
       */
       if (na.status === 'betaald' && !na.eventId) {
         const eventId = await maakEvent({ db, orderId, order: na })
@@ -203,68 +207,76 @@ async function maakEvent({ db, orderId, order }) {
   const nu = new Date()
   const jaar = dag(order.van)?.getFullYear() ?? nu.getFullYear()
 
-  const ref = db.collection('tasks').doc()
-  await ref.set({
-    listId: lijst.id,
-    listName: lijst.name ?? 'Events',
-    spaceId: lijst.spaceId ?? null,
-    brandId: lijst.brandId ?? null,
-    parentId: null,
-    title: `Verhuur — ${naam}`,
-    description: [
-      `Online betaald via rental.jeconcept.be. Kenmerk ${orderId}.`,
-      '',
-      regels,
-      '',
-      order.klant?.opmerking ? `Opmerking van de klant: ${order.klant.opmerking}` : null,
-    ]
-      .filter((r) => r !== null)
-      .join('\n'),
-    eventDate: dag(order.van),
-    eventEndDate: order.tot && order.tot !== order.van ? dag(order.tot) : null,
-    dueDate: dag(order.van),
-    startDate: null,
-    customerId: order.customerId ?? null,
-    customerName: order.customerName ?? order.klant?.naam?.trim() ?? null,
-    eventType: 'Verhuur',
-    templateId: null,
-    priority: null,
-    timeEstimateMinutes: null,
-    assignees: [],
-    position: Date.now(),
-    pax: null,
-    location: null,
-    locationPlaceId: null,
-    locationLat: null,
-    locationLng: null,
-    formule: null,
-    formuleId: null,
-    formuleKeuzes: null,
-    formulePrijsPerPersoon: null,
-    formuleBtw: null,
-    formuleInclBtw: null,
-    quoteAmount: order.exclBtw ?? null,
-    budget: order.exclBtw ?? null,
-    bestellijst: [],
-    tags: ['verhuur'],
-    archived: false,
-    afgesloten: false,
-    afgeslotenJaar: null,
-    completedAt: null,
-    trackedSeconds: 0,
-    commentCount: 0,
-    statusId: kolom.id,
-    statusName: kolom.name,
-    statusColor: kolom.color,
-    statusKind: kolom.kind,
-    open: kolom.kind !== 'done' && kolom.kind !== 'closed',
-    // Waar het geld vandaan kwam, zodat de fiche terug kan naar de order.
-    huurorderId: orderId,
-    createdBy: null,
-    updatedBy: null,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  })
+  // Een vast id per order, en `create` in plaats van `set`: dezelfde trigger
+  // twee keer geeft zo één event, ook als beide tegelijk lopen.
+  const ref = db.collection('tasks').doc(`huur-${orderId}`)
+  try {
+    await ref.create({
+      listId: lijst.id,
+      listName: lijst.name ?? 'Events',
+      spaceId: lijst.spaceId ?? null,
+      brandId: lijst.brandId ?? null,
+      parentId: null,
+      title: `Verhuur — ${naam}`,
+      description: [
+        `Online betaald via rental.jeconcept.be. Kenmerk ${orderId}.`,
+        '',
+        regels,
+        '',
+        order.klant?.opmerking ? `Opmerking van de klant: ${order.klant.opmerking}` : null,
+      ]
+        .filter((r) => r !== null)
+        .join('\n'),
+      eventDate: dag(order.van),
+      eventEndDate: order.tot && order.tot !== order.van ? dag(order.tot) : null,
+      dueDate: dag(order.van),
+      startDate: null,
+      customerId: order.customerId ?? null,
+      customerName: order.customerName ?? order.klant?.naam?.trim() ?? null,
+      eventType: 'Verhuur',
+      templateId: null,
+      priority: null,
+      timeEstimateMinutes: null,
+      assignees: [],
+      position: Date.now(),
+      pax: null,
+      location: null,
+      locationPlaceId: null,
+      locationLat: null,
+      locationLng: null,
+      formule: null,
+      formuleId: null,
+      formuleKeuzes: null,
+      formulePrijsPerPersoon: null,
+      formuleBtw: null,
+      formuleInclBtw: null,
+      quoteAmount: order.exclBtw ?? null,
+      budget: order.exclBtw ?? null,
+      bestellijst: [],
+      tags: ['verhuur'],
+      archived: false,
+      afgesloten: false,
+      afgeslotenJaar: null,
+      completedAt: null,
+      trackedSeconds: 0,
+      commentCount: 0,
+      statusId: kolom.id,
+      statusName: kolom.name,
+      statusColor: kolom.color,
+      statusKind: kolom.kind,
+      open: kolom.kind !== 'done' && kolom.kind !== 'closed',
+      // Waar het geld vandaan kwam, zodat de fiche terug kan naar de order.
+      huurorderId: orderId,
+      createdBy: null,
+      updatedBy: null,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+  } catch (err) {
+    if (err?.code !== 6) throw err // 6 = ALREADY_EXISTS
+    logger.info('Event voor deze huur bestond al; niets dubbel gemaakt', { orderId, eventId: ref.id })
+    return ref.id
+  }
 
   // De reservaties horen bij het event, zodat het tabblad Materiaal ze toont.
   const batch = db.batch()

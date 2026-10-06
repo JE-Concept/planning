@@ -19,6 +19,20 @@ export const HERKANSING_DAGEN = 7
 export const WACHTTIJD_MINUTEN = (pogingen) => 5 * 3 ** Math.max(0, (pogingen ?? 1) - 1)
 /** Een rij die de relay na zoveel minuten nog niet op de bus zette, zet de herkansing er zelf op. */
 export const RELAY_MINUTEN = 2
+
+/**
+ * De GDPR-termijn van de log, voor de rijen die `functions/` zelf schrijft
+ * (de spiegel van de verhuursite). Moet gelijk zijn aan `BEWAAR_MAANDEN` in
+ * functions-messaging/envelop.js; twee codebases delen geen bestanden, dus
+ * bewaakt tests/messaging.test.js dat ze niet uit elkaar lopen.
+ */
+export const BEWAAR_MAANDEN = 24
+
+export function bewaarTot(nu = new Date()) {
+  const d = new Date(nu)
+  d.setUTCMonth(d.getUTCMonth() + BEWAAR_MAANDEN)
+  return d
+}
 /** De verwerkers die er zijn, in de volgorde waarin het scherm ze toont. */
 export const VERWERKERS = ['event']
 

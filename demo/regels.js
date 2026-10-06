@@ -112,16 +112,16 @@ export const REGELS = {
   automationRuns: { lezen: isTeam, schrijven: () => false },
   templates:      { lezen: isTeam, schrijven: isAdmin },
   // Verhuur: het team leest, een beheerder beheert de catalogus, en
-  // reserveren mag ieder lid. De dagtellers schrijft alleen de server.
+  // reserveren doet het team. De dagtellers schrijft alleen de server.
   materiaal:      { lezen: isTeam, schrijven: isAdmin },
-  reservaties:    { lezen: isTeam, schrijven: isMember },
+  reservaties:    { lezen: isTeam, schrijven: isTeam },
   materiaalDag:   { lezen: isTeam, schrijven: () => false },
   // Online afgerekende verhuur komt uit `functions-betaling/`; de browser
   // schrijft hier niets, anders zet iemand zijn eigen order op betaald.
   huurorders:     { lezen: isTeam, schrijven: () => false },
   // Aanvragen komen van de verhuursite via een functie; het team leest ze en
   // werkt de stand bij.
-  verhuuraanvragen: { lezen: isTeam, schrijven: isMember },
+  verhuuraanvragen: { lezen: isTeam, schrijven: isTeam },
   messaging:      { lezen: isAdmin, schrijven: () => false },
   verhuurSessies:   { lezen: () => false, schrijven: () => false },
   formules:       { lezen: isTeam, schrijven: isAdmin },

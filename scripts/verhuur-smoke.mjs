@@ -1,5 +1,6 @@
 import { createReadStream, existsSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { cspVoor } from './lib/csp.mjs'
 import { extname, join } from 'node:path'
 import { chromium } from 'playwright'
 import { nieuwePagina, rustig } from './lib/rust.mjs'
@@ -64,6 +65,8 @@ const AANBOD = {
 const VRIJ = { 'm-statafel': 40, 'm-koeling': 4, 'm-verwarmer': 0 }
 
 const verzoeken = []
+
+const CSP = cspVoor('verhuur')
 
 const server = createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${POORT}`)
@@ -131,7 +134,11 @@ const server = createServer((req, res) => {
   const pad = url.pathname === '/' ? '/index.html' : url.pathname
   const bestand = join(MAP, pad)
   const doel = existsSync(bestand) && extname(bestand) ? bestand : join(MAP, 'index.html')
-  res.writeHead(200, { 'Content-Type': SOORT[extname(doel)] ?? 'application/octet-stream' })
+  res.writeHead(200, {
+    'Content-Type': SOORT[extname(doel)] ?? 'application/octet-stream',
+    // De policy uit firebase.json: zie scripts/lib/csp.mjs.
+    ...(extname(doel) === '.html' ? { 'Content-Security-Policy': CSP } : {}),
+  })
   createReadStream(doel).pipe(res)
 })
 

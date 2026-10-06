@@ -687,5 +687,12 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "messaging",
+      "fieldPath": "bewaarTot",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
 }

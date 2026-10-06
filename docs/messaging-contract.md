@@ -25,6 +25,12 @@ De token bepaalt de bron. Elke site heeft er haar eigen; ze staan samen in het g
 
 `verhuur` bestaat ook, maar schrijft rechtstreeks in de log; ze heeft geen token.
 
+**Een token wisselen** gaat zonder stilstand: een bron mag in het geheim een lijst tokens hebben (`"feestbeest": ["oud…", "nieuw…"]`). Zet de nieuwe erbij, pas de site aan, en haal de oude weg zodra de site met de nieuwe aflevert. Bij een lek doe je hetzelfde, maar haal je de oude meteen weg.
+
+**Limiet.** Per bron komen er hooguit 120 berichten per minuut binnen (per instantie, en er draaien er hoogstens drie). Daarboven antwoordt de ingang `429` met `Retry-After: 60`; een eerlijke site komt daar nooit aan, een gelekte token kost zo hooguit dat maximum.
+
+**Bewaren.** Elke rij in de log krijgt `bewaarTot`, twee jaar na ontvangst, en Firestore wist ze op die datum zelf (GDPR). Een andere termijn is `BEWAAR_MAANDEN` in `functions-messaging/envelop.js` en `functions/messaging-stand.js`.
+
 **De token beslist de bron.** Wat een afzender zelf in `bron` zet, telt niet: een token spreekt alleen voor haar eigen site, zodat een gelekte token nooit namens een andere site kan afleveren.
 
 ## Twee vormen

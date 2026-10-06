@@ -1,0 +1,36 @@
+# Dependabot: elke week een voorstel per codebase, gegroepeerd, zodat een
+# upgrade zoals die naar Node 24 geen avondwerk meer is maar een PR die CI al
+# gedraaid heeft. Kleine en patch-versies samen in één PR per map; een grote
+# versie apart, want die vraagt een mens die de changelog leest.
+#
+# Elke functions-map is een eigen codebase met een eigen lockfile, dus staat
+# hier elke map apart. Wat CI rood maakt, wordt niet samengevoegd.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday, time: '06:00', timezone: Europe/Brussels }
+    open-pull-requests-limit: 5
+    groups:
+      klein:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directories:
+      - /functions
+      - /functions-mail
+      - /functions-meetings
+      - /functions-betaling
+      - /functions-messaging
+    schedule: { interval: weekly, day: monday, time: '06:00', timezone: Europe/Brussels }
+    open-pull-requests-limit: 5
+    groups:
+      klein:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday, time: '06:00', timezone: Europe/Brussels }
+    groups:
+      acties:
+        update-types: [minor, patch, major]

@@ -120,25 +120,87 @@ export function wintermoodsNaarEnvelop(body) {
  * Eén geheim en niet één per bron, want elke nieuwe bron zou anders een nieuw
  * `defineSecret` en een nieuwe uitrolwacht vragen — en een bron erbij hoort een
  * regel in een geheim te zijn, geen uitrolwijziging.
+ *
+ * Een bron mag ook een lijst tokens hebben: `{ "wintermoods": ["oud…", "nieuw…"] }`.
+ * Zo wissel je een token zonder dat de site een minuut stilvalt: zet de nieuwe
+ * erbij, pas de site aan, haal de oude weg. Zonder lijst moest dat in één
+ * beweging aan twee kanten tegelijk, en een gelekte token vervang je juist
+ * wanneer je geen tijd hebt om dat netjes te plannen.
+ *
+ * Geeft altijd `{ bron: [token, …] }`; een token korter dan 16 tekens telt niet.
  */
 export function leesTokens(geheim) {
   try {
     const obj = JSON.parse(String(geheim ?? ''))
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {}
     return Object.fromEntries(
-      Object.entries(obj).filter(([k, v]) => BRON.test(k) && typeof v === 'string' && v.length >= 16)
+      Object.entries(obj)
+        .filter(([k]) => BRON.test(k))
+        .map(([k, v]) => [k, (Array.isArray(v) ? v : [v]).filter((t) => typeof t === 'string' && t.length >= 16)])
+        .filter(([, lijst]) => lijst.length > 0)
     )
   } catch {
     return {}
   }
 }
 
-/** De bron die bij een token hoort, of null. Vergelijkt in constante tijd per kandidaat. */
+/**
+ * De bron die bij een token hoort, of null. Vergelijkt in constante tijd per
+ * kandidaat, en loopt altijd alle kandidaten af: wie stopt bij de eerste
+ * treffer, verraadt met zijn antwoordtijd welke bron het was.
+ */
 export function bronVanToken(tokens, header, gelijk) {
   const meegegeven = String(header ?? '').replace(/^Bearer\s+/i, '')
   if (!meegegeven) return null
-  for (const [bron, token] of Object.entries(tokens)) {
-    if (gelijk(token, meegegeven)) return bron
+  let gevonden = null
+  for (const [bron, lijst] of Object.entries(tokens)) {
+    for (const token of Array.isArray(lijst) ? lijst : [lijst]) {
+      if (gelijk(token, meegegeven) && !gevonden) gevonden = bron
+    }
   }
-  return null
+  return gevonden
+}
+
+/**
+ * Een limiet per bron: zoveel berichten per minuut, per instantie.
+ *
+ * De ingang staat publiek, en een token kan lekken. Zonder limiet kan wie hem
+ * heeft in een paar minuten tienduizenden kaarten op het bord zetten, en elke
+ * rij kost een schrijfactie en een verwerker. Een echte site stuurt een
+ * handvol aanvragen per uur; een limiet van een paar per seconde merkt ze dus
+ * nooit, en een lek kost hooguit het maximum maal het aantal instanties (3).
+ *
+ * In het geheugen van de instantie en niet in Firestore: dat zou elke
+ * aanvraag een extra schrijfactie kosten om een probleem af te remmen dat er
+ * bijna nooit is. Een venster van een minuut, met de tijdstippen per bron.
+ */
+export function maakLimiet(perMinuut) {
+  const vensters = new Map()
+  return (sleutel, nu = Date.now()) => {
+    const recent = (vensters.get(sleutel) ?? []).filter((t) => nu - t < 60000)
+    if (recent.length >= perMinuut) {
+      vensters.set(sleutel, recent)
+      return false
+    }
+    recent.push(nu)
+    vensters.set(sleutel, recent)
+    return true
+  }
+}
+
+/**
+ * Hoe lang een bericht in de log blijft: twee jaar.
+ *
+ * In de log staan namen, mailadressen en telefoonnummers, en de GDPR vraagt
+ * dat je die niet langer bewaart dan nodig. Een aanvraag die na twee jaar geen
+ * klant werd, wordt het niet meer; een die het wél werd, staat dan al lang op
+ * de eventkaart en in de offerte. Firestore wist de rij zelf op `bewaarTot`
+ * (een TTL-regel in firestore.indexes.json). Een andere termijn is dit getal.
+ */
+export const BEWAAR_MAANDEN = 24
+
+export function bewaarTot(nu = new Date()) {
+  const d = new Date(nu)
+  d.setUTCMonth(d.getUTCMonth() + BEWAAR_MAANDEN)
+  return d
 }

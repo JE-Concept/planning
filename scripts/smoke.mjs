@@ -21,6 +21,7 @@
  */
 
 import { createServer } from 'node:http'
+import { cspVoor } from './lib/csp.mjs'
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -50,6 +51,8 @@ const TYPES = {
 // Wat er weg moet doen alsof het weg is — zo wordt een uitrol nagespeeld.
 const verdwenen = new Set()
 
+const CSP = cspVoor('app')
+
 const server = createServer((req, res) => {
   const pad = req.url.split('?')[0]
   if ([...verdwenen].some((deel) => pad.includes(deel))) {
@@ -59,7 +62,12 @@ const server = createServer((req, res) => {
   }
   let bestand = join(root, pad === '/' ? 'index.html' : pad)
   if (!existsSync(bestand) || statSync(bestand).isDirectory()) bestand = join(root, 'index.html')
-  res.writeHead(200, { 'Content-Type': TYPES[extname(bestand)] ?? 'application/octet-stream' })
+  const html = extname(bestand) === '.html'
+  res.writeHead(200, {
+    'Content-Type': TYPES[extname(bestand)] ?? 'application/octet-stream',
+    // De policy uit firebase.json, afgedwongen: zie scripts/lib/csp.mjs.
+    ...(html ? { 'Content-Security-Policy': CSP } : {}),
+  })
   createReadStream(bestand).pipe(res)
 })
 
