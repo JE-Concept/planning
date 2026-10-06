@@ -1,3 +1,4 @@
+import './runtime.js'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { maakMessaging } from './messaging.js'

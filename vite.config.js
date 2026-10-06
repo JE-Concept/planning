@@ -124,6 +124,7 @@ export default defineConfig(({ mode }) => {
             'firebase/firestore': resolve('./demo/firestore.js'),
             'firebase/auth': resolve('./demo/auth.js'),
             'firebase/app': resolve('./demo/stubs.js'),
+            'firebase/app-check': resolve('./demo/stubs.js'),
             'firebase/functions': resolve('./demo/stubs.js'),
             'firebase/storage': resolve('./demo/stubs.js'),
             // De klantenpagina's praten met een Cloud Function; die draait

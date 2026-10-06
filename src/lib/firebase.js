@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app'
+import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check'
 import {
   GoogleAuthProvider,
   browserLocalPersistence,
@@ -37,6 +38,30 @@ if (!isConfigured) {
 }
 
 export const app = initializeApp(config)
+
+/*
+  App Check: Firestore en de functies vragen een bewijs dat een verzoek uit
+  deze app komt, en niet uit een script met een gekopieerde config. Die config
+  staat in elke bundel en is dus publiek; zonder App Check is ze het enige wat
+  een aanvaller nodig heeft om tegen de rules aan te praten.
+
+  Alleen met een reCAPTCHA Enterprise-sleutel (handover, stap A11). Zonder
+  sleutel gebeurt hier niets, en dat is ook de stand tot het afdwingen: eerst
+  een week meten in de console of alleen echte verzoeken een token hebben, dan
+  pas aanzetten. Wie afdwingt voor elke versie van de app een token stuurt,
+  sluit de mensen buiten die de pagina nog open hebben staan.
+*/
+const APPCHECK_SLEUTEL = import.meta.env.VITE_APPCHECK_SITE_KEY
+if (APPCHECK_SLEUTEL && isConfigured && import.meta.env.VITE_USE_EMULATORS !== '1') {
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(APPCHECK_SLEUTEL),
+      isTokenAutoRefreshEnabled: true,
+    })
+  } catch (err) {
+    console.warn('JE Plan: App Check niet gestart', err)
+  }
+}
 
 /**
  * Firestore, met de gegevens op schijf.

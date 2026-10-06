@@ -1,3 +1,4 @@
+import './runtime.js'
 import { initializeApp } from 'firebase-admin/app'
 import { FieldValue } from 'firebase-admin/firestore'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'

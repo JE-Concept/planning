@@ -83,6 +83,8 @@ jobs:
           # Zonder deze sleutel blijft het locatieveld op een event een gewoon
           # tekstveld: geen adressenlijst, wel gewoon typen. Zie .env.example.
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          # App Check (A11). Leeg = uit; zie src/lib/firebase.js.
+          VITE_APPCHECK_SITE_KEY: ${{ secrets.VITE_APPCHECK_SITE_KEY }}
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
 
@@ -125,6 +127,8 @@ jobs:
           # Zonder deze sleutel blijft het locatieveld op een event een gewoon
           # tekstveld: geen adressenlijst, wel gewoon typen. Zie .env.example.
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          # App Check (A11). Leeg = uit; zie src/lib/firebase.js.
+          VITE_APPCHECK_SITE_KEY: ${{ secrets.VITE_APPCHECK_SITE_KEY }}
           VITE_APP_URL: https://planning.jeconcept.be
           VITE_CANONICAL_HOST: ${{ secrets.VITE_CANONICAL_HOST }}
 
@@ -166,6 +170,13 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
           FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+          # Een eigen serviceaccount per codebase (handover A12). Leeg = het
+          # standaard compute-account, zoals altijd; zie functions/runtime.js.
+          JEPLAN_SA_DEFAULT: ${{ vars.JEPLAN_SA_DEFAULT }}
+          JEPLAN_SA_MAIL: ${{ vars.JEPLAN_SA_MAIL }}
+          JEPLAN_SA_MEETINGS: ${{ vars.JEPLAN_SA_MEETINGS }}
+          JEPLAN_SA_BETALING: ${{ vars.JEPLAN_SA_BETALING }}
+          JEPLAN_SA_MESSAGING: ${{ vars.JEPLAN_SA_MESSAGING }}
         run: |
           printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
           # De hosting-target staat in .firebaserc op de oorspronkelijke

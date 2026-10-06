@@ -2,6 +2,9 @@
 export const initializeApp = () => ({ __demo: true })
 export const getStorage = () => ({ __demo: true })
 export const connectStorageEmulator = () => {}
+// App Check heeft in de demo niets te bewijzen: er is geen server.
+export const initializeAppCheck = () => ({ __demo: true })
+export class ReCaptchaEnterpriseProvider {}
 
 /**
  * Opslag in de demo: het bestand blijft in dit tabblad.

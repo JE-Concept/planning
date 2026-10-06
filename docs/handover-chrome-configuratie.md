@@ -71,7 +71,11 @@ Dit is al in orde. Doe het niet opnieuw:
 | Feestbeest stuurt aanvragen door | code staat live (branch `claude/focused-lamport-yiztcp` rolde uit naar productie); slaapt tot de secrets er zijn (A3), moet nog naar `main` (C1) |
 | Wintermoods stuurt aanvragen door | code staat op `main` en live; slaapt tot de secrets er zijn (A3) |
 | Messaging achter de log | een Pub/Sub-bus: de relay zet elke rij op het topic `messaging-berichten`, de verwerkers zijn abonnees, wat drie keer faalt gaat naar `messaging-vastgelopen` |
-| Runtime van de functies | Node 24; de eerstvolgende uitrol (C3) zet alle functies om |
+| Runtime van de functies | Node 24, live sinds de uitrol van 6 oktober 's avonds; de topics `messaging-berichten` en `messaging-vastgelopen` bestaan |
+| Opruimregel voor oude function-images | gezet door de uitrol: een week |
+| Content-Security-Policy | afgedwongen op de verhuursite; op de backoffice als *Report-Only* (A13 zet ze na een week scherp) |
+| Bewaartermijn messaging | twee jaar, via de TTL-regel op `bewaarTot`; de uitrol zet die regel zelf |
+| Dependabot | aan via `.github/dependabot.yml`; opent elke maandag PR's. Die merge je **niet**: dat beslist Jasper |
 | Cue en de boekingsapp | los van JE Plan; buiten gebruik te stellen in Deel F |
 
 ---
@@ -80,9 +84,9 @@ Dit is al in orde. Doe het niet opnieuw:
 
 Werk in deze volgorde. Elke stap is herhaalbaar. Hangt een stap op iets van Jasper, vraag het en ga intussen verder met wat er niet van afhangt.
 
-1. **A — Google Cloud en Firebase:** Cloud Shell, messaging-tokens, Drive, Maps, push, IMAP.
+1. **A — Google Cloud en Firebase:** Cloud Shell, messaging-tokens, Drive, Maps, push, IMAP, App Check, eigen serviceaccounts, bewaking.
 2. **B — Stripe (live).**
-3. **C — GitHub:** merges, secrets, uitrollen.
+3. **C — GitHub:** merges, secrets, uitrollen, beveiliging van de organisatie.
 4. **D — de sites:** Bar Vue, Meer, Ken je klanten en jeconcept.be koppelen.
 5. **F — Cue en de boekingsapp buiten gebruik stellen.**
 6. **E — Lightspeed, telefoonnummer, nakijken en rapport.** Het rapport (E5) is altijd het laatste.
@@ -268,6 +272,78 @@ Deze sleutel is alleen nodig om overleg samen te vatten.
 
 Wacht er niet op. Ga verder en kijk in E4 of de status *Connected* is.
 
+
+## A11. App Check: een reCAPTCHA Enterprise-sleutel
+
+App Check laat Firestore en de functies zien of een verzoek uit de echte app komt. De app gebruikt het zodra er een sleutel is; **afdwingen** doe je nu nog niet (zie A13).
+
+1. Open <https://console.cloud.google.com/security/recaptcha?project=je-planning>. Staat de API uit, zet ze aan.
+2. **Create key** → naam `je-plan-appcheck` → platform **Website** → domeinen `planning.jeconcept.be` en `je-planning.web.app` → geen checkbox-uitdaging (*score-based*). Maak de sleutel aan en kopieer het **sleutel-id** (begint meestal met `6L`). Dat id is publiek; het staat straks in de bundel.
+3. Open <https://console.firebase.google.com/project/je-planning/appcheck/apps> → bij de web-app **reCAPTCHA Enterprise** → plak hetzelfde sleutel-id → **Save**. Klik **niet** op *Enforce*.
+4. Zet het id in GitHub als secret `VITE_APPCHECK_SITE_KEY` (zoals in C2).
+
+Klaar als de volgende uitrol (C3) loopt en de App Check-pagina na een uur verzoeken toont onder *Verified* voor Firestore.
+
+## A12. Een eigen serviceaccount per codebase
+
+Vandaag draaien alle functies als het standaard compute-account, en dat heeft Editor op het hele project. Hierna krijgt elke codebase een eigen account met alleen de rollen die ze gebruikt. De code staat klaar (`functions*/runtime.js`); ze doet pas iets als de GitHub-variabelen bestaan.
+
+Plak dit in Cloud Shell. Het is herhaalbaar: wat al bestaat, wordt overgeslagen.
+
+```
+P=je-planning
+NR=$(gcloud projects describe $P --format='value(projectNumber)')
+UITROL=$(gcloud iam service-accounts list --project $P --filter='email~^firebase-adminsdk' --format='value(email)' | head -1)
+rol() { gcloud projects add-iam-policy-binding $P --member "serviceAccount:$1" --role "$2" --condition=None --quiet >/dev/null && echo "  ✔ $2"; }
+for N in functions mail meetings betaling messaging; do
+  SA="jeplan-$N@$P.iam.gserviceaccount.com"
+  gcloud iam service-accounts describe "$SA" --project $P >/dev/null 2>&1 \
+    || gcloud iam service-accounts create "jeplan-$N" --project $P --display-name "JE Plan — $N"
+  echo "$SA"
+  for R in roles/datastore.user roles/logging.logWriter roles/eventarc.eventReceiver roles/run.invoker; do rol "$SA" $R; done
+  # De uitrolsleutel moet de functies onder dit account mogen zetten.
+  gcloud iam service-accounts add-iam-policy-binding "$SA" --project $P \
+    --member "serviceAccount:$UITROL" --role roles/iam.serviceAccountUser --quiet >/dev/null && echo "  ✔ uitrol mag het gebruiken"
+done
+F="jeplan-functions@$P.iam.gserviceaccount.com"
+for R in roles/firebaseauth.admin roles/firebasecloudmessaging.admin roles/pubsub.publisher roles/storage.objectAdmin; do rol "$F" $R; done
+# ploeg.js maakt custom tokens, en daarvoor ondertekent het account met zijn eigen sleutel.
+gcloud iam service-accounts add-iam-policy-binding "$F" --project $P --member "serviceAccount:$F" \
+  --role roles/iam.serviceAccountTokenCreator --quiet >/dev/null && echo "  ✔ tokens ondertekenen"
+rol "jeplan-mail@$P.iam.gserviceaccount.com" roles/storage.objectAdmin
+# Pub/Sub levert berichten af als een eigen dienstaccount; dat moet tokens voor de abonnees mogen maken.
+rol "service-$NR@gcp-sa-pubsub.iam.gserviceaccount.com" roles/iam.serviceAccountTokenCreator
+```
+
+Klaar als elk account `✔` toont. Zet daarna in <https://github.com/Kenjeklanten/planning/settings/variables/actions> → **New repository variable** (variabelen, geen secrets), **één per keer**, met na elke variabele een uitrol (C3) en de controle hieronder:
+
+| Volgorde | Variabele | Waarde |
+|---|---|---|
+| 1 | `JEPLAN_SA_MESSAGING` | `jeplan-messaging@je-planning.iam.gserviceaccount.com` |
+| 2 | `JEPLAN_SA_BETALING` | `jeplan-betaling@je-planning.iam.gserviceaccount.com` |
+| 3 | `JEPLAN_SA_MEETINGS` | `jeplan-meetings@je-planning.iam.gserviceaccount.com` |
+| 4 | `JEPLAN_SA_MAIL` | `jeplan-mail@je-planning.iam.gserviceaccount.com` |
+| 5 | `JEPLAN_SA_DEFAULT` | `jeplan-functions@je-planning.iam.gserviceaccount.com` |
+
+Vóór stap 5: voeg `jeplan-functions@je-planning.iam.gserviceaccount.com` toe aan de gedeelde Drive *JE Plan* als **Contentmanager**, net als het account in A4. De Drive kijkt naar leden, niet naar IAM-rollen; zonder dit geeft elke upload *geen toegang tot de Drive*.
+
+Controle na elke uitrol: op <https://console.cloud.google.com/run?project=je-planning> staat bij de functies van die codebase het nieuwe account onder *Security*. Doe daarna voor die codebase de proef uit E4 (bij `functions`: aanmelden met Google én met een personeelscode, een taak toewijzen zodat er een melding vertrekt, en een proefbericht in D0).
+
+**Gaat er iets mis** (een trigger die niets meer doet, `PERMISSION_DENIED` in de logs), maak de variabele dan leeg, rol opnieuw uit (C3) en meld welke rol er ontbrak. Het oude account is daarmee meteen terug.
+
+## A13. Bewaking en, na een week, afdwingen
+
+**Meldingen bij storingen.** Open <https://console.cloud.google.com/monitoring/alerting?project=je-planning> → **Create policy**, drie keer, elk met als kanaal het e-mailadres van Jasper (vraag het als je het niet hebt; vul het niet zelf in):
+1. *Log match*: `severity>=ERROR AND resource.type="cloud_run_revision"`, hoogstens één melding per uur → naam `JE Plan — fout in een functie`.
+2. *Metric*: Pub/Sub → Topic → *Published message count* op topic `messaging-vastgelopen`, drempel `> 0` over 5 minuten → naam `JE Plan — bericht vastgelopen`.
+3. *Log match*: `resource.labels.service_name="messaging" AND httpRequest.status=401`, drempel meer dan 20 in 10 minuten → naam `JE Plan — golf 401 aan de ingang`.
+
+**Een week na A11 en na de uitrol met de CSP** (dat is ten vroegste 13 oktober), en alleen als:
+- App Check bij Firestore en bij Cloud Functions **meer dan 99 % verified** toont: klik daar **Enforce**;
+- de console van de browser op `planning.jeconcept.be` na een rondje door alle pagina's geen meldingen *Content Security Policy (Report-Only)* toont: vraag Claude (in een sessie op de repo) om in `firebase.json` `Content-Security-Policy-Report-Only` te vervangen door `Content-Security-Policy`.
+
+Is één van beide niet zo, laat het staan en noteer het in het rapport.
+
 ---
 
 # Deel B — Stripe (live)
@@ -396,6 +472,13 @@ Kom daarna terug naar **B2** als die nog openstaat.
 Na de merge in C1 lopen ze vanzelf. Liepen ze niet, of liep de merge voor A3 klaar was:
 1. Ga naar <https://github.com/Kenjeklanten/feestbeest/actions>.
 2. Start de laatste run op `main` van **Deploy to Cloudflare Pages** en van **Deploy Wintermoods to Cloudflare Pages** opnieuw met **Re-run all jobs**.
+
+
+## C5. Beveiliging van de GitHub-organisatie
+
+1. <https://github.com/organizations/Kenjeklanten/settings/security> → **Require two-factor authentication** aan. GitHub toont wie er nog geen heeft; die leden verliezen toegang tot ze het aanzetten. Vraag Jasper eerst of dat nu mag, en noteer zijn antwoord.
+2. Voor `planning`, `feestbeest`: *Settings → Code security* → **Dependabot alerts**, **Dependabot security updates**, **Secret scanning** en **Push protection** aan.
+3. Beslist Jasper dat `planning` privé wordt: *Settings → General → Danger Zone → Change visibility → Make private*. Doe het **alleen** op zijn uitdrukkelijke vraag; de uitrol werkt daarna gewoon verder.
 
 ---
 
@@ -593,6 +676,9 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 - A8 IMAP_URL: bestond / nieuw gezet / niet gelukt (reden)
 - A9 ANTHROPIC_API_KEY: gezet / niet gewenst
 - A10 rental.jeconcept.be: Needs setup / Pending / Connected · DNS-records gezet (type + naam)
+- A11 App Check: sleutel aangemaakt ja/nee · in Firebase gekoppeld ja/nee · VITE_APPCHECK_SITE_KEY gezet ja/nee · NIET afgedwongen
+- A12 serviceaccounts: aangemaakt ja/nee · variabelen gezet en uitgerold: messaging/betaling/meetings/mail/default (per stuk ok of teruggedraaid + reden)
+- A13 drie meldingsregels aangemaakt ja/nee · App Check afgedwongen ja/nee (cijfers) · CSP scherp gevraagd ja/nee
 
 ## Stripe
 - B1 STRIPE_SECRET (restricted key): gezet ja/nee
@@ -605,6 +691,7 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 - C2 VITE_GOOGLE_MAPS_API_KEY, VITE_FIREBASE_VAPID_KEY: gezet ja/nee
 - C3 laatste uitrol planning: run-nummer, groen ja/nee, resterende waarschuwingen: …
 - C4 deploys feestbeest: groen ja/nee
+- C5 2FA verplicht ja/nee (Jaspers antwoord) · Dependabot/secret scanning/push protection aan ja/nee · planning privé ja/nee (op vraag van Jasper)
 
 ## Sites
 - D0 proef per bron: per bron ok / foutcode
@@ -637,6 +724,8 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 | D0: HTML in plaats van JSON | `messaging` is niet uitgerold | C3; in de annotaties staat waarom |
 | Site-proef: rij in Messaging maar geen kaart | de stand van een verwerker is *fout* | in *Instellingen → Messaging* staat de reden per verwerker; na drie keer volgt een melding. Meld de reden. |
 | Site-proef: niets in Messaging | de webhook vertrekt niet of de header ontbreekt | het log van de webhook in de plugin of in Wix nakijken; header exact `X-Messaging-Token` |
+| Na A12: een trigger doet niets meer, of `PERMISSION_DENIED` in de logs | het nieuwe account mist een rol | de variabele van die codebase leeg maken, C3, en de ontbrekende rol uit de log in het rapport zetten |
+| Na A11: een scherm laadt niet en de console meldt App Check | afgedwongen te vroeg, of sleutel voor het verkeerde domein | in Firebase App Check *Unenforce*; domeinen van de sleutel nakijken |
 | Upload van een document: *geen toegang tot de Drive* | de service-account zit niet in de Drive, of de API staat uit | A4 stap 1 en 3; rechten doen er soms een minuut over |
 | Uitrol: *Stripe-geheimen ontbreken* | één van de twee ontbreekt | beide namen nakijken: `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` |
 | Stripe: *This payment method is not activated* | Bancontact staat niet aan in live-modus | B3, in **live** |
