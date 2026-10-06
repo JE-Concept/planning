@@ -90,12 +90,17 @@ export function maakVerhuur({ db, region }) {
       region,
       cors: false,
       /*
-        `invoker: 'private'` zegt alleen tegen de CLI dat ze zelf geen
-        IAM-binding moet zetten; publiek bereikbaar wordt dit een stap later in
-        de workflow. Dezelfde uitleg als bij `portaal.js` en `agenda.js`, en om
-        dezelfde reden: zonder dit strandt de hele uitrol.
+        Publiek, en dat staat hier en niet alleen in de workflow. Met
+        `invoker: 'private'` zette elke uitrol de functie terug op "Require
+        authentication", en omdat de workflow `verhuur` niet opnieuw publiek
+        zette (alleen agenda en portaal), gaf /api/verhuur/aanbod op
+        rental.jeconcept.be na de uitrol een 403: een lege etalage. De
+        uitrolsleutel mag de Cloud Run-binding zetten — de betaalfuncties in
+        functions-betaling doen dat al zo. De workflow zet ze daarna nog eens,
+        als vangnet. Wie wat mag zien, beslist de functie zelf: alleen de
+        velden van het aanbod, nooit inkoopprijs of leverancier.
       */
-      invoker: 'private',
+      invoker: 'public',
       // Een etalage die rondgaat op sociale media, met een plafond erop: een
       // publiek adres zonder bovengrens is een factuur die iemand anders mag
       // bepalen. Zie `portaal.js` voor dezelfde afweging.

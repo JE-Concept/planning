@@ -228,6 +228,15 @@ jobs:
             --member allUsers --role roles/run.invoker --quiet \
             || echo "::warning::Kon allUsers/run.invoker niet zetten op portaal — de klantenpagina is dan niet bereikbaar."
 
+          # En de verhuursite: haar aanbod, de beschikbaarheid en de aanvragen
+          # komen allemaal via deze ene functie. De code zet ze al op `public`;
+          # dit is het vangnet, want zonder deze binding toont rental.jeconcept.be
+          # een lege etalage (403 op /api/verhuur/aanbod).
+          gcloud run services add-iam-policy-binding verhuur \
+            --region europe-west1 --project "$FIREBASE_PROJECT" \
+            --member allUsers --role roles/run.invoker --quiet \
+            || echo "::warning::Kon allUsers/run.invoker niet zetten op verhuur — de verhuursite toont dan geen aanbod."
+
           # De functie draait onder haar eigen runtime-service-account. Op een
           # vers project krijgt die niet meer automatisch Editor, en zonder
           # Firestore-recht crasht ensureProfile bij de eerste lees — wat bij de

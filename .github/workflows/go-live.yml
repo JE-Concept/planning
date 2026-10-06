@@ -116,12 +116,13 @@ jobs:
             --member allUsers --role roles/run.invoker --quiet \
             || echo "::warning::Kon allUsers/run.invoker niet zetten op ensureprofile."
 
-          # De twee adressen die zonder login te openen horen te zijn: een
-          # agenda-abonnement kan geen aanmeldscherm tonen, en een klant die
-          # zijn offerte opent hoort er geen account voor nodig te hebben. De
-          # sleutel in het adres is wat ze afschermt; welke velden er naar
-          # buiten gaan beslist de functie zelf.
-          for dienst in agenda portaal; do
+          # De adressen die zonder login te openen horen te zijn: een
+          # agenda-abonnement kan geen aanmeldscherm tonen, een klant die zijn
+          # offerte opent hoort er geen account voor nodig te hebben, en de
+          # verhuursite is een publieke etalage. De sleutel in het adres (of,
+          # bij de verhuur, de selectie van velden) is wat ze afschermt; welke
+          # velden er naar buiten gaan beslist de functie zelf.
+          for dienst in agenda portaal verhuur; do
             gcloud run services add-iam-policy-binding "$dienst" \
               --region europe-west1 --project "$PROJECT" \
               --member allUsers --role roles/run.invoker --quiet \
