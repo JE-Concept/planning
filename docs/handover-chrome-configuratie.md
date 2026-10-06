@@ -18,6 +18,23 @@ De eerdere handover (`docs/handover-claude-in-chrome.md`) zette het project en `
 
 ---
 
+## Stand op 6 oktober 2026
+
+Uit het uitrol-log van CI-run 123 blijkt dat een deel intussen in orde is. Dit hoef je niet meer te doen:
+
+| Stap | Stand |
+|---|---|
+| A1 Secret Manager Admin op de uitrolsleutel | **klaar** — de uitrol gaf de mailfuncties zelf leesrecht op hun geheimen |
+| A2 `SMTP_URL` en `IMAP_URL` | **bestaan**; de mailverzender en de postvakfuncties zijn uitgerold |
+| Verhuursite op `je-planning-verhuur.web.app` | **live** (CI 124) |
+| Functie `drive` (documenten) | **uitgerold**; A6 is nog te doen |
+
+Nog open: A2 (`STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, optioneel `ANTHROPIC_API_KEY`), A3, A4, A5, A6, A7, heel Deel B, C1, C2, D1, D2.
+
+**Eerst dit:** de laatste twee uitrollen (runs 125 en 126) kregen geen runner van GitHub en zijn geannuleerd zonder dat er iets liep. Open <https://github.com/Kenjeklanten/planning/actions/runs/37369347749> en klik **Re-run all jobs** vóór je aan de rest begint; dan staat de Wintermoods-ontvanger klaar tegen dat A7 gezet is.
+
+---
+
 ## Wat je nodig hebt
 
 - Google-account met **Owner** op het Google Cloud-project `je-planning` (IAM, Secret Manager, Firebase Hosting)
@@ -28,7 +45,7 @@ De eerdere handover (`docs/handover-claude-in-chrome.md`) zette het project en `
 - Het **app-wachtwoord** van `plan@jeconcept.be` voor IMAP (of het recht om er een te maken in Google Workspace)
 - Optioneel: een Anthropic-account voor de overlegfuncties, en een Google Maps-sleutel
 
-Doe de stappen in volgorde. **A1 eerst**: zolang dat recht ontbreekt, helpt geen enkel geheim.
+Doe de stappen in volgorde. A1 is al in orde (zie de stand hierboven); begin bij A2.
 
 ---
 
