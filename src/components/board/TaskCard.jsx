@@ -3,8 +3,9 @@ import { cn } from '@lib/cn'
 import { formatDuration, priorityOf } from '@lib/format'
 import { prioSleutel, vervaldag } from '@lib/task-view'
 import { isTeLaat } from '@lib/laat'
-import { AvatarStack, Badge } from '@ui/index'
+import { AvatarStack, Badge } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
+import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /**
  * One card on the board. Everything it shows is already on the task document —
@@ -53,7 +54,7 @@ function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, on
       {task.tags?.length ? (
         <div className="mt-2 flex flex-wrap gap-1">
           {task.tags.map((name) => (
-            <Badge key={name} color={tags[name]?.color ?? '#8593a9'} subtle>
+            <Badge key={name} color={tags[name]?.color ?? STANDAARD_KLEUR} subtle>
               {name}
             </Badge>
           ))}

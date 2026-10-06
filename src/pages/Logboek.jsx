@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { addDays, formatTime, startOfMonth, startOfWeek } from '@lib/dates'
 import { SOORTEN, filter, mensenIn, naarCsv, perDag, zinVan } from '@lib/logboek'
-import { Badge, Button, EmptyState, Input, Select, Spinner } from '@ui/index'
+import { Badge, EmptyState, Input, Select, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -65,12 +65,10 @@ export default function Logboek() {
         eyebrow="JE Plan"
         title={t('logboek.titel')}
         subtitle={t('logboek.regel', { aantal: gefilterd.length })}
-        actions={
-          gefilterd.length ? (
-            <Button size="sm" variant="secondary" iconLeft="file-text" onClick={exporteer}>
-              {t('logboek.exporteer')}
-            </Button>
-          ) : null
+        acties={
+          gefilterd.length
+            ? { tweede: { label: t('logboek.exporteer'), icon: 'file-text', onClick: exporteer } }
+            : null
         }
       />
 

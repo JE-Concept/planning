@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { bestelTekst, bestellijstVoorEvent, keuzeSamenvatting, nodigTekst, perCategorie } from '@lib/formules'
-import { Badge, Button, Checkbox, Icon, IconButton, Input, Select } from '@components/ds'
+import { Badge, bevestig, Button, Checkbox, Icon, IconButton, Input, Select } from '@components/ds'
 import { FORMULE_CATEGORIEEN } from '@lib/formule-templates'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -42,7 +42,7 @@ export default function Bestellijst({ ev }) {
   const herbereken = async () => {
     if (!formule) return
     const personen = Number(ev.pax) || berekendOp || 0
-    if (!window.confirm(t('bestellijst.herbereken_vraag', { aantal: personen }))) return
+    if (!bevestig(t('bestellijst.herbereken_vraag', { aantal: personen }))) return
     setBezig(true)
     try {
       await updateEvent(ev.id, { bestellijst: bestellijstVoorEvent(formule, ev.formuleKeuzes ?? {}, personen) })

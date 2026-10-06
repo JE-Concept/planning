@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react'
 import { addDays, dayKey, formatDate, startOfDay } from '@lib/dates'
 import { conflicten, reeks, vrijInPeriode } from '@lib/voorraad'
 import { useNarrow } from '@lib/useNarrow'
-import { Button, Dialog, Field, Icon, Input, Select } from '@components/ds'
+import { Acties, Button, Dialog, EmptyState, Field, Icon, Input, Select, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
-import { EmptyState, Spinner } from '@ui/index'
 import { useTaal } from '@context/TaalProvider'
 import { useAuth } from '@context/AuthProvider'
 import { useToast } from '@context/ToastProvider'
@@ -79,12 +78,8 @@ export default function Materiaal() {
       <PageHeader
         eyebrow={t('materiaal.eyebrow')}
         title={t('materiaal.titel')}
-        actions={
-          isAdmin ? (
-            <Button size="sm" iconLeft="plus" onClick={() => setBewerken({})}>
-              {t('materiaal.toevoegen')}
-            </Button>
-          ) : null
+        acties={
+          isAdmin ? { hoofd: { label: t('materiaal.toevoegen'), icon: 'plus', onClick: () => setBewerken({}) } } : null
         }
       />
 
@@ -346,14 +341,10 @@ function WaarborgDialoog({ order, onClose }) {
       onClose={onClose}
       width={460}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button onClick={bevestig} disabled={bezig || teVeel}>
-            {t('huurorder.waarborg_bevestig', { bedrag: euro(gaatTerug) })}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('huurorder.waarborg_bevestig', { bedrag: euro(gaatTerug) }), onClick: bevestig, bezig, uit: teVeel }}
+        />
       }
     >
       {order ? (

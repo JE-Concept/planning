@@ -3,17 +3,7 @@ import { Navigate, useParams } from 'react-router-dom'
 import { PRIORITIES, formatDuration, priorityOf } from '@lib/format'
 import { prioSleutel, vervaldag } from '@lib/task-view'
 import { isTeLaat } from '@lib/laat'
-import {
-  AvatarStack,
-  Badge,
-  Button,
-  EmptyState,
-  Field,
-  Input,
-  Modal,
-  Select,
-  Spinner,
-} from '@ui/index'
+import { AvatarStack, Badge, Button, EmptyState, Input, Select, Spinner } from '@components/ds'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import KanbanBoard from '@components/board/KanbanBoard'
 import TaskDrawer from '@components/board/TaskDrawer'
@@ -24,6 +14,7 @@ import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { moveTaskTo, useTasks } from '@data/tasks'
+import { STANDAARD_KLEUR, STANDAARD_MERKKLEUR } from '@lib/kleur'
 
 const GROUPINGS = [
   { key: 'status', sleutel: 'tasks.groep.status' },
@@ -97,10 +88,10 @@ export default function Board() {
   const { columns, tasksByColumn } = useMemo(() => {
     if (groupBy === 'assignee') {
       const cols = [
-        { key: NOBODY, label: t('bord.niet_toegewezen'), color: '#8593a9' },
+        { key: NOBODY, label: t('bord.niet_toegewezen'), color: STANDAARD_KLEUR },
         ...profiles
           .filter((p) => p.active !== false)
-          .map((p) => ({ key: p.id, label: p.fullName || p.email, color: '#3377ff' })),
+          .map((p) => ({ key: p.id, label: p.fullName || p.email, color: STANDAARD_MERKKLEUR })),
       ]
       const buckets = Object.fromEntries(cols.map((c) => [c.key, []]))
       for (const task of visible) {
@@ -113,7 +104,7 @@ export default function Board() {
     if (groupBy === 'priority') {
       const cols = [
         ...PRIORITIES.map((p) => ({ key: String(p.value), label: t(prioSleutel(p.value)), color: p.color })),
-        { key: '', label: t('tasks.prio.geen'), color: '#8593a9' },
+        { key: '', label: t('tasks.prio.geen'), color: STANDAARD_KLEUR },
       ]
       const buckets = Object.fromEntries(cols.map((c) => [c.key, []]))
       for (const task of visible) buckets[String(task.priority ?? '')]?.push(task)
@@ -128,7 +119,7 @@ export default function Board() {
       else orphans.push(task)
     }
     if (orphans.length > 0) {
-      cols.unshift({ key: '', label: t('tasks.zonder_status'), color: '#8593a9' })
+      cols.unshift({ key: '', label: t('tasks.zonder_status'), color: STANDAARD_KLEUR })
       buckets[''] = orphans
     }
     return { columns: cols, tasksByColumn: buckets }
@@ -193,16 +184,10 @@ export default function Board() {
       <PageHeader
         title={list.name}
         subtitle={spaceById[list.spaceId]?.name}
-        actions={
-          <>
-            <Button variant="secondary" onClick={() => setEditingColumns(true)}>
-              {t('bord.kolommen')}
-            </Button>
-            <Button variant="primary" onClick={() => setNewTask({ status: statuses[0] })}>
-              + {t('bord.nieuwe_taak')}
-            </Button>
-          </>
-        }
+        acties={{
+          tweede: { label: t('bord.kolommen'), onClick: () => setEditingColumns(true) },
+          hoofd: { label: t('bord.nieuwe_taak'), icon: 'plus', onClick: () => setNewTask({ status: statuses[0] }) },
+        }}
         tabs={
           <>
             <Tab active={view === 'board'} onClick={() => setView('board')}>
@@ -413,7 +398,7 @@ function ListView({ columns, tasksByColumn, profileById, tagsByName, onOpen }) {
                           {task.tags?.length ? (
                             <span className="ml-2 inline-flex gap-1">
                               {task.tags.map((name) => (
-                                <Badge key={name} color={tagsByName[name]?.color ?? '#8593a9'} subtle>
+                                <Badge key={name} color={tagsByName[name]?.color ?? STANDAARD_KLEUR} subtle>
                                   {name}
                                 </Badge>
                               ))}

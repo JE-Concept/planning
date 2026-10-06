@@ -1,6 +1,5 @@
 import { formatDate, formatTime, formatWeekday } from '@lib/dates'
-import { Badge, Icon } from '@components/ds'
-import { EmptyState, Spinner } from '@ui/index'
+import { Badge, EmptyState, Icon, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'

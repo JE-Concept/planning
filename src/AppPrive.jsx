@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { Spinner } from '@ui/index'
+import { Spinner } from '@components/ds'
 import { pagina } from '@lib/paginalader'
 import { AuthProvider, useAuth } from '@context/AuthProvider'
 import { TaalProvider } from '@context/TaalProvider'

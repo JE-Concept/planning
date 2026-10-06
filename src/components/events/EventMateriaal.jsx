@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { dagenVan } from '@lib/eventdagen'
 import { kanErbij } from '@lib/voorraad'
-import { Button, Icon, Select } from '@components/ds'
-import { EmptyState } from '@ui/index'
+import { Acties, Button, EmptyState, Icon, Select } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import {
@@ -160,9 +159,7 @@ export default function EventMateriaal({ event }) {
               style={{ width: 90 }}
             />
           </div>
-          <Button onClick={leggVast} disabled={!gekozen || bezig}>
-            {t('eventmat.vastleggen')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('eventmat.vastleggen'), uit: !gekozen || bezig, onClick: leggVast }} />
         </div>
 
         {past && !past.kan ? (

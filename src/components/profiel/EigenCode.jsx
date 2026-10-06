@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Field, Input } from '@components/ds'
+import { Acties, Field, Input } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { wijzigEigenCode } from '@data/ploeg'
@@ -53,9 +53,7 @@ export default function EigenCode() {
             className="je-codeveld"
           />
         </Field>
-        <Button size="sm" onClick={bewaar} loading={bezig} disabled={code.length !== 4}>
-          {t('ploeg.code_bewaren')}
-        </Button>
+        <Acties plaats="rij" hoofd={{ label: t('ploeg.code_bewaren'), bezig, uit: code.length !== 4, onClick: bewaar }} />
       </div>
     </section>
   )

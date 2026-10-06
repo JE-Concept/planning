@@ -5,14 +5,12 @@ import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { PLANNING, planningKleur, planningVan } from '@lib/planning'
 import { useNarrow } from '@lib/useNarrow'
 import { ARCHIEF_NA_DAGEN } from '@lib/archief'
-import { Badge, Bar, Button, Icon, IconButton, Select, Stat, Tabs, Tag } from '@components/ds'
+import { Badge, IconButton, Select, Spinner, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
 import EventRow from '@components/events/EventRow'
 import EventBoardCard from '@components/events/EventBoardCard'
 import {
-  StatusBadge,
-  TeamHexes,
   dayLabel,
   euro,
   maandNaam,
@@ -24,7 +22,6 @@ import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { byEventDate, moveEvent, useArchiefJaar, useArchiefStand, useEvents } from '@data/events'
 import { useLosseMails } from '@data/mails'
-import { Spinner } from '@ui/index'
 import { dagenVan, raaktPeriode } from '@lib/eventdagen'
 import PlanningBol from '@components/events/PlanningBol'
 import { usePlanningStanden } from '@data/aapi'
@@ -143,25 +140,23 @@ export default function Events() {
       <PageHeader
         eyebrow={view === 'kalender' ? null : `JE Concept · ${t('events.lopend', { aantal: lopend.length })}`}
         title={view === 'kalender' ? t('nav.kalender') : t('nav.events')}
-        actions={
+        bediening={
+          /*
+            Het postvak hing als menu-ingang onder Events, en stond er elke dag
+            voor niets: wat binnenkomt hangt meestal al aan een event. Hier is
+            het een envelopje met het aantal erbij — zie je niets, dan is er
+            niets, en hoef je er niet te gaan kijken.
+          */
           <>
-            {/*
-              Het postvak hing als menu-ingang onder Events, en stond er elke dag
-              voor niets: wat binnenkomt hangt meestal al aan een event. Hier is
-              het een envelopje met het aantal erbij — zie je niets, dan is er
-              niets, en hoef je er niet te gaan kijken.
-            */}
             <IconButton
               icon="mail"
               label={losse.length ? t('events.postvak_aantal', { aantal: losse.length }) : t('nav.aanvragen')}
               onClick={() => navigate('/aanvragen')}
             />
             {losse.length ? <Badge tone="accent">{losse.length}</Badge> : null}
-            <Button size="sm" iconLeft="plus" onClick={() => setDialog(true)}>
-              {t('events.nieuw')}
-            </Button>
           </>
         }
+        acties={{ hoofd: { label: t('events.nieuw'), icon: 'plus', onClick: () => setDialog(true) } }}
       />
 
       <div className="je-pagebody" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>

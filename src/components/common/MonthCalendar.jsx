@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { cn } from '@lib/cn'
 import { addMonths, dayKey, formatMonth, isToday, monthGrid, startOfMonth } from '@lib/dates'
 import { useTaal } from '@context/TaalProvider'
-import { Button } from '@ui/index'
+import { Button } from '@components/ds'
 
 /**
  * Een maand in een raster, voor alles wat een datum heeft.

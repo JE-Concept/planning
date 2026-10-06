@@ -4,6 +4,7 @@ import { channelMeta, kanalenVan } from '@lib/social-channels'
 import { heeftEigenPublicatiedatum, publicatieMoment } from '@lib/social-planning'
 import { useTaal } from '@context/TaalProvider'
 import { reviewMeta, statusMeta } from '@data/social'
+import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /** A post as it appears in a calendar cell: brand colour, time, thumbnail, channels. */
 export default function PostCard({ post, brand, compact = false, dragging, onOpen, onDragStart, onDragEnd }) {
@@ -41,7 +42,7 @@ export default function PostCard({ post, brand, compact = false, dragging, onOpe
         'group cursor-pointer overflow-hidden rounded-md border bg-white text-left transition hover:shadow-md',
         dragging && 'drag-ghost'
       )}
-      style={{ borderLeft: `3px solid ${brand?.color ?? '#8593a9'}` }}
+      style={{ borderLeft: `3px solid ${brand?.color ?? STANDAARD_KLEUR}` }}
     >
       <div className="px-1.5 py-1">
         <div className="flex items-center gap-1">

@@ -1,4 +1,4 @@
-import { Input, Select } from '@ui/index'
+import { Input, Select } from '@components/ds'
 import { fixedDate, optionsFor, relativeDate } from '@lib/automations'
 import { useTaal } from '@context/TaalProvider'
 

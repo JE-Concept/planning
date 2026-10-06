@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PRIORITIES } from '@lib/format'
 import { prioSleutel } from '@lib/task-view'
-import { Button, Field, Input, Modal, Select, Spinner } from '@ui/index'
+import { Acties, Dialog, Field, Input, Select } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -47,19 +47,15 @@ export default function NewTaskDialog({ list, statuses, initialStatus, uid, onCl
   }
 
   return (
-    <Modal
+    <Dialog width={512}
       open
       onClose={onClose}
       title={t('bord.nieuwe_taak_in', { lijst: list.name })}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" onClick={submit} disabled={!title.trim() || saving}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} {t('alg.aanmaken')}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('alg.aanmaken'), onClick: submit, bezig: saving, uit: !title.trim() }}
+        />
       }
     >
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
@@ -99,6 +95,6 @@ export default function NewTaskDialog({ list, statuses, initialStatus, uid, onCl
           </Select>
         </Field>
       </form>
-    </Modal>
+    </Dialog>
   )
 }

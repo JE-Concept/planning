@@ -2,6 +2,7 @@ import { createReadStream, existsSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname, join } from 'node:path'
 import { chromium } from 'playwright'
+import { nieuwePagina, rustig } from './lib/rust.mjs'
 
 /**
  * De verhuursite, doorlopen zoals een klant hem doorloopt.
@@ -157,7 +158,7 @@ async function test(naam, fn) {
   */
   await context.route(/^https?:\/\/(?!localhost)/, (route) => route.abort())
 
-  const page = await context.newPage()
+  const page = await nieuwePagina(context)
   const fouten = []
   page.on('pageerror', (e) => fouten.push(String(e)))
   page.on('console', (m) => {
@@ -230,7 +231,7 @@ await test('een datum kiezen toont wat vrij is en wat volzet staat', async (page
   await ga(page, '/')
   await page.fill('#van', '2027-03-12')
   await page.fill('#tot', '2027-03-14')
-  await page.waitForTimeout(500)
+  await rustig(page)
 
   const t = await tekst(page)
   zouden(bevat(t, '40 vrij'), `de statafels staan niet als vrij: ${t.slice(0, 400)}`)
@@ -247,7 +248,7 @@ await test('met een datum staat de prijs voor die periode er, niet de dagprijs',
   await ga(page, '/')
   await page.fill('#van', '2027-03-16')
   await page.fill('#tot', '2027-03-18')
-  await page.waitForTimeout(400)
+  await rustig(page)
   const t = await tekst(page)
   // Drie doordeweekse dagen statafel: 3 × 9 = 27.
   zouden(bevat(t, '€ 27,00'), `de periodeprijs klopt niet: ${t.slice(0, 400)}`)
@@ -275,7 +276,7 @@ await test('zes dagen zijn op het scherm niet duurder dan een week', async (page
   await ga(page, '/artikel/m-verwarmer')
   await page.fill('#van', '2027-03-15')
   await page.fill('#tot', '2027-03-20')
-  await page.waitForTimeout(400)
+  await rustig(page)
   const t = await tekst(page)
   zouden(bevat(t, '€ 650,00'), `zes dagen worden niet afgetopt: ${t.slice(0, 500)}`)
   zouden(!bevat(t, '1110'), 'de losse-dagenprijs staat er alsnog')
@@ -285,7 +286,7 @@ await test('een volzet artikel is niet in de mand te leggen', async (page) => {
   await ga(page, '/artikel/m-verwarmer')
   await page.fill('#van', '2027-03-12')
   await page.fill('#tot', '2027-03-14')
-  await page.waitForTimeout(500)
+  await rustig(page)
   const knop = page.getByRole('button', { name: 'In de mand' })
   zouden(await knop.isDisabled(), 'een volzet artikel is toch in de mand te leggen')
 })
@@ -296,11 +297,11 @@ await test('van catalogus naar mand, met btw en waarborg apart', async (page) =>
   await ga(page, '/')
   await page.fill('#van', '2027-03-16')
   await page.fill('#tot', '2027-03-18')
-  await page.waitForTimeout(400)
+  await rustig(page)
 
   await page.locator('.vh__kaart', { hasText: 'Koelkast' }).getByRole('button', { name: 'In de mand' }).click()
   await page.getByRole('link', { name: /^Mand/ }).click()
-  await page.waitForTimeout(300)
+  await rustig(page)
 
   const t = await tekst(page)
   zouden(bevat(t, 'Koelkast glasdeur'), `de mand is leeg: ${t.slice(0, 300)}`)
@@ -320,7 +321,7 @@ await test('de waarborg zit niet in de btw', async (page) => {
   await ga(page, '/')
   await page.fill('#van', '2027-03-16')
   await page.fill('#tot', '2027-03-18')
-  await page.waitForTimeout(400)
+  await rustig(page)
   await page.locator('.vh__kaart', { hasText: 'Koelkast' }).getByRole('button', { name: 'In de mand' }).click()
   await ga(page, '/mand')
   const t = await tekst(page)
@@ -332,7 +333,7 @@ await test('een artikel met een minimum aantal dagen houdt het afrekenen tegen',
   await ga(page, '/')
   await page.fill('#van', '2027-03-16')
   await page.fill('#tot', '2027-03-16')
-  await page.waitForTimeout(400)
+  await rustig(page)
   await page.locator('.vh__kaart', { hasText: 'Koelkast' }).getByRole('button', { name: 'In de mand' }).click()
   await ga(page, '/mand')
 
@@ -352,7 +353,7 @@ await test('het afrekenen stuurt artikelnummers en geen bedragen', async (page) 
   await ga(page, '/')
   await page.fill('#van', '2027-03-16')
   await page.fill('#tot', '2027-03-18')
-  await page.waitForTimeout(400)
+  await rustig(page)
   await page.locator('.vh__kaart', { hasText: 'Statafel' }).getByRole('button', { name: 'In de mand' }).click()
   await ga(page, '/mand')
 
@@ -374,7 +375,7 @@ await test('afbreken laat de mand staan, gelukt maakt hem leeg', async (page) =>
   await ga(page, '/')
   await page.fill('#van', '2027-03-16')
   await page.fill('#tot', '2027-03-18')
-  await page.waitForTimeout(400)
+  await rustig(page)
   await page.locator('.vh__kaart', { hasText: 'Statafel' }).getByRole('button', { name: 'In de mand' }).click()
 
   await ga(page, '/afgebroken')
@@ -398,7 +399,7 @@ await test('een offerteaanvraag vertrekt, met het lokvakje leeg', async (page) =
   await page.locator('input[type=email]').fill('tom@voorbeeld.be')
   await page.locator('textarea').fill('Tuinfeest voor zestig man, tent en statafels.')
   await page.getByRole('button', { name: /Verstuur/ }).click()
-  await page.waitForTimeout(400)
+  await rustig(page)
 
   zouden(laatsteAfrekening?.pad === '/api/verhuur/aanvraag', 'de aanvraag is niet verstuurd')
   zouden(laatsteAfrekening.body.bedrijfsnaam === '', 'het lokvakje is niet leeg meegestuurd')
@@ -410,7 +411,7 @@ await test('een offerteaanvraag vertrekt, met het lokvakje leeg', async (page) =
 await test('de site vraagt beschikbaarheid alleen op met een datum', async (page) => {
   verzoeken.length = 0
   await ga(page, '/')
-  await page.waitForTimeout(300)
+  await rustig(page)
   const metDatum = verzoeken.filter((v) => v.includes('/api/verhuur/beschikbaar'))
   zouden(metDatum.length === 0, `er wordt beschikbaarheid opgevraagd zonder datum: ${metDatum[0]}`)
   zouden(verzoeken.some((v) => v.includes('/api/verhuur/aanbod')), 'het aanbod wordt niet opgehaald')
@@ -422,7 +423,7 @@ await test('een inloglink vragen zegt "kijk in je mail", wat het adres ook is', 
   await ga(page, '/login')
   await page.locator('input[type=email]').fill('iemand@voorbeeld.be')
   await page.getByRole('button', { name: /inloglink/ }).click()
-  await page.waitForTimeout(300)
+  await rustig(page)
   zouden(bevat(await tekst(page), 'Kijk in je mail'), 'na het versturen staat er geen "kijk in je mail"')
   zouden(laatsteAfrekening?.pad === '/api/verhuur/login', 'de aanvraag is niet verstuurd')
   zouden(laatsteAfrekening.body.email === 'iemand@voorbeeld.be', 'het adres ging niet mee')
@@ -430,7 +431,7 @@ await test('een inloglink vragen zegt "kijk in je mail", wat het adres ook is', 
 
 await test('een verlopen link zegt dat, en biedt een nieuwe aan', async (page) => {
   await ga(page, '/login/oudetoken-oudetoken-oud')
-  await page.waitForTimeout(400)
+  await rustig(page)
   const t = await tekst(page)
   zouden(bevat(t, 'verlopen'), `de reden staat er niet: ${t.slice(0, 200)}`)
   zouden((await page.getByRole('link', { name: /Nieuwe link/ }).count()) === 1, 'er is geen weg naar een nieuwe link')
@@ -445,7 +446,7 @@ await test('een verlopen link zegt dat, en biedt een nieuwe aan', async (page) =
 await test('de link gebruiken logt in: eigen huren, adres vast, korting in de mand', async (page) => {
   await ga(page, '/login/goedetoken-goedetoken-goed')
   await page.waitForURL(/\/mijn$/, { timeout: 5000 })
-  await page.waitForTimeout(400)
+  await rustig(page)
 
   const mijn = await tekst(page)
   zouden(bevat(mijn, 'Mijn huren'), 'de pagina met eigen huren komt niet')
@@ -458,10 +459,10 @@ await test('de link gebruiken logt in: eigen huren, adres vast, korting in de ma
   await ga(page, '/')
   await page.fill('#van', '2027-03-16')
   await page.fill('#tot', '2027-03-18')
-  await page.waitForTimeout(300)
+  await rustig(page)
   await page.locator('.vh__kaart', { hasText: 'Koelkast' }).getByRole('button', { name: 'In de mand' }).click()
   await ga(page, '/mand')
-  await page.waitForTimeout(500)
+  await rustig(page)
   const mand = await tekst(page)
   zouden((await page.locator('input[type=email]').inputValue()) === 'lies@voorbeeld.be', 'het adres staat niet vooraf ingevuld')
   zouden(await page.locator('input[type=email]').evaluate((el) => el.readOnly), 'het adres is nog te wijzigen terwijl je ingelogd bent')
@@ -474,7 +475,7 @@ await test('uitloggen haalt de sessie weg', async (page) => {
   await ga(page, '/login/goedetoken-goedetoken-goed')
   await page.waitForURL(/\/mijn$/, { timeout: 5000 })
   await page.getByRole('button', { name: 'uitloggen' }).click()
-  await page.waitForTimeout(200)
+  await rustig(page)
   zouden((await page.evaluate(() => localStorage.getItem('je-verhuur-sessie'))) === null, 'de sessie staat nog in de browser')
   zouden(bevat(await page.locator('.vh__kop').innerText(), 'Inloggen'), 'de kop zegt nog dat je ingelogd bent')
 })
@@ -531,10 +532,10 @@ for (const pad of ['/', '/artikel/m-koeling', '/mand', '/offerte', '/gelukt']) {
     // Via de mand, zodat die pagina niet leeg is wanneer we hem bekijken.
     await page.fill('#van', '2027-03-16')
     await page.fill('#tot', '2027-03-18')
-    await page.waitForTimeout(300)
+    await rustig(page)
     await page.locator('.vh__kaart', { hasText: 'Koelkast' }).getByRole('button', { name: 'In de mand' }).click()
     await ga(page, pad)
-    await page.waitForTimeout(200)
+    await rustig(page)
 
     const uitslag = await page.evaluate(() => {
       const klein = []

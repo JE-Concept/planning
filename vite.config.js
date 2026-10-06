@@ -134,7 +134,6 @@ export default defineConfig(({ mode }) => {
       '@': resolve('./src'),
       '@lib': resolve('./src/lib'),
       '@data': resolve('./src/data'),
-      '@ui': resolve('./src/components/ui'),
       '@components': resolve('./src/components'),
       '@pages': resolve('./src/pages'),
       '@context': resolve('./src/context'),

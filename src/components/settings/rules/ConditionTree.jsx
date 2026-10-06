@@ -1,4 +1,4 @@
-import { Button, Select } from '@ui/index'
+import { Button, Select } from '@components/ds'
 import {
   GROUP_KINDS,
   MAX_DEPTH,

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { addMonths, formatDate, formatMonth, formatTime, startOfMonth } from '@lib/dates'
 import { maandVerslag, meetpunten, naarCsv, reeksVoorPunt } from '@lib/checklist-report'
-import { Button, EmptyState, Icon, Spinner } from '@components/ds'
+import { EmptyState, Icon, PeriodeKiezer, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -72,36 +72,21 @@ export default function ChecklistReport() {
         eyebrow={t('rapport.eyebrow')}
         title={formatMonth(maand)}
         subtitle={t('rapport.ondertitel')}
-        actions={
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setMaand(addMonths(maand, -1))}
-              aria-label={t('rapport.vorige_maand')}
-            >
-              ‹
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMaand(startOfMonth())}>
-              {t('rapport.deze_maand')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setMaand(addMonths(maand, 1))}
-              disabled={addMonths(maand, 1) > new Date()}
-              aria-label={t('rapport.volgende_maand')}
-            >
-              ›
-            </Button>
-            <Button variant="secondary" size="sm" iconLeft="download" onClick={downloadCsv}>
-              CSV
-            </Button>
-            <Button size="sm" iconLeft="file-text" onClick={() => window.print()}>
-              {t('rapport.afdrukken')}
-            </Button>
-          </>
+        bediening={
+          <PeriodeKiezer
+            vorige={{ label: t('rapport.vorige_maand'), onClick: () => setMaand(addMonths(maand, -1)) }}
+            nu={{ label: t('rapport.deze_maand'), onClick: () => setMaand(startOfMonth()) }}
+            volgende={{
+              label: t('rapport.volgende_maand'),
+              onClick: () => setMaand(addMonths(maand, 1)),
+              uit: addMonths(maand, 1) > new Date(),
+            }}
+          />
         }
+        acties={{
+          tweede: { label: 'CSV', icon: 'download', onClick: downloadCsv },
+          hoofd: { label: t('rapport.afdrukken'), icon: 'file-text', onClick: () => window.print() },
+        }}
       />
 
       <div className="je-pagebody">

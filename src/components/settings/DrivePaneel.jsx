@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { driveIdUit, useDriveConfig, zetDrive } from '@data/documents'
-import { Button, Input, Spinner } from '@components/ds'
+import { Acties, Input, Spinner } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 
@@ -74,9 +74,7 @@ export default function DrivePaneel() {
               autoComplete="off"
               spellCheck={false}
             />
-            <Button type="submit" variant="primary" size="md" loading={bezig} disabled={bezig || id === (config.driveId ?? '')}>
-              {t('alg.opslaan')}
-            </Button>
+            <Acties plaats="rij" hoofd={{ label: t('alg.opslaan'), type: 'submit', size: 'md', bezig, uit: id === (config.driveId ?? '') }} />
           </div>
           {id && id !== waarde.trim() ? (
             <p className="je-muted-caption" style={{ margin: 0 }}>

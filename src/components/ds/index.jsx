@@ -7,7 +7,11 @@ import {
   ShieldCheck, Sparkles, Square, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
 } from 'lucide-react'
 import { cn } from '@lib/cn'
+import { badgeKleuren } from '@lib/kleur'
 import { portretVoor } from '@lib/portret'
+// Wederzijds: acties.jsx gebruikt Button, EmptyState gebruikt Acties. Beide pas
+// tijdens het renderen, dus de kringloop in de imports is onschuldig.
+import { Acties } from './acties'
 
 /**
  * De componenten uit het JE Concept Design System, als React.
@@ -160,9 +164,24 @@ export function IconButton({ icon, label, variant = 'bare', size = 'md', classNa
   )
 }
 
-export function Badge({ children, tone = 'neutral', dot = false, className, ...rest }) {
+/**
+ * Een badge in een toon van het systeem, of in een kleur uit de database.
+ *
+ * `color` is voor wat het team zelf kiest (een bordkolom, een merk, een label)
+ * en kan dus alles zijn. De inkt wordt daarom uitgerekend en niet aangenomen:
+ * `badgeKleuren` neemt de inkt die op die kleur leest, en verdiept de stille
+ * variant (`subtle`) tot ze 4,5:1 haalt. Vroeger stond hier altijd wit, en op
+ * het oranje of mintgroen uit het oude palet was een kolomnaam dan onleesbaar.
+ */
+export function Badge({ children, tone = 'neutral', color, subtle = false, dot = false, className, style, ...rest }) {
+  const kleuren = color ? badgeKleuren(color) : null
+  const kleur = kleuren ? (subtle ? kleuren.stil : kleuren.vol) : null
   return (
-    <span className={cn('je-badge', tone !== 'neutral' && `je-badge--${tone}`, className)} {...rest}>
+    <span
+      className={cn('je-badge', tone !== 'neutral' && `je-badge--${tone}`, className)}
+      style={kleur ? { ...kleur, ...style } : style}
+      {...rest}
+    >
       {dot ? <span className="je-badge__dot" /> : null}
       {children}
     </span>
@@ -676,7 +695,12 @@ export function Spinner({ size = 'md', className }) {
   )
 }
 
-export function EmptyState({ title, description, action, icon, className }) {
+/**
+ * Een lege toestand: wat hier zou staan, waarom het er niet is, en wat je eraan
+ * doet. `actie` is één actie (`{ label, onClick, … }`, zie `Acties`) en staat
+ * er als hoofdactie: een leeg scherm heeft precies één zinnige volgende stap.
+ */
+export function EmptyState({ title, description, actie, icon, className }) {
   return (
     <div className={cn('je-empty', className)}>
       {icon ? (
@@ -686,7 +710,7 @@ export function EmptyState({ title, description, action, icon, className }) {
       ) : null}
       <p className="je-empty__title">{title}</p>
       {description ? <p className="je-empty__text">{description}</p> : null}
-      {action ? <div>{action}</div> : null}
+      {actie ? <Acties plaats="leeg" hoofd={actie} /> : null}
     </div>
   )
 }
@@ -759,16 +783,7 @@ export function Drawer({ open = false, onClose, title, subtitle, children, foote
   )
 }
 
-/** Een knop die eerst vraagt of je het zeker weet. */
-export function ConfirmButton({ onConfirm, children, question = 'Zeker weten?', ...rest }) {
-  return (
-    <Button
-      {...rest}
-      onClick={() => {
-        if (window.confirm(question)) onConfirm?.()
-      }}
-    >
-      {children}
-    </Button>
-  )
-}
+// Het call-to-action-kader: Acties, GevaarKnop en bevestig; en PeriodeKiezer,
+// de bediening die er het vaakst naast staat. Zie acties.jsx.
+export { Acties }
+export { GevaarKnop, PeriodeKiezer, Schakelknop, bevestig } from './acties'

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Dialog, Switch } from '@components/ds'
+import { Acties, Dialog, Switch } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -44,11 +44,7 @@ export default function MeldingsVoorkeuren({ open, onClose }) {
       onClose={onClose}
       title={t('melding.titel')}
       width={560}
-      footer={
-        <Button variant="primary" onClick={onClose}>
-          {t('melding.klaar')}
-        </Button>
-      }
+      footer={<Acties hoofd={{ label: t('melding.klaar'), onClick: onClose }} />}
     >
       <div className="je-meldpref">
         <p className="je-meldpref__intro">{t('melding.intro')}</p>

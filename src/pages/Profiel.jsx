@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Avatar, Button, Field, Input } from '@components/ds'
+import { Acties, Avatar, Button, Field, Input } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import EigenCode from '@components/profiel/EigenCode'
 import Voorkeuren from '@components/profiel/Voorkeuren'
@@ -138,9 +138,7 @@ export default function Profiel() {
                 />
               </Field>
               <div>
-                <Button type="submit" size="sm" loading={bezig} disabled={!naam.trim() || naam.trim() === profile?.fullName}>
-                  {t('profiel.bewaren')}
-                </Button>
+                <Acties plaats="rij" hoofd={{ label: t('profiel.bewaren'), type: 'submit', bezig, uit: !naam.trim() || naam.trim() === profile?.fullName }} />
               </div>
             </form>
           </div>

@@ -10,7 +10,7 @@ import {
   nieuwPuntId,
   repeatLabel,
 } from '@lib/checklist-templates'
-import { Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
+import { Acties, Badge, Button, Field, GevaarKnop, Input, Schakelknop, Select, Spinner } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import {
@@ -122,15 +122,10 @@ export default function ChecklistEditor({ isAdmin }) {
 
       <div className="flex flex-wrap gap-1.5">
         {checklists.map((lijst) => (
-          <Button
-            key={lijst.id}
-            size="sm"
-            variant={lijst.id === actief?.id ? 'primary' : 'secondary'}
-            onClick={() => setOpen(lijst.id)}
-          >
+          <Schakelknop key={lijst.id} aan={lijst.id === actief?.id} onClick={() => setOpen(lijst.id)}>
             {lijst.name}
             {lijst.archived ? t('inst.lijst.uit') : ''}
-          </Button>
+          </Schakelknop>
         ))}
       </div>
 
@@ -150,9 +145,7 @@ export default function ChecklistEditor({ isAdmin }) {
               required
             />
           </Field>
-          <Button type="submit" variant="primary" size="sm" loading={maken} disabled={maken || !nieuweNaam.trim()}>
-            {t('alg.aanmaken')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('alg.aanmaken'), type: 'submit', bezig: maken, uit: !nieuweNaam.trim() }} />
         </form>
       ) : null}
     </div>
@@ -218,7 +211,7 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
           <option value="other">{t('inst.lijst.soort_other')}</option>
         </Select>
         {lijst.archived ? (
-          <Badge color="#8593a9" subtle>
+          <Badge>
             {t('inst.lijst.uit_gebruik')}
           </Badge>
         ) : null}
@@ -230,15 +223,12 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
                 {t('inst.lijst.terughalen')}
               </Button>
             ) : (
-              <ConfirmButton
-                variant="ghost"
+              <GevaarKnop
+                label={t('inst.lijst.uit_nemen')}
                 size="sm"
-                className="text-ink-400"
-                question={t('inst.lijst.uit_nemen_vraag')}
+                vraag={t('inst.lijst.uit_nemen_vraag')}
                 onConfirm={() => archiveChecklist(lijst.id).catch((e) => toast.error(e.message))}
-              >
-                {t('inst.lijst.uit_nemen')}
-              </ConfirmButton>
+              />
             )}
           </div>
         ) : null}
@@ -257,15 +247,13 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
               />
               <span className="text-xs text-ink-400">{t('inst.lijst.punten', { aantal: sectie.items.length })}</span>
               {isAdmin ? (
-                <ConfirmButton
-                  variant="ghost"
+                <GevaarKnop
+                  label={t('inst.lijst.groep_weg')}
                   size="sm"
-                  className="ml-auto text-ink-400"
-                  question={t('inst.lijst.groep_weg_vraag')}
+                  className="ml-auto"
+                  vraag={t('inst.lijst.groep_weg_vraag')}
                   onConfirm={() => zetSecties(secties.filter((_, i) => i !== si))}
-                >
-                  {t('inst.lijst.groep_weg')}
-                </ConfirmButton>
+                />
               ) : null}
             </div>
 
@@ -339,7 +327,7 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           className="h-8 min-w-[12rem] flex-1 text-sm"
           disabled={!isAdmin}
         />
-        <Badge subtle color="#4A7FC1">
+        <Badge tone="accent">
           {t(AFDELING_SLEUTEL[punt.who ?? 'iedereen'] ?? afdelingLabel(punt.who))}
         </Badge>
         <Badge subtle>{repeatLabel(punt)}</Badge>
@@ -347,15 +335,12 @@ function Punt({ punt, onWijzig, onWeg, isAdmin }) {
           {open ? t('inst.punt.klaar') : t('inst.punt.wijzigen')}
         </Button>
         {isAdmin ? (
-          <ConfirmButton
-            variant="ghost"
+          <GevaarKnop
+            label={t('inst.punt.weg')}
             size="sm"
-            className="text-ink-400"
-            question={t('inst.punt.weg_vraag')}
+            vraag={t('inst.punt.weg_vraag')}
             onConfirm={onWeg}
-          >
-            {t('inst.punt.weg')}
-          </ConfirmButton>
+          />
         ) : null}
       </div>
 

@@ -1,5 +1,5 @@
 import { Component } from 'react'
-import { Button } from '@ui/index'
+import { Acties } from '@components/ds'
 
 /**
  * Het vangnet onder de app.
@@ -123,14 +123,12 @@ function Melding({ titel, tekst, knop, onKlik, details }) {
         <p className="font-display text-lg font-extrabold text-ink-900">{titel}</p>
         <p className="mt-2 text-sm text-ink-600">{tekst}</p>
 
-        <div className="mt-4 flex justify-center gap-2">
-          <Button variant="primary" size="sm" onClick={onKlik}>
-            {knop}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => window.location.assign('/')}>
-            Naar het begin
-          </Button>
-        </div>
+        <Acties
+          plaats="leeg"
+          className="mt-4"
+          terug={{ label: 'Naar het begin', onClick: () => window.location.assign('/') }}
+          hoofd={{ label: knop, onClick: onKlik }}
+        />
 
         {details ? (
           <details className="mt-4 text-left">

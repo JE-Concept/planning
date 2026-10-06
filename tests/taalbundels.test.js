@@ -36,7 +36,6 @@ const TAALMAP = `${WORTEL}/src/lib/taal`
 const ALIAS = {
   '@lib': `${WORTEL}/src/lib`,
   '@data': `${WORTEL}/src/data`,
-  '@ui': `${WORTEL}/src/components/ui`,
   '@components': `${WORTEL}/src/components`,
   '@pages': `${WORTEL}/src/pages`,
   '@context': `${WORTEL}/src/context`,

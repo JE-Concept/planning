@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { TALEN } from '@lib/i18n'
 import { meldingsrecht, pushIngesteld, pushMogelijk, pushStaatAan, zetPushAan, zetPushUit } from '@lib/push'
-import { Button } from '@components/ds'
+import { Acties, Button, Schakelknop } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -55,17 +55,17 @@ export default function Voorkeuren() {
               de weg terug kunnen vinden.
             */}
             {TALEN.map((optie) => (
-              <Button
+              <Schakelknop
                 key={optie.code}
-                size="sm"
-                variant={optie.code === taal ? 'primary' : 'secondary'}
+                aan={optie.code === taal}
                 role="radio"
+                aria-pressed={undefined}
                 aria-checked={optie.code === taal}
                 lang={optie.code}
                 onClick={() => kies(optie.code)}
               >
                 {optie.label}
-              </Button>
+              </Schakelknop>
             ))}
           </div>
         </div>
@@ -151,15 +151,12 @@ function PushRegel() {
               : t('menu.push_niet_ingesteld_kort')}
         </div>
       </div>
-      <Button
-        size="sm"
-        variant={aan ? 'secondary' : 'primary'}
-        loading={bezig}
-        disabled={geweigerd || !pushIngesteld()}
-        onClick={klik}
-      >
-        {aan ? t('menu.push_uitzetten') : t('menu.push_aanzetten')}
-      </Button>
+      {/* Aanzetten is wat dit blok vraagt; uitzetten mag, maar is de tweede keus. */}
+      <Acties
+        plaats="rij"
+        hoofd={aan ? null : { label: t('menu.push_aanzetten'), bezig, uit: geweigerd || !pushIngesteld(), onClick: klik }}
+        tweede={aan ? { label: t('menu.push_uitzetten'), bezig, uit: geweigerd || !pushIngesteld(), onClick: klik } : null}
+      />
     </div>
   )
 }

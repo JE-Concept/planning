@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatDate } from '@lib/dates'
-import { Badge, Button } from '@components/ds'
+import { Badge, EmptyState } from '@components/ds'
 import PloegCode from '@components/ploeg/PloegCode'
-import { EmptyState } from '@ui/index'
 import PageHeader from '@components/layout/PageHeader'
 import { useTaal } from '@context/TaalProvider'
 import { useAapiMedewerkers } from '@data/aapi'
@@ -74,12 +73,10 @@ export default function Medewerkers() {
               <EmptyState
                 title={t(loading ? 'medewerkers.laden' : 'medewerkers.leeg')}
                 description={loading ? null : t('medewerkers.leeg_uitleg')}
-                action={
-                  loading ? null : (
-                    <Button size="sm" iconLeft="upload" onClick={() => navigate('/planning?tab=import')}>
-                      {t('medewerkers.naar_import')}
-                    </Button>
-                  )
+                actie={
+                  loading
+                    ? null
+                    : { label: t('medewerkers.naar_import'), icon: 'upload', onClick: () => navigate('/planning?tab=import') }
                 }
               />
             </div>

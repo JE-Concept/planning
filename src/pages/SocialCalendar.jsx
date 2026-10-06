@@ -15,7 +15,7 @@ import {
   WEEKDAYS,
 } from '@lib/dates'
 import { bucketPerDag, publicatieMoment, weekDagen, weekNummer } from '@lib/social-planning'
-import { Badge, Button, EmptyState, Input, Select, Spinner } from '@ui/index'
+import { Badge, Button, EmptyState, Input, PeriodeKiezer, Select, Spinner } from '@components/ds'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import PostCard from '@components/social/PostCard'
 import PostDrawer from '@components/social/PostDrawer'
@@ -216,38 +216,23 @@ export default function SocialCalendar() {
                 })
               : t('social.kop.maand', { aantal: shown.length, maand: formatMonth(month) })
         }
-        actions={
+        bediening={
           view === 'events' ? null : view === 'week' ? (
-            <>
-              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, -7))} aria-label={t('social.week.vorige')}>
-                ‹
-              </Button>
-              <Button variant="secondary" onClick={() => setWeek(startOfWeek())}>
-                {t('social.week.deze')}
-              </Button>
-              <Button variant="secondary" onClick={() => setWeek((w) => addDays(w, 7))} aria-label={t('social.week.volgende')}>
-                ›
-              </Button>
-              <Button variant="primary" onClick={() => addOn(new Date())}>
-                {t('social.post.nieuw')}
-              </Button>
-            </>
+            <PeriodeKiezer
+              vorige={{ label: t('social.week.vorige'), onClick: () => setWeek((w) => addDays(w, -7)) }}
+              nu={{ label: t('social.week.deze'), onClick: () => setWeek(startOfWeek()) }}
+              volgende={{ label: t('social.week.volgende'), onClick: () => setWeek((w) => addDays(w, 7)) }}
+            />
           ) : (
-          <>
-            <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, -1))} aria-label={t('social.maand.vorige')}>
-              ‹
-            </Button>
-            <Button variant="secondary" onClick={() => setMonth(startOfMonth())}>
-              {t('alg.vandaag')}
-            </Button>
-            <Button variant="secondary" onClick={() => setMonth((m) => addMonths(m, 1))} aria-label={t('social.maand.volgende')}>
-              ›
-            </Button>
-            <Button variant="primary" onClick={() => addOn(new Date())}>
-              {t('social.post.nieuw')}
-            </Button>
-          </>
+            <PeriodeKiezer
+              vorige={{ label: t('social.maand.vorige'), onClick: () => setMonth((m) => addMonths(m, -1)) }}
+              nu={{ label: t('alg.vandaag'), onClick: () => setMonth(startOfMonth()) }}
+              volgende={{ label: t('social.maand.volgende'), onClick: () => setMonth((m) => addMonths(m, 1)) }}
+            />
           )
+        }
+        acties={
+          view === 'events' ? null : { hoofd: { label: t('social.post.nieuw'), icon: 'plus', onClick: () => addOn(new Date()) } }
         }
         tabs={
           <>
@@ -293,7 +278,7 @@ export default function SocialCalendar() {
         </Select>
 
         <button type="button" onClick={() => setReviewOnly((v) => !v)} aria-pressed={reviewOnly}>
-          <Badge color="#b660e0" subtle={!reviewOnly}>
+          <Badge tone={reviewOnly ? 'solid' : 'accent'}>
             {t('social.filter.wacht_op_review', { aantal: waitingForReview })}
           </Badge>
         </button>

@@ -4,19 +4,7 @@ import { leesFunctieFout } from '@lib/functie-fout'
 import { beginstatus, kiesTakenlijst, standaardDeadline } from '@lib/agenda-taak'
 import { urenTekst } from '@lib/rooster'
 import { groepeerActies, zoekVerslagen } from '@lib/verslag-zoek'
-import {
-  Avatar,
-  Badge,
-  Button,
-  ConfirmButton,
-  EmptyState,
-  Field,
-  Input,
-  Modal,
-  Select,
-  Spinner,
-  Textarea,
-} from '@ui/index'
+import { Acties, Avatar, Badge, Button, Dialog, EmptyState, Field, GevaarKnop, Input, Select, Spinner, Textarea } from '@components/ds'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -32,6 +20,7 @@ import {
   totalMinutes,
   useAgenda,
 } from '@data/agenda'
+import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /**
  * Teamoverleg.
@@ -77,12 +66,10 @@ export default function Meetings() {
               ? t('overleg.gevonden', { aantal: meetings.length, gevonden: gevonden.length })
               : t('overleg.verslag_aantal', { aantal: meetings.length })
         }
-        actions={
-          tab === 'verslagen' && isAdmin ? (
-            <Button variant="primary" onClick={() => setPasting(true)}>
-              {t('overleg.samenvatten')}
-            </Button>
-          ) : null
+        acties={
+          tab === 'verslagen' && isAdmin
+            ? { hoofd: { label: t('overleg.samenvatten'), onClick: () => setPasting(true) } }
+            : null
         }
         tabs={
           <>
@@ -267,9 +254,7 @@ function Agenda({ items }) {
                 ))}
               </Select>
             </Field>
-            <Button type="submit" variant="primary" disabled={busy || !titel.trim()}>
-              {t('overleg.op_de_agenda')}
-            </Button>
+            <Acties plaats="rij" hoofd={{ label: t('overleg.op_de_agenda'), type: 'submit', bezig: busy, uit: !titel.trim() }} />
           </div>
         </form>
 
@@ -329,14 +314,12 @@ function Agenda({ items }) {
                         {t('overleg.besproken')}
                       </Button>
                       {item.ownerId === uid || isAdmin ? (
-                        <ConfirmButton
-                          variant="ghost"
+                        <GevaarKnop
+                          label={t('alg.verwijderen')}
                           size="sm"
-                          question={t('overleg.punt_verwijderen')}
+                          vraag={t('overleg.punt_verwijderen')}
                           onConfirm={() => deleteAgendaItem(item.id).catch((e) => toast.error(e.message))}
-                        >
-                          {t('alg.verwijderen')}
-                        </ConfirmButton>
+                        />
                       ) : null}
                     </div>
                   </li>
@@ -454,19 +437,15 @@ function Afronden({ item, onClose }) {
   }
 
   return (
-    <Modal
+    <Dialog width={512}
       open
       onClose={onClose}
       title={t('overleg.afronden_titel')}
       footer={
-        <>
-          <Button variant="secondary" disabled={busy} onClick={alleenAfvinken}>
-            {t('overleg.alleen_afvinken')}
-          </Button>
-          <Button variant="primary" disabled={busy || !titel.trim() || !lijst} onClick={metTaak}>
-            {busy ? t('overleg.bezig') : t('overleg.taak_aanmaken')}
-          </Button>
-        </>
+        <Acties
+          tweede={{ label: t('overleg.alleen_afvinken'), onClick: alleenAfvinken, uit: busy }}
+          hoofd={{ label: t('overleg.taak_aanmaken'), onClick: metTaak, bezig: busy, uit: !titel.trim() || !lijst }}
+        />
       }
     >
       <div className="space-y-3 px-5 py-4">
@@ -505,7 +484,7 @@ function Afronden({ item, onClose }) {
           <p className="text-[11px] text-amber-700">{t('overleg.geen_takenlijst')}</p>
         )}
       </div>
-    </Modal>
+    </Dialog>
   )
 }
 
@@ -520,7 +499,7 @@ function MeetingDetail({ meeting, onClose }) {
   )
 
   return (
-    <Modal open onClose={onClose} title={meeting.titel} width="max-w-2xl">
+    <Dialog open onClose={onClose} title={meeting.titel} width={672}>
       <div className="space-y-5 px-5 py-4">
         <p className="text-xs text-ink-500">
           {formatDate(meeting.datum)}
@@ -563,7 +542,7 @@ function MeetingDetail({ meeting, onClose }) {
                   <span
                     aria-hidden="true"
                     className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: taak.statusColor ?? '#8593a9' }}
+                    style={{ backgroundColor: taak.statusColor ?? STANDAARD_KLEUR }}
                   />
                   <span className="min-w-0 flex-1 text-sm text-ink-800">{taak.title}</span>
                   {wie ? (
@@ -572,7 +551,7 @@ function MeetingDetail({ meeting, onClose }) {
                       {wie.fullName || wie.email}
                     </span>
                   ) : (
-                    <Badge color="#f59e0b" subtle>
+                    <Badge tone="warning">
                       {taak.voorgesteldeVerantwoordelijke
                         ? `${taak.voorgesteldeVerantwoordelijke}?`
                         : t('overleg.geen_wie')}
@@ -599,7 +578,7 @@ function MeetingDetail({ meeting, onClose }) {
 
         <p className="rounded-xl bg-ink-50 px-3 py-2 text-[11px] text-ink-600">{t('overleg.door_ai')}</p>
       </div>
-    </Modal>
+    </Dialog>
   )
 }
 
@@ -629,20 +608,16 @@ function PasteTranscript({ onClose }) {
   }
 
   return (
-    <Modal
+    <Dialog
       open
       onClose={onClose}
       title={t('overleg.samenvatten')}
-      width="max-w-2xl"
+      width={672}
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" disabled={busy || transcript.trim().length < 200} onClick={submit}>
-            {busy ? t('overleg.bezig') : t('overleg.samenvatten_knop')}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('overleg.samenvatten_knop'), onClick: submit, bezig: busy, uit: transcript.trim().length < 200 }}
+        />
       }
     >
       <div className="space-y-3 px-5 py-4">
@@ -684,6 +659,6 @@ function PasteTranscript({ onClose }) {
           </p>
         ) : null}
       </div>
-    </Modal>
+    </Dialog>
   )
 }

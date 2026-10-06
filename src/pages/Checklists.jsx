@@ -3,8 +3,7 @@ import { cn } from '@lib/cn'
 import { addDays, dayKey, formatDate, formatTime, isToday } from '@lib/dates'
 import { afdelingLabel, dueOn, grensTekst, meetOordeel, repeatLabel, runProgress, visibleTo } from '@lib/checklist-templates'
 import { herhalingVan, volgendeKeer } from '@lib/checklist-herhaling'
-import { Icon } from '@components/ds'
-import { Avatar, Badge, Button, EmptyState, Input, ProgressBar, Spinner, Textarea } from '@ui/index'
+import { Acties, Avatar, Badge, EmptyState, Icon, Input, PeriodeKiezer, ProgressBar, Spinner, Textarea } from '@components/ds'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useOffline } from '@context/OfflineProvider'
@@ -80,23 +79,16 @@ export default function Checklists() {
         subtitle={`${formatDate(date)}${isToday(date) ? ` — ${t('lijst.vandaag')}` : ''}${
           profile?.department ? ` · ${afdelingLabel(profile.department)}` : ''
         }`}
-        actions={
-          <>
-            <Button variant="secondary" onClick={() => setOffset((o) => o - 1)} aria-label={t('lijst.vorige_dag')}>
-              ‹
-            </Button>
-            <Button variant="secondary" onClick={() => setOffset(0)} disabled={offset === 0}>
-              {t('alg.vandaag')}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setOffset((o) => Math.min(0, o + 1))}
-              disabled={offset === 0}
-              aria-label={t('lijst.volgende_dag')}
-            >
-              ›
-            </Button>
-          </>
+        bediening={
+          <PeriodeKiezer
+            vorige={{ label: t('lijst.vorige_dag'), onClick: () => setOffset((o) => o - 1) }}
+            nu={{ label: t('alg.vandaag'), onClick: () => setOffset(0), uit: offset === 0 }}
+            volgende={{
+              label: t('lijst.volgende_dag'),
+              onClick: () => setOffset((o) => Math.min(0, o + 1)),
+              uit: offset === 0,
+            }}
+          />
         }
         tabs={checklists.map((list) => {
           const listRun = byChecklist[list.id]
@@ -115,7 +107,7 @@ export default function Checklists() {
       <div className="flex items-center gap-3 border-b border-ink-200 bg-white px-4 py-2.5 sm:px-6">
         <ProgressBar
           value={progress.ratio}
-          color={progress.ratio === 1 ? '#3db88b' : '#1A3A6B'}
+          color={progress.ratio === 1 ? 'var(--success)' : undefined}
           className="h-2 flex-1"
         />
         <span className="shrink-0 text-xs font-semibold tabular-nums text-ink-700">
@@ -195,28 +187,24 @@ export default function Checklists() {
               ) : null}
             </section>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="primary"
-                disabled={progress.done < progress.total || Boolean(run?.closedAt)}
-                onClick={() =>
+            <Acties
+              plaats="rij"
+              uitleg={
+                run?.closedAt
+                  ? t('lijst.afgerond_door', { wie: run.closedByName, tijd: formatTime(run.closedAt) })
+                  : progress.done < progress.total
+                    ? t('lijst.nog_te_gaan', { rest: progress.total - progress.done })
+                    : null
+              }
+              hoofd={{
+                label: run?.closedAt ? t('lijst.is_afgerond') : t('lijst.afronden'),
+                uit: progress.done < progress.total || Boolean(run?.closedAt),
+                onClick: () =>
                   closeRun({ checklist: current, day, profile })
                     .then(() => toast.success(t('lijst.afgerond_toast')))
-                    .catch((err) => toast.error(err.message))
-                }
-              >
-                {run?.closedAt ? t('lijst.is_afgerond') : t('lijst.afronden')}
-              </Button>
-              {run?.closedAt ? (
-                <span className="text-xs text-ink-500">
-                  {t('lijst.afgerond_door', { wie: run.closedByName, tijd: formatTime(run.closedAt) })}
-                </span>
-              ) : progress.done < progress.total ? (
-                <span className="text-xs text-ink-500">
-                  {t('lijst.nog_te_gaan', { rest: progress.total - progress.done })}
-                </span>
-              ) : null}
-            </div>
+                    .catch((err) => toast.error(err.message)),
+              }}
+            />
           </div>
         </div>
       )}
@@ -318,7 +306,7 @@ function Item({ item, state, onToggle, onValue }) {
           <span className={cn('block text-sm', done ? 'text-ink-500 line-through' : 'text-ink-900')}>
             {item.label}
             {item.repeat && item.repeat.kind !== 'dagelijks' ? (
-              <Badge color="#8593a9" subtle className="ml-2 align-middle">
+              <Badge className="ml-2 align-middle">
                 {repeatLabel(item)}
               </Badge>
             ) : null}

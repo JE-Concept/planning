@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { leesAanvraag } from '@lib/aanvraag'
 import { formatDateTime } from '@lib/dates'
-import { Badge, Button, EmptyState, Icon, Select, Spinner } from '@components/ds'
+import { Acties, Badge, EmptyState, Icon, Select, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -135,22 +135,12 @@ function SiteAanvraag({ aanvraag }) {
           ))}
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <Button size="sm" onClick={maakEvent} disabled={bezig}>
-          {t('verhuuraanvraag.event_maken')}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={() => handelAf(aanvraag.id)} disabled={bezig}>
-          {t('verhuuraanvraag.afgehandeld')}
-        </Button>
-        <Button
-          as="a"
-          size="sm"
-          variant="secondary"
-          href={`mailto:${aanvraag.email}`}
-        >
-          {t('verhuuraanvraag.mailen')}
-        </Button>
-      </div>
+      <Acties
+        plaats="rij"
+        terug={{ label: t('verhuuraanvraag.afgehandeld'), uit: bezig, onClick: () => handelAf(aanvraag.id) }}
+        tweede={{ label: t('verhuuraanvraag.mailen'), as: 'a', href: `mailto:${aanvraag.email}` }}
+        hoofd={{ label: t('verhuuraanvraag.event_maken'), uit: bezig, onClick: maakEvent }}
+      />
     </article>
   )
 }
@@ -250,9 +240,7 @@ function Aanvraag({ mail }) {
       </div>
 
       <div className="je-aanvraag__acties">
-        <Button size="sm" loading={bezig} disabled={!eventsList} onClick={maakEvent}>
-          {t('mail.postvak.maak_event')}
-        </Button>
+        <Acties plaats="rij" hoofd={{ label: t('mail.postvak.maak_event'), bezig, uit: !eventsList, onClick: maakEvent }} />
         <Select
           aria-label={t('mail.postvak.koppel')}
           value={koppelAan}

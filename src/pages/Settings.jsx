@@ -6,7 +6,7 @@ import { fromQuery } from '@lib/collections'
 import { AFDELINGEN } from '@lib/checklist-templates'
 import { PIPELINE, STEP_RULES, labelOf, toneOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
-import { Avatar, Badge, Button, Field, Hex, Icon, IconButton, Input, Select, Switch, Tabs, Tag } from '@components/ds'
+import { Acties, Avatar, Badge, bevestig, Button, Field, Hex, Icon, IconButton, Input, Select, Switch, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import BusinessRules from '@components/settings/BusinessRules'
 import HerhalingenPaneel from '@components/settings/HerhalingenPaneel'
@@ -357,9 +357,7 @@ function TeamTab() {
                 />
               </Field>
             </div>
-            <Button size="sm" disabled={!inviteOk} onClick={invite}>
-              {t('inst.team.uitnodigen_knop')}
-            </Button>
+            <Acties plaats="rij" hoofd={{ label: t('inst.team.uitnodigen_knop'), uit: !inviteOk, onClick: invite }} />
           </div>
           {invites.map((iv) => (
             <div
@@ -562,7 +560,7 @@ function TemplatesTab({ initial }) {
     }
   }
   const remove = async () => {
-    if (!window.confirm(t('inst.tpl.verwijder_vraag', { naam: draft.name }))) return
+    if (!bevestig(t('inst.tpl.verwijder_vraag', { naam: draft.name }))) return
     try {
       await ensureStored()
       await deleteTemplate(draft.id)

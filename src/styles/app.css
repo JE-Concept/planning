@@ -332,6 +332,12 @@
   border-bottom: 1px solid var(--border-hairline);
   background: var(--surface-1);
 }
+.je-pagehead__rechts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
 .je-pagehead h1 {
   font: var(--type-h2);
   text-transform: uppercase;
@@ -1414,7 +1420,7 @@ select.je-compact { padding-right: 24px; }
   .je-bottomnav,
   .je-chat,
   .je-updatebar,
-  .je-pagehead > div:last-child,
+  .je-pagehead__rechts,
   .je-mobilebar { display: none !important; }
 
   .je-shell, .je-main, .je-pagebody { display: block; overflow: visible; height: auto; }
@@ -2277,13 +2283,8 @@ select.je-compact { padding-right: 24px; }
   color: var(--danger);
 }
 
-/* Verwijderen naast archiveren. De rode knop trok evenveel aandacht als de
-   veilige keuze ernaast; nu is het een gewone, stille knop die pas rood wordt
-   als je hem echt aanwijst. De waarschuwing zit in de vraag, niet in de kleur. */
-.je-taak-weg:hover,
-.je-taak-weg:focus-visible {
-  color: var(--danger);
-}
+/* Verwijderen naast archiveren: stil, en pas rood wanneer je het aanwijst.
+   Dat is nu de stille GevaarKnop zelf (je-btn--gevaar-stil in je-ds.css). */
 
 /* ── Business rules ────────────────────────────────────────────────────────
    Een regel is sinds de uitbreiding geen enkele zin meer: een boom van

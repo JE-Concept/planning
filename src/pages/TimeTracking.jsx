@@ -1,17 +1,7 @@
 import { useMemo, useState } from 'react'
 import { dayKey, formatDate, formatDateTime, formatTime, startOfMonth, toLocalInput } from '@lib/dates'
 import { formatCurrency, formatDuration, toDecimalHours } from '@lib/format'
-import {
-  Avatar,
-  Button,
-  ConfirmButton,
-  EmptyState,
-  Field,
-  Input,
-  Modal,
-  Select,
-  Spinner,
-} from '@ui/index'
+import { Acties, Avatar, Button, Dialog, EmptyState, Field, GevaarKnop, Input, Select, Spinner } from '@components/ds'
 import PageHeader, { Tab } from '@components/layout/PageHeader'
 import MonthCalendar from '@components/common/MonthCalendar'
 import { useAuth } from '@context/AuthProvider'
@@ -74,7 +64,7 @@ export default function TimeTracking() {
       <PageHeader
         title={t('nav.uren')}
         subtitle={t('uren.samenvatting', { totaal: formatDuration(total) })}
-        actions={
+        bediening={
           <>
             <Select value={month} onChange={(e) => setMonth(e.target.value)} className="w-auto" aria-label={t('uren.maand')}>
               {months.map((m) => (
@@ -96,18 +86,12 @@ export default function TimeTracking() {
                     ))
                 : null}
             </Select>
-            <Button
-              variant="secondary"
-              onClick={() => exportCsv(entries, profileById, month, t)}
-              disabled={entries.length === 0}
-            >
-              CSV
-            </Button>
-            <Button variant="primary" onClick={() => setAdding(true)}>
-              {t('uren.tijd_kort')}
-            </Button>
           </>
         }
+        acties={{
+          tweede: { label: 'CSV', onClick: () => exportCsv(entries, profileById, month, t), uit: entries.length === 0 },
+          hoofd: { label: t('uren.tijd_kort'), icon: 'plus', onClick: () => setAdding(true) },
+        }}
         tabs={
           <>
             <Tab active={view === 'entries'} onClick={() => setView('entries')}>
@@ -166,11 +150,7 @@ export default function TimeTracking() {
           <EmptyState
             title={t('uren.leeg')}
             description={t('uren.leeg_uitleg')}
-            action={
-              <Button variant="primary" onClick={() => setAdding(true)}>
-                {t('uren.tijd_toevoegen')}
-              </Button>
-            }
+            actie={{ label: t('uren.tijd_toevoegen'), onClick: () => setAdding(true) }}
           />
         ) : view === 'entries' ? (
           <div className="space-y-5">
@@ -215,16 +195,13 @@ export default function TimeTracking() {
                             >
                               ✎
                             </Button>
-                            <ConfirmButton
-                              variant="ghost"
+                            <GevaarKnop
+                              icon="x"
                               size="sm"
-                              className="text-ink-400"
-                              question={t('uren.registratie_verwijderen')}
+                              vraag={t('uren.registratie_verwijderen')}
                               onConfirm={() => deleteEntry(entry).catch((e) => toast.error(e.message))}
                               aria-label={t('alg.verwijderen')}
-                            >
-                              ✕
-                            </ConfirmButton>
+                            />
                           </>
                         ) : null}
                       </li>
@@ -454,19 +431,15 @@ function EntryModal({ entry, uid, onClose }) {
   }
 
   return (
-    <Modal
+    <Dialog width={512}
       open
       onClose={onClose}
       title={entry ? t('uren.aanpassen_titel') : t('uren.toevoegen_titel')}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" onClick={submit} disabled={saving || !taskId}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} {t('alg.opslaan')}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('alg.opslaan'), onClick: submit, bezig: saving, uit: !taskId }}
+        />
       }
     >
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
@@ -489,6 +462,6 @@ function EntryModal({ entry, uid, onClose }) {
           />
         </Field>
       </form>
-    </Modal>
+    </Dialog>
   )
 }

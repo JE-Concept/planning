@@ -4,7 +4,7 @@ import { startOfDay } from '@lib/dates'
 import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import { verwijderVraag } from '@lib/verwijdervraag'
-import { Avatar, Button, Checkbox, ConfirmButton, Icon, IconButton, Input, Tabs, Textarea } from '@components/ds'
+import { Avatar, bevestig, Button, Icon, IconButton, Input, Spinner, Tabs } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
@@ -28,7 +28,6 @@ import { deleteDocument, leesbareGrootte, uploadDocument, useDocuments } from '@
 import { addEventTask, deleteEvent, isDone, moveEvent, updateEvent, useEventTime, useEvents, useLosEvent } from '@data/events'
 import { durationOf } from '@lib/time-math'
 import { useRunningTimer } from '@data/time'
-import { Spinner } from '@ui/index'
 import { TAB_STAND_TEKST } from '@lib/aapi-weergave'
 
 /** Eén event: pijplijn, fiche, en de vier tabbladen uit het design. */
@@ -148,61 +147,53 @@ export default function EventDetail() {
           .filter(Boolean)
           .join(' · ')}
         title={ev.name}
-        actions={
+        bediening={
           <>
             <StatusBadge statusName={ev.statusName} statuses={eventStatuses} />
             <PlanningBadge event={ev} />
-            {vorige ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                iconLeft="arrow-left"
-                title={t('events.detail.terug_stap', { stap: labelOf(vorige, eventStatuses).toLowerCase() })}
-                onClick={() => move(vorige)}
-              >
-                {t('alg.vorige')}
-              </Button>
-            ) : null}
-            {next ? (
-              <Button
-                size="sm"
-                iconRight="arrow-right"
-                title={t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}
-                onClick={() => move(next)}
-              >
-                {t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() })}
-              </Button>
-            ) : null}
-            {/*
-              Verwijderen staat hier stil en achteraan, want archiveren is
-              bijna altijd het juiste. Maar een dubbel aangemaakt dossier of
-              een test hoort niet in de geschiedenis, en zolang die alleen te
-              archiveren zijn, vervuilen ze elk overzicht.
-            */}
-            {/*
-              Alleen het pictogram. Het woord "Verwijderen" naast twee
-              stapknoppen trok de aandacht naar de enige knop in deze rij die
-              iets onherstelbaars doet — en de vraag die erop volgt, zegt toch
-              al precies wat er weggaat.
-            */}
-            <ConfirmButton
-              variant="ghost"
-              size="sm"
-              iconLeft="trash-2"
-              aria-label={t('alg.verwijderen')}
-              title={t('alg.verwijderen')}
-              question={verwijderVraag({ task: ev, subtaken: tasks.length, bijlagen: documenten.length, soort: 'event' })}
-              onConfirm={() =>
-                deleteEvent(ev.id)
-                  .then(() => {
-                    toast.success(t('events.detail.verwijderd', { naam: ev.name }))
-                    navigate('/')
-                  })
-                  .catch((err) => toast.error(err.message))
-              }
-            />
           </>
         }
+        acties={{
+          /*
+            Verwijderen staat stil en als pictogram, want archiveren is bijna
+            altijd het juiste; het woord "Verwijderen" naast twee stapknoppen
+            trok de aandacht naar de enige knop die iets onherstelbaars doet.
+            Maar een dubbel aangemaakt dossier of een test hoort niet in de
+            geschiedenis, en de vraag die erop volgt zegt precies wat er weggaat.
+          */
+          gevaar: {
+            toon: 'stil',
+            size: 'sm',
+            icon: 'trash-2',
+            'aria-label': t('alg.verwijderen'),
+            title: t('alg.verwijderen'),
+            vraag: verwijderVraag({ task: ev, subtaken: tasks.length, bijlagen: documenten.length, soort: 'event' }),
+            onConfirm: () =>
+              deleteEvent(ev.id)
+                .then(() => {
+                  toast.success(t('events.detail.verwijderd', { naam: ev.name }))
+                  navigate('/')
+                })
+                .catch((err) => toast.error(err.message)),
+          },
+          tweede: vorige
+            ? {
+                label: t('alg.vorige'),
+                icon: 'arrow-left',
+                size: 'sm',
+                title: t('events.detail.terug_stap', { stap: labelOf(vorige, eventStatuses).toLowerCase() }),
+                onClick: () => move(vorige),
+              }
+            : null,
+          hoofd: next
+            ? {
+                label: t('events.detail.naar_stap', { stap: labelOf(next, eventStatuses).toLowerCase() }),
+                iconRight: 'arrow-right',
+                size: 'sm',
+                onClick: () => move(next),
+              }
+            : null,
+        }}
       />
 
       {/*
@@ -529,7 +520,7 @@ function Attachments({ taskId }) {
             label={t('alg.verwijderen')}
             size="sm"
             onClick={() => {
-              if (window.confirm(t('events.doc.weg_vraag', { naam: d.name })))
+              if (bevestig(t('events.doc.weg_vraag', { naam: d.name })))
                 deleteDocument(d).catch((err) => toast.error(err.message))
             }}
           />

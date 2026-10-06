@@ -15,6 +15,7 @@ export default {
   'kalender.kopieer': { nl: 'Adres kopiëren', en: 'Copy address' },
   'kalender.vernieuw': { nl: 'Nieuw adres', en: 'New address' },
   'kalender.stop': { nl: 'Abonnement stoppen', en: 'Stop the subscription' },
+  'kalender.stop_vraag': { nl: 'Het abonnement stoppen? Wie de agenda nu gekoppeld heeft, ziet geen nieuwe events meer.', en: 'Stop the subscription? Anyone who linked the calendar will stop seeing new events.' },
   'kalender.gemaakt': { nl: 'Je adres staat klaar.', en: 'Your address is ready.' },
   'kalender.vernieuwd': { nl: 'Nieuw adres. Het oude werkt niet meer.', en: 'New address. The old one no longer works.' },
   'kalender.gestopt': { nl: 'Het adres werkt niet meer.', en: 'The address no longer works.' },

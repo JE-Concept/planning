@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@lib/cn'
 import { byPosition } from '@lib/position'
-import { Button } from '@ui/index'
+import { Button } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import TaskCard from './TaskCard'
 

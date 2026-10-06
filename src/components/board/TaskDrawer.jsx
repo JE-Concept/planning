@@ -3,17 +3,7 @@ import { formatDate, formatDateTime, toLocalInput, fromLocalInput } from '@lib/d
 import { isTeLaat } from '@lib/laat'
 import { formatCurrency, formatDuration, PRIORITIES } from '@lib/format'
 import { prioSleutel, vervaldag } from '@lib/task-view'
-import {
-  Avatar,
-  Badge,
-  Button,
-  ConfirmButton,
-  Drawer,
-  Field,
-  Input,
-  Select,
-  Textarea,
-} from '@ui/index'
+import { Acties, Avatar, Badge, Button, Drawer, Field, GevaarKnop, Input, Schakelknop, Select, Textarea } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -40,6 +30,7 @@ import { useActivity } from '@data/activity'
 import { LOGGEN_SINDS, beschrijf, verloopVan } from '@lib/activiteit'
 import { channelMeta, reviewMeta, statusMeta, usePostsForTask } from '@data/social'
 import { addManualEntry, startTimer, stopTimer, useRunningTimer, useTaskTimeEntries, deleteEntry } from '@data/time'
+import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /** Saves on blur rather than on every keystroke: one write per edit, not per letter. */
 function useDraft(value, save) {
@@ -100,46 +91,38 @@ export default function TaskDrawer({ taskId, subtasks = [], onClose }) {
       title={list?.name ?? t('bord.taak')}
       subtitle={task.statusName || undefined}
       footer={
-        <>
-          {/* Niet elke datum betekent iets; wat er staat, zegt erbij wat het is. */}
-          <span className="text-xs text-ink-400" title={herkomst?.uitleg ?? undefined}>
-            {herkomst?.tekst ?? ''}
-          </span>
-          <div className="flex items-center gap-2">
-            {/*
-              Archiveren is de rustige keuze en staat er dus als de gewone knop;
-              verwijderen is de uitzondering en draagt geen rood meer, alleen de
-              vraag die zegt wat je weggooit.
-            */}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                archiveTask(task.id)
-                  .then(() => {
-                    toast.success(t('bord.naar_archief'))
-                    onClose()
-                  })
-                  .catch((err) => toast.error(err.message))
-              }
-            >
-              {t('alg.archiveren')}
-            </Button>
-            <ConfirmButton
-              variant="ghost"
-              size="sm"
-              className="je-taak-weg"
-              question={verwijderVraag({ task, subtaken: subtasks.length, bijlagen: documents.length })}
-              onConfirm={() =>
-                deleteTask(task.id)
-                  .then(onClose)
-                  .catch((err) => toast.error(err.message))
-              }
-            >
-              {t('alg.verwijderen')}
-            </ConfirmButton>
-          </div>
-        </>
+        /*
+          Archiveren is de rustige keuze en staat er dus als de gewone knop;
+          verwijderen is de uitzondering en blijft stil, met de vraag die zegt
+          wat je weggooit. Niet elke datum betekent iets; de uitleg links zegt
+          erbij wat er staat.
+        */
+        <Acties
+          uitleg={
+            <span title={herkomst?.uitleg ?? undefined}>{herkomst?.tekst ?? ''}</span>
+          }
+          gevaar={{
+            label: t('alg.verwijderen'),
+            toon: 'stil',
+            size: 'sm',
+            vraag: verwijderVraag({ task, subtaken: subtasks.length, bijlagen: documents.length }),
+            onConfirm: () =>
+              deleteTask(task.id)
+                .then(onClose)
+                .catch((err) => toast.error(err.message)),
+          }}
+          tweede={{
+            label: t('alg.archiveren'),
+            size: 'sm',
+            onClick: () =>
+              archiveTask(task.id)
+                .then(() => {
+                  toast.success(t('bord.naar_archief'))
+                  onClose()
+                })
+                .catch((err) => toast.error(err.message)),
+          }}
+        />
       }
     >
       <div className="space-y-6 px-5 py-4">
@@ -315,7 +298,7 @@ function Labels({ task, tags, toast }) {
 
     try {
       const bestaand = tags.find((tag) => tag.name.toLowerCase() === naam.toLowerCase())
-      if (!bestaand) await upsertTag({ name: naam, color: '#8593a9' })
+      if (!bestaand) await upsertTag({ name: naam, color: STANDAARD_KLEUR })
       const opTaak = bestaand?.name ?? naam
       if (!task.tags?.includes(opTaak)) await toggleTag(task, opTaak)
       setNieuw('')
@@ -345,7 +328,7 @@ function Labels({ task, tags, toast }) {
           .filter((naam) => !tags.some((tag) => tag.name === naam))
           .map((naam) => (
             <button key={naam} type="button" onClick={() => toggleTag(task, naam)} aria-pressed>
-              <Badge color="#8593a9">{naam}</Badge>
+              <Badge>{naam}</Badge>
             </button>
           ))}
       </div>
@@ -601,16 +584,13 @@ function Subtasks({ task, subtasks, profileById }) {
               {(sub.assignees ?? []).slice(0, 1).map((assignee) => (
                 <Avatar key={assignee} profile={profileById[assignee]} size="xs" />
               ))}
-              <ConfirmButton
-                variant="ghost"
+              <GevaarKnop
+                icon="x"
                 size="sm"
-                className="h-6 w-6 p-0 text-ink-400"
-                question={t('bord.subtaak_verwijderen_vraag')}
+                vraag={t('bord.subtaak_verwijderen_vraag')}
                 onConfirm={() => deleteTask(sub.id)}
                 aria-label={t('bord.subtaak_verwijderen')}
-              >
-                ✕
-              </ConfirmButton>
+              />
             </li>
           )
         })}
@@ -666,9 +646,9 @@ function TimeSection({ task, list, uid, toast, profileById }) {
           <Button variant="ghost" size="sm" onClick={() => setManual((m) => !m)}>
             {t('bord.handmatig')}
           </Button>
-          <Button variant={runningHere ? 'danger' : 'secondary'} size="sm" onClick={toggle}>
+          <Schakelknop aan={runningHere} stop onClick={toggle}>
             {runningHere ? `■ ${formatDuration(elapsed, { withSeconds: true })}` : '▶ Start'}
-          </Button>
+          </Schakelknop>
         </div>
       </div>
 
@@ -702,16 +682,14 @@ function TimeSection({ task, list, uid, toast, profileById }) {
                 {formatDateTime(entry.startedAt)}
                 {entry.description ? ` · ${entry.description}` : ''}
               </span>
-              <ConfirmButton
-                variant="ghost"
+              <GevaarKnop
+                icon="x"
                 size="sm"
-                className="ml-auto h-6 w-6 p-0 text-ink-400"
-                question={t('bord.tijd_verwijderen')}
+                className="ml-auto"
+                vraag={t('bord.tijd_verwijderen')}
                 onConfirm={() => deleteEntry(entry)}
                 aria-label={t('alg.verwijderen')}
-              >
-                ✕
-              </ConfirmButton>
+              />
             </li>
           ))}
         </ul>
@@ -756,14 +734,12 @@ function ManualEntryForm({ task, list, uid, toast, onDone }) {
       <Field label={t('bord.veld.omschrijving')} className="sm:col-span-2">
         <Input value={description} onChange={(e) => setDescription(e.target.value)} />
       </Field>
-      <div className="flex gap-2 sm:col-span-2">
-        <Button type="submit" variant="primary" size="sm">
-          {t('alg.toevoegen')}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onDone}>
-          {t('alg.annuleren')}
-        </Button>
-      </div>
+      <Acties
+        plaats="rij"
+        className="sm:col-span-2"
+        terug={{ onClick: onDone }}
+        hoofd={{ label: t('alg.toevoegen'), type: 'submit' }}
+      />
     </form>
   )
 }
@@ -819,16 +795,14 @@ function VerloopSection({ taskId, listId, profile }) {
                 <strong className="text-ink-800">{item.data.authorName}</strong>
                 <span>{formatDateTime(item.data.createdAt)}</span>
                 {item.data.authorId === profile?.id ? (
-                  <ConfirmButton
-                    variant="ghost"
+                  <GevaarKnop
+                    icon="x"
                     size="sm"
-                    className="ml-auto h-5 w-5 p-0"
-                    question={t('bord.reactie_verwijderen_vraag')}
+                    className="ml-auto"
+                    vraag={t('bord.reactie_verwijderen_vraag')}
                     onConfirm={() => deleteComment(item.data)}
                     aria-label={t('bord.reactie_verwijderen')}
-                  >
-                    ✕
-                  </ConfirmButton>
+                  />
                 ) : null}
               </div>
               <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">{item.data.body}</p>
@@ -854,9 +828,7 @@ function VerloopSection({ taskId, listId, profile }) {
           onChange={(e) => setBody(e.target.value)}
           placeholder={t('bord.reactie_schrijven')}
         />
-        <Button type="submit" variant="primary" disabled={!body.trim()}>
-          {t('bord.plaatsen')}
-        </Button>
+        <Acties plaats="rij" hoofd={{ label: t('bord.plaatsen'), type: 'submit', uit: !body.trim() }} />
       </form>
     </section>
   )

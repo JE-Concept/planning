@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { formatDate, formatDateTime } from '@lib/dates'
-import { Badge, Button, Icon, Stat } from '@components/ds'
-import { EmptyState } from '@ui/index'
+import { Acties, Badge, Button, Icon, Stat } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { importeerPlanning, useImportRuns, useImportWachtrij } from '@data/aapi'
@@ -92,14 +91,11 @@ export default function PlanningImport({ onNaarDag }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <Icon name="file-text" size={20} />
             <span style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{bestand.name}</span>
-            {voorbeeld ? (
-              <Button size="sm" iconLeft="upload" loading={bezig} onClick={doeHet}>
-                {t('aapi.import.nu')}
-              </Button>
-            ) : null}
-            <Button size="sm" variant="ghost" onClick={opnieuw} disabled={bezig}>
-              {t('aapi.import.opnieuw')}
-            </Button>
+            <Acties
+              plaats="rij"
+              terug={{ label: t('aapi.import.opnieuw'), onClick: opnieuw, uit: bezig }}
+              hoofd={voorbeeld ? { label: t('aapi.import.nu'), icon: 'upload', bezig, onClick: doeHet } : null}
+            />
           </div>
         ) : (
           <div

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { formatDateTime } from '@lib/dates'
-import { Avatar, Badge, Button, Field, Select, Spinner, Textarea } from '@ui/index'
+import { Acties, Avatar, Badge, Field, Select, Spinner, Textarea } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -78,17 +78,16 @@ export default function ReviewPanel({ post }) {
           placeholder={t('social.review.notitie_plaatshouder')}
         />
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" disabled={busy} onClick={() => act('request')}>
-            {t('social.review.vragen')}
-          </Button>
-          <Button variant="primary" size="sm" disabled={busy} onClick={() => act('approve')}>
-            {t('social.review.goedkeuren')}
-          </Button>
-          <Button variant="danger" size="sm" disabled={busy} onClick={() => act('changes')}>
-            {t('social.review.aanpassing_vragen')}
-          </Button>
-        </div>
+        {/* "Aanpassing vragen" was rood, maar het is geen gevaar: niets gaat weg.
+            Het is een tweede stap naast goedkeuren, en zo staat het er nu. */}
+        <Acties
+          plaats="rij"
+          tweede={[
+            { label: t('social.review.vragen'), uit: busy, onClick: () => act('request') },
+            { label: t('social.review.aanpassing_vragen'), uit: busy, onClick: () => act('changes') },
+          ]}
+          hoofd={{ label: t('social.review.goedkeuren'), uit: busy, onClick: () => act('approve') }}
+        />
 
         {busy ? (
           <p className="flex items-center gap-2 text-xs text-ink-500">

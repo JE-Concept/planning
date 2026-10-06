@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Icon, Input } from '@components/ds'
-import { Spinner } from '@ui/index'
+import { Acties, Button, Icon, Input, Spinner } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { meldAanMetCode, usePloegLijst } from '@data/ploeg'
 
@@ -122,21 +121,18 @@ export default function CodeAanmelden({ onTerug }) {
 
       <p className="je-muted-caption">{t('ploeg.eerste_keer')}</p>
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-        <Button onClick={meld} loading={bezig} disabled={code.length !== 4}>
-          {t('ploeg.aanmelden')}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => {
+      <Acties
+        plaats="rij"
+        terug={{
+          label: t('ploeg.andere_naam'),
+          onClick: () => {
             setWie(null)
             setCode('')
             setFout(null)
-          }}
-        >
-          {t('ploeg.andere_naam')}
-        </Button>
-      </div>
+          },
+        }}
+        hoofd={{ label: t('ploeg.aanmelden'), bezig, uit: code.length !== 4, onClick: meld }}
+      />
     </div>
   )
 }

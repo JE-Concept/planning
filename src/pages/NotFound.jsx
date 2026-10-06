@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTaal } from '@context/TaalProvider'
-import { Button, EmptyState } from '@ui/index'
+import { EmptyState } from '@components/ds'
 
 export default function NotFound() {
   const { t } = useTaal()
@@ -10,11 +10,7 @@ export default function NotFound() {
       <EmptyState
         title={t('events.weg.titel')}
         description={t('events.weg.tekst')}
-        action={
-          <Link to="/">
-            <Button variant="primary">{t('events.weg.knop')}</Button>
-          </Link>
-        }
+        actie={{ label: t('events.weg.knop'), as: Link, to: '/' }}
       />
     </div>
   )

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { addDays, dayKey } from '@lib/dates'
 import { bestelTekst, bestellijstVan, prijsVan, standaardKeuzes } from '@lib/formules'
 import { leegLocatie } from '@lib/kaart'
-import { Button, Dialog, Field, Icon, Input, Select, Tabs } from '@components/ds'
+import { Acties, Dialog, Field, Icon, Input, Select, Tabs } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -227,14 +227,10 @@ export default function NewEventDialog({ open, onClose }) {
         <div className="je-muted-caption">
           {modus === 'formule' ? t('events.nieuw.uitleg_formule') : t('events.nieuw.uitleg_custom')}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button size="sm" disabled={!klaar} loading={busy} onClick={create}>
-            {t('events.nieuw.aanmaken')}
-          </Button>
-        </div>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('events.nieuw.aanmaken'), bezig: busy, uit: !klaar, onClick: create }}
+        />
       </div>
     </Dialog>
   )

@@ -1,4 +1,4 @@
-import { Avatar, Badge, Bar } from '@components/ds'
+import { Avatar, Badge } from '@components/ds'
 import { asDate, huidigeLocaleVan } from '@lib/dates'
 import { labelOf, toneOf } from '@lib/pipeline'
 import { planningVan } from '@lib/planning'
@@ -200,11 +200,6 @@ export function progressOf(tasks = []) {
     total: tasks.length,
     pct: tasks.length ? Math.round((done / tasks.length) * 100) : 0,
   }
-}
-
-export function ProgressLine({ tasks }) {
-  const p = progressOf(tasks)
-  return <Bar pct={p.pct} />
 }
 
 export function paxLabel(e) {

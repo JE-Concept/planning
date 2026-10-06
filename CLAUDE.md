@@ -70,10 +70,16 @@ AAPI invoert. Ze mag nooit op planning lijken en nooit een shift worden.
   verdwenen functie laten ze dan afbreken. Herkansen gaat via de bus van
   messaging (zie `functions/messaging-bus.js`); daarom heet de relay daar nog
   `messagingEvent`.
+- **Elke actie gaat door `Acties`** (`src/components/ds/acties.jsx`): een
+  hoofdactie, een voet van een dialoog, de knoppen in een paginakop. Buiten
+  het kader alleen `variant="secondary"` of `"ghost"`; iets weghalen is een
+  `GevaarKnop`; bevestigen is `bevestig()`. Zie *Call to action* in
+  `docs/design-je-concept.md`; `tests/acties.test.js` weigert de rest.
+- **Eén laag componenten: `@components/ds`.** `@ui/` bestaat niet meer.
 - **Op de messaging-bus staat nooit inhoud**, alleen de verwijzing naar de rij
   in de log (claim check). Een verwerker leest de rij zelf.
 - **De verhuursite (`verhuur/`) mag niets uit de backoffice halen.** Geen
-  `@data/`, `@components/`, `@context/`, `@ui/`, en geen Firebase-SDK. Alleen
+  `@data/`, `@components/`, `@context/`, en geen Firebase-SDK. Alleen
   `@lib/` en `@styles/` zijn gedeeld. `tests/verhuur-bundel.test.js` weigert de
   rest. Welke velden het pand verlaten, staat als **witte lijst** in
   `functions/verhuur-aanbod.js` — nooit een zwarte lijst, want die is altijd

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDateTime } from '@lib/dates'
 import { linksIn } from '@lib/links'
 import { kandidaten, metMarkering, ruweStukken, zetVermelding, zoekopdrachtVan } from '@lib/vermelding'
-import { Avatar, Button, IconButton, Textarea } from '@components/ds'
+import { Acties, Avatar, bevestig, IconButton, Textarea } from '@components/ds'
 import LinkVoorbeeld from '@components/common/LinkVoorbeeld'
 import Notitietekst from '@components/common/Notitietekst'
 import { useAuth } from '@context/AuthProvider'
@@ -202,7 +202,7 @@ export default function EventNotities({ ev, compact = false }) {
                         size="sm"
                         variant="bare"
                         onClick={() => {
-                          if (window.confirm(t('events.notities.notitie_weg_vraag')))
+                          if (bevestig(t('events.notities.notitie_weg_vraag')))
                             deleteComment(n).catch((err) => toast.error(err.message))
                         }}
                       />
@@ -299,9 +299,7 @@ export default function EventNotities({ ev, compact = false }) {
         </div>
         <div className="je-notities__knop">
           <span className="je-muted-caption">{t('events.notities.vermeld_hint')}</span>
-          <Button size="sm" onClick={plaats} loading={bezig} disabled={!tekst.trim()}>
-            {t('events.notities.bewaren')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('events.notities.bewaren'), bezig, uit: !tekst.trim(), onClick: plaats }} />
         </div>
       </div>
     </aside>

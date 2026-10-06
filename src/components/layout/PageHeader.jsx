@@ -1,5 +1,5 @@
 import { cn } from '@lib/cn'
-import { Icon } from '@components/ds'
+import { Acties, Icon } from '@components/ds'
 import { Link } from 'react-router-dom'
 
 /**
@@ -8,8 +8,15 @@ import { Link } from 'react-router-dom'
  *
  * Schermen die nog geen eyebrow meegeven (de oudere pagina's) tonen hun
  * ondertitel als een rustige regel onder de titel.
+ *
+ * Rechts staan twee soorten dingen, en ze worden niet meer door elkaar gezet:
+ * - `bediening`: wat het beeld verandert maar niets doet (bladeren door een
+ *   periode, een filter, een zoekveld, een statusbadge);
+ * - `acties`: wat iets doet, als `{ hoofd, tweede, gevaar }` voor `Acties`. De
+ *   hoofdactie van de pagina ("Nieuw event") staat zo overal op dezelfde plek
+ *   en in dezelfde vorm: helemaal rechts en gevuld.
  */
-export default function PageHeader({ title, eyebrow, subtitle, actions, tabs, back, className }) {
+export default function PageHeader({ title, eyebrow, subtitle, bediening, acties, tabs, back, className }) {
   return (
     <header className={cn('je-pagehead', className)}>
       <div style={{ minWidth: 0, flex: 1 }}>
@@ -37,8 +44,11 @@ export default function PageHeader({ title, eyebrow, subtitle, actions, tabs, ba
         <h1>{title}</h1>
         {subtitle ? <p className="je-muted-caption" style={{ marginTop: 4, fontSize: 13 }}>{subtitle}</p> : null}
       </div>
-      {actions ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>{actions}</div>
+      {bediening || acties ? (
+        <div className="je-pagehead__rechts">
+          {bediening}
+          {acties ? <Acties plaats="kop" {...acties} /> : null}
+        </div>
       ) : null}
       {tabs ? (
         <div className="je-tabs je-tabs--scroll" style={{ flexBasis: '100%', marginBottom: 'calc(-1 * var(--space-6) - 1px)', border: 0 }}>

@@ -1,4 +1,4 @@
-import { Avatar, Button, Field, Select } from '@ui/index'
+import { Avatar, Button, Field, Select } from '@components/ds'
 import {
   ASSIGNEE_MODES,
   actieLabel,

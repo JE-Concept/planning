@@ -1,4 +1,4 @@
-import { Badge } from '@ui/index'
+import { Badge } from '@components/ds'
 import { entiteitLabel, entityOf, fieldOf, veldLabel } from '@lib/automations'
 import { formatDateTime } from '@lib/dates'
 import { useTaal } from '@context/TaalProvider'
@@ -26,7 +26,7 @@ export default function RuleRuns({ runs = [] }) {
         return (
           <li key={run.id}>
             <div className="je-regel-log__kop">
-              <Badge color="#3377ff" subtle>
+              <Badge tone="accent">
                 {entiteitLabel(t, ent)}
               </Badge>
               <span className="font-semibold">{run.docTitle || run.docId}</span>

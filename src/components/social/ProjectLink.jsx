@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Badge, Button, Input } from '@ui/index'
+import { Badge, Button, Input } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useAuth } from '@context/AuthProvider'
 import { linkPostToTask } from '@data/social'
 import { useSocialEventZoeker } from '@data/social-events'
 import { useTaskSearch } from '@data/tasks'
+import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /**
  * The project a post belongs to.
@@ -93,7 +94,7 @@ export default function ProjectLink({ post }) {
                   <span
                     aria-hidden="true"
                     className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: task.statusColor ?? '#8593a9' }}
+                    style={{ backgroundColor: task.statusColor ?? STANDAARD_KLEUR }}
                   />
                   <span className="min-w-0 flex-1 truncate text-ink-800">{task.title}</span>
                   <span className="shrink-0 text-[11px] text-ink-400">{task.listName}</span>

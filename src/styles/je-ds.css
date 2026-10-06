@@ -323,6 +323,34 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .je-btn__spinner{width:12px;height:12px;border:1.5px solid currentColor;border-top-color:transparent;border-radius:var(--radius-pill);animation:je-spin 700ms linear infinite}
 @keyframes je-spin{to{transform:rotate(360deg)}}
 
+/* ---------- Acties (het call-to-action-kader) ----------
+   Eén hoofdactie rechts, gevuld; andere stappen omlijnd ervoor; terug stil
+   het verst weg; gevaar apart links. Zie src/components/ds/acties.jsx. */
+.je-acties{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;min-width:0}
+.je-acties__links{display:flex;align-items:center;gap:var(--space-3);margin-right:auto;min-width:0}
+.je-acties__rechts{display:flex;align-items:center;justify-content:flex-end;gap:var(--space-3);margin-left:auto;flex-wrap:wrap}
+.je-acties__uitleg{font:var(--type-body-sm);color:var(--text-3)}
+.je-acties--voet{width:100%}
+.je-acties--rij .je-acties__rechts{margin-left:0;justify-content:flex-start}
+.je-acties--rij .je-acties__links{margin-right:0}
+.je-acties--leeg{justify-content:center}
+.je-acties--leeg .je-acties__rechts{margin-left:0;justify-content:center}
+.je-acties--stapel{flex-direction:column;align-items:stretch}
+.je-acties--stapel .je-acties__rechts{flex-direction:column-reverse;align-items:stretch;margin-left:0}
+.je-acties--stapel .je-btn{width:100%}
+.je-iconbtn--gevaar:hover,.je-iconbtn--gevaar:focus-visible,.je-btn--gevaar-stil:hover,.je-btn--gevaar-stil:focus-visible{color:var(--danger);background:rgba(179,53,47,.08)}
+/* Op een smalle telefoon: de hoofdactie bovenaan en over de volle breedte,
+   waar de duim zit; gevaar onderaan, zo ver mogelijk ervandaan. */
+@media (max-width:560px){
+  .je-acties--voet{flex-direction:column-reverse;align-items:stretch}
+  .je-acties--voet .je-acties__rechts{flex-direction:column-reverse;align-items:stretch;margin-left:0}
+  .je-acties--voet .je-acties__links{margin-right:0;justify-content:center}
+  .je-acties--voet .je-btn{width:100%}
+}
+
+/* ---------- PeriodeKiezer ---------- */
+.je-periode{display:inline-flex;align-items:center;gap:var(--space-2)}
+
 /* ---------- IconButton ---------- */
 .je-iconbtn{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--text-2);border:1px solid transparent;border-radius:var(--radius-control);cursor:pointer;transition:var(--transition-control)}
 .je-iconbtn--sm{width:32px;height:32px}

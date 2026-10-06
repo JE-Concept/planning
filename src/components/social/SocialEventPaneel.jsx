@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { SOCIAL_STAGES, stageOf } from '@lib/social-stage'
 import { formatDate } from '@lib/dates'
 import { kaartLink } from '@lib/kaart'
-import { Badge, Button, Drawer, EmptyState } from '@ui/index'
-import { Icon } from '@components/ds'
+import { Badge, Drawer, EmptyState, Icon, Schakelknop } from '@components/ds'
 import PostCard from '@components/social/PostCard'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -106,15 +105,9 @@ export default function SocialEventPaneel({ taskId, onClose }) {
             <div className="je-eyebrow">{t('social.event.stand')}</div>
             <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
               {SOCIAL_STAGES.map((stap) => (
-                <Button
-                  key={stap.key}
-                  size="sm"
-                  variant={stap.key === stand ? 'primary' : 'secondary'}
-                  disabled={bezig}
-                  onClick={() => verzet(stap.key)}
-                >
+                <Schakelknop key={stap.key} aan={stap.key === stand} disabled={bezig} onClick={() => verzet(stap.key)}>
                   {stap.label}
-                </Button>
+                </Schakelknop>
               ))}
             </div>
           </div>
@@ -132,9 +125,9 @@ export default function SocialEventPaneel({ taskId, onClose }) {
 
           {/* Tijd boeken hoort hier: het is het werk waarvoor dit bord bestaat. */}
           <div>
-            <Button size="sm" variant={loopt ? 'primary' : 'secondary'} iconLeft={loopt ? 'square' : 'play'} onClick={timerKnop} loading={bezig}>
+            <Schakelknop aan={loopt} iconLeft={loopt ? 'square' : 'play'} onClick={timerKnop} loading={bezig}>
               {loopt ? t('timer.stoppen') : t('timer.starten')}
-            </Button>
+            </Schakelknop>
           </div>
         </div>
       )}

@@ -13,7 +13,7 @@ import {
   triggersFor,
   veldLabel,
 } from '@lib/automations'
-import { Badge, Button, ConfirmButton, Field, Input, Select, Spinner } from '@ui/index'
+import { Acties, Badge, Button, Field, GevaarKnop, Input, Select, Spinner } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -125,15 +125,12 @@ export default function BusinessRules({ isAdmin }) {
                       >
                         {rule.enabled === false ? t('regels.aanzetten') : t('regels.uitzetten')}
                       </Button>
-                      <ConfirmButton
-                        variant="ghost"
+                      <GevaarKnop
+                        label={t('alg.verwijderen')}
                         size="sm"
-                        className="text-ink-400"
-                        question={t('regels.verwijder_vraag')}
+                        vraag={t('regels.verwijder_vraag')}
                         onConfirm={() => deleteAutomation(rule.id)}
-                      >
-                        {t('alg.verwijderen')}
-                      </ConfirmButton>
+                      />
                     </div>
                   ) : null
                 }
@@ -155,19 +152,15 @@ export default function BusinessRules({ isAdmin }) {
             lists={taakLijsten}
             onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
           />
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={!draft.name.trim() || ruleWarnings(draft, { lists: taakLijsten, t }).length > 0}
-            >
-              {t('regels.regel_aanzetten')}
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setDraft(null)}>
-              {t('regels.weg_ermee')}
-            </Button>
-          </div>
+          <Acties
+            plaats="rij"
+            terug={{ label: t('regels.weg_ermee'), onClick: () => setDraft(null) }}
+            hoofd={{
+              label: t('regels.regel_aanzetten'),
+              type: 'submit',
+              uit: !draft.name.trim() || ruleWarnings(draft, { lists: taakLijsten, t }).length > 0,
+            }}
+          />
         </form>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -213,12 +206,12 @@ function RuleEditor({ rule, onChange, header, readOnly = false, nieuw = false, c
           required
         />
         {rule.kind === 'table' ? (
-          <Badge color="#7c3aed" subtle>
+          <Badge tone="accent">
             {t('regels.badge_tabel')}
           </Badge>
         ) : null}
         {uit ? (
-          <Badge color="#8593a9" subtle>
+          <Badge>
             {t('regels.badge_uit')}
           </Badge>
         ) : null}

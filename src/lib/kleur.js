@@ -166,6 +166,16 @@ export function badgeKleuren(kleur, { grond = '#ffffff', waas = 0.12 } = {}) {
  * bord en waren niet te lezen. Wat al in de database staat blijft staan; de
  * weergave hierboven maakt die alsnog leesbaar.
  */
+/**
+ * De kleur van iets waar het team (nog) geen kleur voor koos: een label, een
+ * kolom zonder status, een persoon op het bord. Ze komt in de database terecht
+ * en is daarom een hex en geen token. Eén naam, zodat ze niet op twintig
+ * plekken net anders is.
+ */
+export const STANDAARD_KLEUR = '#8593a9'
+/** De standaardkleur van een nieuw merk of een nieuwe takenlijst. */
+export const STANDAARD_MERKKLEUR = '#3377ff'
+
 export const PALET = [
   '#55637a', // grijsblauw — neutraal, het begin van een pijplijn
   '#1b3a6b', // navy — het accent van het huis

@@ -13,8 +13,7 @@ import {
   urenTekst,
   vraagtAandacht,
 } from '@lib/aapi-weergave'
-import { Badge, Button, Checkbox, Icon, IconButton, Select, Tabs } from '@components/ds'
-import { EmptyState, Spinner } from '@ui/index'
+import { Button, Checkbox, EmptyState, IconButton, Select, Spinner, Tabs } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import ShiftBlok from '@components/aapi/ShiftBlok'
 import ShiftDetail from '@components/aapi/ShiftDetail'

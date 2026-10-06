@@ -329,6 +329,7 @@ export default {
   'rooster.dienst_aanpassen': { nl: 'Dienst aanpassen', en: 'Edit shift' },
   'rooster.dienst_toevoegen': { nl: 'Dienst toevoegen', en: 'Add shift' },
   'rooster.weghalen': { nl: 'Weghalen', en: 'Remove' },
+  'rooster.weghalen_vraag': { nl: 'Deze dienst uit het rooster halen?', en: 'Remove this shift from the roster?' },
   'rooster.van': { nl: 'Van', en: 'From' },
   'rooster.van_hint': {
     nl: 'Zoals het op de deur hangt, bijvoorbeeld 17:00.',

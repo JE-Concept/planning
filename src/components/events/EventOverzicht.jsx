@@ -1,6 +1,6 @@
 import { DREMPELS, standVan } from '@lib/eventstand'
 import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
-import { Badge, Icon } from '@components/ds'
+import { Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useOfferte } from '@data/offertes'

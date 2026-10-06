@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { BTW_TARIEVEN, DEFAULT_FORMULES, FORMULE_CATEGORIEEN } from '@lib/formule-templates'
 import { bestelTekst, bestellijstVan, nodigTekst, prijsVan, standaardKeuzes } from '@lib/formules'
 import { useNarrow } from '@lib/useNarrow'
-import { Badge, Button, Field, Icon, IconButton, Input, Select, Switch, Textarea } from '@components/ds'
+import { Badge, bevestig, Button, Field, Icon, IconButton, Input, Select, Switch, Textarea } from '@components/ds'
 import { TEMPLATE_ICONS } from '@data/templates'
 import {
   createFormule,
@@ -159,7 +159,7 @@ export default function FormuleSettings() {
    * event mee starten.
    */
   const verwijder = async () => {
-    if (!window.confirm(t('inst.formule.verwijder_vraag', { naam: draft.name }))) return
+    if (!bevestig(t('inst.formule.verwijder_vraag', { naam: draft.name }))) return
     try {
       await zorgVoorOpslag()
       await deleteFormule(draft.id)

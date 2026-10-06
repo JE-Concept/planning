@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { SOCIAL_STAGES, stageOf } from '@lib/social-stage'
-import { Button, EmptyState, Input, Spinner } from '@ui/index'
+import { Button, EmptyState, Input, Spinner } from '@components/ds'
 import KanbanBoard from '@components/board/KanbanBoard'
 import TaskDrawer from '@components/board/TaskDrawer'
 import { useAuth } from '@context/AuthProvider'
@@ -139,7 +139,7 @@ export default function SocialEventsBoard({ socialOwner = null }) {
         placeholder={t('social.bord.los_plaatshouder')}
         aria-label={t('social.bord.nieuwe_taak')}
       />
-      <Button type="submit" size="sm" disabled={!nieuw.trim() || bezig}>
+      <Button variant="secondary" type="submit" size="sm" disabled={!nieuw.trim() || bezig}>
         {t('alg.toevoegen')}
       </Button>
     </form>

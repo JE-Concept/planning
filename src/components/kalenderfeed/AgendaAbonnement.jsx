@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Dialog } from '@components/ds'
+import { Acties, Dialog } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -73,11 +73,7 @@ export default function AgendaAbonnement({ open, onClose }) {
       onClose={onClose}
       title={t('kalender.titel')}
       width={560}
-      footer={
-        <Button variant="primary" onClick={onClose}>
-          {t('alg.sluiten')}
-        </Button>
-      }
+      footer={<Acties hoofd={{ label: t('alg.sluiten'), onClick: onClose }} />}
     >
       <p style={{ margin: 0, font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>{t('kalender.uitleg')}</p>
 
@@ -98,17 +94,13 @@ export default function AgendaAbonnement({ open, onClose }) {
             {adres}
           </div>
 
-          <div style={{ marginTop: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-            <Button size="sm" iconLeft="copy" onClick={kopieer}>
-              {t('kalender.kopieer')}
-            </Button>
-            <Button size="sm" variant="secondary" onClick={maak} loading={bezig}>
-              {t('kalender.vernieuw')}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={stop} loading={bezig}>
-              {t('kalender.stop')}
-            </Button>
-          </div>
+          <Acties
+            plaats="rij"
+            className="mt-4"
+            gevaar={{ label: t('kalender.stop'), toon: 'stil', size: 'sm', vraag: t('kalender.stop_vraag'), bezig, onConfirm: stop }}
+            tweede={{ label: t('kalender.vernieuw'), bezig, onClick: maak }}
+            hoofd={{ label: t('kalender.kopieer'), icon: 'copy', onClick: kopieer }}
+          />
 
           <ol style={{ marginTop: 'var(--space-5)', paddingLeft: '1.2em', font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
             <li>{t('kalender.stap1')}</li>
@@ -124,11 +116,7 @@ export default function AgendaAbonnement({ open, onClose }) {
           </p>
         </>
       ) : (
-        <div style={{ marginTop: 'var(--space-5)' }}>
-          <Button onClick={maak} loading={bezig} iconLeft="calendar-days">
-            {t('kalender.maak')}
-          </Button>
-        </div>
+        <Acties plaats="rij" className="mt-5" hoofd={{ label: t('kalender.maak'), icon: 'calendar-days', bezig, onClick: maak }} />
       )}
     </Dialog>
   )

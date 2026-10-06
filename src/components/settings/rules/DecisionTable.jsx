@@ -1,4 +1,4 @@
-import { Button, Input, Select } from '@ui/index'
+import { Button, Input, Select } from '@components/ds'
 import {
   emptyRow,
   fieldOf,

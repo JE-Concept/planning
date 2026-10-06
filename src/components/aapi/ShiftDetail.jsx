@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { formatDate, formatDateTime, formatTime } from '@lib/dates'
-import { Badge, Button, Field, Select } from '@components/ds'
-import { Drawer } from '@ui/index'
+import { Acties, Badge, Button, Drawer, Field, Select } from '@components/ds'
 import {
   KOPPELING_TEKST,
   afdelingLabel,
@@ -153,19 +152,12 @@ export default function ShiftDetail({ shift, naam, events = [], eventById = {}, 
                 ))}
               </Select>
             </Field>
-            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              <Button size="sm" loading={bezig} disabled={!keuze} onClick={() => zet('manual', keuze)}>
-                {t('aapi.event.koppel_hier')}
-              </Button>
-              <Button size="sm" variant="secondary" loading={bezig} onClick={() => zet('none')}>
-                {t('aapi.shift.geen_event')}
-              </Button>
-              {shift.linkStatus !== 'unlinked' ? (
-                <Button size="sm" variant="ghost" loading={bezig} onClick={() => zet('unlinked')}>
-                  {t('aapi.shift.losmaken')}
-                </Button>
-              ) : null}
-            </div>
+            <Acties
+              plaats="rij"
+              terug={shift.linkStatus !== 'unlinked' ? { label: t('aapi.shift.losmaken'), bezig, onClick: () => zet('unlinked') } : null}
+              tweede={{ label: t('aapi.shift.geen_event'), bezig, onClick: () => zet('none') }}
+              hoofd={{ label: t('aapi.event.koppel_hier'), bezig, uit: !keuze, onClick: () => zet('manual', keuze) }}
+            />
           </div>
         ) : null}
 

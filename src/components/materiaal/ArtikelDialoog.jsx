@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Checkbox, Dialog, Field, Input, Textarea } from '@components/ds'
+import { Acties, Button, Checkbox, Dialog, Field, Input, Textarea } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { maakMateriaal, uploadFoto, verwijderFoto, wijzigMateriaal } from '@data/materiaal'
@@ -132,14 +132,10 @@ export default function ArtikelDialoog({ open, artikel, categorieen = [], onClos
       onClose={onClose}
       width={620}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button onClick={bewaren} disabled={bezig || !vorm.naam.trim()}>
-            {t('alg.bewaren')}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('alg.bewaren'), onClick: bewaren, bezig, uit: !vorm.naam.trim() }}
+        />
       }
     >
       <div className="je-artikelvorm">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DOELEN, SOORTEN, omschrijf, volgendeKeer } from '@lib/herhaling'
 import { formatDate } from '@lib/dates'
-import { Button, Checkbox, ConfirmButton, Input, Select, Textarea } from '@components/ds'
+import { Acties, Checkbox, GevaarKnop, Input, Select, Textarea } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -51,9 +51,7 @@ export default function HerhalingenPaneel() {
         <p className="je-muted-caption" style={{ margin: 0, flex: 1 }}>
           {t('herhaling.uitleg')}
         </p>
-        <Button size="sm" iconLeft="plus" loading={bezig} onClick={erbij}>
-          {t('herhaling.erbij')}
-        </Button>
+        <Acties plaats="rij" hoofd={{ label: t('herhaling.erbij'), icon: 'plus', bezig, onClick: erbij }} />
       </div>
 
       {herhalingen.length === 0 ? (
@@ -104,13 +102,12 @@ function Rij({ herhaling, profiles, lists, uid, t, fout }) {
             ...profiles.map((p) => ({ value: p.id, label: p.fullName ?? p.email ?? p.id })),
           ]}
         />
-        <ConfirmButton
-          variant="ghost"
+        <GevaarKnop
           size="sm"
           iconLeft="trash-2"
           aria-label={t('herhaling.weg')}
           title={t('herhaling.weg')}
-          question={t('herhaling.weg_vraag', { titel: herhaling.titel })}
+          vraag={t('herhaling.weg_vraag', { titel: herhaling.titel })}
           onConfirm={() => wisHerhaling(herhaling.id).catch(fout)}
         />
       </div>

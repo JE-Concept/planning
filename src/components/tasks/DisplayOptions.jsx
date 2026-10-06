@@ -1,6 +1,6 @@
 import { PRIORITIES } from '@lib/format'
 import { GROEPEN, SORTERINGEN, WEERGAVEN, prioSleutel } from '@lib/task-view'
-import { Button, Icon, Input, Select } from '@components/ds'
+import { Icon, Input, Schakelknop, Select } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 
 /**
@@ -113,14 +113,13 @@ export default function DisplayOptions({ opties, zet, profiles, lijsten, labels,
           ))}
         </Select>
 
-        <Button
-          variant={opties.open ? 'secondary' : 'primary'}
-          size="sm"
+        <Schakelknop
+          aan={!opties.open}
           onClick={() => zet({ open: !opties.open })}
           title={t(opties.open ? 'tasks.alleen_open_hint' : 'tasks.ook_afgerond_hint')}
         >
           {t(opties.open ? 'tasks.alleen_open' : 'tasks.ook_afgerond')}
-        </Button>
+        </Schakelknop>
 
         <label className="je-displaybar__zoek">
           <Icon name="search" size={15} />

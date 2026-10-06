@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import jsx from './eslint/jsx-gebruikt.js'
 
 export default [
   { ignores: ['dist', 'dist-demo', 'dist-verhuur', 'dist-verhuur-demo', 'node_modules', 'coverage'] },
@@ -20,11 +21,14 @@ export default [
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      jsx,
     },
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
+      'jsx/jsx-gebruikt': 'error',
+      // Alleen `_` vooraan: een hoofdletter is geen vrijbrief meer, zie eslint/jsx-gebruikt.js.
+      'no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],
       'react-refresh/only-export-components': 'off',
     },
   },

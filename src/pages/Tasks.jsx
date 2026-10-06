@@ -18,6 +18,7 @@ import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { isDone } from '@data/events'
 import { moveTaskTo, useTaskBoard, useTasks } from '@data/tasks'
+import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /**
  * Tasks: alles wat er te doen is, in de vorm die je op dat moment nodig hebt.
@@ -215,7 +216,7 @@ export default function Tasks() {
     // Taken met een status die niet meer bestaat horen zichtbaar te blijven;
     // stil weglaten is hoe werk verdwijnt.
     if (wezen.length) {
-      cols.unshift({ key: '', label: t('tasks.zonder_status'), color: '#8593a9' })
+      cols.unshift({ key: '', label: t('tasks.zonder_status'), color: STANDAARD_KLEUR })
       buckets[''] = wezen
     }
     return { kolommen: cols, takenPerKolom: buckets }
@@ -261,20 +262,13 @@ export default function Tasks() {
       <PageHeader
         title="Tasks"
         subtitle={bordModus ? lijst.name : undefined}
-        actions={
-          <>
-            {bordModus && isAdmin ? (
-              <Button variant="secondary" size="sm" onClick={() => setKolommenOpen(true)}>
-                {t('bord.kolommen')}
-              </Button>
-            ) : null}
-            {doelLijst ? (
-              <Button size="sm" iconLeft="plus" onClick={() => setNieuweTaak({ status: doelStatuses[0] })}>
-                {t('bord.nieuwe_taak')}
-              </Button>
-            ) : null}
-          </>
-        }
+        acties={{
+          tweede:
+            bordModus && isAdmin ? { label: t('bord.kolommen'), onClick: () => setKolommenOpen(true) } : null,
+          hoofd: doelLijst
+            ? { label: t('bord.nieuwe_taak'), icon: 'plus', onClick: () => setNieuweTaak({ status: doelStatuses[0] }) }
+            : null,
+        }}
       />
 
       <DisplayOptions
@@ -389,18 +383,13 @@ function Regel({ task, onOpen, listById, tagsByName }) {
           jouw werk en wacht iedereen op een ander.
         */}
         {(task.assignees ?? []).length === 0 ? (
-          <Badge
-            style={{
-              background: 'color-mix(in srgb, var(--warning, #d98324) 14%, transparent)',
-              color: 'var(--warning, #d98324)',
-              borderColor: 'transparent',
-            }}
-          >
+          <Badge tone="warning">
             {t('tasks.niemand')}
           </Badge>
         ) : null}
+        {/* Via Badge en niet met de hand: dan rekent die de inkt uit tegen 4,5:1. */}
         {(task.tags ?? []).map((naam) => (
-          <Badge key={naam} style={{ background: `${tagsByName[naam]?.color ?? '#8593a9'}1f`, color: tagsByName[naam]?.color ?? '#8593a9', borderColor: 'transparent' }}>
+          <Badge key={naam} color={tagsByName[naam]?.color ?? STANDAARD_KLEUR} subtle>
             {naam}
           </Badge>
         ))}
@@ -542,7 +531,7 @@ function Kalender({ maand, onMaand, dagen, zonderDatum, onOpen }) {
               onClick={() => onOpen(task.id)}
               className="je-plainbtn je-calitem"
               style={{
-                borderLeftColor: telaat ? 'var(--danger)' : (task.statusColor ?? '#8593a9'),
+                borderLeftColor: telaat ? 'var(--danger)' : (task.statusColor ?? STANDAARD_KLEUR),
                 color: telaat ? 'var(--danger)' : 'var(--text-1)',
                 fontWeight: telaat || isToday(task.dueDate) ? 600 : 400,
               }}

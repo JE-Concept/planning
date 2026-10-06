@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { formatVat, vatHint } from '@lib/klanten'
-import { Button, Field, Input, Select } from '@components/ds'
+import { Acties, Field, Input, Select } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { createCustomer, useCustomers } from '@data/customers'
@@ -120,14 +120,11 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
               onChange={(e) => setNieuw((x) => ({ ...x, email: e.target.value }))}
             />
           </Field>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-            <Button variant="ghost" size="sm" onClick={() => setNieuw(null)}>
-              {t('alg.annuleren')}
-            </Button>
-            <Button size="sm" loading={busy} disabled={!nieuw.name.trim()} onClick={maak}>
-              {t('klant.kiezen.aanmaken')}
-            </Button>
-          </div>
+          <Acties
+            plaats="rij"
+            terug={{ onClick: () => setNieuw(null) }}
+            hoofd={{ label: t('klant.kiezen.aanmaken'), bezig: busy, uit: !nieuw.name.trim(), onClick: maak }}
+          />
         </div>
       ) : null}
 

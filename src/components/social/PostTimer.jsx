@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { formatDuration } from '@lib/format'
-import { Button } from '@ui/index'
+import { Schakelknop } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -63,9 +63,9 @@ export default function PostTimer({ post }) {
     <section>
       <div className="mb-2 flex items-center justify-between">
         <h3 className="label mb-0">{t('social.tijd.kop')}</h3>
-        <Button variant={loopt ? 'danger' : 'secondary'} size="sm" onClick={schakel} disabled={bezig}>
+        <Schakelknop aan={loopt} stop onClick={schakel} disabled={bezig}>
           {loopt ? `■ ${formatDuration(elapsed, { withSeconds: true })}` : `▶ ${t('timer.start')}`}
-        </Button>
+        </Schakelknop>
       </div>
       <p className="text-sm text-ink-600">
         {post.taskId ? t('social.tijd.aan_event') : t('social.tijd.op_merk')}

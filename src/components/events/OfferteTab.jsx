@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { RUBRIEKEN, btwVoor, ontbrekend, regelBedrag, totalenVan } from '@lib/offerte'
 import { prijsVan } from '@lib/formules'
-import { Button, Icon, IconButton, Input, Select, Spinner } from '@components/ds'
+import { Acties, Button, Icon, IconButton, Input, Select, Spinner } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -127,17 +127,15 @@ export default function OfferteTab({ ev }) {
         <div className="je-offertewerk__kop">
           <span className="je-caps">{t('offerte.regels')}</span>
           <span className="je-muted-caption">{offerte.nummer}</span>
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-3)' }}>
-            <Button variant="secondary" size="sm" iconLeft="plus" onClick={() => voegRegelToe(offerte, { omschrijving: '' }, uid)}>
-              {t('offerte.regel_erbij')}
-            </Button>
-            <Button variant="secondary" size="sm" iconLeft="download" onClick={() => window.print()}>
-              {t('offerte.afdrukken')}
-            </Button>
-            <Button size="sm" loading={bezig} onClick={versturen}>
-              {t('offerte.versturen')}
-            </Button>
-          </span>
+          <Acties
+            plaats="rij"
+            className="ml-auto"
+            tweede={[
+              { label: t('offerte.regel_erbij'), icon: 'plus', onClick: () => voegRegelToe(offerte, { omschrijving: '' }, uid) },
+              { label: t('offerte.afdrukken'), icon: 'download', onClick: () => window.print() },
+            ]}
+            hoofd={{ label: t('offerte.versturen'), bezig, onClick: versturen }}
+          />
         </div>
 
         {/*

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Badge, Button, ConfirmButton, Field, Input, Modal, Select, Spinner } from '@ui/index'
+import { Acties, Badge, Button, Dialog, Field, GevaarKnop, Input, Select, Spinner } from '@components/ds'
 import ColumnEditor from '@components/board/ColumnEditor'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -17,6 +17,7 @@ import {
   updateList,
   upsertTag,
 } from '@data/workspace'
+import { STANDAARD_KLEUR, STANDAARD_MERKKLEUR } from '@lib/kleur'
 
 /**
  * De kolommen van één lijst, geopend vanuit de instellingen.
@@ -115,7 +116,7 @@ export function StructureSettings() {
                     className="h-8 max-w-xs text-sm"
                     aria-label={t('inst.struct.lijstnaam')}
                   />
-                  <Badge color={list.kind === 'social' ? '#d62976' : '#3377ff'} subtle>
+                  <Badge tone={list.kind === 'social' ? 'accent' : 'neutral'}>
                     {list.kind === 'social' ? t('inst.struct.soort_social') : t('inst.struct.soort_taken')}
                   </Badge>
                   {/* De kolommen van een bord horen bij de inrichting van de
@@ -131,15 +132,13 @@ export function StructureSettings() {
                       {t('inst.struct.terughalen')}
                     </Button>
                   ) : (
-                    <ConfirmButton
-                      variant="ghost"
+                    <GevaarKnop
+                      label={t('alg.archiveren')}
                       size="sm"
-                      className="ml-auto text-ink-400"
-                      question={t('inst.struct.archiveer_vraag')}
+                      className="ml-auto"
+                      vraag={t('inst.struct.archiveer_vraag')}
                       onConfirm={() => archiveList(list.id)}
-                    >
-                      {t('alg.archiveren')}
-                    </ConfirmButton>
+                    />
                   )}
                 </li>
               ))}
@@ -156,9 +155,7 @@ export function StructureSettings() {
             placeholder={t('inst.struct.naam')}
             required
           />
-          <Button type="submit" variant="primary" size="sm" disabled={!spaceName.trim()}>
-            {t('alg.aanmaken')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('alg.aanmaken'), type: 'submit', uit: !spaceName.trim() }} />
         </form>
 
         <form onSubmit={addList} className="card space-y-2 p-4">
@@ -190,14 +187,7 @@ export function StructureSettings() {
             <option value="tasks">{t('inst.struct.takenbord')}</option>
             <option value="social">{t('inst.struct.socialcontent')}</option>
           </Select>
-          <Button
-            type="submit"
-            variant="primary"
-            size="sm"
-            disabled={!listDraft.name.trim() || !listDraft.spaceId}
-          >
-            {t('alg.aanmaken')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('alg.aanmaken'), type: 'submit', uit: !listDraft.name.trim() || !listDraft.spaceId }} />
         </form>
       </div>
     </div>
@@ -210,8 +200,8 @@ export function BrandSettings() {
   const { brands, tags } = useWorkspace()
   const { t } = useTaal()
   const toast = useToast()
-  const [brand, setBrand] = useState({ name: '', key: '', color: '#3377ff' })
-  const [tag, setTag] = useState({ name: '', color: '#8593a9' })
+  const [brand, setBrand] = useState({ name: '', key: '', color: STANDAARD_MERKKLEUR })
+  const [tag, setTag] = useState({ name: '', color: STANDAARD_KLEUR })
   const [samenvoegen, setSamenvoegen] = useState(null)
 
   return (
@@ -248,7 +238,7 @@ export function BrandSettings() {
                 ...brand,
                 key: brand.key || brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
               })
-              setBrand({ name: '', key: '', color: '#3377ff' })
+              setBrand({ name: '', key: '', color: STANDAARD_MERKKLEUR })
               toast.success(t('inst.merk.toegevoegd'))
             } catch (err) {
               toast.error(err.message)
@@ -268,9 +258,7 @@ export function BrandSettings() {
             onChange={(e) => setBrand((b) => ({ ...b, name: e.target.value }))}
             placeholder={t('inst.merk.nieuw')}
           />
-          <Button type="submit" variant="primary" size="sm" disabled={!brand.name.trim()}>
-            {t('alg.toevoegen')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('alg.toevoegen'), type: 'submit', uit: !brand.name.trim() }} />
         </form>
       </section>
 
@@ -298,16 +286,13 @@ export function BrandSettings() {
                     {t('inst.label.samenvoegen')}
                   </button>
                 ) : null}
-                <ConfirmButton
-                  variant="ghost"
+                <GevaarKnop
+                  icon="x"
                   size="sm"
-                  className="h-5 w-5 p-0 text-ink-400"
-                  question={t('inst.label.verwijder_vraag', { naam: label.name })}
+                  vraag={t('inst.label.verwijder_vraag', { naam: label.name })}
                   onConfirm={() => deleteTag(label.id)}
                   aria-label={t('inst.label.verwijderen')}
-                >
-                  ✕
-                </ConfirmButton>
+                />
               </span>
             </li>
           ))}
@@ -335,7 +320,7 @@ export function BrandSettings() {
             e.preventDefault()
             try {
               await upsertTag(tag)
-              setTag({ name: '', color: '#8593a9' })
+              setTag({ name: '', color: STANDAARD_KLEUR })
             } catch (err) {
               toast.error(err.message)
             }
@@ -354,9 +339,7 @@ export function BrandSettings() {
             onChange={(e) => setTag((vorig) => ({ ...vorig, name: e.target.value }))}
             placeholder={t('inst.label.nieuw')}
           />
-          <Button type="submit" variant="primary" size="sm" disabled={!tag.name.trim()}>
-            {t('alg.toevoegen')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('alg.toevoegen'), type: 'submit', uit: !tag.name.trim() }} />
         </form>
       </section>
     </div>
@@ -403,20 +386,16 @@ function SamenvoegDialoog({ bron, tags, onKlaar, onGelukt, onFout }) {
   }
 
   return (
-    <Modal
+    <Dialog
       open
       onClose={onKlaar}
       title={t('inst.label.samenvoeg_titel', { naam: bron.name })}
-      width="max-w-sm"
+      width={384}
       footer={
-        <>
-          <Button variant="ghost" onClick={onKlaar}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" onClick={voerUit} disabled={!doel || bezig}>
-            {bezig ? <Spinner className="h-3 w-3" /> : null} {t('inst.label.samenvoegen_knop')}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onKlaar }}
+          hoofd={{ label: t('inst.label.samenvoegen_knop'), onClick: voerUit, bezig, uit: !doel }}
+        />
       }
     >
       <div className="grid gap-4">
@@ -437,6 +416,6 @@ function SamenvoegDialoog({ bron, tags, onKlaar, onGelukt, onFout }) {
               : t('inst.label.taken', { aantal, van: bron.name, naar: doel?.name ?? '' })}
         </p>
       </div>
-    </Modal>
+    </Dialog>
   )
 }

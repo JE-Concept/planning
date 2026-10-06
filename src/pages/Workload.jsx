@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addDays, dayKey, startOfWeek } from '@lib/dates'
 import { periodKeys } from '@lib/time-math'
-import { Avatar, Bar, EmptyState, IconButton } from '@components/ds'
+import { Avatar, Bar, EmptyState, PeriodeKiezer } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { hours, shortDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
@@ -73,11 +73,11 @@ export default function Workload() {
       <PageHeader
         eyebrow={t('tasks.werklast.week', { week: Number(weekNo), reeks: range })}
         title={t('nav.werklast')}
-        actions={
-          <>
-            <IconButton icon="chevron-left" label={t('tasks.werklast.vorige')} variant="outline" size="sm" onClick={() => setOffset((o) => o - 1)} />
-            <IconButton icon="chevron-right" label={t('tasks.werklast.volgende')} variant="outline" size="sm" onClick={() => setOffset((o) => o + 1)} />
-          </>
+        bediening={
+          <PeriodeKiezer
+            vorige={{ label: t('tasks.werklast.vorige'), onClick: () => setOffset((o) => o - 1) }}
+            volgende={{ label: t('tasks.werklast.volgende'), onClick: () => setOffset((o) => o + 1) }}
+          />
         }
       />
       <div className="je-pagebody">

@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
-import { Button, Spinner } from '@ui/index'
-import { Icon } from '@components/ds'
+import { bevestig, Button, Icon, Spinner } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import {
@@ -140,7 +139,7 @@ export default function Documents({ customerId = null, taskId = null, titel = nu
                 size="sm"
                 className="shrink-0 text-ink-400"
                 onClick={() => {
-                  if (window.confirm(t('events.doc.weg_vraag', { naam: document.name }))) {
+                  if (bevestig(t('events.doc.weg_vraag', { naam: document.name }))) {
                     deleteDocument(document).catch((err) => toast.error(err.message))
                   }
                 }}

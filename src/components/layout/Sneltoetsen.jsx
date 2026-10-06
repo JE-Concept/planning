@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Icon } from '@components/ds'
-import { Modal } from '@ui/index'
+import { Dialog, Icon } from '@components/ds'
 import { useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -90,7 +89,7 @@ export default function Sneltoetsen({ hulpOpen, setHulpOpen }) {
   }, [navigate, setHulpOpen, setChatOpen, chatOpen, isStaff])
 
   return (
-    <Modal open={hulpOpen} onClose={() => setHulpOpen(false)} title={t('menu.sneltoetsen')} width="max-w-md">
+    <Dialog open={hulpOpen} onClose={() => setHulpOpen(false)} title={t('menu.sneltoetsen')} width={448}>
       <ul className="je-sneltoetsen">
         {toetsen.map((toets) => (
           <li key={toets.toets}>
@@ -103,6 +102,6 @@ export default function Sneltoetsen({ hulpOpen, setHulpOpen }) {
         <Icon name="info" size={14} />
         {t('inst.sneltoets.uitleg')}
       </p>
-    </Modal>
+    </Dialog>
   )
 }

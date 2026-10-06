@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Button, Icon, Logotype } from '@components/ds'
+import { Acties, Button, Icon, Logotype, Spinner } from '@components/ds'
 import CodeAanmelden from '@components/ploeg/CodeAanmelden'
-import { Spinner } from '@ui/index'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 
@@ -102,9 +101,7 @@ export default function Login() {
 
         {state === 'signed-out' && !metCode ? (
           <>
-            <Button size="lg" block iconLeft="log-in" onClick={signIn}>
-              {t('login.met_google')}
-            </Button>
+            <Acties plaats="stapel" hoofd={{ label: t('login.met_google'), size: 'lg', icon: 'log-in', onClick: signIn }} />
             {error ? <Notice>{error}</Notice> : null}
             <p style={{ margin: 0, font: 'var(--type-caption)', fontWeight: 400, color: 'var(--slate-500)', textAlign: 'center' }}>
               {t('login.enkel_voor')}
@@ -127,12 +124,11 @@ export default function Login() {
             <Notice>
               {t('login.vastgelopen')}
             </Notice>
-            <Button size="lg" block onClick={herstelZonderCache}>
-              {t('schil.opnieuw_beginnen')}
-            </Button>
-            <Button variant="ghost" size="md" block onClick={logOut}>
-              {t('schil.afmelden')}
-            </Button>
+            <Acties
+              plaats="stapel"
+              terug={{ label: t('schil.afmelden'), onClick: logOut }}
+              hoofd={{ label: t('schil.opnieuw_beginnen'), size: 'lg', onClick: herstelZonderCache }}
+            />
           </>
         ) : null}
 

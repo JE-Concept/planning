@@ -6,8 +6,7 @@ import { formatDuration } from '@lib/format'
 import { indexOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import { useNieuweVersie } from '@lib/useNieuweVersie'
-import { Button, Icon, IconButton, Logotype } from '@components/ds'
-import { Spinner } from '@ui/index'
+import { Acties, Button, Icon, IconButton, Logotype, Schakelknop, Spinner } from '@components/ds'
 import { AssistantProvider, useAssistant } from '@context/AssistantProvider'
 import { useAuth } from '@context/AuthProvider'
 import { OfflineProvider } from '@context/OfflineProvider'
@@ -167,9 +166,9 @@ function Shell({ children }) {
               {narrow ? (
                 <IconButton icon="sparkles" label={t('schil.assistent')} variant="outline" onClick={() => setOpen(!chatOpen)} />
               ) : (
-                <Button variant={chatOpen ? 'primary' : 'secondary'} size="sm" iconLeft="sparkles" onClick={() => setOpen(!chatOpen)}>
+                <Schakelknop aan={chatOpen} iconLeft="sparkles" onClick={() => setOpen(!chatOpen)}>
                   {t('schil.assistent')}
-                </Button>
+                </Schakelknop>
               )}
             </div>
           </div>
@@ -185,9 +184,7 @@ function Shell({ children }) {
                 <p style={{ marginTop: 8, font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
                   {t('schil.duurt_te_lang_tekst')}
                 </p>
-                <Button size="sm" style={{ marginTop: 16 }} onClick={herstelZonderCache}>
-                  {t('schil.opnieuw_beginnen')}
-                </Button>
+                <Acties plaats="leeg" className="mt-4" hoofd={{ label: t('schil.opnieuw_beginnen'), size: 'sm', onClick: herstelZonderCache }} />
               </div>
             </div>
           ) : loading ? (
@@ -201,9 +198,7 @@ function Shell({ children }) {
                 <p style={{ marginTop: 8, font: 'var(--type-body-sm)', color: 'var(--text-2)' }}>
                   {t('schil.laadt_niet_tekst', { fout: error.code ?? error.message })}
                 </p>
-                <Button size="sm" style={{ marginTop: 16 }} onClick={() => window.location.reload()}>
-                  {t('alg.herladen')}
-                </Button>
+                <Acties plaats="leeg" className="mt-4" hoofd={{ label: t('alg.herladen'), size: 'sm', onClick: () => window.location.reload() }} />
               </div>
             </div>
           ) : (

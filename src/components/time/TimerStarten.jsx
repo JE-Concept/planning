@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Dialog, Field, Input } from '@components/ds'
+import { Acties, Dialog, Field, Input } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { startTimer } from '@data/time'
@@ -46,14 +46,10 @@ export default function TimerStarten({ uid, onClose }) {
       title={t('timer.starten')}
       onClose={onClose}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" iconLeft="play" onClick={start} loading={bezig} disabled={!keuze}>
-            {t('timer.start')}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('timer.start'), icon: 'play', onClick: start, bezig, uit: !keuze }}
+        />
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>

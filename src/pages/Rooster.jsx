@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { addDays, dayKey, formatDate, formatWeekday, startOfWeek } from '@lib/dates'
 import { geplandTegenoverGeboekt, roosterVan, urenTekst } from '@lib/rooster'
-import { Icon } from '@components/ds'
-import { Button, EmptyState, Field, Input, Modal, Select, Spinner } from '@ui/index'
+import { Acties, Dialog, EmptyState, Field, Icon, Input, PeriodeKiezer, Select, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -98,24 +97,14 @@ export default function Rooster() {
         eyebrow={`${formatDate(rooster.dagen[0].datum)} — ${formatDate(rooster.dagen[6].datum)}`}
         title={t('nav.rooster')}
         subtitle={t('rooster.ingepland', { uren: urenTekst(rooster.minuten) })}
-        actions={
-          <>
-            <Button variant="secondary" size="sm" onClick={() => setMaandag(addDays(maandag, -7))} aria-label={t('rooster.vorige_week')}>
-              ‹
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMaandag(startOfWeek())}>
-              {t('rooster.deze_week')}
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMaandag(addDays(maandag, 7))} aria-label={t('rooster.volgende_week')}>
-              ›
-            </Button>
-            {isAdmin ? (
-              <Button variant="secondary" size="sm" onClick={kopieer} disabled={bezig}>
-                {t('rooster.kopieer')}
-              </Button>
-            ) : null}
-          </>
+        bediening={
+          <PeriodeKiezer
+            vorige={{ label: t('rooster.vorige_week'), onClick: () => setMaandag(addDays(maandag, -7)) }}
+            nu={{ label: t('rooster.deze_week'), onClick: () => setMaandag(startOfWeek()) }}
+            volgende={{ label: t('rooster.volgende_week'), onClick: () => setMaandag(addDays(maandag, 7)) }}
+          />
         }
+        acties={isAdmin ? { tweede: { label: t('rooster.kopieer'), size: 'sm', onClick: kopieer, bezig } } : null}
       />
 
       {rooster.botsingen.length ? (
@@ -316,25 +305,21 @@ function DienstDialoog({ dienst, mensen, brands, onKlaar, onFout }) {
   const geldig = /^\d{1,2}:\d{2}$/.test(f.start) && /^\d{1,2}:\d{2}$/.test(f.end)
 
   return (
-    <Modal
+    <Dialog
       open
       onClose={onKlaar}
       title={dienst.id ? t('rooster.dienst_aanpassen') : t('rooster.dienst_toevoegen')}
-      width="max-w-md"
+      width={448}
       footer={
-        <>
-          {dienst.id ? (
-            <Button variant="ghost" onClick={weg} disabled={bezig}>
-              {t('rooster.weghalen')}
-            </Button>
-          ) : null}
-          <Button variant="ghost" onClick={onKlaar}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" onClick={bewaar} disabled={!geldig || bezig}>
-            {bezig ? <Spinner className="h-3 w-3" /> : null} {t('alg.opslaan')}
-          </Button>
-        </>
+        <Acties
+          gevaar={
+            dienst.id
+              ? { label: t('rooster.weghalen'), vraag: t('rooster.weghalen_vraag'), onConfirm: weg, uit: bezig }
+              : null
+          }
+          terug={{ onClick: onKlaar }}
+          hoofd={{ label: t('alg.opslaan'), onClick: bewaar, bezig, uit: !geldig }}
+        />
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
@@ -370,6 +355,6 @@ function DienstDialoog({ dienst, mensen, brands, onKlaar, onFout }) {
           <Input value={f.note} onChange={zet('note')} placeholder={t('rooster.notitie_hint')} />
         </Field>
       </div>
-    </Modal>
+    </Dialog>
   )
 }

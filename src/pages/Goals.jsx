@@ -2,21 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@lib/cn'
 import { daysUntil, formatDate, fromDateInput, toDateInput } from '@lib/dates'
 import { formatCurrency, formatNumber } from '@lib/format'
-import {
-  Avatar,
-  AvatarStack,
-  Badge,
-  Button,
-  ConfirmButton,
-  EmptyState,
-  Field,
-  Input,
-  Modal,
-  ProgressBar,
-  Select,
-  Spinner,
-  Textarea,
-} from '@ui/index'
+import { Acties, Avatar, AvatarStack, Badge, Button, Dialog, EmptyState, Field, Input, ProgressBar, Select, Spinner, Textarea } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
@@ -93,24 +79,20 @@ export default function Goals() {
       <PageHeader
         title="Goals"
         subtitle={t('goals.lopend', { aantal: goals.filter((g) => g.status === 'active').length })}
-        actions={
-          <>
-            <Select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="w-auto"
-              aria-label={t('goals.filter')}
-            >
-              <option value="active">{t('goals.status.active')}</option>
-              <option value="achieved">{t('goals.status.achieved')}</option>
-              <option value="draft">{t('goals.status.draft')}</option>
-              <option value="all">{t('alg.alles')}</option>
-            </Select>
-            <Button variant="primary" onClick={() => setCreating(true)}>
-              {t('goals.nieuw')}
-            </Button>
-          </>
+        bediening={
+          <Select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-auto"
+            aria-label={t('goals.filter')}
+          >
+            <option value="active">{t('goals.status.active')}</option>
+            <option value="achieved">{t('goals.status.achieved')}</option>
+            <option value="draft">{t('goals.status.draft')}</option>
+            <option value="all">{t('alg.alles')}</option>
+          </Select>
         }
+        acties={{ hoofd: { label: t('goals.nieuw'), icon: 'plus', onClick: () => setCreating(true) } }}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
@@ -122,11 +104,7 @@ export default function Goals() {
           <EmptyState
             title={t('goals.leeg.titel')}
             description={t('goals.leeg.tekst')}
-            action={
-              <Button variant="primary" onClick={() => setCreating(true)}>
-                {t('goals.leeg.knop')}
-              </Button>
-            }
+            actie={{ label: t('goals.leeg.knop'), onClick: () => setCreating(true) }}
           />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -181,7 +159,7 @@ function GoalCard({ goal, owner, onEdit, onCheckIn, profileById }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge color={goal.status === 'achieved' ? '#008844' : '#8593a9'} subtle>
+            <Badge tone={goal.status === 'achieved' ? 'success' : 'neutral'}>
               {t(STATUS_SLEUTELS[goal.status])}
             </Badge>
           </div>
@@ -289,9 +267,7 @@ function KeyResultRow({ kr, onCheckIn }) {
             className="h-8 flex-1 text-xs"
             aria-label={t('goals.notitie')}
           />
-          <Button type="submit" variant="primary" size="sm" disabled={!bruikbaar}>
-            {t('bord.opslaan')}
-          </Button>
+          <Acties plaats="rij" hoofd={{ label: t('bord.opslaan'), type: 'submit', uit: !bruikbaar }} />
         </form>
       ) : (
         <div className="mt-1 flex gap-3">
@@ -416,31 +392,26 @@ function GoalModal({ goal, profiles, uid, onClose }) {
   }
 
   return (
-    <Modal
+    <Dialog
       open
       onClose={onClose}
-      width="max-w-2xl"
+      width={672}
       title={t(goal ? 'goals.bewerk_titel' : 'goals.nieuw_titel')}
       footer={
-        <>
-          {goal ? (
-            <ConfirmButton
-              variant="danger"
-              size="sm"
-              className="mr-auto"
-              question={t('goals.verwijder_vraag')}
-              onConfirm={() => deleteGoal(goal.id).then(onClose)}
-            >
-              {t('alg.verwijderen')}
-            </ConfirmButton>
-          ) : null}
-          <Button variant="ghost" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" onClick={submit} disabled={!name.trim() || saving}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} {t('bord.opslaan')}
-          </Button>
-        </>
+        <Acties
+          gevaar={
+            goal
+              ? {
+                  label: t('alg.verwijderen'),
+                  size: 'sm',
+                  vraag: t('goals.verwijder_vraag'),
+                  onConfirm: () => deleteGoal(goal.id).then(onClose),
+                }
+              : null
+          }
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('bord.opslaan'), onClick: submit, bezig: saving, uit: !name.trim() }}
+        />
       }
     >
       <form onSubmit={submit} className="space-y-4">
@@ -588,7 +559,7 @@ function GoalModal({ goal, profiles, uid, onClose }) {
           </Button>
         </section>
       </form>
-    </Modal>
+    </Dialog>
   )
 }
 

@@ -12,8 +12,7 @@ import {
   setPrimaryContact,
   vatHint,
 } from '@lib/klanten'
-import { Badge, Button, ConfirmButton, Drawer, Field, Input, Select, Spinner, Textarea } from '@ui/index'
-import { Checkbox } from '@components/ds'
+import { Acties, Badge, Button, Checkbox, Drawer, Field, GevaarKnop, Input, Select, Spinner, Textarea } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import Documents from '@components/common/Documents'
 import TaskDrawer from '@components/board/TaskDrawer'
@@ -33,6 +32,7 @@ import {
   useCustomers,
   useCustomerTasks,
 } from '@data/customers'
+import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /**
  * Klanten.
@@ -94,22 +94,18 @@ export default function Customers() {
       <PageHeader
         title={t('nav.klanten')}
         subtitle={t('klant.actief', { aantal: customers.filter((c) => !c.archived).length })}
-        actions={
-          <>
-            {/* De tekst in het veld paste niet in het veld: hij liep dood op
-                "contactperso…". Korter erin, volledig in het label. */}
-            <Input
-              value={zoek}
-              onChange={(e) => setZoek(e.target.value)}
-              placeholder={t('klant.zoek_hint')}
-              className="je-zoekveld h-8 text-sm"
-              aria-label={t('klant.zoek_label')}
-            />
-            <Button variant="primary" size="sm" onClick={maak} disabled={nieuw}>
-              {t('klant.nieuw')}
-            </Button>
-          </>
+        bediening={
+          /* De tekst in het veld paste niet in het veld: hij liep dood op
+             "contactperso…". Korter erin, volledig in het label. */
+          <Input
+            value={zoek}
+            onChange={(e) => setZoek(e.target.value)}
+            placeholder={t('klant.zoek_hint')}
+            className="je-zoekveld h-8 text-sm"
+            aria-label={t('klant.zoek_label')}
+          />
         }
+        acties={{ hoofd: { label: t('klant.nieuw'), icon: 'plus', onClick: maak, uit: nieuw } }}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
@@ -135,7 +131,7 @@ export default function Customers() {
                       {klant.name}
                     </span>
                     {klant.archived ? (
-                      <Badge color="#8593a9" subtle>
+                      <Badge>
                         {t('klant.uit')}
                       </Badge>
                     ) : klant.brandId && brandById[klant.brandId] ? (
@@ -266,36 +262,29 @@ function KlantPaneel({ id, onClose, toast }) {
         .filter(Boolean)
         .join(' · ')}
       footer={
-        <>
-          {klant.archived ? (
-            <Button variant="ghost" size="sm" onClick={() => restoreCustomer(id)}>
-              {t('klant.terughalen')}
-            </Button>
-          ) : (
-            <ConfirmButton
-              variant="ghost"
-              size="sm"
-              className="text-ink-400"
-              question={t('klant.uit_gebruik_vraag')}
-              onConfirm={() => archiveCustomer(id)}
-            >
-              {t('klant.uit_gebruik')}
-            </ConfirmButton>
-          )}
-          {tasks.length === 0 ? (
-            <ConfirmButton
-              variant="ghost"
-              size="sm"
-              className="text-red-700"
-              question={t('klant.weg_vraag')}
-              onConfirm={() => deleteCustomer(id).then(onClose)}
-            >
-              {t('alg.verwijderen')}
-            </ConfirmButton>
-          ) : (
-            <span className="text-xs text-ink-400">{t('klant.niet_weg', { aantal: tasks.length })}</span>
-          )}
-        </>
+        <Acties
+          gevaar={
+            tasks.length === 0
+              ? {
+                  label: t('alg.verwijderen'),
+                  size: 'sm',
+                  vraag: t('klant.weg_vraag'),
+                  onConfirm: () => deleteCustomer(id).then(onClose),
+                }
+              : null
+          }
+          uitleg={tasks.length === 0 ? null : t('klant.niet_weg', { aantal: tasks.length })}
+          tweede={
+            klant.archived
+              ? { label: t('klant.terughalen'), size: 'sm', onClick: () => restoreCustomer(id) }
+              : {
+                  label: t('klant.uit_gebruik'),
+                  size: 'sm',
+                  vraag: t('klant.uit_gebruik_vraag'),
+                  onClick: () => archiveCustomer(id),
+                }
+          }
+        />
       }
     >
       <div className="space-y-5 px-5 py-4">
@@ -513,17 +502,15 @@ function KlantPaneel({ id, onClose, toast }) {
                       })
                     }
                   />
-                  <ConfirmButton
-                    variant="ghost"
+                  <GevaarKnop
+                    label={t('klant.contact_weg')}
                     size="sm"
-                    className="ml-auto text-ink-400"
-                    question={t('klant.contact_weg_vraag')}
+                    className="ml-auto"
+                    vraag={t('klant.contact_weg_vraag')}
                     onConfirm={() =>
                       zet({ contacts: (klant.contacts ?? []).filter((c) => c.id !== contact.id) })
                     }
-                  >
-                    {t('klant.contact_weg')}
-                  </ConfirmButton>
+                  />
                 </div>
               </li>
             ))}
@@ -575,7 +562,7 @@ function KlantPaneel({ id, onClose, toast }) {
                       {ev.title}
                     </button>
                     {ev.statusName ? (
-                      <Badge color={ev.statusColor ?? '#8593a9'} subtle>
+                      <Badge color={ev.statusColor ?? STANDAARD_KLEUR} subtle>
                         {labelOf(ev.statusName, eventsList?.statuses ?? [])}
                       </Badge>
                     ) : null}

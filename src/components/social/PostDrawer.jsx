@@ -2,17 +2,7 @@ import { useState } from 'react'
 import { formatDateTime, fromLocalInput, toLocalInput } from '@lib/dates'
 import { CHANNELS, channelMeta, hoofdKanaal } from '@lib/social-channels'
 import { heeftEigenPublicatiedatum, publicatieMoment } from '@lib/social-planning'
-import {
-  Avatar,
-  Badge,
-  Button,
-  ConfirmButton,
-  Drawer,
-  Field,
-  Input,
-  Select,
-  Textarea,
-} from '@ui/index'
+import { Acties, Avatar, Badge, Drawer, Field, GevaarKnop, Input, Select, Textarea } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
@@ -56,25 +46,23 @@ export default function PostDrawer({ postId, onClose }) {
           : undefined
       }
       footer={
-        <>
-          <span className="text-xs text-ink-400">
-            {post.publishedUrl ? (
+        <Acties
+          uitleg={
+            post.publishedUrl ? (
               <a href={post.publishedUrl} target="_blank" rel="noreferrer" className="underline">
                 {t('social.post.bekijk_publicatie')}
               </a>
             ) : (
               t('social.post.niet_gepubliceerd')
-            )}
-          </span>
-          <ConfirmButton
-            variant="danger"
-            size="sm"
-            question={t('social.post.verwijder_vraag')}
-            onConfirm={() => deletePost(post.id).then(onClose)}
-          >
-            {t('alg.verwijderen')}
-          </ConfirmButton>
-        </>
+            )
+          }
+          gevaar={{
+            label: t('alg.verwijderen'),
+            size: 'sm',
+            vraag: t('social.post.verwijder_vraag'),
+            onConfirm: () => deletePost(post.id).then(onClose),
+          }}
+        />
       }
     >
       <div className="space-y-6 px-5 py-4">
@@ -272,16 +260,14 @@ function PostComments({ postId, profile }) {
               <strong className="text-ink-800">{c.authorName}</strong>
               <span>{formatDateTime(c.createdAt)}</span>
               {c.authorId === profile?.id ? (
-                <ConfirmButton
-                  variant="ghost"
+                <GevaarKnop
+                  icon="x"
                   size="sm"
-                  className="ml-auto h-5 w-5 p-0"
-                  question={t('social.feedback.verwijder_vraag')}
+                  className="ml-auto"
+                  vraag={t('social.feedback.verwijder_vraag')}
                   onConfirm={() => deleteComment(c)}
                   aria-label={t('social.feedback.verwijderen')}
-                >
-                  ✕
-                </ConfirmButton>
+                />
               ) : null}
             </div>
             <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">{c.body}</p>
@@ -291,9 +277,7 @@ function PostComments({ postId, profile }) {
 
       <form onSubmit={submit} className="mt-2 flex gap-2">
         <Input value={body} onChange={(e) => setBody(e.target.value)} placeholder={t('social.feedback.plaatshouder')} />
-        <Button type="submit" variant="primary" disabled={!body.trim()}>
-          {t('social.feedback.plaatsen')}
-        </Button>
+        <Acties plaats="rij" hoofd={{ label: t('social.feedback.plaatsen'), type: 'submit', uit: !body.trim() }} />
       </form>
     </section>
   )

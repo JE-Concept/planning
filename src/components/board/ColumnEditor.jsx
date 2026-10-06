@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Badge, Button, Input, Modal, Select, Spinner } from '@ui/index'
+import { Acties, Badge, Button, Dialog, Input, Select } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { saveStatuses } from '@data/workspace'
@@ -101,20 +101,16 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
   }
 
   return (
-    <Modal
+    <Dialog
       open
       onClose={onClose}
-      width="max-w-2xl"
+      width={672}
       title={t('bord.kolommen_van', { lijst: list.name })}
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            {t('alg.annuleren')}
-          </Button>
-          <Button variant="primary" onClick={save} disabled={saving || onbestemd.length > 0}>
-            {saving ? <Spinner className="h-3 w-3" /> : null} {t('bord.opslaan')}
-          </Button>
-        </>
+        <Acties
+          terug={{ onClick: onClose }}
+          hoofd={{ label: t('bord.opslaan'), onClick: save, bezig: saving, uit: onbestemd.length > 0 }}
+        />
       }
     >
       <ul className="space-y-2">
@@ -250,6 +246,6 @@ export default function ColumnEditor({ list, statuses, counts = {}, onClose }) {
           gesloten: t('bord.soort.closed'),
         })}
       </p>
-    </Modal>
+    </Dialog>
   )
 }
