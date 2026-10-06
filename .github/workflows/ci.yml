@@ -10,17 +10,17 @@ on:
 jobs:
   check:
     name: Lint, test, build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       # De Firestore-emulator draait op Java. Die staat op de runner, maar
       # niet altijd in een versie die de emulator aanvaardt; vastzetten scheelt
       # een test die op een dinsdag ineens niet meer start.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -80,17 +80,17 @@ jobs:
     name: Deploy to Firebase
     needs: check
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The `secrets` context cannot be read in a step-level `if`, so the presence
     # of the key travels through `env` instead. Without it, CI still runs green
     # and simply skips the deploy.
     env:
       HAS_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Build
@@ -153,7 +153,7 @@ jobs:
           printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
           # De hosting-target staat in .firebaserc op de oorspronkelijke
           # projectnaam; hier hangen we hem aan het project dat echt draait.
-          npx --yes firebase-tools@13 target:apply hosting app "$FIREBASE_PROJECT" \
+          npx --yes firebase-tools@15 target:apply hosting app "$FIREBASE_PROJECT" \
             --project "$FIREBASE_PROJECT" --non-interactive
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only firestore:rules,firestore:indexes,storage
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions:default
@@ -291,7 +291,7 @@ jobs:
           # De verhuursite: eerst proberen de site aan te maken (doet niets als
           # ze er al is), dan uitrollen. Mislukt het, dan staat de backoffice
           # wél live en zegt de uitrol wat eraan scheelt.
-          npx --yes firebase-tools@13 hosting:sites:create "$FIREBASE_PROJECT-verhuur" --project "$FIREBASE_PROJECT" >/dev/null 2>&1 \
+          npx --yes firebase-tools@15 hosting:sites:create "$FIREBASE_PROJECT-verhuur" --project "$FIREBASE_PROJECT" >/dev/null 2>&1 \
             || echo "::notice::Site $FIREBASE_PROJECT-verhuur niet aangemaakt (bestaat al, of de sleutel mag het niet)."
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting:verhuur \
             || echo "::warning::De verhuursite is niet uitgerold — bestaat de site $FIREBASE_PROJECT-verhuur in Firebase Hosting? De backoffice staat wel live."

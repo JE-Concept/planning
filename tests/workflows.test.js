@@ -63,4 +63,23 @@ describe('de workflows', () => {
       expect(src.slice(bouw, uitrol), `${naam}: de bouw zit in een andere job dan de uitrol`).not.toMatch(/\n {2}[a-z-]+:\n/)
     }
   })
+
+  it('gebruiken geen verouderde Actions en een vaste runner', () => {
+    // GitHub schakelde Node 20 voor Actions uit (september 2025): checkout@v4,
+    // setup-node@v4 en setup-java@v4 draaiden daarna gedwongen op Node 24, met
+    // een waarschuwing in elke run. En `ubuntu-latest` schuift op 19 oktober 2026
+    // naar Ubuntu 26: een image dat onder je wegschuift, is een build die op een
+    // dag zonder commit rood kan worden. Vast is vast; overstappen is een commit.
+    const MINIMUM = { 'actions/checkout': 7, 'actions/setup-node': 7, 'actions/setup-java': 6 }
+    for (const naam of bestanden) {
+      const src = readFileSync(new URL(naam, MAP), 'utf8')
+      expect(src, `${naam} gebruikt nog ubuntu-latest`).not.toMatch(/runs-on:\s*ubuntu-latest/)
+      for (const [actie, versie] of Object.entries(MINIMUM)) {
+        for (const m of src.matchAll(new RegExp(`${actie}@v(\\d+)`, 'g'))) {
+          expect(Number(m[1]), `${naam}: ${actie}@v${m[1]} is verouderd`).toBeGreaterThanOrEqual(versie)
+        }
+      }
+      expect(src, `${naam}: firebase-tools ouder dan 15`).not.toMatch(/firebase-tools@1[0-4]\b/)
+    }
+  })
 })

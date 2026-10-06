@@ -5,7 +5,7 @@
   "type": "module",
   "description": "JE Plan — interne planningstool voor JE Concept (Kanban, social media kalender, timetracking, goals)",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "build": "vite build",
@@ -25,7 +25,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "offerte:voorbeeld": "npm run build:demo && node scripts/offerte-voorbeeld.mjs",
-    "test:rules": "npx --yes firebase-tools@13 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules.test.js\"",
+    "test:rules": "npx --yes firebase-tools@15 emulators:exec --only firestore --project je-planning-rules-test \"vitest run tests/rules.test.js\"",
     "build:verhuur": "vite build --config vite.verhuur.config.js",
     "dev:verhuur": "vite --config vite.verhuur.config.js",
     "smoke:verhuur": "npm run build:verhuur && node scripts/verhuur-smoke.mjs",

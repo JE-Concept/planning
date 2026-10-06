@@ -31,16 +31,16 @@ concurrency:
 jobs:
   live:
     name: Uitrollen naar ${{ inputs.project_id }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PROJECT: ${{ inputs.project_id }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
 
       # Beter hier stoppen met een leesbare zin dan verderop met een 401.
@@ -66,7 +66,7 @@ jobs:
       # naam van het oorspronkelijke project. Hier hangen we hem aan het project
       # dat echt gebruikt wordt, zodat een afwijkende project-ID gewoon werkt.
       - name: Koppel het hosting-target
-        run: npx --yes firebase-tools@13 target:apply hosting app "$PROJECT" --project "$PROJECT" --non-interactive
+        run: npx --yes firebase-tools@15 target:apply hosting app "$PROJECT" --project "$PROJECT" --non-interactive
 
       # De Firebase CLI vraagt het facturatieplan op voor ze functions uitrolt,
       # en die API staat op een vers project niet aan.
@@ -241,7 +241,7 @@ jobs:
           # rolt beide sites in één beweging uit, en als de tweede site nog niet
           # bestaat gaat daarmee óók de backoffice niet live. Zie ci.yml.
           scripts/ci/deploy.sh "$PROJECT" --only hosting:app
-          npx --yes firebase-tools@13 hosting:sites:create "$PROJECT-verhuur" --project "$PROJECT" >/dev/null 2>&1 \
+          npx --yes firebase-tools@15 hosting:sites:create "$PROJECT-verhuur" --project "$PROJECT" >/dev/null 2>&1 \
             || echo "::notice::Site $PROJECT-verhuur niet aangemaakt (bestaat al, of de sleutel mag het niet)."
           scripts/ci/deploy.sh "$PROJECT" --only hosting:verhuur \
             || echo "::warning::De verhuursite is niet uitgerold — bestaat de site $PROJECT-verhuur in Firebase Hosting? De backoffice staat wel live."

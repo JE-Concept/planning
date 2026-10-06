@@ -20,7 +20,7 @@ WACHT=90
 log=$(mktemp)
 
 for poging in $(seq 1 "$POGINGEN"); do
-  npx --yes firebase-tools@13 deploy --project "$PROJECT" --non-interactive "$@" 2>&1 | tee "$log"
+  npx --yes firebase-tools@15 deploy --project "$PROJECT" --non-interactive "$@" 2>&1 | tee "$log"
   status=${PIPESTATUS[0]}
   [ "$status" -eq 0 ] && exit 0
 

@@ -42,7 +42,7 @@ permissions:
 jobs:
   backup:
     name: PITR en weekexport
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Zonder sleutel kan er niets, en dan hoort de workflow groen te blijven in
     # plaats van elke maandag een rood kruisje te sturen dat niemand meer leest.
     env:
