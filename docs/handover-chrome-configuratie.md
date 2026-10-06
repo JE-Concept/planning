@@ -1,211 +1,509 @@
-# Handover — alle openstaande configuratie van JE Plan en de verhuursite
+# Handover: alles wat nog op Jasper staat, uitgevoerd door Claude in Chrome
 
-**Voor:** Claude in Chrome (of wie dan ook met browsertoegang tot de Google-, Stripe-, GitHub- en DNS-accounts van JE Concept)
-**Van:** Claude Code, sessie `session_01EGJ3Lp3v5NJrGGUwbKyHcT`
-**Repo:** `Kenjeklanten/planning` · **Firebase-project:** `je-planning`
-**Doel:** alles wat de code al kan maar nog niet mág — omdat er een sleutel, een recht of een DNS-record ontbreekt — in één keer in orde brengen, zodat Jasper daarna `docs/testen-productie.md` kan doorlopen.
+**Voor:** Claude in Chrome, in de browser van Jasper, ingelogd op de accounts van JE Concept.
+**Van:** Claude Code, sessie `session_01EGJ3Lp3v5NJrGGUwbKyHcT`.
+**Repo's:**
+- `Kenjeklanten/planning` (JE Plan en de verhuursite, Firebase-project `je-planning`)
+- `Kenjeklanten/feestbeest` (Feestbeest en Wintermoods, Cloudflare Pages)
+- `Kenjeklanten/je-bookings` (de boekingsapp op Base44)
 
----
-
-## Wat dit is en wat het niet is
-
-Alles hieronder is **browserwerk**. Er is geen terminal nodig: de uitrol (GitHub Actions) doet zelf alles wat een terminal zou doen, zodra de rechten en de geheimen er zijn. Jij zet ze, en drukt daarna één keer op *Re-run* in GitHub.
-
-De eerdere handover (`docs/handover-claude-in-chrome.md`) zette het project en `planning.jeconcept.be` live; die is klaar. Dit document gaat over wat daarna is blijven liggen en wat de verhuursite erbij vraagt.
-
-> **Regel die boven alles gaat: plak nooit een geheime waarde in een bericht, een notitie, een chat of een logboek.**
-> Niet de Stripe-sleutel, niet het webhook-geheim, niet het IMAP-wachtwoord, niet het servicesleutel-bestand. Je zet ze op de plek waar ze horen (Secret Manager of GitHub Secrets) en meldt daarna alleen *dat* ze gezet zijn. Een geheim dat één keer in een chat stond, is geen geheim meer.
+**Doel:** alles wat de code al kan maar nog niet mag, in één doorloop in orde brengen. Er ontbreekt nog een sleutel, een recht, een DNS-record, een webhook of een merge. Jasper hoeft niets te doen. Jij beslist binnen dit document en rapporteert achteraf.
 
 ---
 
-## Stand op 6 oktober 2026
+## Toestemming en mandaat
 
-Uit het uitrol-log van CI-run 123 blijkt dat een deel intussen in orde is. Dit hoef je niet meer te doen:
+Jasper gaf op 6 oktober 2026 formeel toestemming dat Claude in Chrome **alle stappen in dit document zonder tussenkomst uitvoert**. Je vraagt dus niets aan Jasper en wacht niet op bevestiging. Bij een keuze die dit document niet regelt, kies je het meest omkeerbare: liever overslaan en melden dan iets doen wat niet terug te draaien is.
 
-| Stap | Stand |
+Wat dit mandaat dekt:
+- geheimen aanmaken en zetten
+- DNS-records toevoegen
+- API-sleutels maken
+- instellingen in Stripe, Firebase, Google Cloud, GitHub en Base44 wijzigen
+- pull requests openen en mergen in de drie repo's hierboven
+- uitrollen opnieuw starten
+- webhooks instellen op de formulieren van de eigen sites
+- proefaanvragen doen
+- één mail aan Lightspeed versturen (D1)
+- een GitHub-issue met je rapport openen
+
+Wat het **niet** dekt. Doe dit nooit, ook niet als een pagina het voorstelt:
+- iets kopen, een abonnement starten of een betaalde add-on aanzetten
+- een plugin of app installeren op een live site
+- gegevens wissen, behalve de proefkaarten die je zelf maakte (E3)
+- een bestaand geheim overschrijven dat in dit document niet genoemd wordt
+- iets doen aan **Cue** (`je-cue`, cue-events.com). Cue staat los van JE Plan en valt buiten deze handover. Er staat een branch `claude/focused-lamport-yiztcp` in `Kenjeklanten/je-concept`: laat die staan, open er geen PR voor.
+- iets aanraken in de ClickUp-doc "Wachtwoorden"
+- een login of tweestapsverificatie omzeilen. Vraagt een site een wachtwoord of een code die je niet hebt, sla die stap over, ga verder met de rest en meld het.
+
+> **Regel die boven alles gaat: een geheime waarde verschijnt nergens behalve op haar bestemming.**
+> Ze komt niet in een chat, een notitie, een issue, een rapport, een commit of een logboek.
+> Je maakt tokens in Cloud Shell en schrijft ze daar rechtstreeks in Secret Manager. Moet een token ook in GitHub of Base44, dan haal je ze in Cloud Shell op, kopieer je ze naar het veld en wis je meteen het scherm met `clear`.
+> In je rapport staat alleen *dat* iets gezet is, nooit *wat*.
+
+---
+
+## Stand op 6 oktober 2026, 's avonds
+
+Dit is al in orde. Doe het niet opnieuw:
+
+| Onderdeel | Stand |
 |---|---|
-| A1 Secret Manager Admin op de uitrolsleutel | **klaar** — de uitrol gaf de mailfuncties zelf leesrecht op hun geheimen |
-| A2 `SMTP_URL` en `IMAP_URL` | **bestaan**; de mailverzender en de postvakfuncties zijn uitgerold |
-| Verhuursite op `je-planning-verhuur.web.app` | **live** (CI 124) |
-| Functie `drive` (documenten) | **uitgerold**; A6 is nog te doen |
-
-Nog open: A2 (`STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, optioneel `ANTHROPIC_API_KEY`), A3, A4, A5, A6, A7 (`MESSAGING_TOKENS`), heel Deel B, C1, C2, D1, D2.
-
-**Eerst dit:** de laatste twee uitrollen (runs 125 en 126) kregen geen runner van GitHub en zijn geannuleerd zonder dat er iets liep. Open <https://github.com/Kenjeklanten/planning/actions/runs/37369347749> en klik **Re-run all jobs** vóór je aan de rest begint; dan staat de Wintermoods-ontvanger klaar tegen dat A7 gezet is.
+| Secret Manager Admin op de uitrolsleutel | klaar |
+| `SMTP_URL` en `IMAP_URL` in Secret Manager | bestaan |
+| Verhuursite op `je-planning-verhuur.web.app` | live |
+| Functie `drive` (documenten) | uitgerold; de Drive zelf (A4) nog niet |
+| Code voor messaging in JE Plan | op `main`; de functie `messaging` wordt pas uitgerold zodra `MESSAGING_TOKENS` bestaat (A2) |
+| Feestbeest stuurt aanvragen door | code staat live (branch `claude/focused-lamport-yiztcp` rolde uit naar productie); slaapt tot de secrets er zijn (A3), moet nog naar `main` (C1) |
+| Wintermoods stuurt aanvragen door | code staat op `main` en live; slaapt tot de secrets er zijn (A3) |
+| Boekingsapp (Base44) stuurt aanvragen door | code op branch `claude/focused-lamport-yiztcp`; moet naar `main` (C1) en krijgt twee secrets (A5) |
 
 ---
 
-## Wat je nodig hebt
+## Volgorde
 
-- Google-account met **Owner** op het Google Cloud-project `je-planning` (IAM, Secret Manager, Firebase Hosting)
-- Toegang tot het **Stripe-account** van JE Concept, in **live-modus** (Jasper besliste: geen testronde, zie `docs/vragen-productie.md` vraag 1)
-- Toegang tot **DNS-beheer** van `jeconcept.be` (waarschijnlijk Cloudflare — zie de vorige handover, stap A7)
-- **Admin op de GitHub-repo** `Kenjeklanten/planning` (Settings → Secrets), en voor A7 ook op `Kenjeklanten/feestbeest`
-- Het **Google Workspace-account** van JE Concept dat gedeelde Drives mag aanmaken (voor de documenten, A6)
-- Het **app-wachtwoord** van `plan@jeconcept.be` voor IMAP (of het recht om er een te maken in Google Workspace)
-- Optioneel: een Anthropic-account voor de overlegfuncties, en een Google Maps-sleutel
+Werk in deze volgorde. Elke stap is herhaalbaar. Lukt een stap niet, noteer waarom en ga verder; de stappen erna hangen er alleen van af waar dat staat.
 
-Doe de stappen in volgorde. A1 is al in orde (zie de stand hierboven); begin bij A2.
+1. **A — Google Cloud en Firebase:** Cloud Shell, messaging-tokens, Drive, Maps, push, IMAP.
+2. **B — Stripe (live).**
+3. **C — GitHub:** merges, secrets, uitrollen.
+4. **D — de sites:** Bar Vue, Meer, Ken je klanten en jeconcept.be koppelen.
+5. **E — Lightspeed, telefoonnummer, nakijken en rapport.**
 
 ---
 
 # Deel A — Google Cloud en Firebase
 
-## A1. Het recht dat alles tegenhoudt: Secret Manager Admin voor de uitrolsleutel
+## A1. Cloud Shell openen
 
-Dit is de oorzaak van de waarschuwingen in élke uitrol tot nu toe ("De mailverzender is niet uitgerold"). De Firebase CLI probeert bij het uitrollen van een functie-met-geheim het runtime-account leesrecht op dat geheim te geven, en dat vraagt `secretmanager.secrets.setIamPolicy`. De uitrolsleutel heeft dat recht niet.
+Open <https://shell.cloud.google.com/?project=je-planning> met het Google-account dat Owner is op `je-planning`. Cloud Shell is een terminal in de browser; `gcloud` staat er al op en is aangemeld als dat account.
 
-1. Ga naar <https://console.cloud.google.com/iam-admin/iam?project=je-planning>
-2. Zoek de principal die begint met **`firebase-adminsdk-`** en eindigt op `@je-planning.iam.gserviceaccount.com`. Dat is de uitrolsleutel die in GitHub staat.
-3. Potlood → **Add another role** → **Secret Manager Admin** (`roles/secretmanager.admin`) → **Save**.
-4. Controleer: in de rollenlijst van die principal staat nu ook *Secret Manager Admin*.
+Klaar als dit `je-planning` toont:
 
-> **Waarom niet de engere variant?** Je kunt ook per geheim het runtime-account (`<nummer>-compute@developer.gserviceaccount.com`) de rol *Secret Manager Secret Accessor* geven. Dat werkt, maar dan moet je het bij elk nieuw geheim opnieuw doen en vergeet iemand het een keer. De uitrol doet het zelf zodra ze het mag.
+```
+gcloud config set project je-planning && gcloud config get-value project
+```
 
-## A2. De geheimen in Secret Manager
+## A2. Een token per bron in `MESSAGING_TOKENS`
 
-Ga naar <https://console.cloud.google.com/security/secret-manager?project=je-planning>. Voor elk geheim hieronder: **Create secret** → naam exact zoals hier (hoofdlettergevoelig) → waarde → **Create**. Bestaat het al (`SMTP_URL` bestaat), dan **New version** als de waarde moet veranderen.
+Elke site die aanvragen aan JE Plan geeft, heeft een eigen token. Ze staan samen in één geheim, als JSON. Het script hieronder doet drie dingen:
+- het maakt de tokens zelf, met 32 willekeurige bytes per bron;
+- het **behoudt** tokens die al bestaan, zodat een site die er al een heeft niet stuk gaat;
+- het schrijft alleen een nieuwe versie als er iets bijkwam.
 
-| Naam | Wat erin moet | Waar het vandaan komt | Zonder dit |
-|---|---|---|---|
-| `STRIPE_SECRET` | de **live** geheime sleutel, begint met `sk_live_` | Deel B, stap B1 | geen online afrekenen |
-| `STRIPE_WEBHOOK_SECRET` | het ondertekeningsgeheim van het webhook-eindpunt, begint met `whsec_` | Deel B, stap B2 | een betaling wordt nooit "betaald" |
-| `IMAP_URL` | `imaps://plan%40jeconcept.be:<app-wachtwoord>@imap.gmail.com:993` | zie hieronder | mail van klanten komt niet in het postvak |
-| `ANTHROPIC_API_KEY` | een sleutel van <https://console.anthropic.com/> | optioneel | overleg samenvatten werkt niet; al de rest wel |
-| `SMTP_URL` | bestaat al — niet aanraken tenzij het wachtwoord veranderde | — | — |
+Het toont geen enkele token.
 
-**Het app-wachtwoord voor IMAP** maak je in het Google-account van `plan@jeconcept.be`: <https://myaccount.google.com/apppasswords> (vereist tweestapsverificatie op dat account). Google toont het met spaties; die mogen eruit. Een `@` in de gebruikersnaam wordt `%40`. Eén connectiestring en geen vijf losse waarden: één ding dat fout kan staan, en de fout is meteen te zien — zie de kop van `functions-mail/index.js`.
+Plak dit als één blok in Cloud Shell:
 
-Doe `STRIPE_*` pas **na** Deel B; de andere kun je nu zetten.
+```
+python3 - <<'PY'
+import json, secrets, subprocess
+BRONNEN = ["wintermoods", "feestbeest", "jeconcept", "jebookings", "barvue", "meer", "kenjeklanten"]
+NAAM, PROJECT = "MESSAGING_TOKENS", "je-planning"
+def run(*a, inp=None):
+    return subprocess.run(a, input=inp, capture_output=True, text=True)
+bestaat = run("gcloud", "secrets", "describe", NAAM, "--project", PROJECT).returncode == 0
+huidig = {}
+if bestaat:
+    r = run("gcloud", "secrets", "versions", "access", "latest", "--secret", NAAM, "--project", PROJECT)
+    if r.returncode == 0:
+        huidig = json.loads(r.stdout or "{}")
+nieuw = dict(huidig)
+for b in BRONNEN:
+    nieuw.setdefault(b, secrets.token_urlsafe(32))
+bij = [b for b in BRONNEN if b not in huidig]
+if not bij:
+    print("Niets te doen: alle bronnen hebben al een token.")
+else:
+    if not bestaat:
+        run("gcloud", "secrets", "create", NAAM, "--project", PROJECT, "--replication-policy", "automatic")
+    r = run("gcloud", "secrets", "versions", "add", NAAM, "--project", PROJECT, "--data-file=-", inp=json.dumps(nieuw))
+    print("Nieuwe versie gezet." if r.returncode == 0 else "MISLUKT: " + r.stderr.strip())
+    print("Token bijgemaakt voor:", ", ".join(bij))
+print("Bronnen in het geheim:", ", ".join(sorted(nieuw)))
+PY
+```
 
-## A3. Het domein van de verhuursite
+Klaar als de laatste regel alle zeven bronnen noemt.
 
-De tweede hosting-site `je-planning-verhuur` bestaat al (de uitrol maakte ze aan) en staat op <https://je-planning-verhuur.web.app>. Nu het echte adres (vraag 16: `rental.jeconcept.be`).
+Een token later ophalen doe je altijd zo (vervang `feestbeest` door de bron):
 
-1. <https://console.firebase.google.com/project/je-planning/hosting/sites> → klik op **je-planning-verhuur** (niet op de hoofdsite!)
-2. **Add custom domain** → `rental.jeconcept.be` → **Continue**. Kies *niet* "redirect".
-3. Firebase toont één of twee DNS-records (een TXT voor de verificatie en een A- of CNAME-record). Laat dit scherm open.
-4. In het DNS-beheer van `jeconcept.be`: voeg die records toe, exact zoals getoond. Staat het op Cloudflare: **proxy uit** (grijze wolk) voor dit record, anders blijft de status op *Needs setup*.
-5. Terug in Firebase: **Verify**. Het certificaat volgt vanzelf; dat kan een uur duren. Status hoort op *Connected* te komen.
+```
+gcloud secrets versions access latest --secret=MESSAGING_TOKENS | python3 -c 'import json,sys;print(json.load(sys.stdin)["feestbeest"])'
+```
 
-De site is al vindbaar voor zoekmachines (vraag 17, beslist). Het domein hoeft dus niet "stil" gezet te worden.
+Kopieer de getoonde regel naar het veld waar ze hoort en typ **meteen** `clear`.
 
-## A4. Google Maps-sleutel (optioneel, backoffice)
+## A3. De tokens van Feestbeest en Wintermoods in GitHub
 
-Zonder deze sleutel is het locatieveld op een event een gewoon tekstveld. Met: een adressenlijst terwijl je typt.
+Ga naar <https://github.com/Kenjeklanten/feestbeest/settings/secrets/actions>. Klik voor elke rij **New repository secret**. Bestaat de secret al, klik dan **Update**.
 
-1. <https://console.cloud.google.com/apis/credentials?project=je-planning> → **Create credentials → API key**
-2. **Edit** de sleutel: *Application restrictions* → **Websites** → `https://planning.jeconcept.be/*`; *API restrictions* → alleen **Places API** en **Maps JavaScript API** (beide eerst aanzetten onder *Enabled APIs*).
-3. Deze sleutel is **publiek** (ze zit in de browserbundel) en hoort dus niet in Secret Manager maar in GitHub: Deel C, stap C1, als `VITE_GOOGLE_MAPS_API_KEY`.
+| Naam | Waarde |
+|---|---|
+| `FB_JEPLAN_URL` | `https://planning.jeconcept.be/api/messaging` |
+| `FB_JEPLAN_TOKEN` | de token van `feestbeest` (A2, ophalen en `clear`) |
+| `WM_JEPLAN_URL` | `https://planning.jeconcept.be/api/wintermoods` |
+| `WM_JEPLAN_TOKEN` | de token van `wintermoods` (A2, ophalen en `clear`) |
 
-## A5. Pushmeldingen (optioneel, maar beslist: vraag 15)
+De twee deploys van die repo zetten deze waarden door naar Cloudflare Pages. In C1 en C3 laat je ze opnieuw lopen.
 
-Jasper wil een pushmelding bij een online huur of aanvraag. Daarvoor ontbreekt één sleutel; de volledige uitleg staat in `docs/push-notificaties-aanzetten.md`. Kort: Firebase Console → Project settings → **Cloud Messaging** → *Web Push certificates* → **Generate key pair** → de getoonde sleutel wordt de GitHub-secret `VITE_FIREBASE_VAPID_KEY` (Deel C). Ook publiek, dus GitHub en niet Secret Manager.
+## A4. Google Drive voor de documenten bij events en klanten
 
-## A6. Google Drive voor de documenten bij events en klanten
+1. **De Drive API aanzetten.** In Cloud Shell:
+   ```
+   gcloud services enable drive.googleapis.com
+   ```
+2. **Het adres van de service-account vinden.** In Cloud Shell:
+   ```
+   gcloud functions describe drive --region=europe-west1 --format='value(serviceConfig.serviceAccountEmail)'
+   ```
+   Het resultaat heeft de vorm `<nummer>-compute@developer.gserviceaccount.com`. Dat is een adres, geen geheim.
+3. **De gedeelde Drive maken.** Log in Google Drive in met het Workspace-account van JE Concept.
+   - Ga naar *Gedeelde Drives* → **Nieuw** → naam `JE Plan`. Bestaat ze al, gebruik dan die.
+   - Kies *Leden beheren* → plak het adres uit stap 2 → rol **Contentmanager** → vink *Melding sturen* uit → *Verzenden*.
+   - Kopieer de link van de Drive uit de adresbalk.
+4. **De link in JE Plan zetten.** Ga naar <https://planning.jeconcept.be> → *Instellingen* → tabblad **Documenten** → plak de link → *Bewaren*.
 
-De bestanden bij een event of een klant staan niet in Firebase Storage maar in een gedeelde Google Drive. JE Plan maakt daar per event en per klant een map in. Drie dingen zijn nodig, in deze volgorde:
+Klaar als je dit ziet:
+- Je opent een event en voegt onder *Documenten* een klein tekstbestand toe met de naam `proef-jeplan.txt`.
+- In Drive verschijnt `JE Plan / Events / <datum — titel> / proef-jeplan.txt`.
+- Daarna verwijder je dat ene bestand weer, in JE Plan.
 
-1. **Drive API aanzetten.** Google Cloud Console → project `je-planning` → *APIs & Services* → *Library* → zoek **Google Drive API** → **Enable**.
-2. **De service-account vinden.** Cloud Console → *Cloud Functions* (of *Cloud Run*) → functie **drive** → tabblad *Details* → noteer de **service-account** (vorm `<nummer>-compute@developer.gserviceaccount.com`). Dat is geen geheim; het is een adres.
-3. **Een gedeelde Drive maken en die account toevoegen.** Google Drive (ingelogd als het Workspace-account van JE Concept) → *Gedeelde Drives* → **Nieuw** → naam `JE Plan`. Open ze → *Leden beheren* → plak het adres uit stap 2 → rol **Contentmanager** → melding uitvinken → *Verzenden*. Kopieer daarna de link van de Drive uit de adresbalk (`https://drive.google.com/drive/folders/0A…`).
-4. **De link in JE Plan zetten.** planning.jeconcept.be → *Instellingen* → tabblad **Documenten** → plak de link → *Bewaren*. Het paneel toont de herkende id.
+## A5. De boekingsapp (Base44): twee secrets
 
-Controle: open een event, voeg onder *Documenten* een klein bestand toe. In Drive verschijnt `JE Plan / Events / <datum — titel> / <bestand>`, en in JE Plan opent de naam een voorvertoning. Mislukt de upload met *geen toegang tot de Drive*, dan is stap 3 niet (goed) gezet of de API van stap 1 nog niet aan — rechten doen er soms een minuut over.
+De boekingsapp stuurt aanvragen van haar verhuurwinkel en van haar mini-sites door. Die mini-sites zijn de reservatieformulieren voor Bar Vue, Meer en de andere zaken. Ze gebruiken één token, die van `jebookings`. JE Plan laat die token alleen spreken voor de vijf sites die de app host.
 
-Als de functie **drive** niet in de lijst staat, is de uitrol van na 5 oktober nog niet gelopen: eerst C2.
+1. Open het Base44-dashboard van de app die aan `Kenjeklanten/je-bookings` gekoppeld is.
+2. Ga naar *Settings* → **Secrets**. Op sommige schermen heet dat *Environment variables*.
+3. Zet:
+   - `JEPLAN_URL` = `https://planning.jeconcept.be/api/messaging`
+   - `JEPLAN_TOKEN` = de token van `jebookings` (A2, ophalen en `clear`)
 
-## A7. Het geheim van messaging: een token per bron
+De functie `forwardToJePlan` verschijnt pas na de merge in C1. Zet de secrets toch nu al; ze wachten.
 
-Alles wat van buiten binnenkomt (eerst Wintermoods, straks Bar Vue en Feestbeest) gaat door één ingang, `/api/messaging`, met per bron een eigen token. De tokens staan samen in één geheim als JSON. Eén waarde per bron, op twee plekken, en nergens anders.
+## A6. Pushmeldingen: het sleutelpaar
 
-1. **Een token maken voor Wintermoods.** Een wachtwoordbeheerder of een generator: minstens 32 willekeurige letters en cijfers. Bewaar ze één keer in de wachtwoordkluis van JE Concept onder "MESSAGING wintermoods". Plak ze nooit in een chat, een notitie of een logboek.
-2. **In Secret Manager van `je-planning`.** Google Cloud Console → project `je-planning` → *Security* → *Secret Manager* → **Create secret** → naam exact `MESSAGING_TOKENS` → bij *Secret value* precies dit, met de token in plaats van de puntjes: `{"wintermoods": "…"}` → **Create**. Komt er later een bron bij, dan **New version** met een extra regel in hetzelfde object, bijvoorbeeld `{"wintermoods": "…", "barvue": "…"}`.
-3. **In GitHub, repo `Kenjeklanten/feestbeest`.** Settings → Secrets and variables → Actions → **New repository secret**: `WM_JEPLAN_TOKEN` met dezelfde Wintermoods-token (alleen de token, niet de JSON), en `WM_JEPLAN_URL` met `https://planning.jeconcept.be/api/wintermoods`. De deploy van die repo zet ze door naar Cloudflare Pages.
-4. **De uitrol van `Kenjeklanten/planning` opnieuw draaien** (Deel C2). In het log hoort nu `Geheim MESSAGING_TOKENS bestaat.` te staan, gevolgd door de uitrol van `functions:messaging` en de IAM-binding op `messaging`. Daarna ook de deploy van `Kenjeklanten/feestbeest` opnieuw draaien, zodat de site de twee nieuwe waarden krijgt.
+1. Ga naar <https://console.firebase.google.com/project/je-planning/settings/cloudmessaging>.
+2. Zoek onder *Web Push certificates* het sleutelpaar.
+   - Staat er geen: klik **Generate key pair**.
+   - Staat er al een: gebruik dat. Maak geen tweede.
+3. Kopieer de publieke sleutel. Ze komt in C2 als `VITE_FIREBASE_VAPID_KEY`.
 
-Controle: doe een proefaanvraag op de Wintermoods-site. Binnen enkele seconden staat er een kaart "Wintermoods — <naam> (<aantal>p)" in de kolom *request* op planning.jeconcept.be. Een tweede inzending met dezelfde aanvraag-id maakt geen tweede kaart. Zolang stap 2 niet gebeurd is, zegt de uitrol `Geheim MESSAGING_TOKENS bestaat niet` als waarschuwing en mailt de site gewoon verder, zonder kaart.
+Deze sleutel is publiek; hij zit later in de browserbundel. Toch plak je hem alleen in GitHub.
+
+## A7. Google Maps-sleutel (backoffice)
+
+1. Zet de twee API's aan. In Cloud Shell:
+   ```
+   gcloud services enable places.googleapis.com maps-backend.googleapis.com
+   ```
+2. Ga naar <https://console.cloud.google.com/apis/credentials?project=je-planning> → **Create credentials → API key**.
+3. Klik **Edit API key**:
+   - naam `JE Plan backoffice`
+   - *Application restrictions*: **Websites**, met `https://planning.jeconcept.be/*`
+   - *API restrictions*: alleen **Places API** en **Maps JavaScript API**
+   - **Save**
+4. Kopieer de sleutel. Ze komt in C2 als `VITE_GOOGLE_MAPS_API_KEY`.
+
+Ook deze sleutel is publiek. Door de beperkingen is ze buiten `planning.jeconcept.be` waardeloos.
+
+## A8. IMAP: het app-wachtwoord van `plan@jeconcept.be`
+
+Kijk eerst of `IMAP_URL` al bestaat en niet voorlopig is:
+
+```
+gcloud secrets versions list IMAP_URL --format='value(name,state,createTime)'
+```
+
+Staat er minstens één versie *enabled*, dan sla je deze stap over.
+
+Bestaat het geheim niet, doe dan dit:
+1. Log in Chrome in als `plan@jeconcept.be` (tweede profiel, of *Account wisselen*).
+2. Open <https://myaccount.google.com/apppasswords> → naam `JE Plan IMAP` → **Maken**.
+   - Vraagt Google een wachtwoord of een tweestapscode die je niet hebt: **stap overslaan en melden**.
+3. Zet in Cloud Shell het geheim, zonder het wachtwoord in de geschiedenis te laten:
+   ```
+   read -rs -p "App-wachtwoord: " PW; echo
+   printf 'imaps://plan%%40jeconcept.be:%s@imap.gmail.com:993' "${PW// /}" | gcloud secrets create IMAP_URL --replication-policy=automatic --data-file=- 2>/dev/null \
+     || printf 'imaps://plan%%40jeconcept.be:%s@imap.gmail.com:993' "${PW// /}" | gcloud secrets versions add IMAP_URL --data-file=-
+   unset PW; clear
+   ```
+   Plak bij de vraag het app-wachtwoord; het verschijnt niet op het scherm.
+
+## A9. Anthropic-sleutel (optioneel)
+
+Deze sleutel is alleen nodig om overleg samen te vatten.
+- Is er al een Anthropic Console-account van JE Concept met betaalgegevens en ben je er ingelogd? Maak dan op <https://console.anthropic.com/settings/keys> een sleutel `je-plan` en zet ze via `read -rs` zoals in A8:
+  ```
+  read -rs -p "Sleutel: " K; echo
+  printf '%s' "$K" | gcloud secrets create ANTHROPIC_API_KEY --replication-policy=automatic --data-file=-
+  unset K; clear
+  ```
+- Anders sla je deze stap over. Een nieuw account of betaalgegevens horen niet bij dit mandaat.
+
+## A10. Het domein van de verhuursite: `rental.jeconcept.be`
+
+1. Ga naar <https://console.firebase.google.com/project/je-planning/hosting/sites> → klik op **je-planning-verhuur**. Niet de hoofdsite.
+2. Kies **Add custom domain** → `rental.jeconcept.be` → *Continue*. Kies geen redirect.
+3. Voeg in het DNS-beheer van `jeconcept.be` de getoonde records exact zo toe.
+   - Waarschijnlijk gebruik je Cloudflare. Dan staat de **proxy uit** (grijze wolk).
+   - Een bestaand record met dezelfde naam en hetzelfde type pas je aan; de rest laat je staan.
+4. Klik in Firebase op **Verify**. Het certificaat volgt vanzelf; dat kan tot een uur duren.
+
+Wacht er niet op. Ga verder en kijk in E4 of de status *Connected* is.
 
 ---
 
 # Deel B — Stripe (live)
 
-Werk in **live-modus** (schakelaar rechtsboven in het Stripe-dashboard). Alles wat je in testmodus zet, geldt niet live — en omgekeerd.
+Werk in **live-modus**, met de schakelaar rechtsboven. Vraagt Stripe bij een stap een wachtwoord of een tweestapscode die je niet hebt, sla die stap over en meld het.
 
-## B1. De API-sleutel
+## B1. Een beperkte sleutel voor JE Plan
 
-1. <https://dashboard.stripe.com/apikeys> → onder *Standard keys* → **Secret key** → *Reveal live key*.
-2. Zet ze als `STRIPE_SECRET` in Secret Manager (A2). Niet kopiëren naar iets anders.
+Maak een beperkte sleutel, niet de volle geheime sleutel. Lekt ze, dan is ze geen sleutel tot alles.
 
-> Liever een **restricted key** dan de volle geheime sleutel? Mag: *Create restricted key* met **Write** op *Checkout Sessions*, *Refunds* en *PaymentIntents*, en **Read** op *Charges*. Meer heeft de code niet nodig (`functions-betaling/index.js`). Dan is een gelekte sleutel geen sleutel tot alles.
+1. Ga naar <https://dashboard.stripe.com/apikeys> → **Create restricted key** → naam `JE Plan verhuur`.
+2. Rechten:
+   - **Write** op *Checkout Sessions*, *Refunds* en *PaymentIntents*
+   - **Read** op *Charges*
+   - alles anders: *None*
+3. Klik **Create key**. Stripe toont de sleutel één keer.
+4. Zet ze meteen in Cloud Shell:
+   ```
+   read -rs -p "Stripe-sleutel: " K; echo
+   printf '%s' "$K" | gcloud secrets create STRIPE_SECRET --replication-policy=automatic --data-file=- 2>/dev/null \
+     || printf '%s' "$K" | gcloud secrets versions add STRIPE_SECRET --data-file=-
+   unset K; clear
+   ```
 
 ## B2. Het webhook-eindpunt
 
-De functie heet `verhuurWebhook` en staat in regio `europe-west1`. Haar adres vind je in de Firebase Console: <https://console.firebase.google.com/project/je-planning/functions> → rij **verhuurWebhook** → de URL in de kolom *Trigger* (een `…run.app`-adres). **Gebruik dat adres en niet het hosting-adres**: de handtekening wordt op de ruwe body gecontroleerd, en die hoort rechtstreeks binnen te komen.
+De functie `verhuurWebhook` bestaat pas na een uitrol met beide Stripe-geheimen. Zet daarom eerst een voorlopig webhook-geheim:
 
-> Staat `verhuurWebhook` er niet? Dan is `functions:betaling` nog niet uitgerold — dat gebeurt pas zodra A1 én beide `STRIPE_*`-geheimen er zijn. Zet dan eerst `STRIPE_SECRET` en een **voorlopig** `STRIPE_WEBHOOK_SECRET` (willekeurige tekst), draai de uitrol (Deel C, stap C2), kom hier terug voor het echte adres, en zet daarna het echte webhook-geheim als nieuwe versie.
+```
+python3 -c 'import secrets;print("voorlopig-"+secrets.token_hex(8))' | gcloud secrets create STRIPE_WEBHOOK_SECRET --replication-policy=automatic --data-file=- 2>/dev/null || echo "STRIPE_WEBHOOK_SECRET bestaat al"
+```
 
-1. <https://dashboard.stripe.com/webhooks> → **Add endpoint**
-2. *Endpoint URL*: het adres van hierboven
-3. *Events to send*: **`checkout.session.completed`** en **`checkout.session.expired`** — precies die twee
-4. **Add endpoint** → op de detailpagina: *Signing secret* → **Reveal** → zet het als `STRIPE_WEBHOOK_SECRET` in Secret Manager (A2; nieuwe versie als er al een voorlopige stond).
+Doe daarna eerst **C3**, de uitrol van planning, en kom dan terug voor de rest van deze stap.
 
-## B3. Betaalmethodes (vraag 2: kaart, Bancontact, Apple Pay en Google Pay)
+1. Zoek het adres van de functie op in Cloud Shell:
+   ```
+   gcloud functions describe verhuurWebhook --region=europe-west1 --format='value(serviceConfig.uri)'
+   ```
+   Gebruik dat `run.app`-adres. **Gebruik niet het adres van planning.jeconcept.be:** Stripe controleert de handtekening op de ruwe body.
+2. Ga naar <https://dashboard.stripe.com/webhooks> → **Add endpoint**.
+   - Bij *Endpoint URL* vul je het adres uit stap 1 in.
+   - Als *Events* kies je precies **`checkout.session.completed`** en **`checkout.session.expired`**.
+   - Klik *Add endpoint*.
+   - Staat er al een eindpunt met hetzelfde adres, gebruik dan dat.
+3. Klik op de detailpagina bij *Signing secret* op **Reveal** en zet het als nieuwe versie:
+   ```
+   read -rs -p "Webhook-geheim: " K; echo
+   printf '%s' "$K" | gcloud secrets versions add STRIPE_WEBHOOK_SECRET --data-file=-
+   unset K; clear
+   ```
+4. Doe **C3** nog een keer, zodat de functie het echte geheim leest.
 
-1. <https://dashboard.stripe.com/settings/payment_methods> → zet **Bancontact** aan. Zonder Bancontact weigert Stripe de Checkout-sessie, want de code vraagt er uitdrukkelijk om.
-2. **Apple Pay** en **Google Pay** aanzetten in dezelfde lijst. Stripe toont ze vanzelf op toestellen die ze kunnen.
-3. Voor Apple Pay moet het domein geregistreerd zijn: <https://dashboard.stripe.com/settings/payment_method_domains> → **Add a new domain** → `rental.jeconcept.be` (pas nadat A3 op *Connected* staat). Stripe controleert een bestand op dat domein; Firebase Hosting serveert dat niet vanzelf. **Lukt de verificatie niet, meld het** — dan voegt Claude Code het bestand toe aan `verhuur/public/.well-known/`. Zonder registratie werkt alles behalve Apple Pay.
+## B3. Betaalmethodes
 
-## B4. Hoe de betaalpagina eruitziet
+1. Zet op <https://dashboard.stripe.com/settings/payment_methods> **Bancontact**, **Apple Pay** en **Google Pay** aan. Zonder Bancontact weigert Stripe de sessie.
+2. Doe dit pas als A10 op *Connected* staat. Ga naar <https://dashboard.stripe.com/settings/payment_method_domains> → **Add a new domain** → `rental.jeconcept.be`.
+   - Faalt de verificatie, meld het dan. Claude Code zet het bestand in `verhuur/public/.well-known/`.
+   - Zonder registratie werkt alles, behalve Apple Pay.
 
-<https://dashboard.stripe.com/settings/branding>: logo van JE Concept, accentkleur `#1B3A6B` (het navy van het design system), bedrijfsnaam **JE Concept**. Dit is wat de klant ziet tussen de mand en de bedankpagina; het hoort op de site te lijken.
+## B4. Uitzicht en gegevens
 
-Controleer ook <https://dashboard.stripe.com/settings/public>: *Statement descriptor* op iets wat een klant op zijn rekeninguittreksel herkent (`JE CONCEPT VERHUUR`), en een support-mailadres (`info@jeconcept.be`).
+1. Op <https://dashboard.stripe.com/settings/branding>:
+   - het logo van JE Concept, als dat er nog niet staat;
+   - accentkleur `#1B3A6B`;
+   - naam **JE Concept**.
+2. Op <https://dashboard.stripe.com/settings/public>:
+   - *Statement descriptor* `JE CONCEPT VERHUUR`;
+   - support-mail `info@jeconcept.be`.
+   - Pas een veld alleen aan als het leeg is of duidelijk fout. Wat Jasper bewust zette, laat je staan.
 
-## B5. Terugbetalingen
-
-Niets in te stellen: de knop *Waarborg terugstorten* in JE Plan doet een gedeeltelijke refund via de API. Maar weet dat Stripe de **kosten van de oorspronkelijke betaling niet terugbetaalt** bij een refund. Dat is geen fout van de tool.
+Terugbetalingen hoeven niet ingesteld te worden.
 
 ---
 
 # Deel C — GitHub
 
-## C1. De publieke sleutels als repository secrets
+## C1. De twee branches naar `main`
 
-<https://github.com/Kenjeklanten/planning/settings/secrets/actions> → **New repository secret**:
+De koppeling met JE Plan staat in twee repo's op branch `claude/focused-lamport-yiztcp`. Merge ze, zodat een latere push naar `main` ze niet terugdraait.
+
+1. **Feestbeest en Wintermoods**
+   - Ga naar <https://github.com/Kenjeklanten/feestbeest/compare/main...claude/focused-lamport-yiztcp>.
+   - Titel: `Aanvragen ook aan JE Plan geven`.
+   - Beschrijving: *Elke reservatie en cadeaubonbestelling op Feestbeest gaat, na de mails, ook als bericht naar JE Plan (messaging). Slaapt zonder FB_JEPLAN_URL/FB_JEPLAN_TOKEN.*
+   - Klik **Create pull request**. Wacht tot de checks groen zijn, en klik dan **Merge pull request** (*Create a merge commit*).
+   - Zijn de checks rood, merge dan niet. Noteer de naam van de rode check.
+2. **De boekingsapp**
+   - Ga naar <https://github.com/Kenjeklanten/je-bookings/compare/main...claude/focused-lamport-yiztcp>.
+   - Titel: `Websiteaanvragen doorsturen naar JE Plan`.
+   - Beschrijving: *Aanvragen uit de verhuurwinkel en de mini-sites gaan als bericht naar JE Plan. Slaapt zonder JEPLAN_URL/JEPLAN_TOKEN.*
+   - Maak de PR. Merge ze als de checks groen zijn, of als er geen checks zijn.
+   - Controleer daarna in Base44 bij *Code → Functions* dat `forwardToJePlan` er staat. Base44 neemt `main` over, wat enkele minuten kan duren.
+   - Verschijnt de functie na tien minuten niet, meld het dan. Zet de code niet met de hand over.
+
+Merge in geen enkele andere repo, en zeker niet in `Kenjeklanten/je-concept` (Cue).
+
+## C2. Publieke sleutels van planning
+
+Ga naar <https://github.com/Kenjeklanten/planning/settings/secrets/actions> → **New repository secret**.
 
 | Naam | Waarde | Van |
 |---|---|---|
-| `VITE_GOOGLE_MAPS_API_KEY` | de Maps-sleutel | A4 |
-| `VITE_FIREBASE_VAPID_KEY` | het Web Push-sleutelpaar | A5 |
+| `VITE_GOOGLE_MAPS_API_KEY` | de Maps-sleutel | A7 |
+| `VITE_FIREBASE_VAPID_KEY` | de publieke Web Push-sleutel | A6 |
 
-Deze twee zijn publiek (ze zitten in de browserbundel); daarom horen ze hier en niet in Secret Manager. De zes `VITE_FIREBASE_*`-waarden en `FIREBASE_SERVICE_ACCOUNT` staan er al — **niet aanraken**.
+Raak de zes `VITE_FIREBASE_*`-waarden en `FIREBASE_SERVICE_ACCOUNT` **niet** aan.
 
-## C2. De uitrol opnieuw draaien
+## C3. De uitrol van planning
 
-Pas nadat A1, A2 en B1–B2 klaar zijn:
+1. Ga naar <https://github.com/Kenjeklanten/planning/actions/workflows/ci.yml> → **Run workflow** → branch `main` → **Run workflow**.
+   - Loopt er al een run voor de laatste commit, wacht dan tot die klaar is.
+2. Wacht tot de job **Deploy to Firebase** klaar is, een minuut of tien.
+3. Lees de annotaties.
 
-1. <https://github.com/Kenjeklanten/planning/actions/workflows/ci.yml> → de bovenste run → **Re-run all jobs**.
-2. Wacht tot hij klaar is (een minuut of acht). Open de job **Deploy to Firebase** en lees de **annotaties** bovenaan de samenvatting.
+Deze regels horen erin te staan:
+- `Geheim MESSAGING_TOKENS bestaat.`
+- de uitrol van `functions:messaging`
+- de IAM-binding op `messaging`
 
-Wat je wilt zien: **geen** van deze drie waarschuwingen meer:
-- *De mailverzender is niet uitgerold* → A1 niet goed, of `SMTP_URL`/`IMAP_URL` ontbreekt
-- *Stripe-geheimen ontbreken* → B1/B2 niet in Secret Manager, of de naam wijkt af
-- *Geheim ANTHROPIC_API_KEY bestaat niet* → alleen als je die bewust zette
+Deze waarschuwingen mogen er **niet** meer staan:
+- *De mailverzender is niet uitgerold*
+- *Stripe-geheimen ontbreken*
 
-Wat er wél mag blijven staan: de waarschuwing over Node.js 20 van GitHub zelf. Die is niet van ons.
+De waarschuwing van GitHub over Node.js mag blijven staan; die is niet van ons.
 
-3. Na een groene run staan in <https://console.firebase.google.com/project/je-planning/functions> ook `verhuurAfrekenen`, `verhuurWebhook`, `verhuurWaarborgTerug` en `verlopenOptiesOpruimen`. Kom dan terug naar **B2** als je daar nog een voorlopig webhook-geheim had gezet.
+Krijgt de run geen runner ("not acquired by Runner"), start ze dan één keer opnieuw. Mislukt ze nog eens, meld het met het run-nummer.
+
+Kom daarna terug naar **B2** als die nog openstaat.
+
+## C4. De deploys van feestbeest
+
+Na de merge in C1 lopen ze vanzelf. Liepen ze niet, of liep de merge voor A3 klaar was:
+1. Ga naar <https://github.com/Kenjeklanten/feestbeest/actions>.
+2. Start de laatste run op `main` van **Deploy to Cloudflare Pages** en van **Deploy Wintermoods to Cloudflare Pages** opnieuw met **Re-run all jobs**.
 
 ---
 
-# Deel D — wat jij níét kunt, maar wel kunt klaarzetten
+# Deel D — de sites koppelen
 
-## D1. Lightspeed K-Series — partnerinschakeling voor reservaties
+## D0. Eerst een proef per bron, vanuit Cloud Shell
 
-Voor het vervangen van de reservatiemodule (Wintermoods, Meer, Bar Vue) moet Lightspeed de *Reservations for Platforms*-API voor dit account openzetten. Dat gaat via de accountmanager, niet via een instelling. Zet deze mail klaar voor Jasper (verstuur ze niet zelf):
+Dit bewijst dat elke token werkt, los van welke site dan ook. Doe het **na C3**. Plak dit in Cloud Shell:
 
-> **Aan:** de Lightspeed-accountmanager van JE Concept
+```
+for B in wintermoods feestbeest jeconcept jebookings barvue meer kenjeklanten; do
+  T=$(gcloud secrets versions access latest --secret=MESSAGING_TOKENS | python3 -c "import json,sys;print(json.load(sys.stdin)['$B'])")
+  printf '%-13s ' "$B"
+  curl -sS -X POST https://planning.jeconcept.be/api/messaging \
+    -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
+    -d "{\"soort\":\"offerte.aangevraagd\",\"sleutel\":\"proef-chrome-$B\",\"inhoud\":{\"naam\":\"Proef JE Plan\",\"email\":\"plan@jeconcept.be\",\"personen\":2,\"bericht\":\"Proef van Claude in Chrome — mag weg.\"}}"
+  echo
+done; unset T
+```
+
+- **Verwacht:** zeven regels met `"ok":true`.
+- **`401`:** de token klopt niet. A2 opnieuw, dan C3.
+- **Een HTML-pagina of `404`:** `messaging` is niet uitgerold. Kijk C3 na.
+
+Daarna:
+- Onder *Instellingen → Messaging* staan zeven rijen.
+- In de kolom *request* staan zes kaarten "<Merk> — Proef JE Plan (2p)". De kaart van `jebookings` heeft als merk JE Concept.
+
+Ruim ze op in E3.
+
+## D1. Per site: uitzoeken waarop ze draait
+
+Doe dit voor elk van deze vier sites:
+- **Bar Vue**, `barvue.be`, bron `barvue`
+- **Meer — Het Vinne**, bron `meer`. Zoek de site via Google: "Meer Het Vinne Zoutleeuw".
+- **Ken je klanten**, `kenjeklanten.be`, bron `kenjeklanten`
+- **JE Concept**, `jeconcept.be`, bron `jeconcept`
+
+Zoek de pagina met het reservatie-, contact- of offerteformulier. Bekijk de bron van de pagina (*Weergave → Ontwikkelaar → Bron bekijken*) en kijk wie het formulier verwerkt.
+
+| Je ziet | Platform | Ga naar |
+|---|---|---|
+| een formulier van de boekingsapp (Base44, een `base44`-adres, of een mini-site van je-bookings) | boekingsapp | D2 |
+| `wp-content`, `wp-json` | WordPress | D3 |
+| `wix.com`, `static.wixstatic.com` | Wix | D4 |
+| iets anders (Squarespace, Webflow, Jimdo, One.com, een extern reservatiesysteem zoals Lightspeed, Zenchef of Resengo) | ander | D5 |
+
+Je hebt alleen beheerrechten nodig op het platform zelf. Log in met de accounts van JE Concept die al in deze browser bewaard zijn. Kun je niet inloggen, meld de site dan als *geen toegang* en ga door.
+
+## D2. De site gebruikt de boekingsapp
+
+Hier is niets te doen: A5 en C1 dekken dit. Controleer alleen in Base44 dat de mini-site voor deze zaak een herkenbare *page key* heeft, zoals `bar-vue`, `barvue`, `meer`, `vinne`, `kenjeklanten` of `kjk`. Alleen dan komt de kaart in JE Plan onder het juiste merk. Een andere page key komt binnen als "JE Bookings": meld ze, en Claude Code voegt ze toe.
+
+## D3. WordPress
+
+1. Ga naar `/wp-admin` → *Plugins* en kijk welke formulierplugin actief is.
+2. Kijk of die plugin **zelf** een webhook met een eigen header kan sturen, zonder iets bij te kopen of te installeren:
+
+| Plugin | Webhook met header |
+|---|---|
+| WPForms | alleen met de add-on *Webhooks*, als die al actief is: *Settings → Webhooks* |
+| Gravity Forms | alleen met de add-on *Webhooks*, als die al actief is |
+| Fluent Forms | *Integrations → Webhook*, als die al aan staat |
+| Formidable | *Actions → Send API data*, als die al aan staat |
+| Contact Form 7, Elementor-formulieren | **nee**: geen eigen headers. Ga naar D5. |
+
+3. Kan het, stel dan de webhook zo in:
+   - **URL:** `https://planning.jeconcept.be/api/messaging`
+   - **Methode:** POST, **body:** JSON (of *form*), met alle velden
+   - **Header:** `X-Messaging-Token` met de token van deze bron (A2, ophalen en `clear`)
+
+   Laat de veldnamen zoals ze zijn. JE Plan herkent naam, e-mail, telefoon, datum, aantal personen en bericht in het Nederlands, Engels en Frans (zie `docs/messaging-contract.md`). Wat het niet herkent, komt als regel in de omschrijving.
+4. **De token komt nooit in de URL.** Laat de plugin geen header toe, ga dan naar D5.
+
+## D4. Wix
+
+1. Ga naar het dashboard van de site → **Automations** → *New automation*.
+2. Trigger: **Form submitted** → kies het formulier.
+3. Actie: **Send an HTTP request**. Stel in:
+   - URL `https://planning.jeconcept.be/api/messaging`
+   - POST, met *Body: JSON*
+   - alle velden van het formulier
+   - header `X-Messaging-Token` met de token van deze bron
+4. Klik **Activate**.
+
+Biedt Wix geen header aan, of alleen met een betaald pakket, ga dan naar D5.
+
+## D5. Geen webhook mogelijk: de mail als vangnet
+
+Bouw niets bij en koop niets. Zorg alleen dat de inzendingen per mail op `info@jeconcept.be` aankomen. Kijk bij de meldingsinstellingen van het formulier.
+- Staat `info@jeconcept.be` er al bij, laat het dan zo.
+- Staat het er niet bij, voeg het toe als extra ontvanger.
+
+JE Plan leest die mail in *Postvak* (via `IMAP_URL`, A8). De aanvraag gaat dus niet verloren, maar wordt geen automatische kaart. Noteer in je rapport welk platform en welke plugin de site gebruikt. Claude Code beslist dan of er een eigen koppeling komt.
+
+## D6. Per gekoppelde site: een echte proef
+
+Doe dit voor elke site die je in D3 of D4 koppelde, en voor Feestbeest, Wintermoods en een mini-site van de boekingsapp:
+1. Vul het formulier in:
+   - naam `Proef JE Plan`
+   - e-mail `plan@jeconcept.be`
+   - een datum binnen twee maanden
+   - 2 personen
+   - bericht `Proef van Claude in Chrome — mag weg.`
+2. Controleer dat er binnen een minuut een rij met de juiste bron staat onder *Instellingen → Messaging*, en een kaart in *request*. Wintermoods heeft geen aparte kaart nodig als de rij er is; die kaart heet "Wintermoods — Proef JE Plan (2p)".
+
+Kies een formule of een product dat niets kost en geen betaling start. Rekent een formulier meteen af, sla het dan over.
+
+---
+
+# Deel E — de rest, nakijken en rapport
+
+## E1. Lightspeed K-Series: de mail versturen
+
+1. Zoek in Gmail van JE Concept naar de laatste mail van of aan een adres op `@lightspeedhq.com`, en neem dat adres als ontvanger.
+   - Vind je er geen, gebruik dan het supportformulier in de Lightspeed-backoffice (*Help → Contact support*) met dezelfde tekst.
+2. Verstuur dit:
+
 > **Onderwerp:** Reservations for Platforms — toegang voor eigen reservatiesysteem
 >
 > Beste,
@@ -217,37 +515,71 @@ Voor het vervangen van de reservatiemodule (Wintermoods, Meer, Bar Vue) moet Lig
 > Met vriendelijke groet,
 > Jasper — JE Concept
 
-## D2. Het telefoonnummer van de verhuursite (vraag 10)
+## E2. Het telefoonnummer van de verhuursite
 
-Jasper geeft het later. Zodra hij het heeft: het staat op twee plekken in de code (`verhuur/src/lib/instellingen.js` en `functions-betaling/order.js`) en is werk voor Claude Code, niet voor de browser. Noteer het nummer alleen in je rapport als Jasper het je geeft.
+1. Zoek het telefoonnummer dat JE Concept **publiek** gebruikt: op `jeconcept.be` (contact of footer), of in het Google-bedrijfsprofiel van JE Concept.
+2. Neem alleen een nummer dat daar al publiek staat. Verzin niets en neem geen privénummer uit een mailhandtekening.
+3. Zet het in je rapport (E5). Het is geen geheim. Claude Code zet het in de code.
 
----
+## E3. Opruimen
 
-# Deel E — nakijken
+Open in JE Plan elke kaart **"… — Proef JE Plan (2p)"** die je zelf maakte, en verwijder ze. De rijen onder *Instellingen → Messaging* blijven staan. Dat is de bedoeling: de log is onveranderlijk, en de sleutel `proef-chrome-…` maakt duidelijk wat het was.
 
-Loop na een groene run **`docs/testen-productie.md`** door, stap 0 tot 8. Dat draaiboek is geschreven voor Jasper, maar stap 0 en stap 1–2 kun jij doen; vanaf stap 3 (echt betalen met een eigen kaart) is het aan hem.
+## E4. Nakijken
 
-Kort, wat moet kloppen:
-- <https://je-planning-verhuur.web.app> en, na A3, <https://rental.jeconcept.be> tonen de catalogus (leeg tot Jasper artikelen op *los te huren* zet — dat is juist).
-- In JE Plan → Materiaal → een artikel openen: het vinkje *Mag zonder offerte gehuurd worden* en het fotoveld staan er.
-- Een offerteaanvraag op de site komt binnen één minuut in JE Plan → Events → envelopje, mét een mail aan de beheerders (die vertrekt pas als `SMTP_URL` werkt).
+- `https://je-planning-verhuur.web.app` toont de catalogus. Na A10 doet `https://rental.jeconcept.be` dat ook, met status *Connected* in Hosting.
+- Op <https://console.firebase.google.com/project/je-planning/functions> staan:
+  - `messaging`
+  - `verhuurAfrekenen`, `verhuurWebhook` en `verhuurWaarborgTerug`
+  - `verlopenOptiesOpruimen`
+  - `drive`
+- In Stripe (live) staat bij het webhook-eindpunt geen enkele mislukte aflevering.
+- Doorloop daarna `docs/testen-productie.md`, **stap 0 tot en met 2**. Stap 3 en verder betalen echt geld; die blijven voor Jasper.
 
----
+## E5. Het rapport: als GitHub-issue
 
-## Wat je terugrapporteert aan Jasper
+Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de titel **`Rapport configuratie Claude in Chrome — <datum>`**. Gebruik de body hieronder, ingevuld. Er komen **geen geheime waarden** in: geen tokens, sleutels, wachtwoorden, `whsec_`, `sk_`, `rk_` of TXT-waarden.
 
-Alleen feiten, geen waarden:
+```
+## Google Cloud en Firebase
+- A2 MESSAGING_TOKENS: bronnen in het geheim = …
+- A3 feestbeest-secrets FB_JEPLAN_URL/TOKEN, WM_JEPLAN_URL/TOKEN: gezet ja/nee
+- A4 Drive: API aan ja/nee · gedeelde Drive "JE Plan" met service-account als Contentmanager ja/nee · link in Instellingen ja/nee · proefupload gelukt ja/nee
+- A5 Base44 JEPLAN_URL/JEPLAN_TOKEN: gezet ja/nee
+- A6 VAPID-sleutel: aangemaakt/bestond
+- A7 Maps-sleutel: aangemaakt en beperkt ja/nee
+- A8 IMAP_URL: bestond / nieuw gezet / overgeslagen (reden)
+- A9 ANTHROPIC_API_KEY: gezet / overgeslagen (reden)
+- A10 rental.jeconcept.be: Needs setup / Pending / Connected · DNS-records gezet (type + naam)
 
-1. **A1**: staat *Secret Manager Admin* op `firebase-adminsdk-…`? (ja/nee)
-2. **A2**: welke van de vijf geheimen bestaan nu in Secret Manager? (namen, geen waarden)
-3. **A3**: status van `rental.jeconcept.be` in Hosting (*Needs setup* / *Pending* / *Connected*) en welke DNS-records je zette (type en naam, niet de waarde van de TXT)
-4. **B2**: staat het webhook-eindpunt in Stripe op het `run.app`-adres, met precies de twee gebeurtenissen?
-5. **B3**: welke betaalmethodes staan aan, en lukte de domeinregistratie voor Apple Pay?
-6. **C2**: is de uitrol groen, en welke waarschuwingen staan er nog?
-7. **D1**: staat de mail aan Lightspeed klaar?
-8. **A6**: is de Drive API aan, bestaat de gedeelde Drive `JE Plan` met de service-account als Contentmanager, en staat de link in Instellingen → Documenten?
-9. **A7**: bestaat `MESSAGING_TOKENS` in Secret Manager (met een regel voor wintermoods) en staan `WM_JEPLAN_TOKEN` en `WM_JEPLAN_URL` in de GitHub-secrets van feestbeest? (ja/nee, geen waarden)
-10. Bevestiging dat je **nergens** een geheime waarde geplakt hebt buiten Secret Manager en GitHub Secrets.
+## Stripe
+- B1 STRIPE_SECRET (restricted key): gezet ja/nee
+- B2 webhook op run.app-adres met de twee gebeurtenissen: ja/nee · echt geheim gezet ja/nee
+- B3 betaalmethodes aan: … · Apple Pay-domein: gelukt/mislukt/nog niet
+- B4 branding en descriptor: aangepast/stond goed
+
+## GitHub
+- C1 feestbeest PR: <link> gemerged ja/nee · je-bookings PR: <link> gemerged ja/nee · forwardToJePlan zichtbaar in Base44 ja/nee
+- C2 VITE_GOOGLE_MAPS_API_KEY, VITE_FIREBASE_VAPID_KEY: gezet ja/nee
+- C3 laatste uitrol planning: run-nummer, groen ja/nee, resterende waarschuwingen: …
+- C4 deploys feestbeest: groen ja/nee
+
+## Sites
+- D0 proef per bron: per bron ok / foutcode
+- Bar Vue: platform … · gekoppeld via D2/D3/D4/D5 · proef ok ja/nee
+- Meer: platform … · adres … · gekoppeld via … · proef ok ja/nee
+- Ken je klanten: platform … · gekoppeld via … · proef ok ja/nee
+- jeconcept.be: platform … · gekoppeld via … · proef ok ja/nee
+- Feestbeest, Wintermoods, mini-site boekingsapp: proef ok ja/nee
+- Onbekende page keys in Base44: …
+
+## Rest
+- E1 mail aan Lightspeed: verstuurd aan (adres of "supportformulier") ja/nee
+- E2 publiek telefoonnummer: … (bron: …)
+- E3 proefkaarten verwijderd ja/nee
+- Overgeslagen stappen en waarom: …
+- Bevestiging: geen enkele geheime waarde buiten Secret Manager, GitHub Secrets of Base44 Secrets geplakt.
+```
 
 ---
 
@@ -255,16 +587,18 @@ Alleen feiten, geen waarden:
 
 | Wat je ziet | Wat er aan de hand is | Wat je doet |
 |---|---|---|
-| Uitrol: *Permission 'secretmanager.secrets.setIamPolicy' denied* | A1 is niet (goed) gezet | IAM nakijken: juiste principal (`firebase-adminsdk-…`), rol *Secret Manager Admin*, opgeslagen. Rechten doen er soms een minuut over. |
-| Upload van een document: *geen toegang tot de Drive* | de service-account zit niet in de gedeelde Drive, of de Drive API staat uit | A6 stap 1 en 3 nakijken; het adres moet dat van de functie **drive** zijn, rol Contentmanager |
-| Uitrol: *Geheim X bestaat niet* | naam wijkt af of verkeerd project | naam hoofdlettergevoelig vergelijken met de tabel in A2; project `je-planning` |
-| Uitrol: *Stripe-geheimen ontbreken* terwijl ze er staan | één van de twee ontbreekt — allebei zijn nodig | beide namen nakijken |
-| Stripe: *This payment method is not activated* bij afrekenen | Bancontact staat niet aan in live-modus | B3, in **live**-modus |
-| Stripe-webhook: *Signing secret mismatch* / betaling blijft op *Wacht op betaling* | het webhook-geheim hoort bij een ander eindpunt (test vs. live) of is de voorlopige | B2: nieuw geheim als nieuwe versie zetten, uitrol opnieuw |
-| Betaling blijft op *Wacht op betaling* en de webhook toont `400 handtekening klopt niet` | het eindpunt wijst naar het hosting-adres in plaats van de functie | B2: het `run.app`-adres gebruiken |
-| Hosting: domein blijft *Needs setup* | DNS nog niet doorgegeven, of Cloudflare-proxy aan | grijze wolk; tot een uur wachten |
-| Apple Pay-domein: *Verification failed* | het verificatiebestand staat niet op de site | melden — Claude Code zet het in `verhuur/public/.well-known/` |
-| `verhuurWebhook` staat niet in de functielijst | `functions:betaling` werd overgeslagen | A1 + beide `STRIPE_*` zetten, C2 opnieuw |
-| Mails blijven in `mailQueue` op *wachtend* | mailverzender niet uitgerold | A1, dan C2; zie ook `docs/e-mailmeldingen-aanzetten.md` |
+| Cloud Shell: `PERMISSION_DENIED` | verkeerd account of verkeerd project | rechtsboven het account met Owner op `je-planning` kiezen; `gcloud config set project je-planning` |
+| Uitrol: *Geheim MESSAGING_TOKENS bestaat niet* | A2 liep niet, of liep in een ander project | A2 opnieuw, met `gcloud config get-value project` = `je-planning` |
+| D0: `401` voor één bron | die bron ontbreekt in de JSON, of de functie draait nog met een oude versie | A2 (het script vult aan), dan C3 |
+| D0: HTML in plaats van JSON | `messaging` is niet uitgerold | C3; in de annotaties staat waarom |
+| Site-proef: rij in Messaging maar geen kaart | de stand van een verwerker is *fout* | in *Instellingen → Messaging* staat de reden per verwerker; na drie keer volgt een melding. Meld de reden. |
+| Site-proef: niets in Messaging | de webhook vertrekt niet of de header ontbreekt | het log van de webhook in de plugin of in Wix nakijken; header exact `X-Messaging-Token` |
+| Upload van een document: *geen toegang tot de Drive* | de service-account zit niet in de Drive, of de API staat uit | A4 stap 1 en 3; rechten doen er soms een minuut over |
+| Uitrol: *Stripe-geheimen ontbreken* | één van de twee ontbreekt | beide namen nakijken: `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` |
+| Stripe: *This payment method is not activated* | Bancontact staat niet aan in live-modus | B3, in **live** |
+| Betaling blijft op *Wacht op betaling* | het webhook-eindpunt wijst naar het hosting-adres, of het geheim is nog voorlopig | B2: het `run.app`-adres en het echte geheim, dan C3 |
+| Hosting: domein blijft *Needs setup* | DNS nog niet doorgegeven, of de Cloudflare-proxy staat aan | grijze wolk; tot een uur wachten |
+| Base44 toont `forwardToJePlan` niet | de app neemt `main` niet automatisch over | melden; niet met de hand overzetten |
+| GitHub: *not acquired by Runner* | GitHub had even geen runner | één keer opnieuw starten |
 
-Opnieuw draaien mag altijd. Elke stap van de uitrol is herhaalbaar.
+Opnieuw draaien mag altijd. Elke stap is herhaalbaar, en het script in A2 overschrijft nooit een bestaande token.
