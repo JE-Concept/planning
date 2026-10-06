@@ -146,16 +146,15 @@ export function bronVanToken(tokens, header, gelijk) {
 /**
  * Platformen die voor meer dan één site spreken.
  *
- * De boekingsapp (Base44) host mini-sites met een reservatieformulier, en Cue
- * (het platform achter jeconcept.be) is er een met tenants. Eén token per
- * platform, en het platform zegt in `bron` voor welke site het bericht is.
+ * De boekingsapp (Base44) host mini-sites met een reservatieformulier. Eén token
+ * voor het platform, en het platform zegt in `bron` voor welke site het bericht is.
+ * Cue staat los van JE Plan en spreekt hier voor niemand.
  * Alleen de bronnen in deze lijst: een gelekt platform-token kan zo nooit
  * spreken voor een bron die niet bij dat platform hoort, en de lijst staat in
  * de code, niet in een geheim, zodat ze in een review te zien is.
  */
 export const SPREEKT_VOOR = {
   jebookings: ['barvue', 'meer', 'kenjeklanten', 'feestbeest', 'jeconcept'],
-  jeconcept: ['barvue', 'meer', 'kenjeklanten'],
 }
 
 /**

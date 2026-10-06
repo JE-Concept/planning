@@ -229,6 +229,8 @@ describe('een platform dat voor meer sites spreekt', () => {
     expect(effectieveBron('feestbeest', 'jeconcept')).toEqual({ bron: 'feestbeest', via: null })
     expect(effectieveBron('jebookings', 'verhuur')).toEqual({ bron: 'jebookings', via: null })
     expect(effectieveBron('jebookings', 'wintermoods')).toEqual({ bron: 'jebookings', via: null })
+    // Cue staat los van JE Plan: de token van jeconcept.be spreekt alleen voor zichzelf.
+    expect(effectieveBron('jeconcept', 'barvue')).toEqual({ bron: 'jeconcept', via: null })
     expect(SPREEKT_VOOR.jebookings).not.toContain('verhuur')
   })
 })
