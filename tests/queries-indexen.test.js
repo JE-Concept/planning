@@ -390,8 +390,12 @@ describe('nieuwe queries', () => {
     archiefvragen: gelijkheden zonder sortering, en die bedient Firestore uit
     zijn eigen veldindexen. Daarom staan ze wel hier en niet in de tabel
     hierboven.
+
+    En 80 sinds messaging: Instellingen → Messaging leest de laatste honderd
+    berichten op `ontvangen` aflopend (`src/data/messaging.js`). Eén
+    `orderBy` zonder gelijkheid, dus uit de veldindex en niet in de tabel.
   */
-  const QUERIES_IN_DE_APP = 79
+  const QUERIES_IN_DE_APP = 80
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

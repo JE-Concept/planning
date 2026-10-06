@@ -165,6 +165,21 @@ const LOGO =
     contentType, size, url, uploadedBy: 'u-jasper', createdAt: dag(-30 + i),
   }))
 
+// ─── Messaging: wat er van buiten binnenkwam ────────────────────────────────
+// Drie standen, zodat het tabblad laat zien wat het laat zien: klaar met een
+// kaart, vastgelopen na drie pogingen, en een soort die niet voor de
+// verwerker is.
+;[
+  ['wintermoods-7c1a', 'wintermoods', 'reservatie.aangevraagd', '7c1a', { naam: 'Lies Vandeputte', email: 'lies@example.be', personen: 24, formule: 'bbq', datum: dagsleutel(dag(60)) },
+    { event: { stand: 'klaar', taskId: 't-trouw', op: dag(-1) } }, -1],
+  ['wintermoods-9e02', 'wintermoods', 'reservatie.aangevraagd', '9e02', { naam: 'Tom Peeters', email: 'tom@example.be', personen: 12, formule: 'fondue', datum: dagsleutel(dag(40)) },
+    { event: { stand: 'fout', fout: 'geen_eventlijst', pogingen: 3, op: dag(-2) } }, -2],
+  ['verhuur-order-118', 'verhuur', 'huur.betaald', 'order-118', { naam: 'Peeters BV', bedrag: 184.5 },
+    { event: { stand: 'overgeslagen', op: dag(-3) } }, -3],
+].forEach(([id, bron, soort, sleutel, inhoud, verwerking, dagen]) =>
+  seedDoc('messaging', id, { bron, soort, sleutel, taal: 'nl', tijdstip: null, inhoud, verwerking, versie: 1, ontvangen: dag(dagen) })
+)
+
 // De gedeelde Drive is in de demo "ingericht"; het id gaat nergens heen.
 seedDoc('config', 'drive', { driveId: '0ADemoDriveId', updatedAt: dag(-40) })
 

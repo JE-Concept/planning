@@ -75,6 +75,19 @@ const INCREMENT = Symbol('increment')
 const ARRAY_UNION = Symbol('arrayUnion')
 
 export const seedDoc = (col, id, data) => store.set(`${col}/${id}`, { ...data })
+/**
+ * Schrijven zoals een functie dat doet: met beheerdersrechten, langs de regels
+ * heen, en met een seintje aan de schermen die kijken. Voor de stubs van
+ * callables die live op de server lopen (zie `stubs.js`); de app zelf gebruikt
+ * dit nooit, want die moet door de regels.
+ */
+export const schrijfAlsServer = (col, id, patch) => {
+  const path = `${col}/${id}`
+  const existing = store.get(path)
+  if (!existing) throw new Error(`Bestaat niet: ${path}`)
+  store.set(path, { ...existing, ...patch })
+  geschreven(path)
+}
 export const allDocs = () => store
 
 function notify() {

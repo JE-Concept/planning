@@ -52,7 +52,7 @@ export function kort(tekst, max = 80) {
  * en in het schermpje waar je ze aan- en uitzet. Een tikfout in één daarvan
  * zou stil betekenen "dit bericht wil niemand".
  */
-export const SOORTEN = ['toewijzing', 'reactie', 'deadline', 'telaat', 'systeem', 'verhuur']
+export const SOORTEN = ['toewijzing', 'reactie', 'deadline', 'telaat', 'systeem', 'verhuur', 'messaging']
 
 /**
  * Wat je krijgt zolang je niets instelt.
@@ -87,6 +87,12 @@ export const STANDAARD = {
     moeten staan, en de eerste die dat moet weten is wie de camion laadt.
   */
   verhuur: { push: true, email: true },
+  /*
+    Een bericht van buiten (Wintermoods, de verhuursite, …) dat drie keer niet
+    verwerkt raakte. Alleen beheerders, beide kanalen: een bericht dat blijft
+    liggen is een klant die niets hoort — zie `functions/messaging-verwerking.js`.
+  */
+  messaging: { push: true, email: true },
 }
 
 /**

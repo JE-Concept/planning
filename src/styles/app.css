@@ -3882,3 +3882,20 @@ button.je-paneel-kaart:hover {
     border-radius: 0;
   }
 }
+
+/* ── Instellingen → Messaging: de log van wat van buiten binnenkwam ───────── */
+.je-messaging { list-style: none; margin: 0; padding: 0; }
+.je-messaging__rij { padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-hairline); display: flex; flex-direction: column; gap: var(--space-2); }
+.je-messaging__kop { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); }
+.je-messaging__bron { font: var(--type-caption); text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); }
+.je-messaging__soort { font: var(--type-body-sm); color: var(--text-1); }
+.je-messaging__tijd { margin-left: auto; }
+.je-messaging__detail { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.je-messaging__standen { display: flex; flex-direction: column; gap: var(--space-2); }
+.je-messaging__stand { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); min-height: 32px; }
+.je-messaging__fout { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.je-messaging__link { font: var(--type-body-sm); color: var(--accent); text-decoration: underline; min-height: 32px; display: inline-flex; align-items: center; }
+@media (max-width: 559px) {
+  .je-messaging__rij { padding: var(--space-3) var(--space-4); }
+  .je-messaging__tijd { margin-left: 0; flex-basis: 100%; }
+}

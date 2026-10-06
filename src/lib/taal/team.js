@@ -387,6 +387,11 @@ export default {
     nl: 'Een online betaalde huur of een offerteaanvraag van rental.jeconcept.be. Alleen voor beheerders.',
     en: 'A rental paid online or a quote request from rental.jeconcept.be. Admins only.',
   },
+  'melding.messaging_titel': { nl: 'Berichten van buiten', en: 'Messages from outside' },
+  'melding.messaging_uitleg': {
+    nl: 'Een aanvraag van Wintermoods of een andere site die drie keer niet verwerkt raakte. Alleen voor beheerders.',
+    en: 'A request from Wintermoods or another site that failed to process three times. Admins only.',
+  },
 
   'melding.push_niet_ingesteld': {
     nl: 'Meldingen op je toestel zijn voor deze installatie nog niet ingesteld. Tot dat gebeurt komt alles per e-mail binnen.',

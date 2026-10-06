@@ -368,7 +368,9 @@ Wintermoods, de verhuursite, en straks Bar Vue en Feestbeest sturen elk aanvrage
 
 Aan de kant van Wintermoods (repo `Kenjeklanten/feestbeest`) heet de token `WM_JEPLAN_TOKEN` en het adres `WM_JEPLAN_URL`; de inrichting staat als stap A7 in `docs/handover-chrome-configuratie.md`.
 
-Nog niet gebouwd (fase 2): een geplande herkansing voor berichten met stand `fout`, een melding aan de beheerders na drie mislukte pogingen, en een tabblad *Messaging* onder Instellingen met per bericht de stand per verwerker.
+**Als een verwerker faalt.** Een geplande functie probeert elk kwartier de berichten met stand `fout` opnieuw, zolang ze jonger zijn dan zeven dagen en nog geen drie pogingen hadden (`functions/messaging-stand.js` zegt wat herkansbaar is; de test legt het vast). Een eventlijst die even niet te lezen was, is een kwartier later meestal terug. Na de derde mislukking stopt de herkansing en krijgen de beheerders één melding (soort `messaging`, push én mail): een bericht dat drie keer faalt, heeft een mens nodig, en een vierde poging zonder mens is dezelfde fout voor de vierde keer. Herkansing en trigger raken elkaar niet: een bericht zonder stand is van de trigger, een bericht met `fout` van de herkansing.
+
+**Instellingen → Messaging** toont de laatste honderd berichten met per verwerker de stand: klaar met een link naar de kaart, mislukt met de fout en het aantal pogingen, of niet van toepassing. De knop **Herspelen** laat de verwerker opnieuw lopen via de callable `messagingHerspelen` (alleen beheerders): de log zelf blijft onveranderlijk voor de browser, en dat hoort zo. Herspelen begint de telling opnieuw, ook voor een bericht dat al vastgelopen was.
 
 ---
 

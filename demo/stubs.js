@@ -50,6 +50,20 @@ const DEMO_PLOEG = [
 ]
 
 export const httpsCallable = (_functions, naam) => async (gegevens) => {
+  if (naam === 'messagingHerspelen') {
+    // De demo heeft geen verwerker; ze zet de stand op klaar zodat het scherm
+    // laat zien wat herspelen doet.
+    const { allDocs, schrijfAlsServer } = await import('./firestore.js')
+    const id = gegevens?.id
+    const verwerker = gegevens?.verwerker ?? 'event'
+    const huidig = allDocs().get(`messaging/${id}`)
+    if (!huidig) throw new Error('not-found')
+    // Zoals de functie: langs de regels heen, want de browser mag de log niet schrijven.
+    schrijfAlsServer('messaging', id, {
+      verwerking: { ...(huidig.verwerking ?? {}), [verwerker]: { stand: 'klaar', taskId: 't-trouw', op: new Date() } },
+    })
+    return { data: { ok: true, stand: 'klaar' } }
+  }
   if (naam === 'linkVoorbeeld') return { data: { url: gegevens?.url ?? null, ...VERZONNEN_KAARTJE } }
   if (naam === 'ploegLijst') {
     return { data: { mensen: DEMO_PLOEG.map(({ id, naam: n }) => ({ id, naam: n })) } }

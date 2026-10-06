@@ -1097,6 +1097,30 @@ await test('een bijlage uit Drive opent in een voorvertoning, zonder de fiche te
   await page.close()
 })
 
+await test('het tabblad Messaging toont wat van buiten binnenkwam, met de stand per verwerker', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Messaging' }).click()
+  await page.waitForTimeout(600)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Berichten van buiten'), 'het paneel staat er niet')
+  // Drie standen uit de demo: klaar met een kaart, vastgelopen na drie pogingen, en niet van toepassing.
+  zouden(bevat(tekst, 'wintermoods'), 'de bron staat er niet')
+  zouden(bevat(tekst, 'reservatie.aangevraagd'), 'de soort staat er niet')
+  zouden(bevat(tekst, 'Klaar'), 'een verwerkt bericht toont geen "Klaar"')
+  zouden(bevat(tekst, 'Mislukt') && bevat(tekst, '3 pogingen'), 'een vastgelopen bericht zegt niet hoe vaak het mislukte')
+  zouden(bevat(tekst, 'geen_eventlijst'), 'de fout zelf staat er niet bij')
+  zouden(bevat(tekst, 'Niet van toepassing'), 'een soort die niet voor de verwerker is, zegt dat niet')
+  zouden(bevat(tekst, 'Naar de kaart'), 'van een verwerkt bericht kun je niet naar de kaart')
+
+  // Herspelen zet het vastgelopen bericht weer in gang (in de demo: meteen klaar).
+  const rij = page.locator('.je-messaging__rij', { hasText: 'Tom Peeters' })
+  await rij.getByRole('button', { name: 'Herspelen' }).click()
+  await page.waitForTimeout(700)
+  zouden(bevat(await rij.innerText(), 'Klaar'), 'herspelen verandert de stand niet')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('de instellingen zeggen welke Drive de documenten draagt', async () => {
   const page = await tabblad('/instellingen')
   await page.getByRole('tab', { name: 'Documenten' }).click()

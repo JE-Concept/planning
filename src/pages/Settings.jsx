@@ -13,6 +13,7 @@ import HerhalingenPaneel from '@components/settings/HerhalingenPaneel'
 import SysteemPaneel from '@components/settings/SysteemPaneel'
 import MargePaneel from '@components/settings/MargePaneel'
 import DrivePaneel from '@components/settings/DrivePaneel'
+import MessagingPaneel from '@components/settings/MessagingPaneel'
 import ChecklistEditor from '@components/settings/ChecklistEditor'
 import FormuleSettings from '@components/settings/FormuleSettings'
 import { BrandSettings, StructureSettings } from '@components/settings/LegacySettings'
@@ -57,6 +58,7 @@ const TABS = [
   { value: 'herhalingen', sleutel: 'inst.tab.herhalingen' },
   { value: 'marge', sleutel: 'inst.tab.marge' },
   { value: 'drive', sleutel: 'inst.tab.drive' },
+  { value: 'messaging', sleutel: 'inst.tab.messaging' },
   { value: 'systeem', sleutel: 'inst.tab.systeem' },
 ]
 
@@ -136,6 +138,7 @@ export default function Settings() {
             {tab === 'herhalingen' ? <HerhalingenPaneel /> : null}
             {tab === 'marge' ? <MargePaneel /> : null}
             {tab === 'drive' ? <DrivePaneel /> : null}
+            {tab === 'messaging' ? <MessagingPaneel /> : null}
             {tab === 'systeem' ? <SysteemPaneel /> : null}
           </div>
         )}

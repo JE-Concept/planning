@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { berichtId, bronVanToken, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
 import { KAART_VOOR_SOORT, kaartId, kaartVelden, leesWintermoods, omschrijving, titelVan } from '../functions/messaging-kaart.js'
+import { HERKANSING_DAGEN, MAX_POGINGEN, herkansbaar, isVastgelopen, samenvatting } from '../functions/messaging-stand.js'
 
 /*
   Messaging: de ene ingang voor berichten van buiten, en de verwerker die er
@@ -113,5 +114,38 @@ describe('de kaart uit een Wintermoods-aanvraag', () => {
     expect(velden.pax).toBe(24)
     expect(velden.eventDate).toEqual(new Date('2026-12-19T12:00:00'))
     expect(velden.tags).toEqual(['wintermoods'])
+  })
+})
+
+describe('de stand per verwerker', () => {
+  const dag = 86400000
+  const nu = Date.parse('2026-10-06T12:00:00Z')
+  const bericht = (verwerking, dagenGeleden = 1) => ({
+    bron: 'wintermoods', soort: 'reservatie.aangevraagd', sleutel: 'x', inhoud: { naam: 'Lies' },
+    ontvangen: new Date(nu - dagenGeleden * dag), verwerking,
+  })
+
+  it('herkanst alleen wat op fout staat', () => {
+    expect(herkansbaar(bericht({}), 'event', nu)).toBe(false)
+    expect(herkansbaar(bericht({ event: { stand: 'klaar' } }), 'event', nu)).toBe(false)
+    expect(herkansbaar(bericht({ event: { stand: 'overgeslagen' } }), 'event', nu)).toBe(false)
+    expect(herkansbaar(bericht({ event: { stand: 'fout', pogingen: 1 } }), 'event', nu)).toBe(true)
+  })
+
+  it('geeft het op na drie pogingen, en zegt dan dat het vastgelopen is', () => {
+    expect(herkansbaar(bericht({ event: { stand: 'fout', pogingen: 2 } }), 'event', nu)).toBe(true)
+    expect(herkansbaar(bericht({ event: { stand: 'fout', pogingen: MAX_POGINGEN } }), 'event', nu)).toBe(false)
+    expect(isVastgelopen(bericht({ event: { stand: 'fout', pogingen: MAX_POGINGEN } }), 'event')).toBe(true)
+    expect(isVastgelopen(bericht({ event: { stand: 'fout', pogingen: 1 } }), 'event')).toBe(false)
+  })
+
+  it('laat een oud bericht met rust: wie dat nog wil, herspeelt met de hand', () => {
+    expect(herkansbaar(bericht({ event: { stand: 'fout', pogingen: 1 } }, HERKANSING_DAGEN + 1), 'event', nu)).toBe(false)
+    expect(herkansbaar(bericht({ event: { stand: 'fout', pogingen: 1 } }, HERKANSING_DAGEN - 1), 'event', nu)).toBe(true)
+  })
+
+  it('vat een bericht in één regel samen, met de klant erbij als die er is', () => {
+    expect(samenvatting(bericht({}))).toBe('wintermoods · reservatie.aangevraagd · x · Lies')
+    expect(samenvatting({ bron: 'barvue', soort: 'a.b', sleutel: '1', inhoud: {} })).toBe('barvue · a.b · 1')
   })
 })

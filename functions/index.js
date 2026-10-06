@@ -793,7 +793,12 @@ export const { verhuurOrderBetaald, verhuurAanvraagBinnen } = maakVerhuurOrders(
   functions-messaging/) wordt hier een kaart op het bord. Zie
   `messaging-verwerking.js` voor de stand per verwerker en het herspelen.
 */
-export const { messagingEvent } = maakMessagingVerwerking({ db, region: REGION })
+export const { messagingEvent, messagingHerkansing, messagingHerspelen } = maakMessagingVerwerking({
+  db,
+  region: REGION,
+  verstuur,
+  alleProfielen,
+})
 
 /* Werk dat vanzelf terugkomt; zie `herhalingen.js` voor waarom het 's nachts
    gebeurt en niet zodra iemand de tool opent. */

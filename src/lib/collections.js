@@ -66,6 +66,7 @@ export const COL = {
     `firestore.rules`. De browser rekent niets af.
   */
   huurorders: 'huurorders',
+  messaging: 'messaging',
   /*
     Offerteaanvragen van de verhuursite.
 
