@@ -91,7 +91,9 @@ export function maakMessaging({ db, region }) {
       if (verzoek.method !== 'POST') return antwoord.status(405).json({ fout: 'methode' })
 
       const tokens = leesTokens(MESSAGING_TOKENS.value())
-      const bron = bronVanToken(tokens, verzoek.get('authorization'), gelijk)
+      // Bearer in Authorization; een formulier-plugin die enkel een eigen header kan zetten,
+      // mag `X-Messaging-Token` gebruiken. Nooit in de URL: die belandt in logboeken.
+      const bron = bronVanToken(tokens, verzoek.get('authorization') || verzoek.get('x-messaging-token'), gelijk)
       if (!bron) return antwoord.status(401).json({ fout: 'geen_toegang' })
 
       // Het oude platte Wintermoods-contract blijft werken op zijn oude adres.

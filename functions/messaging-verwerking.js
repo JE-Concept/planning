@@ -4,7 +4,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { FieldValue } from 'firebase-admin/firestore'
 import { logger } from 'firebase-functions'
 import { isEventLijst } from './events-bron.js'
-import { KAART_VOOR_SOORT, kaartId, kaartVelden } from './messaging-kaart.js'
+import { BRONNEN, KAART_VOOR_SOORT, kaartId, kaartVelden, wordtKaart } from './messaging-kaart.js'
 import { MAX_POGINGEN, VERWERKERS, herkansbaar, isVastgelopen, samenvatting } from './messaging-stand.js'
 
 /**
@@ -31,9 +31,12 @@ import { MAX_POGINGEN, VERWERKERS, herkansbaar, isVastgelopen, samenvatting } fr
  * één melding: een bericht dat drie keer faalt, heeft een mens nodig, en een
  * vierde poging zonder mens is dezelfde fout voor de vierde keer.
  *
- * Eerste verwerker: **event**. Een `reservatie.aangevraagd` wordt een kaart
- * in de kolom `request` — geen aanvraagrij, want zo'n aanvraag ís al een
- * datum met een aantal personen en een formule, alleen nog niet bevestigd.
+ * Eerste verwerker: **event**. Een `reservatie.aangevraagd` of
+ * `offerte.aangevraagd` van een bekende bron (zie `BRONNEN` in
+ * `messaging-kaart.js`) wordt een kaart in de kolom `request` — geen
+ * aanvraagrij, want zo'n aanvraag ís al een datum met een aantal personen,
+ * alleen nog niet bevestigd. Een bron met `kaart: false` (de verhuursite)
+ * komt in de log maar krijgt hier geen kaart: die maakt haar eigen weg al.
  * Het id van de kaart is afleidbaar uit het bericht, en `create` in plaats
  * van `set`: bestaat de kaart al, dan heeft het team ze misschien al
  * verplaatst, en die springt dan niet terug naar `request`.
@@ -45,6 +48,14 @@ async function eventLijst(db) {
     .map((d) => ({ id: d.id, ...d.data() }))
     .filter((l) => !l.archived)
     .find(isEventLijst)
+}
+
+/** Het merk van de bron in de werkruimte, zodat de kaart de juiste kleur krijgt. Geen merk is geen fout. */
+async function merkId(db, bron) {
+  const naam = BRONNEN[bron]?.merk
+  if (!naam) return null
+  const snap = await db.collection('brands').where('name', '==', naam).limit(1).get()
+  return snap.empty ? null : snap.docs[0].id
 }
 
 async function maakKaart(db, bericht) {
@@ -72,7 +83,7 @@ async function maakKaart(db, bericht) {
       statusColor: kolom.color,
       statusKind: kolom.kind,
       open: kolom.kind !== 'done' && kolom.kind !== 'closed',
-      ...kaartVelden(bericht),
+      ...kaartVelden(bericht, { brandId: await merkId(db, bericht.bron) }),
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     })
@@ -120,7 +131,7 @@ export function maakMessagingVerwerking({ db, region, verstuur, alleProfielen })
    */
   async function verwerk(ref, bericht, { gedwongen = false } = {}) {
     const vorige = bericht.verwerking?.event
-    if (!KAART_VOOR_SOORT[bericht.soort]) {
+    if (!wordtKaart(bericht)) {
       if (vorige?.stand !== 'overgeslagen') {
         await ref.update({ 'verwerking.event': { stand: 'overgeslagen', op: FieldValue.serverTimestamp() } })
       }

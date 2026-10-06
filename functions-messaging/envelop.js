@@ -27,23 +27,68 @@ export const tekst = (waarde, max) => String(waarde ?? '').trim().slice(0, max)
  */
 export const berichtId = ({ bron, sleutel }) => `${bron}-${sleutel}`
 
+/** Velden van de envelop zelf; al de rest van een plat formulier is inhoud. */
+const ENVELOP_VELDEN = new Set(['bron', 'soort', 'sleutel', 'tijdstip', 'taal', 'inhoud'])
+/** Bovengrens voor de inhoud: een aanvraag is een formulier, geen bijlage. */
+const MAX_INHOUD = 20000
+/** Zonder soort is een bericht van een formulier een vraag om een offerte. */
+export const STANDAARD_SOORT = 'offerte.aangevraagd'
+
+/**
+ * Een kenmerk uit de inhoud zelf, voor een formulier dat er geen meestuurt
+ * (een webhook van een WordPress- of Wix-formulier). Dezelfde inzending twee
+ * keer geeft hetzelfde kenmerk en dus één rij. FNV-1a over de JSON met
+ * gesorteerde sleutels: geen cryptografie nodig, alleen een vaste vingerafdruk.
+ */
+export function kenmerkVan(inhoud) {
+  const vast = (v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, vast(v[k])]))
+      : v
+  const tekst = JSON.stringify(vast(inhoud))
+  let h1 = 0x811c9dc5
+  let h2 = 0x01000193
+  for (let i = 0; i < tekst.length; i += 1) {
+    const c = tekst.charCodeAt(i)
+    h1 = Math.imul(h1 ^ c, 16777619) >>> 0
+    h2 = Math.imul(h2 ^ c, 2246822519) >>> 0
+  }
+  return `h${h1.toString(36)}${h2.toString(36)}`
+}
+
 /**
  * De envelop nakijken. Geeft `{ fout }` met een korte code, of `{ envelop }`
  * met precies de velden die in de log komen — nooit het ruwe verzoek, want wat
  * er niet in de envelop hoort, hoort ook niet in de database.
+ *
+ * Twee vormen worden aanvaard. De volledige envelop (`soort`, `sleutel`,
+ * `inhoud`) is wat een eigen site stuurt. Een **plat formulier** — gewoon de
+ * velden, zoals een formulier-webhook ze verstuurt — wordt in de envelop
+ * gestoken: zonder `inhoud` wordt al wat geen envelopveld is de inhoud,
+ * zonder `soort` geldt `offerte.aangevraagd`, en zonder `sleutel` is het
+ * kenmerk een vingerafdruk van de inhoud. Zo kan een site waar we geen code op
+ * draaien (Bar Vue, Meer, Ken je klanten) aansluiten met enkel een webhook.
  */
 export function leesEnvelop(body, { bron } = {}) {
   const b = tekst(bron ?? body?.bron, 31)
   if (!BRON.test(b)) return { fout: 'geen_bron' }
-  const soort = tekst(body?.soort, 60)
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { fout: 'geen_inhoud' }
+
+  const plat = body.inhoud === undefined
+  const inhoud = plat
+    ? Object.fromEntries(Object.entries(body).filter(([k]) => !ENVELOP_VELDEN.has(k)))
+    : body.inhoud
+  if (inhoud === null || typeof inhoud !== 'object' || Array.isArray(inhoud)) return { fout: 'geen_inhoud' }
+  if (Object.keys(inhoud).length === 0) return { fout: 'geen_inhoud' }
+  if (JSON.stringify(inhoud).length > MAX_INHOUD) return { fout: 'te_groot' }
+
+  const soort = tekst(body.soort, 60) || STANDAARD_SOORT
   if (!SOORT.test(soort)) return { fout: 'geen_soort' }
-  const sleutel = tekst(body?.sleutel, 80)
+  const sleutel = tekst(body.sleutel, 80) || kenmerkVan(inhoud)
   if (!SLEUTEL.test(sleutel)) return { fout: 'geen_sleutel' }
-  if (body?.inhoud === null || typeof body?.inhoud !== 'object' || Array.isArray(body.inhoud)) {
-    return { fout: 'geen_inhoud' }
-  }
+
   // Een tijdstip van de bron is welkom maar niet nodig; de log kent haar eigen ontvangsttijd.
-  const tijdstip = tekst(body?.tijdstip, 40)
+  const tijdstip = tekst(body.tijdstip, 40)
   const tijd = tijdstip && !Number.isNaN(Date.parse(tijdstip)) ? new Date(tijdstip).toISOString() : null
 
   return {
@@ -52,8 +97,8 @@ export function leesEnvelop(body, { bron } = {}) {
       soort,
       sleutel,
       tijdstip: tijd,
-      taal: TALEN.includes(body?.taal) ? body.taal : 'nl',
-      inhoud: body.inhoud,
+      taal: TALEN.includes(body.taal) ? body.taal : 'nl',
+      inhoud,
     },
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { berichtId, bronVanToken, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
-import { KAART_VOOR_SOORT, kaartId, kaartVelden, leesWintermoods, omschrijving, titelVan } from '../functions/messaging-kaart.js'
+import { STANDAARD_SOORT, berichtId, bronVanToken, kenmerkVan, leesEnvelop, leesTokens, wintermoodsNaarEnvelop } from '../functions-messaging/envelop.js'
+import { BRONNEN, KAART_VOOR_SOORT, kaartId, kaartVelden, leesAanvraag, leesDatum, leesWintermoods, omschrijving, titelVan, wordtKaart } from '../functions/messaging-kaart.js'
 import { HERKANSING_DAGEN, MAX_POGINGEN, herkansbaar, isVastgelopen, samenvatting } from '../functions/messaging-stand.js'
 
 /*
@@ -23,12 +23,26 @@ describe('de envelop', () => {
     expect(Object.keys(envelop)).not.toContain('iets')
   })
 
-  it('weigert zonder bron, soort, sleutel of inhoud — elk met een eigen code', () => {
+  it('weigert zonder bron, met een verkeerde soort of sleutel, of zonder inhoud — elk met een eigen code', () => {
     expect(leesEnvelop(goed, {})).toEqual({ fout: 'geen_bron' })
     expect(leesEnvelop({ ...goed, soort: 'Reservatie' }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_soort' })
-    expect(leesEnvelop({ ...goed, sleutel: '' }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_sleutel' })
+    expect(leesEnvelop({ ...goed, sleutel: 'met spatie' }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_sleutel' })
     expect(leesEnvelop({ ...goed, inhoud: 'tekst' }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_inhoud' })
     expect(leesEnvelop({ ...goed, inhoud: [1] }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_inhoud' })
+    expect(leesEnvelop({ ...goed, inhoud: {} }, { bron: 'wintermoods' })).toEqual({ fout: 'geen_inhoud' })
+    expect(leesEnvelop({ ...goed, inhoud: { bericht: 'x'.repeat(30000) } }, { bron: 'wintermoods' })).toEqual({ fout: 'te_groot' })
+  })
+
+  it('neemt een plat formulier aan, zoals een webhook van WordPress of Wix het stuurt', () => {
+    const { envelop } = leesEnvelop({ 'your-name': 'An', 'your-email': 'an@example.be', datum: '12/12/2026' }, { bron: 'barvue' })
+    expect(envelop.soort).toBe(STANDAARD_SOORT)
+    expect(envelop.inhoud).toEqual({ 'your-name': 'An', 'your-email': 'an@example.be', datum: '12/12/2026' })
+    expect(envelop.sleutel).toMatch(/^h[a-z0-9]+$/)
+  })
+
+  it('geeft dezelfde inzending zonder eigen kenmerk toch hetzelfde kenmerk, ook in een andere volgorde', () => {
+    expect(kenmerkVan({ a: 1, b: { c: 2, d: 3 } })).toBe(kenmerkVan({ b: { d: 3, c: 2 }, a: 1 }))
+    expect(kenmerkVan({ a: 1 })).not.toBe(kenmerkVan({ a: 2 }))
   })
 
   it('laat een onleesbaar tijdstip weg en valt terug op Nederlands', () => {
@@ -81,7 +95,8 @@ describe('de kaart uit een Wintermoods-aanvraag', () => {
   it('wordt een kaart in request, met een afleidbaar id', () => {
     expect(KAART_VOOR_SOORT[bericht.soort]).toBe('request')
     expect(kaartId(bericht)).toBe('wm-0f1c')
-    expect(kaartId({ ...bericht, bron: 'barvue' })).toBeNull()
+    expect(kaartId({ ...bericht, bron: 'barvue' })).toBe('msg-barvue-0f1c')
+    expect(kaartId({ ...bericht, sleutel: '' })).toBeNull()
   })
 
   it('normaliseert de inhoud: aantal, datum, grenzen', () => {
@@ -89,7 +104,7 @@ describe('de kaart uit een Wintermoods-aanvraag', () => {
     expect(a.personen).toBe(24)
     expect(a.datum).toBe('2026-12-19')
     expect(leesWintermoods({ ...bericht.inhoud, personen: 5000 }).personen).toBe(1000)
-    expect(leesWintermoods({ ...bericht.inhoud, datum: '19/12/2026' }).datum).toBeNull()
+    expect(leesWintermoods({ ...bericht.inhoud, datum: 'volgende week' }).datum).toBeNull()
   })
 
   it('heet naar de klant en het aantal, en leest in de omschrijving wat de klant invulde', () => {
@@ -147,5 +162,58 @@ describe('de stand per verwerker', () => {
   it('vat een bericht in één regel samen, met de klant erbij als die er is', () => {
     expect(samenvatting(bericht({}))).toBe('wintermoods · reservatie.aangevraagd · x · Lies')
     expect(samenvatting({ bron: 'barvue', soort: 'a.b', sleutel: '1', inhoud: {} })).toBe('barvue · a.b · 1')
+  })
+})
+
+describe('elke bron op het bord', () => {
+  it('kent elke site van JE Concept, en de verhuursite krijgt geen tweede kaart', () => {
+    for (const bron of ['wintermoods', 'feestbeest', 'jeconcept', 'jebookings', 'barvue', 'meer', 'kenjeklanten']) {
+      expect(wordtKaart({ bron, soort: 'offerte.aangevraagd' }), bron).toBe(true)
+    }
+    expect(wordtKaart({ bron: 'verhuur', soort: 'offerte.aangevraagd' })).toBe(false)
+    expect(wordtKaart({ bron: 'onbekend', soort: 'offerte.aangevraagd' })).toBe(false)
+    expect(wordtKaart({ bron: 'barvue', soort: 'huur.betaald' })).toBe(false)
+    expect(BRONNEN.barvue.merk).toBe('Bar Vue')
+  })
+
+  it('leest de velden van een formulier onder hun gewone namen, in drie talen', () => {
+    const a = leesAanvraag({ 'your-name': 'An Peeters', 'your-email': 'an@example.be', gsm: '0470 00 00 00', 'Aantal personen': '35 personen', Date: '2026-11-07', 'your-message': 'Verjaardag', Budget: '1500' })
+    expect(a.naam).toBe('An Peeters')
+    expect(a.email).toBe('an@example.be')
+    expect(a.telefoon).toBe('0470 00 00 00')
+    expect(a.personen).toBe(35)
+    expect(a.datum).toBe('2026-11-07')
+    expect(a.bericht).toBe('Verjaardag')
+    // Wat geen vaste plek heeft, gaat niet verloren.
+    expect(a.extra).toEqual([['Budget', '1500']])
+    expect(leesAanvraag({ Prénom: 'Marie', 'Nom de famille': 'Dubois', Courriel: 'm@example.be' }).naam).toBe('Marie Dubois')
+  })
+
+  it('leest een datum in de Belgische vorm', () => {
+    expect(leesDatum('7/11/2026')).toBe('2026-11-07')
+    expect(leesDatum('07.11.2026')).toBe('2026-11-07')
+    expect(leesDatum('2026-11-07T18:00:00Z')).toBe('2026-11-07')
+    expect(leesDatum('zaterdag')).toBeNull()
+  })
+
+  it('maakt van een Bar Vue-aanvraag een kaart met het merk, de plek en wat de klant invulde', () => {
+    const b = { bron: 'barvue', soort: 'offerte.aangevraagd', sleutel: 'h1', taal: 'nl', inhoud: { naam: 'An', email: 'an@example.be', personen: 40, Budget: '1500' } }
+    const v = kaartVelden(b, { brandId: 'bar-vue' })
+    expect(v.title).toBe('Bar Vue — An (40p)')
+    expect(v.location).toBe('Bar Vue')
+    expect(v.brandId).toBe('bar-vue')
+    expect(v.tags).toEqual(['barvue'])
+    expect(v.berichtId).toBe('barvue-h1')
+    expect(v.description).toContain('Aanvraag via barvue.be.')
+    expect(v.description).toContain('Budget: 1500')
+    expect(kaartVelden(b).brandId).toBeUndefined()
+  })
+
+  it('zet een Feestbeest-aanvraag op het bord als kinderfeest', () => {
+    const v = kaartVelden({ bron: 'feestbeest', soort: 'reservatie.aangevraagd', sleutel: 'x', taal: 'fr', inhoud: { naam: 'Lou', 'aantal kinderen': 12, gelegenheid: 'slaapfeest' } })
+    expect(v.eventType).toBe('Kinderfeest')
+    expect(v.pax).toBe(12)
+    expect(v.title).toBe('Feestbeest — Lou (12p)')
+    expect(omschrijving(leesAanvraag({ naam: 'Lou' }, 'fr'), 'feestbeest')).toContain('feest-beest.be (FR)')
   })
 })

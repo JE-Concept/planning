@@ -27,6 +27,36 @@ import { logger } from 'firebase-functions'
 
 const KOLOM_NA_BETALING = 'planning ongoing'
 
+/**
+ * Wat de verhuursite binnenbrengt, ook in de log van messaging zetten.
+ *
+ * De verhuursite heeft haar eigen weg — een aanvraag in het postvak, een
+ * betaalde huur als event — en die blijft. Maar wie onder Instellingen →
+ * Messaging kijkt wat er van buiten binnenkwam, hoort ook deze te zien: één
+ * plek voor "kwam het aan". De bron `verhuur` staat in `BRONNEN` met
+ * `kaart: false`, dus de verwerker maakt er geen tweede kaart van.
+ * `create` met een vast id: een trigger die twee keer vuurt, geeft één rij.
+ * Mislukt dit, dan gaat de rest gewoon door — de log is een spiegel, niet de
+ * weg zelf.
+ */
+async function spiegelNaarLog(db, { soort, sleutel, inhoud }) {
+  try {
+    await db.collection('messaging').doc(`verhuur-${sleutel}`).create({
+      bron: 'verhuur',
+      soort,
+      sleutel,
+      tijdstip: null,
+      taal: 'nl',
+      inhoud,
+      ontvangen: FieldValue.serverTimestamp(),
+      verwerking: {},
+      versie: 1,
+    })
+  } catch (err) {
+    if (err?.code !== 6) logger.warn('Verhuur niet in de messaging-log gezet', { sleutel, fout: String(err?.message ?? err) })
+  }
+}
+
 export function maakVerhuurOrders({ db, region, verstuur, alleProfielen }) {
   /** Beheerders: wie het magazijn en het geld draagt. */
   const beheerders = (profielen) =>
@@ -42,6 +72,19 @@ export function maakVerhuurOrders({ db, region, verstuur, alleProfielen }) {
 
       const orderId = event.params.id
       const profielen = await alleProfielen()
+
+      await spiegelNaarLog(db, {
+        soort: na.status === 'betaald' ? 'huur.betaald' : 'huur.nakijken',
+        sleutel: `order-${orderId}`,
+        inhoud: {
+          naam: na.klant?.naam ?? '',
+          email: na.klant?.email ?? '',
+          van: na.van ?? null,
+          tot: na.tot ?? null,
+          bedrag: Number(na.teBetalen ?? 0),
+          regels: (na.regels ?? []).map((r) => `${r.aantal} × ${r.naam}`).join(', '),
+        },
+      })
 
       /*
         Idempotent op het document zelf: Firestore levert een trigger soms
@@ -81,6 +124,18 @@ export function maakVerhuurOrders({ db, region, verstuur, alleProfielen }) {
     async (event) => {
       const aanvraag = event.data?.data()
       if (!aanvraag) return
+      await spiegelNaarLog(db, {
+        soort: 'offerte.aangevraagd',
+        sleutel: `aanvraag-${event.params.id}`,
+        inhoud: {
+          naam: aanvraag.naam ?? '',
+          email: aanvraag.email ?? '',
+          telefoon: aanvraag.telefoon ?? '',
+          datum: aanvraag.datum ?? null,
+          personen: aanvraag.gasten ?? null,
+          bericht: aanvraag.wat ?? '',
+        },
+      })
       const profielen = await alleProfielen()
       const wie = aanvraag.naam || aanvraag.email || 'iemand'
 
