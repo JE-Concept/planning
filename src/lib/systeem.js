@@ -19,10 +19,29 @@ export const STIL_NA_UREN = 6
  */
 export const ACHTER_NA_MINUTEN = 20
 
-/** Sinds wanneer het postvak achterloopt, of null als het bij is (of nog nooit draaide). */
+/**
+ * Na hoeveel minuten falen het scherm Aanvragen het zegt: twee runs na elkaar.
+ * Eén mislukte run kan een hapering bij Gmail zijn; twee keer een geweigerde
+ * login is dat niet.
+ */
+export const FOUT_NA_MINUTEN = 10
+
+function alsDatum(waarde) {
+  const d = waarde?.toDate?.() ?? (waarde ? new Date(waarde) : null)
+  return d && !Number.isNaN(d.getTime()) ? d : null
+}
+
+/**
+ * Sinds wanneer het postvak achterloopt, of null als het bij is (of nog nooit draaide).
+ *
+ * Twee manieren om achter te lopen: de ophaler zegt zelf dat hij faalt
+ * (`foutSinds`, ook als hij nog nooit slaagde), of hij zwijgt al te lang.
+ */
 export function postvakAchterSinds(postvak, nu = new Date()) {
-  const laatste = postvak?.laatsteKeer?.toDate?.() ?? (postvak?.laatsteKeer ? new Date(postvak.laatsteKeer) : null)
-  if (!laatste || Number.isNaN(laatste.getTime())) return null
+  const foutSinds = alsDatum(postvak?.foutSinds)
+  if (foutSinds && nu - foutSinds > FOUT_NA_MINUTEN * 60000) return foutSinds
+  const laatste = alsDatum(postvak?.laatsteKeer)
+  if (!laatste) return null
   return nu - laatste > ACHTER_NA_MINUTEN * 60000 ? laatste : null
 }
 
@@ -36,13 +55,14 @@ export function postvakAchterSinds(postvak, nu = new Date()) {
 export function oordeel({ postvak = null, mislukt = [], nu = new Date() } = {}) {
   const laatste = postvak?.laatsteKeer?.toDate?.() ?? (postvak?.laatsteKeer ? new Date(postvak.laatsteKeer) : null)
   const urenStil = laatste ? (nu - laatste) / 3600000 : null
-  const postStaat = laatste == null ? 'nooit' : urenStil > STIL_NA_UREN ? 'stil' : 'goed'
+  const faalt = alsDatum(postvak?.foutSinds) != null
+  const postStaat = faalt ? 'fout' : laatste == null ? 'nooit' : urenStil > STIL_NA_UREN ? 'stil' : 'goed'
 
   return {
     postStaat,
     urenStil: urenStil == null ? null : Math.floor(urenStil),
     mislukteMails: mislukt.length,
     // Eén woord voor het geheel: dat is wat er als badge op het scherm komt.
-    stand: postStaat === 'stil' || mislukt.length > 0 ? 'let_op' : postStaat === 'nooit' ? 'onbekend' : 'goed',
+    stand: postStaat === 'stil' || postStaat === 'fout' || mislukt.length > 0 ? 'let_op' : postStaat === 'nooit' ? 'onbekend' : 'goed',
   }
 }

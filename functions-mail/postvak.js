@@ -98,6 +98,7 @@ export const haalPostOp = onSchedule(
       // Anders blijft de verbinding open en eindigt de functie later nog eens
       // met "Socket timeout" (gezien op 7 oktober).
       client.close()
+      await noteerFout(houder, stand, err.authenticationFailed ? 'aanmelden' : 'verbinden')
       throw err
     }
 
@@ -146,6 +147,7 @@ export const haalPostOp = onSchedule(
       }
     } catch (err) {
       logger.error('IMAP: map openen of post lezen mislukt', { postbus, ...imapFoutVoorLog(err) })
+      await noteerFout(houder, stand, 'lezen')
       throw err
     } finally {
       // Een nette logout als het kan, anders de verbinding hard dicht.
@@ -153,12 +155,37 @@ export const haalPostOp = onSchedule(
     }
 
     await houder.set(
-      { laatsteUid: hoogste, postbus, laatsteKeer: FieldValue.serverTimestamp(), laatsteAantal: gelezen },
+      {
+        laatsteUid: hoogste,
+        postbus,
+        laatsteKeer: FieldValue.serverTimestamp(),
+        laatsteAantal: gelezen,
+        foutSinds: FieldValue.delete(),
+        foutReden: FieldValue.delete(),
+      },
       { merge: true }
     )
     if (gelezen) logger.info('Post opgehaald', { aantal: gelezen, uid: hoogste })
   }
 )
+
+/**
+ * Bijhouden dat de ophaler faalt, voor het scherm Aanvragen.
+ *
+ * Alleen `laatsteKeer` bijhouden was niet genoeg: live had de ophaler nog nooit
+ * een geslaagde run, dus was er geen tijdstip om "achter" mee te rekenen, en
+ * zei Aanvragen "Het postvak is leeg" terwijl Gmail elke run weigerde (7 okt).
+ * `foutSinds` blijft staan zolang het faalt en verdwijnt bij de eerste
+ * geslaagde run. Lukt zelfs dit niet, dan staat de fout al in de log.
+ */
+async function noteerFout(houder, stand, reden) {
+  await houder
+    .set(
+      { foutSinds: stand.foutSinds ?? FieldValue.serverTimestamp(), foutReden: reden, laatsteFout: FieldValue.serverTimestamp() },
+      { merge: true }
+    )
+    .catch((err) => logger.error('Fout van de ophaler kon niet bijgehouden worden', { fout: err.message }))
+}
 
 /**
  * Eén bericht wegschrijven.

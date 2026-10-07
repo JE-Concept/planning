@@ -45,11 +45,16 @@ export default function SysteemPaneel() {
         goed={postStaat === 'goed'}
         titel={t('systeem.post')}
         tekst={
-          postStaat === 'nooit'
-            ? t('systeem.post_nooit')
-            : postStaat === 'stil'
-              ? t('systeem.post_stil', { uren: urenStil, grens: STIL_NA_UREN })
-              : t('systeem.post_goed', { wanneer: formatDateTime(laatste) })
+          postStaat === 'fout'
+            ? t('systeem.post_fout', {
+                sinds: formatDateTime(postvak.foutSinds?.toDate?.() ?? new Date(postvak.foutSinds)),
+                reden: postvak.foutReden ?? '?',
+              })
+            : postStaat === 'nooit'
+              ? t('systeem.post_nooit')
+              : postStaat === 'stil'
+                ? t('systeem.post_stil', { uren: urenStil, grens: STIL_NA_UREN })
+                : t('systeem.post_goed', { wanneer: formatDateTime(laatste) })
         }
       />
 

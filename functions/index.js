@@ -1035,7 +1035,13 @@ function logboekWegTrigger(collectie) {
       na: null,
     })
     if (!regel) return
-    const wie = wieVerwijderde({ authType: event.authType, authId: event.authId })
+    const { authType, authId } = event
+    // Een serviceaccount heeft een e-mailadres als id, een gebruiker zijn uid.
+    const isGebruiker =
+      Boolean(authId) && !String(authId).includes('@') && (await db.collection('profiles').doc(String(authId)).get()).exists
+    // Om na te kunnen gaan wat Firestore echt meegeeft; een uid is geen geheim.
+    logger.info('Logboek: verwijdering', { collectie, authType, authId: authId ?? null, isGebruiker })
+    const wie = wieVerwijderde({ authType, authId }, isGebruiker)
     await schrijfLogregel(wie ? { ...regel, ...wie } : regel)
   })
 }

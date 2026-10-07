@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { STIL_NA_UREN, oordeel, postvakAchterSinds } from '../src/lib/systeem'
+import { FOUT_NA_MINUTEN, STIL_NA_UREN, oordeel, postvakAchterSinds } from '../src/lib/systeem'
 
 const NU = new Date('2026-09-30T09:00:00')
 const urenGeleden = (n) => new Date(NU.getTime() - n * 3600000)
@@ -53,5 +53,15 @@ describe('loopt het postvak achter', () => {
   })
   it('nog nooit gedraaid is geen achterstand maar een taak', () => {
     expect(postvakAchterSinds(null, nu)).toBeNull()
+  })
+  it('een ophaler die faalt zonder ooit te slagen, loopt ook achter (7 okt live)', () => {
+    const foutSinds = new Date(nu.getTime() - (FOUT_NA_MINUTEN + 1) * 60000)
+    expect(postvakAchterSinds({ foutSinds }, nu)).toEqual(foutSinds)
+  })
+  it('één mislukte run is nog geen melding', () => {
+    expect(postvakAchterSinds({ foutSinds: new Date(nu.getTime() - 4 * 60000), laatsteKeer: minuten(9).laatsteKeer }, nu)).toBeNull()
+  })
+  it('het systeemoordeel zegt het ook', () => {
+    expect(oordeel({ postvak: { foutSinds: new Date(nu.getTime() - 60000) }, nu }).stand).toBe('let_op')
   })
 })

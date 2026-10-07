@@ -224,14 +224,20 @@ export function teOud(regel, nu = new Date()) {
 
 /**
  * Wie een document weggooide, zoals Firestore het meegeeft aan een trigger met
- * aanroeper. `app_user` is iemand die in de app aangemeld was; een
- * serviceaccount of het systeem zelf is een functie of een onderhoudsscript.
- * Vroeger stond hier "wie het als laatste bewerkte", en dan meestal
+ * aanroeper. Vroeger stond hier "wie het als laatste bewerkte", en dan meestal
  * "Onbekend".
+ *
+ * Firestore kent geen soort "gebruiker van de app": iemand die in de browser
+ * aangemeld is, komt binnen als `api_key` of `unknown`, met zijn uid als
+ * `authId`. De eerste versie telde `api_key` als het systeem, en live stond er
+ * "Het systeem verwijderde taak …" toen Jasper het in de app deed (7 okt).
+ * Daarom beslist het soort niet meer alleen: heeft `authId` een profiel in
+ * JE Plan (`isGebruiker`), dan is dat wie het deed. Alleen een serviceaccount
+ * of het systeem zelf (bv. een TTL) is "Het systeem".
  */
-export function wieVerwijderde({ authType, authId } = {}) {
-  if (authType === 'app_user' && authId) return { actorId: authId, actorZeker: true, actorSysteem: false }
-  if (authType === 'service_account' || authType === 'api_key' || authType === 'system') {
+export function wieVerwijderde({ authType, authId } = {}, isGebruiker = false) {
+  if (authId && isGebruiker) return { actorId: authId, actorZeker: true, actorSysteem: false }
+  if (authType === 'service_account' || authType === 'system') {
     return { actorId: null, actorZeker: true, actorSysteem: true }
   }
   return null

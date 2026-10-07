@@ -20,6 +20,10 @@ export default {
     nl: 'Al {uren} uur niets opgehaald — dat hoort elke paar minuten te gebeuren. Kijk of het app-wachtwoord nog geldig is.',
     en: 'Nothing fetched for {uren} hours — that should happen every few minutes. Check whether the app password is still valid.',
   },
+  'systeem.post_fout': {
+    nl: 'De ophaler faalt sinds {sinds} ({reden}). Bij aanmelden: het wachtwoord in IMAP_URL moet een app-wachtwoord zijn.',
+    en: 'The fetcher has been failing since {sinds} ({reden}). For sign-in: the password in IMAP_URL must be an app password.',
+  },
   'systeem.post_nooit': {
     nl: 'Nog nooit gedraaid. De sleutel IMAP_URL staat er waarschijnlijk nog niet; zie README → De post van info@jeconcept.be.',
     en: 'Never ran. The IMAP_URL secret is probably not set yet; see the README.',

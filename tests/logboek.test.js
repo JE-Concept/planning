@@ -200,9 +200,13 @@ describe('de export', () => {
 */
 describe('wie een document verwijderde', () => {
   it('een aangemelde gebruiker staat er zeker bij', () => {
-    expect(wieVerwijderde({ authType: 'app_user', authId: 'u-jasper' })).toEqual({
+    expect(wieVerwijderde({ authType: 'unknown', authId: 'u-jasper' }, true)).toEqual({
       actorId: 'u-jasper', actorZeker: true, actorSysteem: false,
     })
+  })
+  it('de browser komt binnen als api_key: dat is de gebruiker, niet het systeem (7 okt live)', () => {
+    expect(wieVerwijderde({ authType: 'api_key', authId: 'u-jasper' }, true)?.actorId).toBe('u-jasper')
+    expect(wieVerwijderde({ authType: 'api_key', authId: 'iets' }, false)).toBeNull()
   })
   it('een functie of script is het systeem', () => {
     expect(wieVerwijderde({ authType: 'service_account', authId: 'x@y.iam' })).toEqual({
