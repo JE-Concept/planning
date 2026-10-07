@@ -39,6 +39,16 @@ describe('datums zonder uur uit ClickUp', () => {
     expect(herstelClickupDatums({ id: 'abc', dueDate: datum }).dueDate).toBe(datum)
   })
 
+  // Live had geen enkele taak een ClickUp-kenmerk; ze werden op 28 september
+  // overgezet, vóór JE Plan in gebruik ging.
+  it('herkent overgezette documenten aan hun aanmaakdatum vóór 1 oktober', () => {
+    const datum = new Date(1808596800000)
+    const oud = herstelClickupDatums({ id: 'x1', createdAt: new Date('2026-09-28T10:00:00Z'), dueDate: datum })
+    expect(dayKey(oud.dueDate)).toBe('2027-04-25')
+    const nieuw = herstelClickupDatums({ id: 'x2', createdAt: new Date('2026-10-05T10:00:00Z'), dueDate: datum })
+    expect(nieuw.dueDate).toBe(datum)
+  })
+
   it('zit in normalise, dus elk scherm leest de juiste dag', () => {
     const ts = { toDate: () => new Date(1808596800000) }
     const uit = normalise({ id: 't', clickupId: '86cbh9v0p', dueDate: ts, createdAt: ts })

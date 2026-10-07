@@ -16,11 +16,13 @@
  * 12:00, zoals de tool zelf een datum zonder uur bewaart: dan toont geen
  * enkel scherm een uur, en valt het event op de juiste dag.
  *
- * Alleen voor gemigreerde documenten: wat in de tool zelf ingevuld wordt, komt
- * nooit op 04:00 terecht, en een echt tijdstip van 22:00 in de zomer mag niet
- * verschuiven. Gemigreerd herkennen we aan `clickupId`, `clickupUrl` of een id
- * dat met `cu-` begint (zo noemt de migratie haar documenten): live bleek de
- * eerste versie, die alleen naar `clickupId` keek, niets te raken.
+ * Alleen voor wat uit ClickUp overgezet is: wat in de tool zelf ingevuld
+ * wordt, komt nooit op 04:00 terecht, en een echt tijdstip van 22:00 in de
+ * zomer mag niet verschuiven. Overgezet herkennen we aan `clickupId`,
+ * `clickupUrl` of een id dat met `cu-` begint, en anders aan de aanmaakdatum:
+ * de droogloop van 7 oktober vond live 167 taken en geen enkele met zo'n
+ * kenmerk. Ze kwamen er op 28 september in, vóór JE Plan in gebruik ging; wat
+ * vóór 1 oktober bestond, komt dus uit ClickUp.
  */
 
 const VELDEN = ['eventDate', 'startDate', 'dueDate', 'eventEndDate']
@@ -55,7 +57,16 @@ export function clickupDag(waarde) {
 const middag = (sleutel) => new Date(`${sleutel}T12:00:00`)
 
 /** Een gemigreerd document met zijn datums op de juiste dag en zonder vals uur. */
-export const gemigreerd = (doc) => Boolean(doc.clickupId || doc.clickupUrl || String(doc.id ?? '').startsWith('cu-'))
+/** Vóór deze dag ging JE Plan niet in gebruik; wat ouder is, is overgezet. */
+export const IN_GEBRUIK_SINDS = new Date('2026-10-01T00:00:00+02:00')
+
+const datumVan = (w) => (w?.toDate ? w.toDate() : w instanceof Date ? w : w ? new Date(w) : null)
+
+export const gemigreerd = (doc) => {
+  if (doc.clickupId || doc.clickupUrl || String(doc.id ?? '').startsWith('cu-')) return true
+  const aangemaakt = datumVan(doc.createdAt)
+  return Boolean(aangemaakt && !Number.isNaN(aangemaakt.getTime()) && aangemaakt < IN_GEBRUIK_SINDS)
+}
 
 export function herstelClickupDatums(doc) {
   if (!doc || !gemigreerd(doc)) return doc
