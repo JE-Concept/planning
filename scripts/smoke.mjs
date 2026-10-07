@@ -1024,16 +1024,15 @@ await test('verwijderen zegt wat er verdwijnt, archiveren is de gewone knop', as
   const page = await tabblad('/bord/l-overview')
   const paneel = await opentTaak(page, 'Trouw Niels en Inez')
 
-  let vraag = ''
-  page.on('dialog', async (d) => {
-    vraag = d.message()
-    await d.dismiss()
-  })
-
   // In de voet, want verderop in het paneel staat bij elke subtaak, elk
   // tijdstip en elke reactie ook een kruisje dat "verwijderen" heet.
   const voet = paneel.locator('.je-drawer__foot')
   await voet.getByRole('button', { name: 'Verwijderen' }).click()
+  // Het eigen bevestigingsvenster van JE Plan, niet dat van de browser.
+  const venster = page.getByRole('dialog', { name: 'Zeker weten?' })
+  await venster.waitFor()
+  const vraag = await venster.innerText()
+  await venster.getByRole('button', { name: 'Annuleren' }).click()
   await rustig(page)
 
   zouden(vraag.includes('Trouw Niels en Inez'), `de vraag noemt de taak niet: ${vraag}`)
@@ -2921,13 +2920,11 @@ await test('de planningstand staat op het event en in elk overzicht', async () =
 await test('een event verwijderen zegt eerst wat er weggaat', async () => {
   const page = await tabblad('/events/t-jolien')
 
-  let vraag = ''
-  page.on('dialog', (d) => {
-    vraag = d.message()
-    d.accept()
-  })
-
   await page.getByRole('button', { name: /^Verwijderen$/ }).click()
+  const venster = page.getByRole('dialog', { name: 'Zeker weten?' })
+  await venster.waitFor()
+  const vraag = await venster.innerText()
+  await venster.getByRole('button', { name: /^Verwijderen$/ }).click()
   await rustig(page)
 
   zouden(bevat(vraag, 'definitief verwijderen'), `geen vraag voor het verwijderen: ${vraag}`)

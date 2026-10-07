@@ -159,7 +159,7 @@ export default function FormuleSettings() {
    * event mee starten.
    */
   const verwijder = async () => {
-    if (!bevestig(t('inst.formule.verwijder_vraag', { naam: draft.name }))) return
+    if (!(await bevestig(t('inst.formule.verwijder_vraag', { naam: draft.name }), { knop: t('alg.verwijderen'), gevaar: true }))) return
     try {
       await zorgVoorOpslag()
       await deleteFormule(draft.id)

@@ -5,6 +5,7 @@ import { pagina } from '@lib/paginalader'
 import { AuthProvider, useAuth } from '@context/AuthProvider'
 import { TaalProvider } from '@context/TaalProvider'
 import { ToastProvider } from '@context/ToastProvider'
+import { BevestigHost } from '@components/ds/acties'
 import { WorkspaceProvider } from '@context/WorkspaceProvider'
 import AppShell from '@components/layout/AppShell'
 import ErrorBoundary from '@components/layout/ErrorBoundary'
@@ -195,6 +196,8 @@ export default function AppPrive() {
               eromheen in de gekozen taal staan. */}
           <TaalProvider>
             <Authenticated />
+            {/* Het venster achter elke "zeker weten?"; zie bevestig in ds/acties. */}
+            <BevestigHost />
           </TaalProvider>
         </AuthProvider>
       </ToastProvider>

@@ -567,7 +567,7 @@ function TemplatesTab({ initial }) {
     }
   }
   const remove = async () => {
-    if (!bevestig(t('inst.tpl.verwijder_vraag', { naam: draft.name }))) return
+    if (!(await bevestig(t('inst.tpl.verwijder_vraag', { naam: draft.name }), { knop: t('alg.verwijderen'), gevaar: true }))) return
     try {
       await ensureStored()
       await deleteTemplate(draft.id)

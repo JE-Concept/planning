@@ -15,6 +15,8 @@ export default {
   // ── Algemeen ───────────────────────────────────────────────────────────
   'alg.opslaan': { nl: 'Bewaren', en: 'Save' },
   'alg.annuleren': { nl: 'Annuleren', en: 'Cancel' },
+  'alg.zeker': { nl: 'Zeker weten?', en: 'Are you sure?' },
+  'alg.doorgaan': { nl: 'Doorgaan', en: 'Continue' },
   'alg.sluiten': { nl: 'Sluiten', en: 'Close' },
   'alg.verwijderen': { nl: 'Verwijderen', en: 'Delete' },
   'alg.vorige': { nl: 'Vorige', en: 'Previous' },

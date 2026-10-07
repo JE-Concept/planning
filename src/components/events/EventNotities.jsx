@@ -201,8 +201,8 @@ export default function EventNotities({ ev, compact = false }) {
                         label={t('events.notities.notitie_weg')}
                         size="sm"
                         variant="bare"
-                        onClick={() => {
-                          if (bevestig(t('events.notities.notitie_weg_vraag')))
+                        onClick={async () => {
+                          if (await bevestig(t('events.notities.notitie_weg_vraag'), { knop: t('events.notities.notitie_weg'), gevaar: true }))
                             deleteComment(n).catch((err) => toast.error(err.message))
                         }}
                       />

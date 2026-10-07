@@ -519,8 +519,8 @@ function Attachments({ taskId }) {
             icon="x"
             label={t('alg.verwijderen')}
             size="sm"
-            onClick={() => {
-              if (bevestig(t('events.doc.weg_vraag', { naam: d.name })))
+            onClick={async () => {
+              if (await bevestig(t('events.doc.weg_vraag', { naam: d.name }), { knop: t('alg.verwijderen'), gevaar: true }))
                 deleteDocument(d).catch((err) => toast.error(err.message))
             }}
           />

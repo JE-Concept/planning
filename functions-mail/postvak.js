@@ -95,6 +95,9 @@ export const haalPostOp = onSchedule(
       await client.connect()
     } catch (err) {
       logger.error('IMAP: verbinden of aanmelden mislukt', imapFoutVoorLog(err))
+      // Anders blijft de verbinding open en eindigt de functie later nog eens
+      // met "Socket timeout" (gezien op 7 oktober).
+      client.close()
       throw err
     }
 
@@ -145,7 +148,8 @@ export const haalPostOp = onSchedule(
       logger.error('IMAP: map openen of post lezen mislukt', { postbus, ...imapFoutVoorLog(err) })
       throw err
     } finally {
-      await client.logout().catch(() => {})
+      // Een nette logout als het kan, anders de verbinding hard dicht.
+      await client.logout().catch(() => client.close())
     }
 
     await houder.set(

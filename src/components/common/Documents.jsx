@@ -138,8 +138,8 @@ export default function Documents({ customerId = null, taskId = null, titel = nu
                 variant="ghost"
                 size="sm"
                 className="shrink-0 text-ink-400"
-                onClick={() => {
-                  if (bevestig(t('events.doc.weg_vraag', { naam: document.name }))) {
+                onClick={async () => {
+                  if (await bevestig(t('events.doc.weg_vraag', { naam: document.name }), { knop: t('alg.verwijderen'), gevaar: true })) {
                     deleteDocument(document).catch((err) => toast.error(err.message))
                   }
                 }}

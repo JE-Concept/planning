@@ -42,7 +42,7 @@ export default function Bestellijst({ ev }) {
   const herbereken = async () => {
     if (!formule) return
     const personen = Number(ev.pax) || berekendOp || 0
-    if (!bevestig(t('bestellijst.herbereken_vraag', { aantal: personen }))) return
+    if (!(await bevestig(t('bestellijst.herbereken_vraag', { aantal: personen })))) return
     setBezig(true)
     try {
       await updateEvent(ev.id, { bestellijst: bestellijstVoorEvent(formule, ev.formuleKeuzes ?? {}, personen) })

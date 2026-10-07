@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import { cn } from '@lib/cn'
 import { useTaal } from '@context/taal-context'
-import { Button, IconButton } from './index'
+import { Button, Dialog, IconButton } from './index'
 
 /**
  * Het actiekader: elke call to action in JE Plan gaat hierdoor.
@@ -72,7 +73,7 @@ function ActieKnop({ actie, variant, size }) {
   // Een actie met een `vraag` vraagt eerst bevestiging, welke rang ze ook heeft:
   // archiveren is geen gevaar (het is terug te halen), maar wel iets om niet per
   // ongeluk te doen.
-  const klik = vraag && onClick ? (e) => bevestig(vraag) && onClick(e) : onClick
+  const klik = vraag && onClick ? async (e) => (await bevestig(vraag, { knop: label })) && onClick(e) : onClick
   return (
     <Button
       variant={variant}
@@ -92,12 +93,63 @@ function ActieKnop({ actie, variant, size }) {
 /**
  * De ene plek waar JE Plan om bevestiging vraagt.
  *
- * Vandaag is dat het venster van de browser: het werkt overal, ook met een
- * schermlezer, en het kan niet wegvallen achter een ander paneel. Wordt het ooit
- * een eigen dialoog, dan verandert alleen deze functie.
+ * Een eigen venster in de stijl van JE Plan, en niet meer dat van de browser:
+ * "Definitief verwijderen?" in een grijs systeemvenster las als een melding van
+ * Chrome en niet van de tool, en het kon niet zeggen wat de knop doet. Het
+ * venster staat één keer in de app (`BevestigHost`); `bevestig` geeft een
+ * belofte die ja of nee wordt. Staat er geen host (een publieke pagina), dan
+ * valt het terug op het venster van de browser, zodat een vraag nooit zomaar
+ * wegvalt.
+ *
+ * `knop` is het woord op de bevestigknop ("Verwijderen"), `gevaar` kleurt hem
+ * rood.
  */
-export function bevestig(vraag) {
-  return typeof window !== 'undefined' && window.confirm(vraag)
+let vraagNaarHost = null
+
+export function bevestig(vraag, { knop, gevaar = false } = {}) {
+  if (vraagNaarHost) return new Promise((antwoord) => vraagNaarHost({ vraag, knop, gevaar, antwoord }))
+  return Promise.resolve(typeof window !== 'undefined' && window.confirm(vraag))
+}
+
+/** Het venster achter `bevestig`. Eén keer, hoog in de app. */
+export function BevestigHost() {
+  const { t } = useTaal()
+  const [open, setOpen] = useState(null)
+
+  useEffect(() => {
+    vraagNaarHost = (verzoek) =>
+      setOpen((vorig) => {
+        // Een tweede vraag terwijl de eerste openstaat: de eerste is nee.
+        vorig?.antwoord(false)
+        return verzoek
+      })
+    return () => {
+      vraagNaarHost = null
+    }
+  }, [])
+
+  const sluit = (ja) => {
+    open?.antwoord(ja)
+    setOpen(null)
+  }
+
+  if (!open) return null
+  return (
+    <Dialog
+      open
+      onClose={() => sluit(false)}
+      width={480}
+      title={t('alg.zeker')}
+      footer={
+        <Acties
+          terug={{ onClick: () => sluit(false) }}
+          hoofd={{ label: open.knop || t('alg.doorgaan'), onClick: () => sluit(true), ...(open.gevaar ? { variant: 'danger' } : {}) }}
+        />
+      }
+    >
+      <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{open.vraag}</p>
+    </Dialog>
+  )
 }
 
 /**
@@ -121,8 +173,8 @@ export function GevaarKnop({
   className,
   ...rest
 }) {
-  const klik = () => {
-    if (bevestig(vraag)) onConfirm?.()
+  const klik = async () => {
+    if (await bevestig(vraag, { knop: label || rest['aria-label'], gevaar: true })) onConfirm?.()
   }
   // Alleen een pictogram (een kruisje naast een reactie, een prullenbak in een
   // kop): dan een echte IconButton, met het label voor de schermlezer uit
