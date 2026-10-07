@@ -82,6 +82,13 @@ describe('wat de browser mag vragen', () => {
     expect(uit.klant.opmerking).toHaveLength(1000)
     expect(uit.klant.naam).toHaveLength(120)
   })
+
+  it('neemt bedrijfsnaam en ondernemingsnummer over, het nummer zonder opmaak', () => {
+    const uit = leesAanvraag({ ...goed, klant: { ...goed.klant, bedrijf: ' Bakkerij Lies bv ', ondernemingsnummer: 'be 0712.345.678' } })
+    expect(uit.klant.bedrijf).toBe('Bakkerij Lies bv')
+    expect(uit.klant.ondernemingsnummer).toBe('BE0712345678')
+    expect(leesAanvraag(goed).klant.bedrijf).toBe('')
+  })
 })
 
 describe('de regels op de Stripe-pagina', () => {

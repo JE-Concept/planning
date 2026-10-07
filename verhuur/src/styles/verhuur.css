@@ -1,106 +1,140 @@
 /*
   De verhuursite.
 
-  Bouwt op `src/styles/je-ds.css` — dezelfde tokens, dezelfde knoppen, dezelfde
-  typografie als de backoffice. Rechtstreeks geïmporteerd en niet gekopieerd:
-  een design system dat op twee plekken staat, staat na een maand op twee
-  manieren.
-
-  Wat hier bij komt, is wat een publieke pagina nodig heeft en een backoffice
-  niet: een etalage, een productraster, een mand. Alles met het voorvoegsel
-  `vh__`, zodat in één oogopslag te zien is wat van deze site is en wat uit het
-  systeem komt.
+  Bouwt op `src/styles/je-ds.css` en `reserveren.css`: de tokens, knoppen en
+  componenten van het JE Concept Design System. Wat hier staat, is de
+  bladspiegel van deze site (kop, secties, rasters, mand), allemaal met het
+  voorvoegsel `vh__`, zodat in één oogopslag te zien is wat van deze site is
+  en wat uit het systeem komt. Het ontwerp staat in het canvas "Verhuursite
+  JE Concept ontwerp".
 */
 
 .vh {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--surface-1);
+  background: var(--canvas);
   color: var(--text-1);
+  font: var(--type-body);
 }
-
-/* ── Kop en voet ──────────────────────────────────────────────────────── */
-
-.vh__kop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--line);
-  background: var(--surface-0);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.vh__merk {
+.vh__body {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  text-decoration: none;
-  color: inherit;
 }
-.vh__merk-naam {
-  font: var(--type-h4);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.vh__wrap {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 48px;
+  box-sizing: border-box;
 }
-.vh__merk-sub {
-  font: var(--type-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--accent);
+.vh__smal {
+  max-width: 820px;
+  padding-block: var(--space-8);
 }
-/*
-  Drie knoppen passen op een telefoon niet naast het merk. Buigen en niet
-  krimpen: een knop die smaller wordt dan zijn woord, is een knop die je
-  niet meer leest. De kop wordt dan twee regels hoog, en dat is goed.
-*/
+
+/* ── Kop ──────────────────────────────────────────────────────────────── */
+
+.vh__kop {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.vh__kop-rij {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-7);
+  padding-block: var(--space-4);
+}
+.vh__merk {
+  font-size: 26px;
+}
 .vh__nav {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-2) var(--space-3);
+  gap: var(--space-2) var(--space-6);
+  flex: 1 1 auto;
 }
-.vh__kop {
+.vh__nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  border: 0;
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  text-decoration: none;
+}
+.vh__nav a:hover {
+  color: var(--text-accent);
+}
+.vh__tools {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.vh__zoek .je-input {
+  width: 220px;
+  min-height: 36px;
 }
 
-.vh__body {
-  flex: 1;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: var(--space-7) var(--space-6) var(--space-8);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-7);
-}
+/* ── Voet ─────────────────────────────────────────────────────────────── */
 
 .vh__voet {
-  border-top: 1px solid var(--line);
-  padding: var(--space-6);
-  text-align: center;
-  font: var(--type-body-sm);
-  color: var(--text-2);
+  background: var(--canvas);
+  color: var(--text-1);
+}
+.vh__voet-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-7);
+  padding-block: var(--space-8) var(--space-7);
+}
+.vh__voet-kolom {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  align-items: flex-start;
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+.vh__voet-kolom p {
+  margin: 0;
+}
+.vh__voet-merk {
+  font-size: 24px;
+}
+.vh__voet a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 0;
+  color: var(--text-2);
+}
+.vh__voet a:hover {
+  color: var(--text-1);
 }
 .vh__voet-klein {
-  font: var(--type-micro);
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border-hairline);
+  font: var(--type-caption);
+  font-weight: 400;
   color: var(--text-3);
 }
+
 /*
-  Bellen en mailen zijn op een telefoon geen voetnoot maar de snelste weg naar
-  een afspraak. Ze krijgen daarom de ruimte van een knop, ook al zien ze eruit
-  als een link.
-*/
-/*
-  Elk telefoonnummer en elk mailadres op deze site, waar het ook staat. Een
-  nummer midden in een zin is op een telefoon precies even goed een knop als
-  eentje in de voet — en van alle dingen die een bezoeker hier kan doen, is
-  bellen de kortste weg naar een afspraak.
+  Elk mailadres op deze site, waar het ook staat. Op een telefoon is een adres
+  midden in een zin precies even goed een knop als eentje in de voet.
 */
 .vh a[href^='tel:'],
 .vh a[href^='mailto:'] {
@@ -108,78 +142,224 @@
   align-items: center;
   min-height: 34px;
 }
-.vh__voet a {
-  padding: 0 var(--space-2);
-}
-/* Voorwaarden, privacy en klantendienst: op een telefoon ook een duim breed. */
-.vh__voet nav a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-}
 
-/* ── Etalage ──────────────────────────────────────────────────────────── */
+/* ── Secties en koppen ────────────────────────────────────────────────── */
 
-.vh__hero h1 {
-  font: var(--type-h1);
-  text-transform: uppercase;
-  margin: 0 0 var(--space-3);
+.vh__sectie {
+  padding-block: var(--space-9);
 }
-.vh__hero p {
-  margin: 0;
-  max-width: 54ch;
-  color: var(--text-2);
+.vh__pagina {
+  padding-block: var(--space-7) var(--space-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
 }
-
-/*
-  De periodekiezer staat in een eigen kader en niet los boven de lijst: hij is
-  het enige veld op de pagina dat alles eronder verandert, en dat hoort te
-  zien te zijn.
-*/
-.vh__periode {
+.vh__sectie-kop {
+  margin-bottom: var(--space-7);
+}
+.vh__pagina .vh__sectie-kop {
+  margin-bottom: 0;
+}
+.vh__sectie-kop--rij {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-5);
+  justify-content: space-between;
   align-items: flex-end;
-  padding: var(--space-5) var(--space-6);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface-0);
+  gap: var(--space-5);
 }
-.vh__periode > div {
+.vh__h1 {
+  font-size: 48px;
+  line-height: 1.04;
+  margin: 0;
+  text-wrap: balance;
+}
+.vh__h2 {
+  font-size: 40px;
+  line-height: 1.05;
+  margin: 0;
+  text-wrap: balance;
+}
+.vh__h3 {
+  font-size: 26px;
+  line-height: 1.1;
+  margin: 0 0 var(--space-5);
+}
+.vh__nacht {
+  background: var(--canvas);
+}
+.vh__nacht .je-steps__title {
+  color: var(--text-1);
+}
+.vh__stap-licht {
+  background: var(--navy-100);
+  color: var(--navy-950);
+}
+.vh__lijn {
+  border-top: 1px solid var(--border-hairline);
+}
+.vh__twee {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: var(--space-7);
+}
+.vh__blok .je-card__title {
+  text-transform: uppercase;
+}
+.vh__offerteblok {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-7);
+}
+.vh__offerteblok .je-sect {
+  max-width: 640px;
+}
+
+/* ── Startpagina ──────────────────────────────────────────────────────── */
+
+.vh__held {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: var(--space-8);
+  align-items: center;
+  padding-block: var(--space-8) var(--space-9);
+}
+.vh__held-tekst {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.vh__held-titel {
+  font-size: 64px;
+  line-height: 1;
+  margin: 0;
+  text-wrap: balance;
+}
+.vh__held-tekst .je-period {
+  box-shadow: var(--shadow-1);
+}
+.vh__held-fotos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.vh__held-fotos > :first-child {
+  grid-column: span 2;
+  aspect-ratio: 16 / 9;
+}
+.vh__held-fotos--1 > :first-child {
+  aspect-ratio: 4 / 3;
+}
+.vh__periode-knop {
+  align-self: flex-end;
+}
+.vh__tegels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-6);
+}
+.vh__tegel {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  border: 0;
+  color: var(--text-1);
+  text-decoration: none;
 }
-.vh__periode input {
-  min-width: 160px;
+.vh__tegel-naam {
+  margin-top: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
-.vh__periode-uitleg {
-  flex: 1 1 100%;
+.vh__tegel:hover .vh__tegel-naam {
+  color: var(--text-accent);
+}
+
+/* ── Periode ──────────────────────────────────────────────────────────── */
+
+.vh__balk {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.vh__balk .je-period {
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+}
+.vh__periode .je-notice {
   margin: 0;
 }
 
-.vh__filters {
+/* ── Aanbod ───────────────────────────────────────────────────────────── */
+
+.vh__kruim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-3);
+  font: var(--type-caption);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.vh__kruim a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 0;
+  color: var(--text-2);
+}
+.vh__kruim a:hover {
+  color: var(--text-accent);
+}
+.vh__kruim [aria-current='page'] {
+  color: var(--text-1);
+}
+.vh__sorteer {
+  width: 230px;
+}
+.vh__aanbod {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+.vh__filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  position: sticky;
+  top: 110px;
+}
+.vh__filter-groep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.vh__filter-tags {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-.vh__filter {
-  border: 1px solid var(--line);
-  background: none;
-  border-radius: 2px;
-  padding: 6px 12px;
-  min-height: 32px;
-  font: var(--type-caps);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-2);
-  cursor: pointer;
+.vh__filter-tags .je-tag {
+  min-height: 34px;
+  box-sizing: border-box;
+  text-decoration: none;
 }
-.vh__filter--aan {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+.je-choice,
+.vh__keuze {
+  position: relative;
+}
+.je-choice {
+  min-height: 34px;
 }
 
 .vh__raster {
@@ -187,204 +367,201 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--space-5);
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: var(--space-8) var(--space-7);
 }
 .vh__kaart {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-5);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface-0);
+  min-width: 0;
 }
-/*
-  Volzet wordt lichter, niet rood. Rood zegt "er is iets fout"; hier is niets
-  fout — het is op die datum gewoon weg, en een andere datum kan prima.
-*/
-.vh__kaart--volzet {
-  opacity: 0.66;
-}
-/*
-  De kop van een kaart is de link naar het artikel, en op een telefoon tik je
-  daarop met een duim. Ruimte eronder, zodat het raakvlak niet eindigt waar de
-  letters eindigen.
-*/
 .vh__kaart-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border: 0;
+  color: var(--text-1);
   text-decoration: none;
-  color: inherit;
-  display: block;
-  padding-bottom: var(--space-2);
-  min-height: 34px;
 }
 .vh__kaart-link h3 {
-  font: var(--type-h4);
-  margin: 0 0 var(--space-2);
-}
-.vh__foto {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: 2px;
-  margin-bottom: var(--space-3);
-  background: var(--surface-2);
-}
-.vh__foto--groot {
-  aspect-ratio: 16 / 9;
-  max-height: 420px;
-}
-/* De plaatshouder: de categorie in de huisletter, als keuze en niet als gat. */
-.vh__foto--leeg {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  font: var(--type-h4);
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: 19px;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-3);
 }
 .vh__kaart-link:hover h3 {
-  color: var(--accent);
+  color: var(--text-accent);
 }
-.vh__kaart-tekst {
-  margin: 0;
-  font: var(--type-body-sm);
-  color: var(--text-2);
-}
-.vh__kaart-voet {
-  margin-top: auto;
+.vh__kaart-rij {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  align-items: baseline;
   justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+.vh__kaart--volzet .vh__foto {
+  opacity: 0.55;
 }
 
-.vh__prijs strong {
-  font: var(--type-h4);
-}
-.vh__vrij {
-  font: var(--type-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-3);
-}
-.vh__vrij--weinig {
-  color: var(--warning, #9a6b00);
-}
-.vh__vrij--volzet {
-  color: var(--text-3);
-}
+/* ── Foto ─────────────────────────────────────────────────────────────── */
 
-.vh__anders {
-  border-top: 1px solid var(--line);
-  padding-top: var(--space-6);
+.vh__foto {
+  max-width: 100%;
 }
-.vh__anders h2 {
-  font: var(--type-h3);
-  text-transform: uppercase;
-  margin: 0 0 var(--space-3);
-}
-.vh__anders p {
-  margin: 0 0 var(--space-5);
-  max-width: 60ch;
-  color: var(--text-2);
+.vh__foto--leeg span {
+  padding-inline: var(--space-4);
+  text-align: center;
 }
 
 /* ── Artikel ──────────────────────────────────────────────────────────── */
 
-.vh__artikel,
-.vh__mand,
-.vh__offerte,
-.vh__afloop,
-.vh__leeg-mand {
+.vh__artikel {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+.vh__koop {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  position: sticky;
+  top: 110px;
+  min-width: 0;
 }
-.vh__artikel h1,
-.vh__mand h1,
-.vh__offerte h1,
-.vh__afloop h1,
-.vh__leeg-mand h1 {
-  font: var(--type-h1);
-  text-transform: uppercase;
-  margin: 0;
-}
-.vh__terug {
-  font: var(--type-body-sm);
-  color: var(--text-2);
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  align-self: flex-start;
-}
-.vh__artikel-tekst {
-  margin: var(--space-3) 0 0;
-  max-width: 60ch;
-  color: var(--text-2);
-}
-
-.vh__staffel table {
-  border-collapse: collapse;
-  width: 100%;
-  max-width: 460px;
-}
-.vh__staffel th,
-.vh__staffel td {
-  text-align: left;
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--line);
-  font-weight: 400;
-}
-.vh__staffel td {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.vh__staffel h2,
-.vh__klantvorm h2 {
-  font: var(--type-h3);
-  text-transform: uppercase;
-  margin: 0 0 var(--space-4);
-}
-
-.vh__bestel {
+.vh__koop-kop {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  align-items: flex-start;
-  padding: var(--space-5) var(--space-6);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface-0);
+  gap: var(--space-3);
 }
-.vh__bestel-regel {
+.vh__koop-kop .je-sect__intro {
+  margin: 0;
+}
+.vh__koop-kaart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.vh__koop-kaart .je-period {
+  padding: var(--space-4) 0;
+  border-left: 0;
+  border-right: 0;
+  background: transparent;
+}
+.vh__koop-kaart .je-notice {
+  margin: 0;
+}
+.vh__koop-actie {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
 }
-.vh__bestel-regel input {
-  width: 90px;
+.vh__koop-actie .je-btn {
+  flex: 1 1 180px;
 }
-.vh__totaal {
+
+.vh__staffel table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: var(--space-4);
+}
+.vh__staffel th,
+.vh__staffel td {
+  text-align: left;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-hairline);
+  font: var(--type-body-sm);
+}
+.vh__staffel td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.vh__mini {
+  list-style: none;
   margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+.vh__mini-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 0;
+  color: var(--text-1);
+  text-decoration: none;
+}
+.vh__mini-naam {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: 16px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.vh__mini .je-photo--empty span {
+  font-size: 11px;
 }
 
 /* ── Mand ─────────────────────────────────────────────────────────────── */
 
+.vh__mand-raster {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+.vh__mand-stappen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+.vh__stap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.vh__stap-titel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: 24px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.vh__stap-n {
+  width: 30px;
+  height: 30px;
+  clip-path: var(--clip-hex);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 14px;
+}
 .vh__mandlijst {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border-hairline);
 }
 /*
-  Buigen en niet in vaste kolommen. Dezelfde reparatie als bij de
-  reservatieregel in de backoffice: `auto`-kolommen kunnen niet krimpen, en
+  Buigen en niet in vaste kolommen: `auto`-kolommen kunnen niet krimpen, en
   dan loopt de knop op een smal scherm buiten de rij.
 */
 .vh__mandregel {
@@ -393,55 +570,76 @@
   gap: var(--space-3) var(--space-4);
   align-items: center;
   padding: var(--space-4) 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.vh__mandregel > .vh__foto {
+  width: 56px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+}
+.vh__mandregel > .vh__foto--leeg span {
+  display: none;
 }
 .vh__mandregel-naam {
-  flex: 1 1 200px;
+  flex: 1 1 180px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  font: var(--type-body-sm);
 }
 /* De naam is de weg terug naar het artikel; een duim moet hem kunnen raken. */
 .vh__mandregel-naam > a {
   display: inline-flex;
   align-items: center;
   min-height: 34px;
-}
-.vh__mandregel-aantal {
-  width: 80px;
+  font-weight: var(--fw-semibold);
 }
 .vh__mandregel-bedrag {
   min-width: 90px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-
-.vh__som {
-  margin: 0;
-  max-width: 420px;
-  margin-left: auto;
-}
-.vh__som > div {
+.vh__keuze {
   display: flex;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  cursor: pointer;
+}
+.vh__keuze--aan {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.vh__keuze-tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.vh__keuze-kop {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: var(--space-5);
-  padding: var(--space-2) 0;
+  gap: 4px var(--space-4);
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: 18px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
-.vh__som dt,
-.vh__som dd {
-  margin: 0;
+.vh__gratis {
+  color: var(--success);
 }
-.vh__som dd {
-  font-variant-numeric: tabular-nums;
+.vh__leveren {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
 }
-.vh__som-totaal {
-  border-top: 1px solid var(--ink, var(--text-1));
-  margin-top: var(--space-2);
-  padding-top: var(--space-3) !important;
-  font: var(--type-h4);
-}
-
 .vh__velden {
   display: grid;
   gap: var(--space-4);
@@ -455,16 +653,60 @@
 .vh__veld-breed {
   grid-column: 1 / -1;
 }
-
-.vh__mandknoppen {
+.vh__overzicht {
+  position: sticky;
+  top: 110px;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.vh__overzicht-kaart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.vh__overzicht-kaart .je-card__title {
+  text-transform: uppercase;
+  margin: 0;
+}
+.vh__overzicht-kaart > .je-btn--ghost {
+  align-self: center;
+}
+.vh__som .je-sum__total {
+  border-top: 1px solid var(--border-hairline);
+}
+.vh__breed {
+  width: 100%;
 }
 
-/* Een knop die eruitziet als een woord in een zin — uitloggen is geen actie
-   die een knop verdient, maar hij moet wel te raken zijn. */
+/* ── Smalle pagina's: offerte, inloggen, mijn huren, afloop ───────────── */
+
+.vh__offerte,
+.vh__afloop,
+.vh__leeg-mand,
+.vh__smal > section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+.vh__smal h1 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: 40px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  margin: 0;
+}
+.vh__smal .vh__velden {
+  width: 100%;
+}
+.vh__smal .vh__mandlijst {
+  width: 100%;
+}
+
+/* ── Kleine dingen ────────────────────────────────────────────────────── */
+
 /* Een link in een zin die met een duim geraakt moet worden. */
 .vh__inlink {
   display: inline-flex;
@@ -473,39 +715,39 @@
   min-width: 34px;
   justify-content: center;
 }
+/* Een knop die eruitziet als een woord in een zin. */
 .vh__tekstknop {
   background: none;
   border: 0;
   padding: 0;
   font: inherit;
-  color: var(--accent);
+  color: var(--text-link);
   text-decoration: underline;
   cursor: pointer;
   min-height: 34px;
 }
-
-/* ── Meldingen ────────────────────────────────────────────────────────── */
-
 .vh__klein {
-  font: var(--type-micro);
+  font: var(--type-caption);
+  font-weight: 400;
   color: var(--text-3);
 }
 .vh__laden,
 .vh__leeg {
   color: var(--text-2);
+  padding-block: var(--space-6);
 }
 .vh__waarschuwing,
 .vh__fout {
   margin: 0;
   padding: var(--space-4) var(--space-5);
-  border-left: 3px solid var(--danger);
+  border-left: 2px solid var(--danger);
   background: var(--surface-2);
   font: var(--type-body-sm);
 }
 
 /*
   Het lokvakje van het offerteformulier. Buiten beeld maar niet `display:
-  none` — dat laatste is precies waar een bot op controleert voor hij een veld
+  none`: dat laatste is precies waar een bot op controleert voor hij een veld
   overslaat.
 */
 .vh__lokvak {
@@ -516,21 +758,74 @@
   overflow: hidden;
 }
 
-@media (max-width: 559px) {
-  .vh__body {
-    padding: var(--space-5) var(--space-5) var(--space-7);
-    gap: var(--space-6);
+/* ── Smallere schermen ────────────────────────────────────────────────── */
+
+@media (max-width: 1023px) {
+  .vh__aanbod,
+  .vh__artikel,
+  .vh__mand-raster {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .vh__kop {
-    padding: var(--space-4);
+  .vh__filter,
+  .vh__koop,
+  .vh__overzicht {
+    position: static;
+  }
+}
+
+@media (max-width: 759px) {
+  .vh__wrap {
+    padding-inline: 16px;
+  }
+  .vh__sectie {
+    padding-block: 56px;
+  }
+  .vh__kop-rij {
+    gap: var(--space-3);
+  }
+  .vh__merk {
+    font-size: 21px;
+  }
+  .vh__nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .vh__tools {
+    margin-left: auto;
+  }
+  .vh__zoek {
+    display: none;
+  }
+  .vh__held {
+    padding-block: var(--space-6) var(--space-7);
+  }
+  .vh__held-titel {
+    font-size: 40px;
+  }
+  .vh__h1,
+  .vh__h2 {
+    font-size: 30px;
+  }
+  .vh__held-fotos {
+    display: none;
+  }
+  .vh__tegels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .vh__tegel-naam {
+    font-size: 15px;
   }
   .vh__velden {
     grid-template-columns: minmax(0, 1fr);
   }
-  .vh__som {
-    max-width: none;
+  .vh__mini {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .vh__raster {
-    grid-template-columns: minmax(0, 1fr);
+  .vh__sorteer {
+    width: 100%;
+  }
+  .vh__keuze {
+    padding: var(--space-4);
   }
 }

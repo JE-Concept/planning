@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { aanvragen } from '../lib/api'
 import { CONTACT } from '../lib/instellingen'
 
@@ -13,13 +13,15 @@ import { CONTACT } from '../lib/instellingen'
  * kunnen bellen en om te weten of het die week überhaupt kan.
  */
 export default function Offerte() {
+  // Vanuit de mand (levering): de artikels en de datum staan er al in.
+  const uitMand = useLocation().state ?? {}
   const [vorm, setVorm] = useState({
     naam: '',
     email: '',
     telefoon: '',
-    datum: '',
+    datum: typeof uitMand.datum === 'string' ? uitMand.datum : '',
     gasten: '',
-    wat: '',
+    wat: typeof uitMand.wat === 'string' ? uitMand.wat : '',
     // Het lokvakje. Zie het verborgen veld onderaan het formulier.
     bedrijfsnaam: '',
   })
@@ -59,9 +61,12 @@ export default function Offerte() {
 
   return (
     <section className="vh__offerte">
-      <h1>Vraag een offerte</h1>
-      <p>
-        Voor tenten die geplaatst moeten worden, mobiele bars, en catering van ontbijt tot walking
+      <span className="je-eyebrow">Groot, met levering of met opbouw</span>
+      <h1 className="je-sect__title vh__h1">
+        Vraag een <em>offerte</em>
+      </h1>
+      <p className="je-sect__intro">
+        Voor levering, tenten die geplaatst moeten worden, mobiele bars, en catering van ontbijt tot walking
         dinner. Vertel kort wat je plan is, dan rekenen we het uit.
       </p>
 

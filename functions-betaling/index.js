@@ -482,15 +482,15 @@ async function klantfiche(order) {
   } else {
     const leegAdres = { street: '', postalCode: '', city: '', country: 'België' }
     const ref = await db.collection('customers').add({
-      name: order.klant?.naam?.trim() || email,
-      vatNumber: '',
+      name: order.klant?.bedrijf?.trim() || order.klant?.naam?.trim() || email,
+      vatNumber: order.klant?.ondernemingsnummer ?? '',
       email,
       phone: order.klant?.telefoon ?? '',
       website: '',
       address: leegAdres,
       billingAddress: leegAdres,
       billingEmail: '',
-      contacts: [],
+      contacts: order.klant?.bedrijf && order.klant?.naam ? [{ name: order.klant.naam.trim(), email, phone: order.klant?.telefoon ?? '' }] : [],
       notes: 'Aangemaakt bij de eerste online huur.',
       kortingMateriaal: 0,
       brandId: null,

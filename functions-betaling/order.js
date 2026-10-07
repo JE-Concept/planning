@@ -106,6 +106,13 @@ export function leesAanvraag(body) {
       email,
       telefoon: tekst(body?.klant?.telefoon, 40),
       opmerking: tekst(body?.klant?.opmerking, 1000),
+      // Wie voor een bedrijf huurt, wil de factuur op naam van dat bedrijf.
+      // Alleen gegevens, geen prijs: de bedrijfskorting komt van de klantfiche.
+      // Ondernemingsnummer en niet "btwNummer": in België is het hetzelfde
+      // nummer, en zo staat er in wat de browser stuurt geen woord dat naar
+      // een bedrag ruikt (zie de smoke-test van de kassa).
+      bedrijf: tekst(body?.klant?.bedrijf, 120),
+      ondernemingsnummer: tekst(body?.klant?.ondernemingsnummer, 20).toUpperCase().replace(/[^A-Z0-9]/g, ''),
     },
   }
 }
@@ -224,6 +231,7 @@ export function melding(order, klantId = null) {
     regels,
     '',
     `Klant: ${order.klant?.naam || '—'} · ${order.klant?.email} · ${order.klant?.telefoon || '—'}`,
+    order.klant?.bedrijf ? `Bedrijf: ${order.klant.bedrijf}${order.klant.ondernemingsnummer ? ` · ondernemingsnummer ${order.klant.ondernemingsnummer}` : ''}` : null,
     order.klant?.opmerking ? `Opmerking: ${order.klant.opmerking}` : null,
     klantId ? `Klantenfiche: /klanten/${klantId}` : null,
     '',

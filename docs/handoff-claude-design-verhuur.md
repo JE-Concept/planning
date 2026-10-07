@@ -1,5 +1,13 @@
 # Handoff aan Claude Design — de verhuursite
 
+> **Bijgewerkt 7 oktober 2026.** Het ontwerp is gemaakt (canvas "Verhuursite JE Concept ontwerp",
+> volgens het conceptvoorstel) en gebouwd. De site heeft nu een startpagina (`/`, `Start.jsx`), het
+> aanbod per categorie of zoekopdracht (`/aanbod`, `/aanbod/:categorie`, `Aanbod.jsx`), een
+> artikelpagina met staffel en "vaak samen gehuurd", en een mand in drie stappen (periode en
+> artikels, afhalen of leveren, gegevens met "ik huur voor een bedrijf"). Prijzen staan met btw.
+> Levering gaat voorlopig via een offerte: de leverprijs per afstand rekent de server nog niet uit.
+> De tabel hieronder beschrijft de vorige, sobere versie.
+
 Voor wie dit leest in Claude Design: dit is wat de verhuursite van JE Concept vandaag is, wat er
 ontworpen mag worden en wat vastligt. De site staat live op <https://je-planning-verhuur.web.app>
 (straks `rental.jeconcept.be`) en is gebouwd met het **JE Concept Design System** dat ook de

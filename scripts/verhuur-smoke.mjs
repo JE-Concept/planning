@@ -223,16 +223,18 @@ await test('de catalogus toont het aanbod met een prijs erbij', async (page) => 
   zouden(bevat(t, 'Koelkast glasdeur'), 'niet alle artikelen staan er')
   // Zonder datum een vanafprijs, want een bedrag zonder periode is geen prijs.
   zouden(/vanaf/i.test(t), `er staat geen vanafprijs: ${t.slice(0, 300)}`)
-  zouden(bevat(t, '€ 9,00'), 'de dagprijs staat er niet')
+  // Met btw: de site toont wat een particulier betaalt (9 × 1,21).
+  zouden(bevat(t, '€ 10,89'), 'de dagprijs met btw staat er niet')
 })
 
 await test('een artikel met foto toont ze, een artikel zonder krijgt zijn categorie als plaatshouder', async (page) => {
   await ga(page, '/')
-  const fotos = page.locator('img.vh__foto')
+  // Alleen in het raster: de startpagina toont dezelfde foto's ook bovenaan en bij de categorieën.
+  const fotos = page.locator('.vh__raster img.vh__foto')
   zouden((await fotos.count()) === 1, `er horen één foto te zijn, er zijn er ${await fotos.count()}`)
   zouden((await fotos.first().getAttribute('alt')) === 'Koelkast glasdeur 380 l', 'de foto heeft de naam van het artikel niet als alt')
   zouden((await fotos.first().getAttribute('loading')) === 'lazy', 'de kaartfoto laadt niet lui')
-  const lege = page.locator('.vh__foto--leeg')
+  const lege = page.locator('.vh__raster .vh__foto--leeg')
   zouden((await lege.count()) === 2, 'de artikelen zonder foto hebben geen plaatshouder')
   const plaatshouders = await lege.allTextContents()
   zouden(
@@ -270,8 +272,8 @@ await test('met een datum staat de prijs voor die periode er, niet de dagprijs',
   await page.fill('#tot', '2027-03-18')
   await rustig(page)
   const t = await tekst(page)
-  // Drie doordeweekse dagen statafel: 3 × 9 = 27.
-  zouden(bevat(t, '€ 27,00'), `de periodeprijs klopt niet: ${t.slice(0, 400)}`)
+  // Drie doordeweekse dagen statafel: 3 × 9 = 27, met btw 32,67.
+  zouden(bevat(t, '€ 32,67'), `de periodeprijs klopt niet: ${t.slice(0, 400)}`)
   zouden(bevat(t, 'voor 3 dagen'), 'er staat niet bij waarvoor het bedrag geldt')
 })
 
@@ -282,7 +284,7 @@ await test('de artikelpagina toont de hele staffel', async (page) => {
   const t = await tekst(page)
   zouden(bevat(t, 'Per dag'), 'de staffel staat er niet')
   zouden(bevat(t, 'Weekend'), 'het weekendtarief staat er niet')
-  zouden(bevat(t, '€ 650,00'), 'de weekprijs staat er niet')
+  zouden(bevat(t, '€ 786,50'), 'de weekprijs (650 met btw) staat er niet')
   zouden(bevat(t, 'Waarborg'), 'de waarborg staat er niet')
   zouden(/nooit meer dan het eerstvolgende grotere tarief/.test(t), 'de staffelregel wordt niet uitgelegd')
 })
@@ -298,8 +300,8 @@ await test('zes dagen zijn op het scherm niet duurder dan een week', async (page
   await page.fill('#tot', '2027-03-20')
   await rustig(page)
   const t = await tekst(page)
-  zouden(bevat(t, '€ 650,00'), `zes dagen worden niet afgetopt: ${t.slice(0, 500)}`)
-  zouden(!bevat(t, '1110'), 'de losse-dagenprijs staat er alsnog')
+  zouden(bevat(t, '€ 786,50'), `zes dagen worden niet afgetopt: ${t.slice(0, 500)}`)
+  zouden(!bevat(t, '1343,10') && !bevat(t, '1110'), 'de losse-dagenprijs staat er alsnog')
 })
 
 await test('een volzet artikel is niet in de mand te leggen', async (page) => {
@@ -380,8 +382,9 @@ await test('van catalogus naar mand, met btw en waarborg apart', async (page) =>
 
   const t = await tekst(page)
   zouden(bevat(t, 'Koelkast glasdeur'), `de mand is leeg: ${t.slice(0, 300)}`)
-  // 3 × 45 = 135 huur, 21% btw = 28,35, waarborg 50 erbuiten.
-  zouden(bevat(t, '€ 135,00'), `het huurbedrag klopt niet: ${t.slice(0, 500)}`)
+  // 3 × 45 = 135 huur, 21% btw = 28,35, samen 163,35; waarborg 50 erbuiten.
+  zouden(bevat(t, '€ 163,35'), `het huurbedrag met btw klopt niet: ${t.slice(0, 500)}`)
+  zouden(bevat(t, '€ 135,00'), 'de huur zonder btw staat er niet bij')
   zouden(bevat(t, '€ 28,35'), 'de btw staat er niet of klopt niet')
   zouden(bevat(t, 'Waarborg'), 'de waarborg staat niet apart')
   zouden(bevat(t, '€ 213,35'), `het te betalen bedrag klopt niet: ${t.slice(0, 600)}`)
@@ -469,6 +472,69 @@ await test('het afrekenen stuurt artikelnummers en geen bedragen', async (page) 
   for (const woord of ['prijs', 'bedrag', 'netto', 'btw', 'teBetalen', 'totaal']) {
     zouden(!verstuurd.includes(woord), `de browser stuurt een bedrag mee: ${woord} in ${verstuurd}`)
   }
+})
+
+/* ── Het aanbod per categorie, zoeken ────────────────────────────────── */
+
+await test('een categorie toont alleen haar eigen artikels', async (page) => {
+  await ga(page, '/aanbod/koeling')
+  const t = await tekst(page)
+  zouden(bevat(t, 'Koelkast glasdeur'), `de koelkast staat niet onder koeling: ${t.slice(0, 300)}`)
+  zouden(!bevat(t, 'Statafel zwart'), 'een statafel staat onder koeling')
+  zouden((await page.locator('.vh__kruim').innerText()).toLowerCase().includes('koeling'), 'het kruimelpad noemt de categorie niet')
+})
+
+await test('zoeken in de kop vindt een artikel', async (page) => {
+  await ga(page, '/')
+  await page.getByRole('searchbox', { name: 'Zoek een artikel' }).fill('statafel')
+  await page.getByRole('searchbox', { name: 'Zoek een artikel' }).press('Enter')
+  await page.waitForURL(/\/aanbod\?zoek=statafel$/)
+  await rustig(page)
+  const raster = (await page.locator('.vh__raster').innerText()).toLowerCase()
+  zouden(bevat(raster, 'Statafel zwart') && !bevat(raster, 'Koelkast'), `de zoekopdracht filtert niet: ${raster.slice(0, 200)}`)
+})
+
+/* ── Levering en bedrijf ─────────────────────────────────────────────── */
+
+/*
+  Leveren kost iets wat de server nog niet uitrekent. Wie laat leveren, kan
+  dus niet betalen maar stuurt zijn mand als offerte, met de artikels erin.
+*/
+await test('laten leveren gaat naar een offerte met de mand erin', async (page) => {
+  await ga(page, '/')
+  await page.fill('#van', '2027-03-16')
+  await page.fill('#tot', '2027-03-18')
+  await rustig(page)
+  await page.locator('.vh__kaart', { hasText: 'Statafel' }).getByRole('button', { name: 'In de mand' }).click()
+  await ga(page, '/mand')
+  await page.getByText('Geleverd en opgehaald').click()
+  zouden((await page.getByRole('button', { name: /^Betalen/ }).count()) === 0, 'met levering staat er nog een betaalknop')
+  await page.getByRole('button', { name: 'Offerte vragen met deze mand' }).last().click()
+  await page.waitForURL(/\/offerte$/)
+  // De offertepagina laadt apart; tot ze er staat, toont het scherm nog de mand.
+  await page.getByRole('heading', { name: /offerte/i }).waitFor()
+  const wat = await page.locator('textarea').inputValue()
+  zouden(bevat(wat, '1 × Statafel zwart'), `de mand staat niet in de aanvraag: ${wat}`)
+  zouden((await page.locator('input[type=date]').inputValue()) === '2027-03-16', 'de datum ging niet mee')
+})
+
+await test('huren voor een bedrijf stuurt naam en ondernemingsnummer mee, geen bedrag', async (page) => {
+  await ga(page, '/')
+  await page.fill('#van', '2027-03-16')
+  await page.fill('#tot', '2027-03-18')
+  await rustig(page)
+  await page.locator('.vh__kaart', { hasText: 'Statafel' }).getByRole('button', { name: 'In de mand' }).click()
+  await ga(page, '/mand')
+  await page.getByText('Ik huur voor een bedrijf').click()
+  await page.locator('input[type=email]').fill('lies@voorbeeld.be')
+  zouden(await page.getByRole('button', { name: /^Betalen/ }).isDisabled(), 'zonder bedrijfsnaam kan je al betalen')
+  await page.getByLabel(/Bedrijfsnaam/).fill('Bakkerij Lies bv')
+  await page.getByRole('textbox', { name: 'Btw-nummer' }).fill('BE 0712.345.678')
+  await page.getByRole('button', { name: /^Betalen/ }).click()
+  await page.waitForURL(/nep-stripe/, { timeout: 5000 })
+  const klant = laatsteAfrekening?.body?.klant ?? {}
+  zouden(klant.bedrijf === 'Bakkerij Lies bv', `de bedrijfsnaam ging niet mee: ${JSON.stringify(klant)}`)
+  zouden(bevat(klant.ondernemingsnummer ?? '', '0712.345.678'), 'het nummer ging niet mee')
 })
 
 /* ── Na de betaling ──────────────────────────────────────────────────── */
@@ -627,7 +693,7 @@ await test('het eerste scherm staat er snel, zonder iets van buiten', async (pag
   Dezelfde twee controles als `scripts/mobiel.mjs` op de backoffice doet, en
   om dezelfde reden: dit is het soort fout dat je op een laptop nooit ziet.
 */
-for (const pad of ['/', '/artikel/m-koeling', '/mand', '/offerte', '/gelukt']) {
+for (const pad of ['/', '/aanbod/koeling', '/artikel/m-koeling', '/mand', '/offerte', '/gelukt']) {
   await test(`${pad} past op een telefoon`, async (page) => {
     await page.setViewportSize({ width: 390, height: 664 })
     await ga(page, '/')

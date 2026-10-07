@@ -54,3 +54,25 @@
   font-display: swap;
   src: url('/fonts/SourceSans3-600.woff2') format('woff2');
 }
+
+/*
+  De twee letters van het logo: Prata voor "JE", Parisienne voor "Concept".
+  Alleen daar gebruikt (en in de sierwoorden van de titels), dus samen 40 kB.
+  Zonder deze twee viel het logo terug op Times en een systeemcursief, en dat
+  is geen JE Concept meer.
+*/
+@font-face {
+  font-family: 'Prata';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Prata-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Parisienne';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Parisienne-400.woff2') format('woff2');
+}

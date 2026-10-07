@@ -15,7 +15,7 @@ export default function Foto({ artikel, groot = false }) {
   if (artikel.foto) {
     return (
       <img
-        className={`vh__foto${groot ? ' vh__foto--groot' : ''}`}
+        className={`je-photo vh__foto${groot ? ' je-photo--hero vh__foto--groot' : ''}`}
         src={artikel.foto}
         alt={artikel.naam}
         loading={groot ? 'eager' : 'lazy'}
@@ -24,7 +24,10 @@ export default function Foto({ artikel, groot = false }) {
     )
   }
   return (
-    <div className={`vh__foto vh__foto--leeg${groot ? ' vh__foto--groot' : ''}`} aria-hidden="true">
+    <div
+      className={`je-photo je-photo--empty vh__foto vh__foto--leeg${groot ? ' je-photo--hero vh__foto--groot' : ''}`}
+      aria-hidden="true"
+    >
       <span>{artikel.categorie || 'JE Concept'}</span>
     </div>
   )

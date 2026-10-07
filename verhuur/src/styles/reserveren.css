@@ -1,0 +1,81 @@
+/*
+  Reserveren: de componenten van het JE Concept Design System voor de
+  verhuursite (periode, prijs, foto, voorraad, aantal, som, stappen, melding).
+
+  Letterlijk overgenomen uit het design system (bestand tokens/reserveren.css,
+  artifact "JE Concept Design System"), zoals je-ds.css de rest overneemt. Pas
+  hier niets aan zonder het design mee te nemen; wat alleen van deze site is,
+  staat in verhuur.css onder `vh__`.
+*/
+
+/* ---------- PeriodPicker ---------- */
+.je-period{display:flex;flex-wrap:wrap;gap:var(--space-5);align-items:flex-end;padding:var(--space-5) var(--space-6);border:1px solid var(--border-hairline);border-radius:var(--radius-md);background:var(--surface-1)}
+.je-period--bar{border-radius:0;border-left:0;border-right:0;padding:var(--space-4) var(--space-6)}
+.je-period__q{flex:1 1 100%;display:flex;align-items:baseline;gap:var(--space-4);flex-wrap:wrap}
+.je-period__title{font:var(--type-h3);font-size:18px;text-transform:uppercase;letter-spacing:var(--ls-h3)}
+.je-period__sum{font:var(--type-body-sm);color:var(--text-accent);font-weight:var(--fw-semibold)}
+.je-period__field{display:flex;flex-direction:column;gap:var(--space-2);flex:1 1 150px;min-width:0}
+.je-period__field .je-input{min-height:40px}
+.je-period__clear{align-self:flex-end}
+.je-period__hint{flex:1 1 100%;margin:0;font:var(--type-body-sm);color:var(--text-2)}
+
+/* ---------- PriceTag ---------- */
+.je-price{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;font:var(--type-body-sm);color:var(--text-2)}
+.je-price__amount{font-family:var(--font-display);font-weight:var(--fw-medium);font-size:20px;letter-spacing:.01em;color:var(--text-1);font-variant-numeric:tabular-nums}
+.je-price--lg .je-price__amount{font-size:32px}
+.je-price__from{font:var(--type-body-sm);color:var(--text-2)}
+
+/* ---------- ArticlePhoto ---------- */
+.je-photo{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-sm);background:var(--surface-2)}
+.je-photo--hero{aspect-ratio:4/3}
+.je-photo--empty{display:flex;align-items:center;justify-content:center;border:1px solid var(--border-hairline);background:var(--navy-50)}
+.je-photo--empty span{font-family:var(--font-display);font-weight:var(--fw-medium);font-size:15px;text-transform:uppercase;letter-spacing:.16em;color:var(--navy-400)}
+.je-photo--hero.je-photo--empty span{font-size:22px}
+
+/* ---------- Availability ---------- */
+.je-avail{display:inline-flex;align-items:center;gap:7px;font:var(--type-caption);letter-spacing:.04em;color:var(--text-2)}
+.je-avail__dot{width:7px;height:7px;border-radius:var(--radius-pill);background:var(--success);flex:0 0 auto}
+.je-avail--few{color:var(--text-accent)}
+.je-avail--few .je-avail__dot{background:var(--accent)}
+.je-avail--full{color:var(--text-3)}
+.je-avail--full .je-avail__dot{background:transparent;border:1px solid var(--text-3)}
+.je-avail--loading .je-avail__dot{background:var(--surface-3)}
+
+/* ---------- QuantityStepper ---------- */
+.je-qty{display:inline-flex;align-items:stretch;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);background:var(--surface-1)}
+.je-qty__btn{width:40px;min-height:40px;border:0;background:transparent;color:var(--text-1);font:var(--type-h3);font-size:20px;line-height:1;cursor:pointer;transition:var(--transition-control)}
+.je-qty__btn:hover{background:var(--accent-quiet)}
+.je-qty__btn:disabled{color:var(--text-3);pointer-events:none}
+.je-qty__input{width:48px;border:0;border-left:1px solid var(--border-hairline);border-right:1px solid var(--border-hairline);text-align:center;font:var(--type-body);font-weight:var(--fw-semibold);color:var(--text-1);background:transparent;-moz-appearance:textfield}
+.je-qty__input::-webkit-inner-spin-button,.je-qty__input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.je-qty--sm .je-qty__btn{width:34px;min-height:34px;font-size:17px}
+.je-qty--sm .je-qty__input{width:40px;font-size:14px}
+
+/* ---------- PriceSummary ---------- */
+.je-sum{margin:0;display:flex;flex-direction:column}
+.je-sum__row{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-5);padding:var(--space-3) 0;font:var(--type-body-sm)}
+.je-sum__row dt,.je-sum__row dd{margin:0}
+.je-sum__row dd{font-variant-numeric:tabular-nums;white-space:nowrap}
+.je-sum__row--discount dd{color:var(--success)}
+.je-sum__deposit{margin-top:var(--space-3);padding:var(--space-4) 0;border-top:1px dashed var(--border-subtle);border-bottom:1px dashed var(--border-subtle)}
+.je-sum__deposit .je-sum__row{padding:0}
+.je-sum__deposit-note{font:var(--type-caption);font-weight:var(--fw-regular);color:var(--text-2);margin-top:4px;max-width:44ch}
+.je-sum__back{font:var(--type-caption);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--success);margin-left:6px}
+.je-sum__total{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-5);padding-top:var(--space-4);margin-top:var(--space-2)}
+.je-sum__total dt{font:var(--type-eyebrow);letter-spacing:var(--ls-label);text-transform:uppercase;color:var(--text-2);margin:0}
+.je-sum__total dd{margin:0;font-family:var(--font-display);font-weight:var(--fw-medium);font-size:30px;font-variant-numeric:tabular-nums}
+.je-sum__foot{font:var(--type-caption);font-weight:var(--fw-regular);color:var(--text-3);margin-top:var(--space-2)}
+
+/* ---------- Steps ---------- */
+.je-steps{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-5);grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.je-steps__item{display:flex;gap:var(--space-4);align-items:flex-start}
+.je-steps__n{flex:0 0 auto;width:36px;height:36px;clip-path:var(--clip-hex);background:var(--navy-800);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:var(--fw-medium);font-size:15px}
+.je-steps__title{font:var(--type-h3);font-size:17px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-1)}
+.je-steps__body{font:var(--type-body-sm);color:var(--text-2);margin-top:2px}
+
+/* ---------- Notice ---------- */
+.je-notice{margin:0;padding:var(--space-4) var(--space-5);border-left:2px solid var(--accent);background:var(--surface-2);font:var(--type-body-sm);color:var(--text-1)}
+.je-notice--warning{border-left-color:var(--warning)}
+.je-notice--danger{border-left-color:var(--danger)}
+.je-notice--success{border-left-color:var(--success)}
+.je-notice__title{display:block;font:var(--type-caption);letter-spacing:var(--ls-label);text-transform:uppercase;margin-bottom:4px}
