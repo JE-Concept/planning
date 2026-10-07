@@ -111,6 +111,12 @@
 .vh__voet a {
   padding: 0 var(--space-2);
 }
+/* Voorwaarden, privacy en klantendienst: op een telefoon ook een duim breed. */
+.vh__voet nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+}
 
 /* ── Etalage ──────────────────────────────────────────────────────────── */
 

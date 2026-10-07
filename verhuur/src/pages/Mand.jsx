@@ -4,7 +4,7 @@ import { BTW_VERHUUR, huurTotaal, regelPrijs } from '@lib/huurprijs'
 import { afrekenen, mijnHuren, sessie } from '../lib/api'
 import { dagenTussen } from '../lib/mand'
 import Periode from '../onderdelen/Periode'
-import { CONTACT } from '../lib/instellingen'
+import { CENTRAAL, CONTACT } from '../lib/instellingen'
 
 const euro = (n) => `€ ${Number(n ?? 0).toFixed(2).replace('.', ',')}`
 
@@ -224,6 +224,23 @@ export default function Mand({ opId, mand, zetAantal, weg, zetPeriode, leegmaken
       </form>
 
       {fout ? <p className="vh__waarschuwing">{fout}</p> : null}
+
+      {/*
+        Wie betaalt, moet vooraf kunnen lezen waarmee hij akkoord gaat: wat de
+        waarborg is, wanneer hij terugkomt, wat annuleren kost. Vlak boven de
+        knop, en niet ergens in de voet waar niemand vóór het betalen kijkt.
+      */}
+      <p className="vh__klein vh__akkoord">
+        Met betalen ga je akkoord met onze{' '}
+        <a href={CENTRAAL.voorwaarden} className="vh__inlink" target="_blank" rel="noopener">
+          algemene voorwaarden
+        </a>
+        . Hoe we met je gegevens omgaan, staat in ons{' '}
+        <a href={CENTRAAL.privacy} className="vh__inlink" target="_blank" rel="noopener">
+          privacybeleid
+        </a>
+        .
+      </p>
 
       <div className="vh__mandknoppen">
         <button type="button" className="je-btn je-btn--ghost je-btn--md" onClick={leegmaken}>

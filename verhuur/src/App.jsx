@@ -2,7 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { aanbod, beschikbaar, sessie } from './lib/api'
 import { useMand } from './lib/mand'
-import { CONTACT } from './lib/instellingen'
+import { CENTRAAL, CONTACT } from './lib/instellingen'
 import Catalogus from './pages/Catalogus'
 
 /*
@@ -176,6 +176,10 @@ function Voet() {
       <div className="vh__voet-klein">
         Prijzen exclusief 21% btw. De waarborg wordt teruggestort bij onbeschadigde teruggave.
       </div>
+      <nav className="vh__voet-klein" aria-label="Voorwaarden en klantendienst">
+        <a href={CENTRAAL.voorwaarden}>Algemene voorwaarden</a> · <a href={CENTRAAL.privacy}>Privacybeleid</a> ·{' '}
+        <a href={CENTRAAL.klantendienst}>Klantendienst</a>
+      </nav>
     </footer>
   )
 }

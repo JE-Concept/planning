@@ -320,6 +320,33 @@ await test('van catalogus naar mand, met btw en waarborg apart', async (page) =>
 })
 
 /*
+  Wie betaalt, moet vooraf kunnen lezen waarmee hij akkoord gaat. De voorwaarden
+  en het privacybeleid zijn de centrale pagina's van JE Concept; de link staat
+  boven de betaalknop, en in de voet van elke pagina.
+*/
+await test('boven de betaalknop staan de voorwaarden, in de voet ook de klantendienst', async (page) => {
+  await ga(page, '/')
+  const voet = page.locator('.vh__voet')
+  for (const [naam, pad] of [['Algemene voorwaarden', '/terms-of-conditions'], ['Privacybeleid', '/privacy-policy'], ['Klantendienst', '/contact']]) {
+    const href = await voet.getByRole('link', { name: naam }).getAttribute('href')
+    zouden(href?.startsWith(`https://www.jeconcept.be${pad}`), `de voet linkt ${naam} naar ${href}`)
+  }
+
+  await page.fill('#van', '2027-03-16')
+  await page.fill('#tot', '2027-03-18')
+  await rustig(page)
+  await page.locator('.vh__kaart', { hasText: 'Koelkast' }).getByRole('button', { name: 'In de mand' }).click()
+  await ga(page, '/mand')
+  const akkoord = page.locator('.vh__akkoord')
+  const href = await akkoord.getByRole('link', { name: 'algemene voorwaarden' }).getAttribute('href')
+  zouden(href?.startsWith('https://www.jeconcept.be/terms-of-conditions'), `de voorwaarden bij het betalen linken naar ${href}`)
+  // Boven de knop, niet eronder: wie al geklikt heeft, leest het niet meer.
+  const tekstY = (await akkoord.boundingBox()).y
+  const knopY = (await page.getByRole('button', { name: /^Betalen/ }).boundingBox()).y
+  zouden(tekstY < knopY, 'de voorwaarden staan onder de betaalknop')
+})
+
+/*
   De waarborg hoort buiten de btw te blijven: het is geld dat je vasthoudt en
   teruggeeft, geen opbrengst. Btw erover heffen is een fout die pas bij de
   afsluiting opvalt.

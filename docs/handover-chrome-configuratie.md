@@ -86,7 +86,7 @@ Werk in deze volgorde. Elke stap is herhaalbaar. Hangt een stap op iets van Jasp
 
 1. **A — Google Cloud en Firebase:** Cloud Shell, messaging-tokens, Drive, Maps, push, IMAP, App Check, eigen serviceaccounts, bewaking.
 2. **B — Stripe (live).**
-3. **C — GitHub:** merges, secrets, uitrollen, beveiliging van de organisatie.
+3. **C — GitHub en Cloudflare:** merges, secrets, uitrollen, beveiliging van de organisatie, de centrale pagina's op jeconcept.be.
 4. **D — de sites:** Bar Vue, Meer, Ken je klanten en jeconcept.be koppelen.
 5. **F — Cue en de boekingsapp buiten gebruik stellen.**
 6. **E — Lightspeed, telefoonnummer, nakijken en rapport.** Het rapport (E5) is altijd het laatste.
@@ -413,6 +413,12 @@ Doe daarna eerst **C3**, de uitrol van planning, en kom dan terug voor de rest v
    - *Statement descriptor* `JE CONCEPT VERHUUR`;
    - support-mail `info@jeconcept.be`.
    - Pas een veld alleen aan als het leeg is of duidelijk fout. Wat Jasper bewust zette, laat je staan.
+3. Op dezelfde pagina, de drie adressen. Jasper koos ze; vul ze precies zo in:
+   - *URL servicevoorwaarden*: `https://jeconcept.be/terms-of-conditions`
+   - *URL privacybeleid*: `https://jeconcept.be/privacy-policy`
+   - *URL voor klantondersteuning*: `https://jeconcept.be/contact`
+
+   Doe dit **na C6**: Stripe opent de adressen om ze na te kijken, en zonder C6 bestaat `jeconcept.be` zonder www niet. Weigert Stripe ze toch, gebruik dan dezelfde adressen met `www.` ervoor en noteer dat in het rapport.
 
 Terugbetalingen hoeven niet ingesteld te worden.
 
@@ -479,6 +485,27 @@ Na de merge in C1 lopen ze vanzelf. Liepen ze niet, of liep de merge voor A3 kla
 1. <https://github.com/organizations/Kenjeklanten/settings/security> → **Require two-factor authentication** aan. GitHub toont wie er nog geen heeft; die leden verliezen toegang tot ze het aanzetten. Vraag Jasper eerst of dat nu mag, en noteer zijn antwoord.
 2. Voor `planning`, `feestbeest`: *Settings → Code security* → **Dependabot alerts**, **Dependabot security updates**, **Secret scanning** en **Push protection** aan.
 3. Beslist Jasper dat `planning` privé wordt: *Settings → General → Danger Zone → Change visibility → Make private*. Doe het **alleen** op zijn uitdrukkelijke vraag; de uitrol werkt daarna gewoon verder.
+
+
+## C6. De centrale pagina's op jeconcept.be
+
+Het privacybeleid, de algemene voorwaarden en de klantendienst zijn voor alle merken dezelfde: `/privacy-policy`, `/terms-of-conditions` en `/contact` op jeconcept.be. Ze komen uit de repo `feestbeest` (map `jeconcept/`, Pages-project `jeconcept-centraal`). Een worker (`jeconcept-centraal-router`) zet precies die drie paden op jeconcept.be; de rest van het domein blijft waar het is.
+
+Op `www.jeconcept.be` werken ze al. Het kale `jeconcept.be` heeft geen DNS-record, en dus ook geen pagina's. Dat los je zo op:
+
+1. Open <https://dash.cloudflare.com> → het account met de zone **jeconcept.be** → **DNS** → **Records**.
+2. Staat er voor de naam `jeconcept.be` (in de lijst als `@` of `jeconcept.be`) al een record van het type **A**, **AAAA** of **CNAME**? Verander het dan **niet**. Noteer type en inhoud in het rapport en ga naar stap 5.
+3. Anders: **Add record** → type **AAAA** → name `@` → IPv6 address `100::` → **Proxy status aan** (oranje wolk) → **Save**. Dat adres hoort bij niemand: Cloudflare gebruikt het voor een naam die alleen een worker beantwoordt.
+4. Raak de MX- en TXT-records niet aan. Daar hangt de mail aan.
+5. Wacht twee minuten en open:
+   - `https://jeconcept.be/privacy-policy`
+   - `https://jeconcept.be/terms-of-conditions`
+   - `https://jeconcept.be/contact`
+
+   Elk moet de pagina van JE Concept tonen, met bovenaan *Nederlands · Français · English*.
+6. Toont het kale domein op een ander pad (bijvoorbeeld `https://jeconcept.be/`) een foutpagina van Cloudflare, dan is dat te verwachten: daar staat nog niets. Dat is voor Jasper, niet voor nu.
+
+Tonen de pagina's op `www.jeconcept.be` het niet, dan liep de worker niet uit. Kijk in <https://github.com/Kenjeklanten/feestbeest/actions/workflows/deploy-jeconcept.yml> naar de stap *Route the paths on jeconcept.be*. Meldt die een rechtenprobleem, geef het token `CLOUDFLARE_API_TOKEN` van die repo dan ook **Workers Scripts: Edit** (account) en **Workers Routes: Edit** (zone jeconcept.be), en start de workflow opnieuw.
 
 ---
 
@@ -588,6 +615,30 @@ Doe dit voor elke site die je in D3 of D4 koppelde, en voor Feestbeest en Winter
 
 Kies een formule of een product dat niets kost en geen betaling start. Rekent een formulier meteen af, sla het dan over.
 
+
+## D7. De centrale pagina's op Bar Vue, Meer en Ken je klanten
+
+Feestbeest, Wintermoods en de verhuursite linken al naar de centrale pagina's. Bar Vue, Meer en Ken je klanten staan niet in een repo; daar zet je de links zelf, op het platform dat je in D1 vond.
+
+Per site:
+1. Zet in de voet (footer), op elke pagina, drie links:
+
+   | Tekst | Adres |
+   |---|---|
+   | Algemene voorwaarden | `https://www.jeconcept.be/terms-of-conditions` |
+   | Privacybeleid | `https://www.jeconcept.be/privacy-policy` |
+   | Klantendienst | `https://www.jeconcept.be/contact` |
+
+   Heeft de site een Franstalige of Engelstalige versie, zet er dan `?lang=fr` of `?lang=en` achter.
+2. Heeft de site een eigen pagina *Privacy*, *Privacybeleid*, *Algemene voorwaarden* of *Disclaimer*:
+   - Kan het platform doorverwijzen (WordPress met een redirect-plugin, Wix → *SEO → URL redirect manager*)? Verwijs die pagina dan met een **301** naar het centrale adres, en haal ze uit het menu.
+   - Kan het niet, vervang de inhoud dan door één zin met de link: *Ons privacybeleid staat op [www.jeconcept.be/privacy-policy](https://www.jeconcept.be/privacy-policy).*
+   - Verwijder nooit een pagina waar je niet zeker van bent wat erop staat. Noteer ze in het rapport.
+3. Verwijst een formulier op de site naar een privacybeleid ("ik ga akkoord met …"), laat die link dan ook naar het centrale adres wijzen.
+4. Heeft de site een cookiebanner, dan blijft die. De centrale pagina zegt dat elke site zelf toestemming vraagt voor statistiek- en advertentiecookies.
+
+Klaar als op elke site de drie links in de voet staan en werken.
+
 ---
 
 # Deel F — Cue en de boekingsapp buiten gebruik stellen
@@ -684,13 +735,14 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 - B1 STRIPE_SECRET (restricted key): gezet ja/nee
 - B2 webhook op run.app-adres met de twee gebeurtenissen: ja/nee · echt geheim gezet ja/nee
 - B3 betaalmethodes aan: … · Apple Pay-domein: gelukt/mislukt/nog niet
-- B4 branding en descriptor: aangepast/stond goed
+- B4 branding en descriptor: aangepast/stond goed · drie URL's (voorwaarden, privacy, klantondersteuning) ingevuld ja/nee, met of zonder www
 
 ## GitHub
 - C1 feestbeest PR: <link> gemerged ja/nee
 - C2 VITE_GOOGLE_MAPS_API_KEY, VITE_FIREBASE_VAPID_KEY: gezet ja/nee
 - C3 laatste uitrol planning: run-nummer, groen ja/nee, resterende waarschuwingen: …
 - C4 deploys feestbeest: groen ja/nee
+- C6 jeconcept.be: AAAA 100:: aangemaakt / bestond al (type + inhoud) · de drie pagina's op het kale domein ok ja/nee
 - C5 2FA verplicht ja/nee (Jaspers antwoord) · Dependabot/secret scanning/push protection aan ja/nee · planning privé ja/nee (op vraag van Jasper)
 
 ## Sites
@@ -701,6 +753,7 @@ Maak in <https://github.com/Kenjeklanten/planning/issues/new> een issue met de t
 - jeconcept.be: platform … · gekoppeld via … · proef ok ja/nee
 - Feestbeest, Wintermoods: proef ok ja/nee
 - Sites op de boekingsapp of op Cue (D2): …
+- D7 centrale links in de voet: Bar Vue ja/nee · Meer ja/nee · Ken je klanten ja/nee · eigen privacy- of voorwaardenpagina's doorverwezen/vervangen/onaangeroerd (welke)
 
 ## Rest
 - E1 mail aan Lightspeed: verstuurd aan (adres of "supportformulier") ja/nee

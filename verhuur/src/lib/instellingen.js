@@ -26,6 +26,19 @@ export const CONTACT = {
 }
 
 /**
+ * De centrale pagina's van JE Concept: één privacybeleid, één set voorwaarden
+ * en één klantendienst voor elk merk, ook voor deze site. Ze staan niet hier
+ * maar op jeconcept.be (de repo feestbeest, map jeconcept/), zodat zes sites
+ * niet zes versies van dezelfde tekst bijhouden. Op www, want het kale
+ * jeconcept.be heeft nog geen DNS-record.
+ */
+export const CENTRAAL = {
+  voorwaarden: 'https://www.jeconcept.be/terms-of-conditions?lang=nl',
+  privacy: 'https://www.jeconcept.be/privacy-policy?lang=nl',
+  klantendienst: 'https://www.jeconcept.be/contact?lang=nl',
+}
+
+/**
  * Vraag 7 en 8: het boekingsvenster.
  *
  * Niet voor morgen: iemand die om 23u voor de volgende ochtend boekt, komt
