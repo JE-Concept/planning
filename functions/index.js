@@ -752,7 +752,7 @@ export const notifyOverdueDigest = onSchedule(
  * De eventdatums als agenda-abonnement, op één adres met een sleutel erin.
  *
  * De uitleg over hoe dat afgeschermd is, staat in `agenda.js` — net als waarom
- * ze met `invoker: 'private'` uitrolt en pas daarna publiek gezet wordt.
+ * ze `invoker: 'public'` in de code heeft en niet alleen in de workflow.
  */
 export const agenda = maakAgendaFeed({ db, region: REGION })
 

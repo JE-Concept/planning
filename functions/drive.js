@@ -175,7 +175,14 @@ async function sync(drive, db, driveId, { taskId, customerId }, uid) {
  */
 export function maakDrive({ db, region, drive = driveEcht, verifieer = (token) => getAuth().verifyIdToken(token) }) {
   return onRequest(
-    { region, cors: false, invoker: 'private', memory: '512MiB', timeoutSeconds: 120, concurrency: 20, maxInstances: 10 },
+    /*
+      Publiek op Cloud Run-niveau, want Hosting stuurt /api/drive/** zonder
+      Google-identiteit door. Wie het mag, beslist `wieBent` hieronder met het
+      Firebase-token van de gebruiker: zonder token een 401 van de functie zelf.
+      Met `invoker: 'private'` gaf Cloud Run een 403 nog voor de functie
+      begon, en geen workflow zette ze ooit publiek. Zie `agenda.js`.
+    */
+    { region, cors: false, invoker: 'public', memory: '512MiB', timeoutSeconds: 120, concurrency: 20, maxInstances: 10 },
     async (req, res) => {
       const pad = String(req.path ?? '').replace(/^\/api\/drive/, '').replace(/^\/+|\/+$/g, '')
       res.set('Cache-Control', 'no-store')

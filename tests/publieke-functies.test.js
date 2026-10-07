@@ -1,47 +1,66 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Functies die zonder login bereikbaar moeten blijven, ook na de volgende uitrol.
+ * HTTP-functies blijven publiek, ook na de volgende uitrol.
  *
  * Een functie met `invoker: 'private'` zet elke uitrol terug op "Require
  * authentication". Voor `verhuur` zette de workflow ze daarna niet opnieuw
  * publiek, en rental.jeconcept.be kreeg een 403 op /api/verhuur/aanbod: een
- * lege etalage, zonder dat er één test rood werd. Deze test legt vast dat elke
- * publieke functie ofwel zelf `public` is, ofwel in beide workflows weer
- * publiek gezet wordt.
+ * lege etalage, zonder dat er één test rood werd. Voor `drive` gold hetzelfde.
+ *
+ * Elke `onRequest` in elke codebase wordt van buiten aangeroepen (Hosting, een
+ * agenda-app, Stripe, een andere site): geen enkele heeft een Google-identiteit
+ * bij zich. Dus: elke `onRequest` zegt zelf `invoker: 'public'`, en wie toegang
+ * krijgt, beslist de functie (token, sleutel in het adres, handtekening).
+ * Daarbovenop zet de workflow de functies uit de standaardcodebase nog eens
+ * publiek, als vangnet.
  */
 
 const lees = (pad) => readFileSync(new URL(`../${pad}`, import.meta.url), 'utf8')
-const ci = lees('.github/workflows/ci.yml')
-const goLive = lees('.github/workflows/go-live.yml')
+const CODEBASES = ['functions', 'functions-mail', 'functions-meetings', 'functions-betaling', 'functions-messaging']
 
-// De Cloud Run-dienst heet zoals de functie, in kleine letters.
-const PUBLIEK = {
-  verhuur: 'functions/verhuur.js',
-  agenda: 'functions/agenda.js',
-  portaal: 'functions/portaal.js',
+/** Elke onRequest( … ) met zijn optieblok, per bestand. */
+function httpFuncties() {
+  const uit = []
+  for (const map of CODEBASES) {
+    for (const naam of readdirSync(new URL(`../${map}`, import.meta.url))) {
+      if (!naam.endsWith('.js')) continue
+      const tekst = lees(`${map}/${naam}`)
+      // Alles tussen `onRequest(` en de handler: daar staan de opties.
+      for (const m of tekst.matchAll(/onRequest\(([\s\S]*?)\basync\b/g)) {
+        // Commentaar weg: daarin mag het woord private gerust nog staan.
+        const opties = m[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+        uit.push({ plek: `${map}/${naam}`, opties })
+      }
+    }
+  }
+  return uit
 }
 
-describe('publieke functies blijven publiek', () => {
-  it('verhuur staat in de code op public', () => {
-    expect(lees('functions/verhuur.js')).toMatch(/invoker: 'public'/)
+const ci = lees('.github/workflows/ci.yml')
+const goLive = lees('.github/workflows/go-live.yml')
+// De Cloud Run-diensten uit de standaardcodebase die van buiten komen.
+const VANGNET = ['verhuur', 'agenda', 'portaal', 'drive']
+
+describe('publieke HTTP-functies', () => {
+  const functies = httpFuncties()
+
+  it('vindt de HTTP-functies (anders test dit niets)', () => {
+    expect(functies.length).toBeGreaterThanOrEqual(7)
   })
 
-  for (const [dienst, bestand] of Object.entries(PUBLIEK)) {
-    it(`${dienst}: public in de code, of na elke uitrol opnieuw publiek gezet`, () => {
-      const inCode = /invoker: 'public'/.test(lees(bestand))
-      const inCi = new RegExp(`add-iam-policy-binding ${dienst} `).test(ci)
-      const inGoLive = new RegExp(`for dienst in [^;]*\\b${dienst}\\b`).test(goLive)
-      expect(inCode || (inCi && inGoLive), `${dienst}: code=${inCode} ci=${inCi} go-live=${inGoLive}`).toBe(true)
-      // Het vangnet staat er voor elke publieke functie, ook als de code al public is.
-      expect(inCi, `${dienst} ontbreekt in ci.yml`).toBe(true)
-      expect(inGoLive, `${dienst} ontbreekt in go-live.yml`).toBe(true)
+  for (const { plek, opties } of httpFuncties()) {
+    it(`${plek}: zegt zelf invoker: 'public'`, () => {
+      expect(opties).toMatch(/invoker:\s*'public'/)
+      expect(opties).not.toMatch(/invoker:\s*'private'/)
     })
   }
 
-  it('de betaalfuncties zijn public in de code', () => {
-    const betaling = lees('functions-betaling/index.js')
-    expect(betaling.match(/invoker: 'public'/g)).toHaveLength(2)
-  })
+  for (const dienst of VANGNET) {
+    it(`${dienst}: de uitrol zet ze daarna nog eens publiek, in beide workflows`, () => {
+      expect(ci, `${dienst} ontbreekt in ci.yml`).toMatch(new RegExp(`add-iam-policy-binding ${dienst} `))
+      expect(goLive, `${dienst} ontbreekt in go-live.yml`).toMatch(new RegExp(`for dienst in [^;]*\\b${dienst}\\b`))
+    })
+  }
 })

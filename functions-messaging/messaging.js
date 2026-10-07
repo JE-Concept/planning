@@ -90,10 +90,9 @@ export function maakMessaging({ db, region, perMinuut = PER_MINUUT }) {
       region,
       cors: false,
       secrets: [MESSAGING_TOKENS],
-      // `invoker: 'private'` zegt alleen tegen de CLI dat ze zelf geen
-      // IAM-binding moet zetten; de workflow doet dat een stap later, net als
-      // bij `verhuur` en `portaal`.
-      invoker: 'private',
+      // Publiek: de afzenders zijn servers zonder Google-identiteit. De token
+      // per bron schermt af. Waarom dit hier staat: zie functions/agenda.js.
+      invoker: 'public',
       concurrency: 20,
       maxInstances: 3,
       memory: '256MiB',

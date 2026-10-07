@@ -103,6 +103,17 @@ jobs:
           npx --yes firebase-tools@15 functions:artifacts:setpolicy --location europe-west1 --days 7 \
             --force --project "$PROJECT" --non-interactive \
             || echo "::warning::Opruimregel voor function-images niet gezet; de uitrol gaat door."
+          # De opruimregel wist images ouder dan een week, ook het image waar een
+          # functie nog naar verwijst wanneer ze bij een uitrol niet opnieuw gebouwd
+          # wordt — en dan geeft die uitrol "Image … not found". Een bewaarregel
+          # houdt per image de vijf nieuwste versies, wat er ook gebeurt: in
+          # Artifact Registry wint "Keep" van "Delete". Zonder --overwrite blijft
+          # de opruimregel van Firebase gewoon naast deze staan.
+          printf '%s' '[{"name":"jeplan-bewaar-recente","action":{"type":"Keep"},"mostRecentVersions":{"keepCount":5}}]' > /tmp/bewaar.json
+          gcloud artifacts repositories set-cleanup-policies gcf-artifacts --location europe-west1 \
+            --project "$PROJECT" --policy /tmp/bewaar.json --no-dry-run --quiet >/dev/null \
+            && echo "Bewaarregel voor de nieuwste images staat." \
+            || echo "::warning::Bewaarregel voor function-images niet gezet; de uitrol gaat door."
           scripts/ci/deploy.sh "$PROJECT" --only functions:default
 
           # Een callable v2-functie draait op Cloud Run en moet publiek
@@ -122,7 +133,7 @@ jobs:
           # verhuursite is een publieke etalage. De sleutel in het adres (of,
           # bij de verhuur, de selectie van velden) is wat ze afschermt; welke
           # velden er naar buiten gaan beslist de functie zelf.
-          for dienst in agenda portaal verhuur; do
+          for dienst in agenda portaal verhuur drive; do
             gcloud run services add-iam-policy-binding "$dienst" \
               --region europe-west1 --project "$PROJECT" \
               --member allUsers --role roles/run.invoker --quiet \
@@ -258,6 +269,12 @@ jobs:
             || echo "::notice::Site $PROJECT-verhuur niet aangemaakt (bestaat al, of de sleutel mag het niet)."
           scripts/ci/deploy.sh "$PROJECT" --only hosting:verhuur \
             || echo "::warning::De verhuursite is niet uitgerold — bestaat de site $PROJECT-verhuur in Firebase Hosting? De backoffice staat wel live."
+
+      # Zie ci.yml: een publiek adres dat een 403 van Cloud Run geeft, is een
+      # mislukte uitrol.
+      - name: Na de uitrol, publieke adressen
+        if: inputs.what == 'alles'
+        run: scripts/ci/na-uitrol.sh "$PROJECT"
 
       - name: Sleutel opruimen
         if: always()

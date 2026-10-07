@@ -73,16 +73,16 @@ const metDatums = (obj, velden) => {
 
 export function maakPortaal({ db, region }) {
   /*
-    `invoker: 'private'` betekent hier niet dat de pagina privé is — het zegt
-    tegen de Firebase CLI dat ze zelf geen IAM-binding moet zetten. Publiek
-    bereikbaar wordt ze een stap later in de workflow. Dezelfde uitleg als bij
-    `agenda.js`, en om dezelfde reden: zonder dit strandt de hele uitrol.
+    Publiek: een klant die zijn offerte opent, heeft geen account en hoort er
+    geen nodig te hebben. De sleutel in het adres schermt af, en welke velden
+    naar buiten gaan beslist de functie. Waarom dit hier staat en niet alleen
+    in de workflow: zie `agenda.js`.
   */
   return onRequest(
     {
       region,
       cors: false,
-      invoker: 'private',
+      invoker: 'public',
       /*
         ── Klaar voor een link die rondgaat ────────────────────────────────
 

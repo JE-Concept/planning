@@ -19,8 +19,12 @@ WACHT=90
 
 log=$(mktemp)
 
+# Wat er deze ronde uitgerold wordt. Begint als wat de workflow vroeg; na een
+# image-race alleen nog de functies die faalden (zie hieronder).
+ARGS=("$@")
+
 for poging in $(seq 1 "$POGINGEN"); do
-  npx --yes firebase-tools@15 deploy --project "$PROJECT" --non-interactive "$@" 2>&1 | tee "$log"
+  npx --yes firebase-tools@15 deploy --project "$PROJECT" --non-interactive "${ARGS[@]}" 2>&1 | tee "$log"
   status=${PIPESTATUS[0]}
   [ "$status" -eq 0 ] && exit 0
 
@@ -37,15 +41,29 @@ for poging in $(seq 1 "$POGINGEN"); do
   fi
 
   # Sinds firebase-tools 15 bouwt de CLI één image per codebase en hangen alle
-  # functies eraan. Cloud Run begint soms aan een functie voor dat image klaar
-  # staat ("Image … not found", "Container import failed"); die functie houdt
-  # dan haar vorige versie, de rest is bijgewerkt. Een tweede ronde vindt het
-  # image wel. Een echte fout in de code geeft een andere melding en valt
-  # hier niet onder.
+  # functies eraan (het heet naar de eerste functie: …__aapi_koppel:version_1).
+  # Cloud Run begint soms aan een functie voor dat image er staat ("Image … not
+  # found", "Container import failed"); die functies houden hun vorige versie,
+  # de rest is bijgewerkt. Zo faalden in CI #129 spreadCustomerRename,
+  # spreadListRename, verhuurAanvraagBinnen en verhuurOrderBetaald.
+  #
+  # De volgende ronde rolt alleen díe functies opnieuw uit, als
+  # functions:<codebase>:<naam>. Dat is sneller, raakt de rest niet opnieuw aan,
+  # en geeft ze een eigen build in plaats van een verwijzing naar hetzelfde
+  # ontbrekende image. Een echte fout in de code geeft een andere melding en
+  # valt hier niet onder.
   if grep -qi "Container import failed\|Image '[^']*' not found" "$log" \
      && [ "$poging" -lt "$POGINGEN" ]; then
-    echo "::warning::Cloud Run vond het nieuwe image nog niet voor een deel van de functies (poging $poging van $POGINGEN). Over 30s opnieuw." >&2
-    sleep 30
+    codebase=$(printf '%s\n' "${ARGS[@]}" | grep -o 'functions:[a-z0-9-]*' | head -1 | cut -d: -f2)
+    mislukt=$(sed -n '/Functions deploy had errors with the following functions:/,/^[^[:space:]]/p' "$log" \
+      | grep -oE '^[[:space:]]+([a-z]+:)?[A-Za-z0-9_-]+\(' | tr -d ' \t(' | sed 's/^[a-z]*://' | sort -u)
+    if [ -n "$codebase" ] && [ -n "$mislukt" ]; then
+      ARGS=(--only "$(printf "functions:$codebase:%s," $mislukt | sed 's/,$//')")
+      echo "::warning::Image-race bij $(echo $mislukt | wc -w) functie(s): $(echo $mislukt | tr '\n' ' ')— alleen die opnieuw (poging $((poging + 1)) van $POGINGEN), over 60s." >&2
+    else
+      echo "::warning::Cloud Run vond het nieuwe image nog niet (poging $poging van $POGINGEN). Over 60s alles opnieuw." >&2
+    fi
+    sleep 60
     continue
   fi
 

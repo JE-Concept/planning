@@ -191,6 +191,17 @@ jobs:
           npx --yes firebase-tools@15 functions:artifacts:setpolicy --location europe-west1 --days 7 \
             --force --project "$FIREBASE_PROJECT" --non-interactive \
             || echo "::warning::Opruimregel voor function-images niet gezet; de uitrol gaat door."
+          # De opruimregel wist images ouder dan een week, ook het image waar een
+          # functie nog naar verwijst wanneer ze bij een uitrol niet opnieuw gebouwd
+          # wordt — en dan geeft die uitrol "Image … not found". Een bewaarregel
+          # houdt per image de vijf nieuwste versies, wat er ook gebeurt: in
+          # Artifact Registry wint "Keep" van "Delete". Zonder --overwrite blijft
+          # de opruimregel van Firebase gewoon naast deze staan.
+          printf '%s' '[{"name":"jeplan-bewaar-recente","action":{"type":"Keep"},"mostRecentVersions":{"keepCount":5}}]' > /tmp/bewaar.json
+          gcloud artifacts repositories set-cleanup-policies gcf-artifacts --location europe-west1 \
+            --project "$FIREBASE_PROJECT" --policy /tmp/bewaar.json --no-dry-run --quiet >/dev/null \
+            && echo "Bewaarregel voor de nieuwste images staat." \
+            || echo "::warning::Bewaarregel voor function-images niet gezet; de uitrol gaat door."
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only functions:default
 
           # Een callable v2-functie draait op Cloud Run en moet publiek
@@ -236,6 +247,13 @@ jobs:
             --region europe-west1 --project "$FIREBASE_PROJECT" \
             --member allUsers --role roles/run.invoker --quiet \
             || echo "::warning::Kon allUsers/run.invoker niet zetten op verhuur — de verhuursite toont dan geen aanbod."
+
+          # De documenten: Hosting stuurt /api/drive/** zonder Google-identiteit
+          # door; de functie controleert zelf het Firebase-token.
+          gcloud run services add-iam-policy-binding drive \
+            --region europe-west1 --project "$FIREBASE_PROJECT" \
+            --member allUsers --role roles/run.invoker --quiet \
+            || echo "::warning::Kon allUsers/run.invoker niet zetten op drive — documenten uploaden lukt dan niet."
 
           # De functie draait onder haar eigen runtime-service-account. Op een
           # vers project krijgt die niet meer automatisch Editor, en zonder
@@ -339,6 +357,15 @@ jobs:
             || echo "::notice::Site $FIREBASE_PROJECT-verhuur niet aangemaakt (bestaat al, of de sleutel mag het niet)."
           scripts/ci/deploy.sh "$FIREBASE_PROJECT" --only hosting:verhuur \
             || echo "::warning::De verhuursite is niet uitgerold — bestaat de site $FIREBASE_PROJECT-verhuur in Firebase Hosting? De backoffice staat wel live."
+
+      # Van buitenaf, zoals een bezoeker: geeft een publiek adres een 403 van
+      # Cloud Run, dan is de uitrol niet geslaagd, ook al is alles hierboven
+      # groen. Zo bleef de etalage van rental.jeconcept.be ooit leeg.
+      - name: Na de uitrol, publieke adressen
+        if: env.HAS_CREDENTIALS == 'true'
+        env:
+          FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: scripts/ci/na-uitrol.sh "$FIREBASE_PROJECT"
 
       - name: Sleutel opruimen
         if: always()
