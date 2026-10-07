@@ -11,12 +11,12 @@
  * goed; dit script zet ze ook zo in de database, zodat de agendafeed, de
  * Drive-mappen en elke functie dezelfde dag zien.
  *
- * Het raakt alleen gemigreerde documenten (met `clickupId`), alleen de velden
+ * Het raakt alleen gemigreerde documenten (zie `gemigreerd`), alleen de velden
  * eventDate, startDate, dueDate en eventEndDate, en alleen een tijdstip dat
  * precies 04:00:00.000 is in Brussel of Manila. Dat wordt die dag om 12:00 in
  * Brussel, zoals de tool zelf een datum zonder uur bewaart.
  */
-import { CLICKUP_DATUMVELDEN, clickupDag } from '../../src/lib/clickupdatum.js'
+import { CLICKUP_DATUMVELDEN, clickupDag, gemigreerd } from '../../src/lib/clickupdatum.js'
 import { schrijftEcht, verbind, verslag } from './_hulp.mjs'
 
 const db = verbind()
@@ -30,12 +30,17 @@ function middagInBrussel(sleutel) {
   return new Date(Date.UTC(j, m - 1, d, 12 - (uurDaar - 12)))
 }
 
-const snap = await db.collection('tasks').where('clickupId', '!=', null).get()
+// Alles lezen en hier filteren: live bleek niet elk gemigreerd document een
+// `clickupId` te hebben, en een query op dat veld zou die overslaan.
+const snap = await db.collection('tasks').get()
 
 const regels = []
 let geraakt = 0
+let migratie = 0
 for (const doc of snap.docs) {
   const data = doc.data()
+  if (!gemigreerd({ id: doc.id, ...data })) continue
+  migratie += 1
   const patch = {}
   const uitleg = []
   for (const veld of CLICKUP_DATUMVELDEN) {
@@ -51,4 +56,5 @@ for (const doc of snap.docs) {
   if (echt) await doc.ref.update(patch)
 }
 
-verslag({ gevonden: snap.size, geraakt, regels, echt })
+console.log(`Documenten: ${snap.size}, waarvan uit ClickUp: ${migratie}`)
+verslag({ gevonden: migratie, geraakt, regels, echt })

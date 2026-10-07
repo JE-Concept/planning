@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { imapInstellingen } from '../functions-mail/imap-instellingen'
+import { imapFoutVoorLog, imapInstellingen, postbusVan } from '../functions-mail/imap-instellingen'
 
 /*
   Op 7 oktober kreeg ImapFlow het geheim als `url` mee, een optie die het niet
@@ -36,5 +36,38 @@ describe('imapInstellingen', () => {
     } catch (err) {
       expect(err.message).not.toContain('geheim123')
     }
+  })
+})
+
+describe('welke map de ophaler leest', () => {
+  it('zonder pad INBOX, met pad die map (een Gmail-label)', () => {
+    expect(postbusVan('imaps://a%40b.be:x@imap.gmail.com:993')).toBe('INBOX')
+    expect(postbusVan('imaps://a%40b.be:x@imap.gmail.com:993/')).toBe('INBOX')
+    expect(postbusVan('imaps://a%40b.be:x@imap.gmail.com:993/JE%20Plan')).toBe('JE Plan')
+  })
+})
+
+/*
+  Live stond er enkel "Command failed". Wat de server antwoordde, hoort in de
+  log; de opdracht zelf niet, want bij LOGIN staat het wachtwoord erin.
+*/
+describe('een IMAP-fout in de log', () => {
+  it('neemt het antwoord van de server mee en laat de opdracht weg', () => {
+    const err = Object.assign(new Error('Command failed'), {
+      responseText: 'Invalid credentials (Failure)',
+      serverResponseCode: 'AUTHENTICATIONFAILED',
+      authenticationFailed: true,
+      responseStatus: 'NO',
+      executedCommand: '1 LOGIN plan@jeconcept.be geheim123',
+    })
+    const log = imapFoutVoorLog(err)
+    expect(log).toEqual({
+      melding: 'Command failed',
+      antwoord: 'Invalid credentials (Failure)',
+      code: 'AUTHENTICATIONFAILED',
+      loginMislukt: true,
+      status: 'NO',
+    })
+    expect(JSON.stringify(log)).not.toContain('geheim123')
   })
 })

@@ -5,7 +5,7 @@ import { logger } from 'firebase-functions'
 import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
 import { zetPlanningInDeWachtrij } from './planningbijlage.js'
-import { imapInstellingen } from './imap-instellingen.js'
+import { imapFoutVoorLog, imapInstellingen, postbusVan } from './imap-instellingen.js'
 
 /**
  * De post van info@jeconcept.be ophalen, uit de postbus die lid is van die groep.
@@ -90,13 +90,21 @@ export const haalPostOp = onSchedule(
 
     // ImapFlow kent geen `url`; zie imap-instellingen.js.
     const client = new ImapFlow({ ...imapInstellingen(url), logger: false })
-    await client.connect()
+    const postbus = postbusVan(url)
+    try {
+      await client.connect()
+    } catch (err) {
+      logger.error('IMAP: verbinden of aanmelden mislukt', imapFoutVoorLog(err))
+      throw err
+    }
 
-    let hoogste = Number(stand.laatsteUid ?? 0)
+    // UID's tellen per map. Leest de ophaler een andere map dan de vorige
+    // keer, dan zegt de oude stand niets meer en begint hij opnieuw.
+    let hoogste = (stand.postbus ?? 'INBOX') !== postbus ? 0 : Number(stand.laatsteUid ?? 0)
     let gelezen = 0
 
     try {
-      const slot = await client.getMailboxLock('INBOX')
+      const slot = await client.getMailboxLock(postbus)
       try {
         // Zonder eerdere stand: alleen wat recent is. Met: alles daarna.
         const zoek = hoogste
@@ -133,12 +141,15 @@ export const haalPostOp = onSchedule(
       } finally {
         slot.release()
       }
+    } catch (err) {
+      logger.error('IMAP: map openen of post lezen mislukt', { postbus, ...imapFoutVoorLog(err) })
+      throw err
     } finally {
       await client.logout().catch(() => {})
     }
 
     await houder.set(
-      { laatsteUid: hoogste, laatsteKeer: FieldValue.serverTimestamp(), laatsteAantal: gelezen },
+      { laatsteUid: hoogste, postbus, laatsteKeer: FieldValue.serverTimestamp(), laatsteAantal: gelezen },
       { merge: true }
     )
     if (gelezen) logger.info('Post opgehaald', { aantal: gelezen, uid: hoogste })

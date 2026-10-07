@@ -39,3 +39,41 @@ export function imapInstellingen(url) {
     },
   }
 }
+
+/**
+ * Welke map gelezen wordt: het pad achter het adres, anders INBOX.
+ *
+ *   imaps://…@imap.gmail.com:993              → INBOX
+ *   imaps://…@imap.gmail.com:993/JE%20Plan    → het Gmail-label "JE Plan"
+ *
+ * Een label in Gmail is via IMAP een map. Zo kan de postbus die de ophaler
+ * leest alleen de post onder dat label doorgeven, zonder de code te wijzigen:
+ * het pad staat in het geheim.
+ */
+export function postbusVan(url) {
+  try {
+    const pad = decodeURIComponent(new URL(String(url).trim()).pathname.replace(/^\/+|\/+$/g, ''))
+    return pad || 'INBOX'
+  } catch {
+    return 'INBOX'
+  }
+}
+
+/**
+ * Wat er in de log mag van een IMAP-fout.
+ *
+ * ImapFlow gooit bij een geweigerde opdracht enkel "Command failed"; het echte
+ * antwoord van de server staat in `responseText` en `serverResponseCode`, en
+ * `authenticationFailed` zegt of het de login was. Live stond er alleen
+ * "Command failed", en dan valt er niets te herstellen. De opdracht zelf
+ * (`executedCommand`) gaat niet mee: bij LOGIN staat daar het wachtwoord in.
+ */
+export function imapFoutVoorLog(err) {
+  return {
+    melding: err?.message ?? String(err),
+    antwoord: err?.responseText ?? null,
+    code: err?.serverResponseCode ?? err?.code ?? null,
+    loginMislukt: Boolean(err?.authenticationFailed),
+    status: err?.responseStatus ?? null,
+  }
+}

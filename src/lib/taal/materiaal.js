@@ -54,8 +54,10 @@ export default {
   'eventmat.tab_een': { nl: 'Materiaal · {aantal}', en: 'Equipment · {aantal}' },
   'eventmat.tab_meer': { nl: 'Materiaal · {aantal}', en: 'Equipment · {aantal}' },
   'eventmat.titel': { nl: 'Vastgelegd voor dit event', en: 'Reserved for this event' },
-  'eventmat.periode_een': { nl: 'over {dagen} dag', en: 'across {dagen} day' },
-  'eventmat.periode_meer': { nl: 'over {dagen} dagen', en: 'across {dagen} days' },
+  // De duur van de huur. "over 1 dag" las als "binnen een dag" op een event
+  // dat pas over achttien dagen was.
+  'eventmat.periode_een': { nl: 'huur voor {dagen} dag', en: 'hired for {dagen} day' },
+  'eventmat.periode_meer': { nl: 'huur voor {dagen} dagen', en: 'hired for {dagen} days' },
   'eventmat.stuks_een': { nl: '{aantal} stuk', en: '{aantal} item' },
   'eventmat.stuks_meer': { nl: '{aantal} stuks', en: '{aantal} items' },
   'eventmat.nog_niets': {

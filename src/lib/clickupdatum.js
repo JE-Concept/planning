@@ -16,9 +16,11 @@
  * 12:00, zoals de tool zelf een datum zonder uur bewaart: dan toont geen
  * enkel scherm een uur, en valt het event op de juiste dag.
  *
- * Alleen voor documenten met een `clickupId`: wat in de tool zelf ingevuld
- * wordt, komt nooit op 04:00 terecht, en een echt tijdstip van 22:00 in de
- * zomer mag niet verschuiven.
+ * Alleen voor gemigreerde documenten: wat in de tool zelf ingevuld wordt, komt
+ * nooit op 04:00 terecht, en een echt tijdstip van 22:00 in de zomer mag niet
+ * verschuiven. Gemigreerd herkennen we aan `clickupId`, `clickupUrl` of een id
+ * dat met `cu-` begint (zo noemt de migratie haar documenten): live bleek de
+ * eerste versie, die alleen naar `clickupId` keek, niets te raken.
  */
 
 const VELDEN = ['eventDate', 'startDate', 'dueDate', 'eventEndDate']
@@ -53,8 +55,10 @@ export function clickupDag(waarde) {
 const middag = (sleutel) => new Date(`${sleutel}T12:00:00`)
 
 /** Een gemigreerd document met zijn datums op de juiste dag en zonder vals uur. */
+export const gemigreerd = (doc) => Boolean(doc.clickupId || doc.clickupUrl || String(doc.id ?? '').startsWith('cu-'))
+
 export function herstelClickupDatums(doc) {
-  if (!doc || !doc.clickupId) return doc
+  if (!doc || !gemigreerd(doc)) return doc
   let uit = doc
   for (const veld of VELDEN) {
     const dag = clickupDag(doc[veld])

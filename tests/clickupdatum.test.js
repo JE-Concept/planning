@@ -32,6 +32,13 @@ describe('datums zonder uur uit ClickUp', () => {
     expect(uit.title).toBe('x')
   })
 
+  it('herkent een gemigreerd document ook aan zijn id of ClickUp-link', () => {
+    const datum = new Date(1808596800000)
+    expect(dayKey(herstelClickupDatums({ id: 'cu-task-86cbh9v0p', dueDate: datum }).dueDate)).toBe('2027-04-25')
+    expect(dayKey(herstelClickupDatums({ clickupUrl: 'https://app.clickup.com/t/86cbh9v0p', dueDate: datum }).dueDate)).toBe('2027-04-25')
+    expect(herstelClickupDatums({ id: 'abc', dueDate: datum }).dueDate).toBe(datum)
+  })
+
   it('zit in normalise, dus elk scherm leest de juiste dag', () => {
     const ts = { toDate: () => new Date(1808596800000) }
     const uit = normalise({ id: 't', clickupId: '86cbh9v0p', dueDate: ts, createdAt: ts })
