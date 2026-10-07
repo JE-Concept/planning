@@ -11,6 +11,22 @@
 export const STIL_NA_UREN = 6
 
 /**
+ * Hoe lang het postvak mag achterlopen voor het scherm Aanvragen het zegt.
+ *
+ * Korter dan de grens hierboven: de ophaler draait om de vijf minuten, en wie
+ * Aanvragen opent, wil weten of "leeg" ook echt leeg is. Live stond er "Het
+ * postvak is leeg" terwijl de ophaler al uren niets binnenhaalde.
+ */
+export const ACHTER_NA_MINUTEN = 20
+
+/** Sinds wanneer het postvak achterloopt, of null als het bij is (of nog nooit draaide). */
+export function postvakAchterSinds(postvak, nu = new Date()) {
+  const laatste = postvak?.laatsteKeer?.toDate?.() ?? (postvak?.laatsteKeer ? new Date(postvak.laatsteKeer) : null)
+  if (!laatste || Number.isNaN(laatste.getTime())) return null
+  return nu - laatste > ACHTER_NA_MINUTEN * 60000 ? laatste : null
+}
+
+/**
  * Wat er aan de hand is, in woorden waar een scherm iets mee kan.
  *
  * `nooit` is met opzet iets anders dan `stil`: nog nooit gedraaid betekent dat

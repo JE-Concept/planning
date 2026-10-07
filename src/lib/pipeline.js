@@ -121,3 +121,18 @@ export function missingForOffer(event) {
   if (!event.quoteAmount) missing.push('offertebedrag')
   return missing
 }
+
+/**
+ * Voorbij, maar nog niet aan de facturatie toe.
+ *
+ * Een event waarvan de laatste dag achter ons ligt en dat nog vóór "ready to
+ * invoice" staat, is ofwel vergeten door te schuiven, ofwel verkeerd gedateerd.
+ * Live stond "Verjaardags-etentje (4 okt)" dagen later nog op "planning
+ * ready", en niemand zag het. Het bord en het dashboard zetten er nu een rode
+ * regel op. `eindeDag` is de laatste dag als 'YYYY-MM-DD'.
+ */
+export function voorbijNietAfgerond(statusName, eindeDag, vandaagDag) {
+  const i = indexOf(statusName)
+  if (i < 0 || !eindeDag) return false
+  return eindeDag < vandaagDag && i < indexOf('ready to invoice')
+}

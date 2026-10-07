@@ -41,6 +41,14 @@ export default {
   'mail.postvak.aantal_meer': { nl: '{aantal} berichten', en: '{aantal} messages' },
   'mail.postvak.laden': { nl: 'Post ophalen…', en: 'Loading mail…' },
   'mail.postvak.leeg': { nl: 'Het postvak is leeg', en: 'The inbox is empty' },
+  'mail.postvak.achter': {
+    nl: 'De post is sinds {sinds} niet meer opgehaald',
+    en: 'Mail has not been fetched since {sinds}',
+  },
+  'mail.postvak.achter_uitleg': {
+    nl: 'Wat sindsdien binnenkwam op info@, staat hier nog niet. Een beheerder kijkt onder Instellingen › Systeem wat er mis is.',
+    en: 'Whatever arrived at info@ since then is not shown here yet. An administrator checks Settings › System to see what is wrong.',
+  },
 
   // Aanvragen van rental.jeconcept.be. Ze staan in hetzelfde postvak als
   // losse mail, want het is hetzelfde werk.

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { AUDIT, kort, regelVan, teOud, verschillen } from '../functions/audit.js'
+import { AUDIT, kort, regelVan, teOud, verschillen, wieVerwijderde } from '../functions/audit.js'
 import { filter, mensenIn, naarCsv, perDag, veldNaam, waardeTekst, zinVan } from '../src/lib/logboek'
 import { laadCatalogus, zetHuidigeTaal } from '../src/lib/i18n'
 
@@ -191,5 +191,26 @@ describe('de export', () => {
 
   it('ontsnapt aanhalingstekens in plaats van de kolom te breken', () => {
     expect(naarCsv([{ at: new Date(), naam: 'De "grote" zaal', wijzigingen: [] }])).toContain('De ""grote"" zaal')
+  })
+})
+
+/*
+  Wie iets weggooide, staat nu in de regel: een trigger met aanroeper geeft het
+  mee. Live stond er bij elke verwijdering "Onbekend".
+*/
+describe('wie een document verwijderde', () => {
+  it('een aangemelde gebruiker staat er zeker bij', () => {
+    expect(wieVerwijderde({ authType: 'app_user', authId: 'u-jasper' })).toEqual({
+      actorId: 'u-jasper', actorZeker: true, actorSysteem: false,
+    })
+  })
+  it('een functie of script is het systeem', () => {
+    expect(wieVerwijderde({ authType: 'service_account', authId: 'x@y.iam' })).toEqual({
+      actorId: null, actorZeker: true, actorSysteem: true,
+    })
+  })
+  it('zonder gegevens blijft de oude, onzekere regel staan', () => {
+    expect(wieVerwijderde({ authType: 'unknown' })).toBeNull()
+    expect(wieVerwijderde()).toBeNull()
   })
 })

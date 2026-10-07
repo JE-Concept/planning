@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { STIL_NA_UREN, oordeel } from '../src/lib/systeem'
+import { STIL_NA_UREN, oordeel, postvakAchterSinds } from '../src/lib/systeem'
 
 const NU = new Date('2026-09-30T09:00:00')
 const urenGeleden = (n) => new Date(NU.getTime() - n * 3600000)
@@ -39,5 +39,19 @@ describe('doet de tool het nog', () => {
 
   it('valt niet om op niets', () => {
     expect(oordeel({}).stand).toBe('onbekend')
+  })
+})
+
+describe('loopt het postvak achter', () => {
+  const nu = new Date('2026-10-07T03:00:00Z')
+  const minuten = (m) => ({ laatsteKeer: new Date(nu.getTime() - m * 60000) })
+  it('bij is bij: een run van tien minuten geleden', () => {
+    expect(postvakAchterSinds(minuten(10), nu)).toBeNull()
+  })
+  it('na twintig minuten zonder run zegt het scherm het', () => {
+    expect(postvakAchterSinds(minuten(25), nu)?.toISOString()).toBe('2026-10-07T02:35:00.000Z')
+  })
+  it('nog nooit gedraaid is geen achterstand maar een taak', () => {
+    expect(postvakAchterSinds(null, nu)).toBeNull()
   })
 })

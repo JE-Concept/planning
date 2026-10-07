@@ -1,7 +1,11 @@
 import { memo } from 'react'
 import { Bar, Icon } from '@components/ds'
 import PlanningBol from './PlanningBol'
-import { PlanningBadge, TeamHexes, eventOndertitel, paxLabel } from './parts'
+import { dayKey } from '@lib/dates'
+import { eindeVan } from '@lib/eventdagen'
+import { voorbijNietAfgerond } from '@lib/pipeline'
+import { useTaal } from '@context/TaalProvider'
+import { PlanningBadge, TeamHexes, eventOndertitel } from './parts'
 
 /**
  * Eén event als kaart op het bord.
@@ -11,6 +15,9 @@ import { PlanningBadge, TeamHexes, eventOndertitel, paxLabel } from './parts'
  * kolom, en zonder dit tekent elke kaart van elke kolom zich dan opnieuw.
  */
 function EventBoardCard({ event, progress, profileById, planningStand, dragging, onOpen, onDragStart, onDragEnd }) {
+  const { t } = useTaal()
+  const einde = eindeVan(event)
+  const achter = voorbijNietAfgerond(event.statusName, einde ? dayKey(einde) : null, dayKey(new Date()))
   return (
     <button
       type="button"
@@ -39,12 +46,26 @@ function EventBoardCard({ event, progress, profileById, planningStand, dragging,
       {/* Alleen wanneer er een stand gekozen is; anders staat op elke kaart
           dezelfde badge en zegt ze niets meer. */}
       <PlanningBadge event={event} compact />
+      {achter ? (
+        <span className="je-muted-caption" style={{ color: 'var(--red-600)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="alert-triangle" size={13} /> {t('events.voorbij_niet_af')}
+        </span>
+      ) : null}
+      {/* Klant en gasten alleen als ze er zijn: "— pax" stond op bijna elke
+          kaart en zei niets. */}
       <span
         className="je-muted-caption"
         style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}
       >
-        <Icon name="users" size={14} />
-        {paxLabel(event)}
+        {event.pax ? (
+          <>
+            <Icon name="users" size={14} />
+            {event.pax} pax
+          </>
+        ) : null}
+        {event.customerName ? (
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{event.customerName}</span>
+        ) : null}
         <span style={{ marginLeft: 'auto' }}>
           <TeamHexes ids={event.team} profileById={profileById} size={22} />
         </span>

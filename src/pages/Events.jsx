@@ -5,7 +5,7 @@ import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { PLANNING, planningKleur, planningVan } from '@lib/planning'
 import { useNarrow } from '@lib/useNarrow'
 import { ARCHIEF_NA_DAGEN } from '@lib/archief'
-import { Badge, IconButton, Select, Spinner, Stat, Tabs, Tag } from '@components/ds'
+import { Badge, Button, IconButton, Select, Spinner, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
 import EventRow from '@components/events/EventRow'
@@ -148,11 +148,16 @@ export default function Events() {
             niets, en hoef je er niet te gaan kijken.
           */
           <>
-            <IconButton
-              icon="mail"
-              label={losse.length ? t('events.postvak_aantal', { aantal: losse.length }) : t('nav.aanvragen')}
+            {/* Met tekst erbij: een envelop zonder woord viel niet op als ingang. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              iconLeft="mail"
+              aria-label={losse.length ? t('events.postvak_aantal', { aantal: losse.length }) : t('nav.aanvragen')}
               onClick={() => navigate('/aanvragen')}
-            />
+            >
+              {t('nav.aanvragen')}
+            </Button>
             {losse.length ? <Badge tone="accent">{losse.length}</Badge> : null}
           </>
         }

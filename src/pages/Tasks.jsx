@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { daysUntil, isToday, startOfMonth } from '@lib/dates'
+import { daysUntil, formatDay, isToday, startOfMonth } from '@lib/dates'
 import { isTeLaat } from '@lib/laat'
 import { formatDuration, priorityOf } from '@lib/format'
 import { filter as filterTaken, groepeer, perDag, prioSleutel } from '@lib/task-view'
@@ -16,7 +16,7 @@ import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { isDone } from '@data/events'
+import { isDone, useEvents } from '@data/events'
 import { moveTaskTo, useTaskBoard, useTasks } from '@data/tasks'
 import { STANDAARD_KLEUR } from '@lib/kleur'
 
@@ -360,7 +360,28 @@ function vervalTekst(t, task) {
   return { tekst: t('tasks.verval.over', { aantal: d }), kleur: 'var(--text-2)' }
 }
 
+/*
+  Bij welk event een taak hoort, en niet in welke lijst ze staat.
+
+  Elke taak van een event staat in de lijst "Events", dus stond er bij elke
+  taak "Events": wie "Appelsap zoeken" zag, wist niet voor welk feest. Nu staat
+  er het event met zijn dag, zoals de zoekbalk het al toonde. Een taak zonder
+  event houdt de naam van haar lijst.
+*/
+function useWaar(listById) {
+  const { eventById } = useEvents()
+  return useCallback(
+    (task) => {
+      const ev = task.parentId ? eventById?.[task.parentId] : null
+      if (ev) return [ev.name, ev.eventDate ? formatDay(ev.eventDate) : null].filter(Boolean).join(' · ')
+      return listById[task.listId]?.name ?? task.listName ?? ''
+    },
+    [eventById, listById]
+  )
+}
+
 function Regel({ task, onOpen, listById, tagsByName }) {
+  const waar = useWaar(listById)
   const { t } = useTaal()
   const prio = priorityOf(task.priority)
   const verval = vervalTekst(t, task)
@@ -393,7 +414,7 @@ function Regel({ task, onOpen, listById, tagsByName }) {
             {naam}
           </Badge>
         ))}
-        <span className="je-taskline__list">{listById[task.listId]?.name ?? task.listName ?? ''}</span>
+        <span className="je-taskline__list" title={waar(task)}>{waar(task)}</span>
         {task.trackedSeconds ? (
           <span className="je-taskline__time">{formatDuration(task.trackedSeconds)}</span>
         ) : (
@@ -456,6 +477,7 @@ function Lijst({ groepen, onOpen, listById, tags }) {
  */
 function Bord({ groepen, onOpen, profileById, listById }) {
   const { t } = useTaal()
+  const waar = useWaar(listById)
 
   return (
     <div className="je-boardscroll">
@@ -476,7 +498,7 @@ function Bord({ groepen, onOpen, profileById, listById }) {
                   className="je-plainbtn je-boardcard"
                 >
                   <span className="je-eyebrow" style={{ letterSpacing: '.14em' }}>
-                    {listById[task.listId]?.name ?? task.listName ?? ''}
+                    {waar(task)}
                   </span>
                   <span style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>{task.title}</span>
                   <span className="je-muted-caption" style={{ display: 'flex', gap: 'var(--space-3)' }}>

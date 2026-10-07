@@ -99,7 +99,8 @@ export function waardeTekst(waarde) {
  * gelezen, en dan had het er net zo goed niet kunnen staan.
  */
 export function zinVan(regel) {
-  const wie = regel?.actorNaam || tekst('logboek.onbekend')
+  // Een functie of onderhoudsscript heeft geen profiel; dan is het het systeem.
+  const wie = regel?.actorNaam || (regel?.actorSysteem ? tekst('logboek.systeem') : tekst('logboek.onbekend'))
   const wat = regel?.naam || regel?.documentId || ''
   const soort = tekst(`logboek.soort.${regel?.soort}`)
 

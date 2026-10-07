@@ -106,6 +106,8 @@ export default {
   'tasks.werklast.open_een': { nl: '{aantal} open taak', en: '{aantal} open task' },
   'tasks.werklast.open_meer': { nl: '{aantal} open taken', en: '{aantal} open tasks' },
   'tasks.werklast.uren': { nl: '{uren} u', en: '{uren} h' },
+  'tasks.werklast.te_laat_een': { nl: '{aantal} te laat', en: '{aantal} overdue' },
+  'tasks.werklast.te_laat_meer': { nl: '{aantal} te laat', en: '{aantal} overdue' },
   'tasks.werklast.legenda_taak': { nl: 'Taak met deadline', en: 'Task with a deadline' },
   'tasks.werklast.legenda_telaat': { nl: 'Te laat of urgent', en: 'Overdue or urgent' },
   'tasks.werklast.legenda_event': { nl: 'Event', en: 'Event' },

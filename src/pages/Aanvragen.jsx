@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { leesAanvraag } from '@lib/aanvraag'
 import { formatDateTime } from '@lib/dates'
+import { postvakAchterSinds } from '@lib/systeem'
 import { Acties, Badge, EmptyState, Icon, Select, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
@@ -12,6 +13,7 @@ import { useCustomers } from '@data/customers'
 import { createEventFromTemplate, useEvents } from '@data/events'
 import { koppelMail, useLosseMails } from '@data/mails'
 import { handelAf, useVerhuuraanvragen } from '@data/verhuuraanvragen'
+import { useSysteem } from '@data/systeem'
 import { resolveTemplate } from '@data/templates'
 
 /**
@@ -30,6 +32,8 @@ export default function Aanvragen() {
   const { t } = useTaal()
   const { mails, laadt } = useLosseMails()
   const { aanvragen: vanDeSite } = useVerhuuraanvragen()
+  const { postvak } = useSysteem()
+  const achterSinds = postvakAchterSinds(postvak)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
@@ -45,6 +49,16 @@ export default function Aanvragen() {
           je apart moet onthouden. Bovenaan, want een formulier dat iemand
           invulde is doorgaans concreter dan een mail die ergens tussen viel.
         */}
+        {/* Een leeg postvak is pas leeg als de ophaler bij is. Zie postvakAchterSinds. */}
+        {achterSinds ? (
+          <div role="status" className="je-panel" style={{ padding: 'var(--space-4) var(--space-5)', borderLeft: '3px solid var(--red-600)' }}>
+            <strong style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="alert-triangle" size={14} /> {t('mail.postvak.achter', { sinds: formatDateTime(achterSinds) })}
+            </strong>
+            <span className="je-muted-caption">{t('mail.postvak.achter_uitleg')}</span>
+          </div>
+        ) : null}
+
         {vanDeSite.map((a) => (
           <SiteAanvraag key={a.id} aanvraag={a} />
         ))}

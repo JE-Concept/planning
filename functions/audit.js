@@ -25,9 +25,10 @@
  * Uit `updatedBy` / `createdBy` op het document zelf, want een trigger weet
  * niet wie er aanmeldde. Bij een verwijdering is dat wie het document als
  * laatste bewerkte en niet per se wie het weggooide — daar is de schrijver niet
- * meer om het te vertellen. Dat staat als `actorZeker: false` in de regel, en
- * het scherm zegt het er dan ook bij. Liever een eerlijke onzekerheid dan een
- * naam die misschien niet klopt.
+ * meer om het te vertellen. Daarom loggen aparte triggers met de aanroeper erbij
+ * (`onDocumentDeletedWithAuthContext`) de verwijderingen: Firestore geeft daar
+ * zelf mee wie het deed. Zie `wieVerwijderde`. Waar dat toch niet lukt, staat er
+ * `actorZeker: false` en zegt het scherm het erbij.
  */
 
 /** Wat er van elke collectie bijgehouden wordt. */
@@ -219,4 +220,19 @@ export function teOud(regel, nu = new Date()) {
   grens.setMonth(grens.getMonth() - BEWAARMAANDEN)
   const at = regel?.at?.toDate ? regel.at.toDate() : new Date(regel?.at)
   return !Number.isNaN(at?.getTime?.()) && at < grens
+}
+
+/**
+ * Wie een document weggooide, zoals Firestore het meegeeft aan een trigger met
+ * aanroeper. `app_user` is iemand die in de app aangemeld was; een
+ * serviceaccount of het systeem zelf is een functie of een onderhoudsscript.
+ * Vroeger stond hier "wie het als laatste bewerkte", en dan meestal
+ * "Onbekend".
+ */
+export function wieVerwijderde({ authType, authId } = {}) {
+  if (authType === 'app_user' && authId) return { actorId: authId, actorZeker: true, actorSysteem: false }
+  if (authType === 'service_account' || authType === 'api_key' || authType === 'system') {
+    return { actorId: null, actorZeker: true, actorSysteem: true }
+  }
+  return null
 }

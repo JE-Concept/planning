@@ -157,9 +157,11 @@ export default {
     en: 'You may rename them; the order follows the run from request to payment.',
   },
   'inst.pijplijn.statusnaam': { nl: 'Statusnaam', en: 'Status name' },
+  // Het is de voorwaarde om de stap te verlaten, niet om erin te staan: een
+  // aanvraag mag zonder klant binnenkomen. "Vereist" las als het tweede.
   'inst.pijplijn.regel.request': {
-    nl: 'Vereist: klant, datum, gasten, offerte',
-    en: 'Needs: customer, date, guests, quote',
+    nl: 'Klant, datum, gasten en bedrag nodig om naar de offerte te gaan',
+    en: 'Customer, date, guests and amount needed to move on to the quote',
   },
   'inst.pijplijn.regel.facturatie': { nl: 'Start facturatie-opvolging', en: 'Starts invoice follow-up' },
   'inst.pijplijn.regel.archief': { nl: 'Naar archief', en: 'To the archive' },

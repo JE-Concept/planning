@@ -1,7 +1,7 @@
 import './runtime.js'
 import { initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
-import { onDocumentCreated, onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore'
+import { onDocumentCreated, onDocumentDeletedWithAuthContext, onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { getMessaging } from 'firebase-admin/messaging'
@@ -28,7 +28,7 @@ import {
 import { taalVan, zeg } from './teksten.js'
 import { hoortInSpiegel, kopieVan, moetBijwerken } from './social-projectie.js'
 import { maakAapiFuncties } from './aapi-import.js'
-import { AUDIT, regelVan, teOud } from './audit.js'
+import { AUDIT, regelVan, teOud, wieVerwijderde } from './audit.js'
 import { maakAgendaFeed } from './agenda.js'
 import { maakPortaal } from './portaal.js'
 import { maakVerhuur } from './verhuur.js'
@@ -1013,20 +1013,45 @@ function logboekTrigger(collectie) {
       voor: event.data?.before?.exists ? event.data.before.data() : null,
       na: event.data?.after?.exists ? event.data.after.data() : null,
     })
-    if (!regel) return
-
-    // De naam van wie het deed staat mee in de regel. Dat is dubbelop met het
-    // profiel, en met opzet: een logboek dat pas leesbaar is wanneer je er een
-    // tweede collectie bij haalt, is onleesbaar zodra iemand vertrekt en zijn
-    // profiel verdwijnt.
-    let actorNaam = null
-    if (regel.actorId) {
-      const profiel = await db.collection('profiles').doc(regel.actorId).get()
-      actorNaam = profiel.exists ? (profiel.data().fullName ?? profiel.data().email ?? null) : null
-    }
-
-    await db.collection('auditLog').add({ ...regel, actorNaam, at: FieldValue.serverTimestamp() })
+    // Verwijderingen logt logboekWegTrigger, die weet wie het deed.
+    if (!regel || regel.actie === 'verwijderd') return
+    await schrijfLogregel(regel)
   })
+}
+
+/*
+  Een eigen trigger voor wat weggegooid wordt, mét de aanroeper.
+
+  Niet door de trigger hierboven om te zetten naar de variant met aanroeper:
+  de uitrol slaat zo'n wijziging van het soort gebeurtenis stil over zonder
+  --force, en die geven we niet. Een nieuwe functie mag wel.
+*/
+function logboekWegTrigger(collectie) {
+  return onDocumentDeletedWithAuthContext({ region: REGION, document: `${collectie}/{id}` }, async (event) => {
+    const regel = regelVan({
+      collectie,
+      id: event.params.id,
+      voor: event.data?.exists ? event.data.data() : null,
+      na: null,
+    })
+    if (!regel) return
+    const wie = wieVerwijderde({ authType: event.authType, authId: event.authId })
+    await schrijfLogregel(wie ? { ...regel, ...wie } : regel)
+  })
+}
+
+async function schrijfLogregel(regel) {
+  // De naam van wie het deed staat mee in de regel. Dat is dubbelop met het
+  // profiel, en met opzet: een logboek dat pas leesbaar is wanneer je er een
+  // tweede collectie bij haalt, is onleesbaar zodra iemand vertrekt en zijn
+  // profiel verdwijnt.
+  let actorNaam = null
+  if (regel.actorId) {
+    const profiel = await db.collection('profiles').doc(regel.actorId).get()
+    actorNaam = profiel.exists ? (profiel.data().fullName ?? profiel.data().email ?? null) : null
+  }
+
+  await db.collection('auditLog').add({ ...regel, actorNaam, at: FieldValue.serverTimestamp() })
 }
 
 export const logboekTaken = logboekTrigger('tasks')
@@ -1041,6 +1066,18 @@ export const logboekHuurorders = logboekTrigger('huurorders')
 export const logboekAfvinklijsten = logboekTrigger('checklists')
 export const logboekDiensten = logboekTrigger('shifts')
 export const logboekInstellingen = logboekTrigger('config')
+export const logboekTakenWeg = logboekWegTrigger('tasks')
+export const logboekKlantenWeg = logboekWegTrigger('customers')
+export const logboekLijstenWeg = logboekWegTrigger('lists')
+export const logboekProfielenWeg = logboekWegTrigger('profiles')
+export const logboekFormulesWeg = logboekWegTrigger('formules')
+export const logboekTemplatesWeg = logboekWegTrigger('templates')
+export const logboekRegelsWeg = logboekWegTrigger('automations')
+export const logboekOffertesWeg = logboekWegTrigger('offertes')
+export const logboekHuurordersWeg = logboekWegTrigger('huurorders')
+export const logboekAfvinklijstenWeg = logboekWegTrigger('checklists')
+export const logboekDienstenWeg = logboekWegTrigger('shifts')
+export const logboekInstellingenWeg = logboekWegTrigger('config')
 
 /**
  * Het logboek opruimen, één keer per maand.

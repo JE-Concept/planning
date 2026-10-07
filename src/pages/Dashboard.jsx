@@ -4,6 +4,7 @@ import { addDays, dayKey, daysUntil, formatDay, isOverdue, relativeDay, startOfW
 import { publicatieMoment } from '@lib/social-planning'
 import { isTeLaat } from '@lib/laat'
 import { planningVan } from '@lib/planning'
+import { voorbijNietAfgerond } from '@lib/pipeline'
 import { formatDuration, priorityOf } from '@lib/format'
 import { runProgress } from '@lib/checklist-templates'
 import { Badge, Bar, Button, Icon, ProgressBar, Spinner } from '@components/ds'
@@ -107,6 +108,14 @@ export default function Dashboard() {
     daarom hoort het op een dashboard.
   */
   const teFactureren = useMemo(() => events.filter((e) => e.statusName === 'ready to invoice'), [events])
+  // Voorbij en nog niet naar de facturatie: zie voorbijNietAfgerond.
+  const achter = useMemo(() => {
+    const vandaag = dayKey(new Date())
+    return events.filter((e) => {
+      const einde = eindeVan(e)
+      return voorbijNietAfgerond(e.statusName, einde ? dayKey(einde) : null, vandaag)
+    })
+  }, [events])
 
   const weekSeconds = entries
     .filter((e) => new Date(e.startedAt) >= week.from)
@@ -178,6 +187,15 @@ export default function Dashboard() {
             toon={teFactureren.length ? 'letop' : undefined}
             onder={t('dashboard.te_factureren_onder')}
           />
+          {achter.length ? (
+            <Cijfer
+              label={t('dashboard.voorbij_niet_af')}
+              waarde={achter.length}
+              naar="/"
+              toon="slecht"
+              onder={t('dashboard.voorbij_niet_af_onder')}
+            />
+          ) : null}
           <Cijfer
             label={t('dashboard.niemand_toegewezen')}
             waarde={zonderUitvoerder.length}

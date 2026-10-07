@@ -24,6 +24,8 @@ export default {
   'dashboard.vandaag_af_onder': { nl: 'deze dag', en: 'this day' },
   'dashboard.te_factureren': { nl: 'Te factureren', en: 'To invoice' },
   'dashboard.te_factureren_onder': { nl: 'nog niet gefactureerd', en: 'not invoiced yet' },
+  'dashboard.voorbij_niet_af': { nl: 'Voorbij, niet afgerond', en: 'Past, not wrapped up' },
+  'dashboard.voorbij_niet_af_onder': { nl: 'staan nog vóór facturatie', en: 'still before invoicing' },
   'dashboard.niemand_toegewezen': { nl: 'Niemand toegewezen', en: 'Nobody assigned' },
   'dashboard.niemand_toegewezen_onder': { nl: 'wacht op iemand', en: 'waiting for someone' },
   'dashboard.events_deze_maand': { nl: 'Events deze maand', en: 'Events this month' },

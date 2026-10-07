@@ -42,6 +42,7 @@ export default {
   'events.stat.zonder_bedrag_een': { nl: '{aantal} zonder bedrag', en: '{aantal} without an amount' },
   'events.stat.zonder_bedrag_meer': { nl: '{aantal} zonder bedrag', en: '{aantal} without an amount' },
   'events.leeg': { nl: 'Geen lopende events voor deze selectie.', en: 'No ongoing events for this selection.' },
+  'events.voorbij_niet_af': { nl: 'Voorbij, nog niet naar facturatie', en: 'Past, not yet sent to invoicing' },
 
   // ── Events: de drie fasen van de lijstweergave ─────────────────────────
   // De fasen zelf staan in @lib/pipeline; hier staat alleen hoe ze heten.

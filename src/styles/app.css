@@ -1094,7 +1094,8 @@ select.je-compact { padding-right: 24px; }
   white-space: nowrap;
 }
 .je-taskline__list {
-  width: 120px;
+  /* Breder: er staat nu het event met zijn dag, niet de lijstnaam. */
+  width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

@@ -17,7 +17,9 @@ const WEEK_HOURS = 38
 /**
  * Werklast: per persoon de taken met een deadline in deze week, de events die
  * erop vallen, en wat er al geboekt is tegenover een week van 38 uur.
- * Wat te laat is, telt mee op vandaag — dat is wanneer het nog moet gebeuren.
+ * Wat te laat is, staat apart bij de persoon en telt niet mee in een dag:
+ * opgestapeld op vandaag gaf het live "8 u" voor Maxine op een gewone woensdag,
+ * en dan zegt de kolom van vandaag niets meer over vandaag.
  */
 export default function Workload() {
   const navigate = useNavigate()
@@ -33,10 +35,17 @@ export default function Workload() {
   const { week } = periodKeys(monday)
   const entries = useWeekEntries(week)
 
-  const people = useMemo(
-    () => profiles.filter((p) => p.active !== false && p.role !== 'staff' && p.role !== 'guest'),
-    [profiles]
-  )
+  /*
+    Het team, plus iedereen die open taken op zijn naam heeft. Wie een taak
+    krijgt, hoort in de werklast te staan, welke rol er ook op het profiel
+    staat; zo ontbrak Caroline hier terwijl ze in Tasks wel taken had.
+  */
+  const people = useMemo(() => {
+    const metTaken = new Set(tasks.filter((t) => !isDone(t)).flatMap((t) => t.assignees ?? []))
+    return profiles.filter(
+      (p) => p.active !== false && p.role !== 'staff' && (p.role !== 'guest' || metTaken.has(p.id))
+    )
+  }, [profiles, tasks])
 
   const rows = people.map((p) => {
     const open = tasks.filter((t) => !isDone(t) && t.assignees?.includes(p.id))
@@ -45,16 +54,13 @@ export default function Workload() {
     return {
       p,
       open,
+      teLaat: open.filter((t) => t.dueDate && dayKey(t.dueDate) < todayKey).length,
       bookedS,
       over: h > 30,
       pct: Math.min(100, Math.round((h / WEEK_HOURS) * 100)),
       days: keys.map((k) => {
-        // Wat te laat is, staat op vandaag; een voorbije dag blijft leeg.
-        const dayT = open.filter((t) => {
-          if (!t.dueDate || k < todayKey) return false
-          const dk = dayKey(t.dueDate)
-          return dk === k || (k === todayKey && dk < todayKey)
-        })
+        // Alleen wat op die dag valt; wat te laat is, staat bij de persoon.
+        const dayT = open.filter((t) => t.dueDate && k >= todayKey && dayKey(t.dueDate) === k)
         const est = dayT.reduce((a, t) => a + (t.timeEstimateMinutes ?? 60), 0) / 60
         return {
           k,
@@ -191,7 +197,12 @@ function Row({ r, todayKey, eventById }) {
           <div style={{ font: 'var(--type-body-sm)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {r.p.fullName || r.p.email}
           </div>
-          <div className="je-muted-caption">{t('tasks.werklast.open', { aantal: r.open.length })}</div>
+          <div className="je-muted-caption">
+            {t('tasks.werklast.open', { aantal: r.open.length })}
+            {r.teLaat ? (
+              <span style={{ color: 'var(--red-600)' }}> · {t('tasks.werklast.te_laat', { aantal: r.teLaat })}</span>
+            ) : null}
+          </div>
         </div>
       </div>
       {r.days.map((c) => (

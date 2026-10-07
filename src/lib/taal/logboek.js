@@ -36,6 +36,7 @@ export default {
   'logboek.periode_kwartaal': { nl: 'Laatste drie maanden', en: 'Last three months' },
   'logboek.periode_alles': { nl: 'Alles', en: 'Everything' },
   'logboek.exporteer': { nl: 'Exporteren naar CSV', en: 'Export to CSV' },
+  'logboek.systeem': { nl: 'Het systeem', en: 'The system' },
   'logboek.onzeker': {
     nl: 'Wie het weggooide is niet zeker — dit is wie het als laatste bewerkte.',
     en: 'Who deleted it is not certain — this is who last edited it.',
