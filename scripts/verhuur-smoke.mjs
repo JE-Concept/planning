@@ -165,6 +165,19 @@ async function test(naam, fn) {
   */
   await context.route(/^https?:\/\/(?!localhost)/, (route) => route.abort())
 
+  /*
+    Gedraag je als een recente Chrome: daar geeft window.scrollTo een Promise
+    terug. De Chromium van Playwright doet dat (nog) niet, en daardoor zag deze
+    test niet dat een effect dat die waarde teruggaf live een wit scherm gaf.
+  */
+  await context.addInitScript(() => {
+    const scroll = window.scrollTo.bind(window)
+    window.scrollTo = (...args) => {
+      scroll(...args)
+      return Promise.resolve()
+    }
+  })
+
   const page = await nieuwePagina(context)
   const fouten = []
   page.on('pageerror', (e) => fouten.push(String(e)))
@@ -296,6 +309,61 @@ await test('een volzet artikel is niet in de mand te leggen', async (page) => {
   await rustig(page)
   const knop = page.getByRole('button', { name: 'In de mand' })
   zouden(await knop.isDisabled(), 'een volzet artikel is toch in de mand te leggen')
+})
+
+/*
+  Doorklikken zonder herladen: van de catalogus naar een artikel, terug, en naar
+  de mand. Elke andere test hier begint met een volledige laadbeurt van de URL;
+  zo bleef onopgemerkt dat de site live een wit scherm gaf bij elke klik binnen
+  de site, terwijl dezelfde URL rechtstreeks laden wel werkte.
+*/
+await test('doorklikken binnen de site: catalogus, artikel, terug, mand', async (page) => {
+  await ga(page, '/')
+  await page.fill('#van', '2027-03-16')
+  await page.fill('#tot', '2027-03-18')
+  await rustig(page)
+
+  await page.locator('.vh__kaart', { hasText: 'Koelkast' }).locator('a.vh__kaart-link').click()
+  await page.waitForURL(/\/artikel\/m-koeling$/)
+  await rustig(page)
+  zouden(bevat(await tekst(page), 'Koelkast glasdeur'), 'de artikelpagina toont het artikel niet')
+
+  await page.locator('a.vh__terug').click()
+  await page.waitForURL(/\/$/)
+  await rustig(page)
+  zouden(bevat(await tekst(page), 'Statafel'), 'terug naar de catalogus toont geen aanbod')
+
+  await page.locator('.vh__kaart', { hasText: 'Koelkast' }).locator('a.vh__kaart-link').click()
+  await page.waitForURL(/\/artikel\/m-koeling$/)
+  await rustig(page)
+  await page.getByRole('button', { name: /In de mand/ }).first().click()
+  await page.getByRole('link', { name: /^Mand/ }).click()
+  await page.waitForURL(/\/mand$/)
+  await rustig(page)
+  zouden(bevat(await tekst(page), 'Koelkast glasdeur'), 'de mand toont het artikel niet')
+  const wortel = await page.locator('#root').innerHTML()
+  zouden(wortel.length > 200, 'wit scherm na doorklikken')
+})
+
+/*
+  Het datumveld houdt met `min` alleen de kalender tegen. Wie morgen intypt,
+  hoort meteen dat online boeken pas vanaf twee dagen vooraf kan, en kan niet
+  betalen; de server weigert het toch (functions-betaling/order.js).
+*/
+await test('een ingetypte datum binnen twee dagen geeft een uitleg en geen betaalknop', async (page) => {
+  const morgen = new Date()
+  morgen.setDate(morgen.getDate() + 1)
+  const sleutel = `${morgen.getFullYear()}-${String(morgen.getMonth() + 1).padStart(2, '0')}-${String(morgen.getDate()).padStart(2, '0')}`
+  await ga(page, '/')
+  await page.fill('#van', sleutel)
+  await rustig(page)
+  zouden(bevat(await tekst(page), 'vanaf 2 dagen vooraf'), 'geen uitleg bij een te vroege datum')
+
+  await page.locator('.vh__kaart', { hasText: 'Statafel' }).getByRole('button', { name: 'In de mand' }).click()
+  await page.getByRole('link', { name: /^Mand/ }).click()
+  await rustig(page)
+  await page.fill('#email', 'lies@voorbeeld.be').catch(() => {})
+  zouden(await page.getByRole('button', { name: /^Betalen/ }).isDisabled(), 'betalen kan met een te vroege datum')
 })
 
 /* ── De mand ─────────────────────────────────────────────────────────── */

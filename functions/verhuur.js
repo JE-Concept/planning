@@ -141,15 +141,20 @@ export function maakVerhuur({ db, region }) {
       if (verzoek.method !== 'GET') return antwoord.status(405).json({ fout: 'alleen_get' })
 
       /*
-        De catalogus mag even blijven hangen bij de CDN — vijf minuten, want
+        De catalogus mag even blijven hangen bij de CDN — een minuut, want
         een prijs die verandert hoeft niet binnen de seconde op het scherm te
-        staan. De beschikbaarheid niet: dat is het getal waarop iemand een
+        staan. Het was vijf minuten, met een kwartier oude kopie erachter, en
+        dan zag wie een artikel aanzette het pas een kwartier later op de site
+        en dacht dat het niet gelukt was. Een minuut is één leesbeurt per
+        minuut op Firestore: niets. De betaling rekent toch met de prijs uit
+        de database, niet met wat de site toonde.
+        De beschikbaarheid blijft korter: dat is het getal waarop iemand een
         beslissing neemt, en een minuut oude "nog twee vrij" is een minuut
         waarin er eentje verkocht kan zijn.
       */
       try {
         if (pad === 'aanbod') {
-          antwoord.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=900')
+          antwoord.set('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=120')
           const snap = await db.collection('materiaal').where('directTeHuren', '==', true).get()
           const catalogus = catalogusVan(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
           return antwoord.json({ artikelen: catalogus, categorieen: categorieenVan(catalogus) })

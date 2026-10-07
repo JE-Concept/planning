@@ -63,3 +63,17 @@ export function boekingsvenster(nu = new Date()) {
   laatst.setDate(laatst.getDate() + MAX_DAGEN_VOORAF)
   return { vroegst: sleutel(vroegst), laatst: sleutel(laatst) }
 }
+
+/*
+  Het datumveld houdt met `min` alleen de kalender tegen; wie de datum
+  intypt, kan er voorbij. Dan toonde de site gewoon prijs en beschikbaarheid,
+  en kwam het "nee" pas na de klik op betalen. Dit zegt het meteen.
+*/
+/** 'te_vroeg', 'te_ver' of null: valt de begindatum buiten wat online kan? */
+export function buitenVenster(van, nu = new Date()) {
+  if (!van) return null
+  const { vroegst, laatst } = boekingsvenster(nu)
+  if (van < vroegst) return 'te_vroeg'
+  if (van > laatst) return 'te_ver'
+  return null
+}

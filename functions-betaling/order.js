@@ -44,8 +44,15 @@ const CONTACT = {
 
 export const euro = (n) => `€ ${Number(n ?? 0).toFixed(2).replace('.', ',')}`
 
-const dagsleutel = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/*
+  De dag zoals hij in België is. Een functie draait in UTC: tussen middernacht
+  en twee uur 's nachts is het daar nog gisteren, en dan liet "twee dagen
+  vooraf" een dag te vroeg door.
+*/
+const BELGISCHE_DAG = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Brussels', year: 'numeric', month: '2-digit', day: '2-digit',
+})
+const dagsleutel = (d) => BELGISCHE_DAG.format(d)
 
 export const centen = (euro) => Math.round(Number(euro) * 100)
 

@@ -4,7 +4,7 @@ import { BTW_VERHUUR, huurTotaal, regelPrijs } from '@lib/huurprijs'
 import { afrekenen, mijnHuren, sessie } from '../lib/api'
 import { dagenTussen } from '../lib/mand'
 import Periode from '../onderdelen/Periode'
-import { CENTRAAL, CONTACT } from '../lib/instellingen'
+import { CENTRAAL, CONTACT, buitenVenster } from '../lib/instellingen'
 
 const euro = (n) => `€ ${Number(n ?? 0).toFixed(2).replace('.', ',')}`
 
@@ -69,8 +69,13 @@ export default function Mand({ opId, mand, zetAantal, weg, zetPeriode, leegmaken
   */
   const teKort = regels.filter(({ artikel }) => dagen.length > 0 && dagen.length < (artikel.minDagen ?? 1))
 
+  // Een ingetypte datum buiten het venster: de periode zegt al waarom.
   const kanBetalen =
-    regels.length > 0 && dagen.length > 0 && teKort.length === 0 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(klant.email)
+    regels.length > 0 &&
+    dagen.length > 0 &&
+    teKort.length === 0 &&
+    !buitenVenster(mand.van) &&
+    /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(klant.email)
 
   const betalen = async () => {
     setBezig(true)

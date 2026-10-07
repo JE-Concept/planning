@@ -50,7 +50,9 @@ function schrijf(mand) {
 export function useMand() {
   const [mand, setMand] = useState(lees)
 
-  useEffect(() => schrijf(mand), [mand])
+  useEffect(() => {
+    schrijf(mand)
+  }, [mand])
 
   /*
     Hetzelfde artikel nog eens toevoegen verhoogt het aantal in plaats van een

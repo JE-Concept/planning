@@ -149,3 +149,19 @@ export function zetEinddatum(event, datum) {
   if (begin && d.getTime() < begin.getTime()) return { eventEndDate: begin }
   return { eventEndDate: d }
 }
+
+/**
+ * De patch die de datum van een event zet of leegmaakt.
+ *
+ * Leegmaken wist ook `startDate` en `dueDate`. Wie een event leest, valt voor
+ * oudere dossiers terug op die twee (`eventDateOf`: eventDate, dan startDate,
+ * dan dueDate), en een nieuw event krijgt zijn datum ook als dueDate. Bleef
+ * die staan, dan kwam de gewiste datum meteen terug op het scherm, en leek
+ * leegmaken niet te werken. Een einddatum zonder begindag zegt niets meer en
+ * gaat mee weg.
+ */
+export function zetDatum(datum) {
+  const d = datum ? asDate(datum) : null
+  if (!d) return { eventDate: null, startDate: null, dueDate: null, eventEndDate: null }
+  return { eventDate: d, dueDate: d }
+}

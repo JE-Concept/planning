@@ -94,6 +94,13 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       niet eerst langs het eventbord. En er is nu een rol die niets anders doet.
     */
     { to: '/social', icon: 'share-2', sleutel: 'nav.socials', kinderen: [] },
+    /*
+      Materiaal staat op zichzelf. Het hing onder Team, maar Team klapt alleen
+      open op zijn eigen pagina's en /materiaal hoorde daar niet bij: wie op
+      Materiaal stond, zag de ingang nergens, en wie elders stond, moest raden
+      dat de voorraad van de verhuur onder Team zat.
+    */
+    { to: '/materiaal', icon: 'package', sleutel: 'nav.materiaal', kinderen: [] },
     {
       to: '/tasks',
       icon: 'check-circle',
@@ -135,7 +142,6 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
         */
         { to: '/planning', icon: 'users', sleutel: 'nav.planning' },
         { to: '/rooster', icon: 'calendar-days', sleutel: 'nav.rooster' },
-        { to: '/materiaal', icon: 'package', sleutel: 'nav.materiaal' },
         { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
         { to: '/logboek', icon: 'file-text', sleutel: 'nav.logboek' },
       ],
@@ -167,6 +173,7 @@ export function mainNav({ isAdmin, isStaff, isSocial }) {
 export const MORE = [
   { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
   { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
+  { to: '/materiaal', icon: 'package', sleutel: 'nav.materiaal' },
   { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
   { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
   { to: '/registraties', icon: 'file-text', sleutel: 'nav.registraties' },

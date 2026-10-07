@@ -3,7 +3,7 @@ import { dayKey, fromDateInput } from '@lib/dates'
 import { planningKeuzes } from '@lib/planning'
 import { missingForOffer } from '@lib/pipeline'
 import { verantwoordelijkeVan, zetVerantwoordelijke } from '@lib/eventteam'
-import { aantalDagen, eindeVan, isMeerdaags, zetEinddatum, zetMeerdaags } from '@lib/eventdagen'
+import { aantalDagen, eindeVan, isMeerdaags, zetDatum, zetEinddatum, zetMeerdaags } from '@lib/eventdagen'
 import { Checkbox, Icon, Input, Select } from '@components/ds'
 import { euro, longDate } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
@@ -75,8 +75,8 @@ export default function EventFiche({ ev }) {
             onChange={(e) => {
               // Een datumveld heeft geen halve waarde: de browser geeft pas
               // iets door als de hele datum klopt.
-              const datum = fromDateInput(e.target.value)
-              bewaar({ eventDate: datum, dueDate: datum ?? ev.dueDate ?? null })
+              // Leeg wist ook de terugvalvelden; zie zetDatum.
+              bewaar(zetDatum(fromDateInput(e.target.value)))
             }}
           />
           <span className="je-muted-caption">{ev.eventDate ? longDate(ev.eventDate) : t('events.fiche.geen_datum')}</span>

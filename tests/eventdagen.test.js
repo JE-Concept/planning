@@ -7,9 +7,11 @@ import {
   isMeerdaags,
   raaktPeriode,
   valtOpDag,
+  zetDatum,
   zetEinddatum,
   zetMeerdaags,
 } from '../src/lib/eventdagen'
+import { dayKey } from '../src/lib/dates'
 
 const dag = (tekst) => new Date(`${tekst}T12:00:00`)
 
@@ -126,5 +128,23 @@ describe('de patches', () => {
   it('een lege einddatum maakt het event weer eendaags', () => {
     const ev = { eventDate: dag('2026-10-12'), eventEndDate: dag('2026-10-14') }
     expect(zetEinddatum(ev, null)).toEqual({ eventEndDate: null })
+  })
+})
+
+describe('zetDatum', () => {
+  it('zet de datum en de deadline van het event', () => {
+    const patch = zetDatum(dag('2026-10-14'))
+    expect(dayKey(patch.eventDate)).toBe('2026-10-14')
+    expect(dayKey(patch.dueDate)).toBe('2026-10-14')
+  })
+
+  // Live: de datum leegmaken leek niet te werken, want het scherm viel terug
+  // op dueDate, en die bleef staan.
+  it('leegmaken laat geen terugvalveld achter waaruit de datum terugkomt', () => {
+    const event = { eventDate: dag('2026-10-14'), startDate: dag('2026-10-13'), dueDate: dag('2026-10-14'), eventEndDate: dag('2026-10-15') }
+    const na = { ...event, ...zetDatum(null) }
+    // Dezelfde volgorde als eventDateOf in src/data/events.js.
+    expect(na.eventDate ?? na.startDate ?? na.dueDate ?? null).toBeNull()
+    expect(na.eventEndDate).toBeNull()
   })
 })

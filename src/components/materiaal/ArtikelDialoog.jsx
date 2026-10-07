@@ -134,7 +134,7 @@ export default function ArtikelDialoog({ open, artikel, categorieen = [], onClos
       footer={
         <Acties
           terug={{ onClick: onClose }}
-          hoofd={{ label: t('alg.bewaren'), onClick: bewaren, bezig, uit: !vorm.naam.trim() }}
+          hoofd={{ label: t('alg.opslaan'), onClick: bewaren, bezig, uit: !vorm.naam.trim() }}
         />
       }
     >

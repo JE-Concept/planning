@@ -5,6 +5,7 @@ import { logger } from 'firebase-functions'
 import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
 import { zetPlanningInDeWachtrij } from './planningbijlage.js'
+import { imapInstellingen } from './imap-instellingen.js'
 
 /**
  * De post van info@jeconcept.be ophalen, uit de postbus die lid is van die groep.
@@ -87,7 +88,8 @@ export const haalPostOp = onSchedule(
     const houder = db.doc(HOUDER)
     const stand = (await houder.get()).data() ?? {}
 
-    const client = new ImapFlow({ url, logger: false })
+    // ImapFlow kent geen `url`; zie imap-instellingen.js.
+    const client = new ImapFlow({ ...imapInstellingen(url), logger: false })
     await client.connect()
 
     let hoogste = Number(stand.laatsteUid ?? 0)

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { aanbod, beschikbaar, sessie } from './lib/api'
 import { useMand } from './lib/mand'
@@ -155,10 +155,16 @@ function Kop({ stuks, ingelogd }) {
 /*
   Na een klik op een artikel begint de nieuwe pagina waar de vorige stond —
   halverwege dus. Op een telefoon lijkt het dan of er niets gebeurd is.
+
+  Het effect geeft bewust niets terug. Nieuwe versies van Chrome laten
+  window.scrollTo een Promise teruggeven; als effect rechtstreeks doorgegeven
+  hield React die voor de opruimfunctie en riep ze bij de volgende klik aan:
+  "n is not a function" en een wit scherm, alleen bij doorklikken.
 */
 function useOmhoogBijWissel(pathname) {
-  const omhoog = useCallback(() => window.scrollTo({ top: 0 }), [])
-  useEffect(omhoog, [pathname, omhoog])
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [pathname])
 }
 
 function Voet() {

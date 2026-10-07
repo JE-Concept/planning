@@ -90,7 +90,7 @@ export default function EventMateriaal({ event }) {
       <section className="je-panel">
         <div className="je-panel__head">
           <span className="je-eyebrow">{t('eventmat.titel')}</span>
-          <span className="je-panel__sub">{t('eventmat.periode', { dagen: dagen.length })}</span>
+          <span className="je-panel__sub">{t('eventmat.periode', { aantal: dagen.length, dagen: dagen.length })}</span>
           <span className="je-panel__right">{t('eventmat.stuks', { aantal: mijn.reduce((s, r) => s + (r.aantal ?? 0), 0) })}</span>
         </div>
 

@@ -12,10 +12,11 @@
  * altijd één dag. Een foutmelding is hier onnodig streng: we schuiven de
  * einddatum mee en laten hem verder kiezen.
  */
-import { MIN_DAGEN_VOORAF, boekingsvenster } from '../lib/instellingen'
+import { CONTACT, MIN_DAGEN_VOORAF, boekingsvenster, buitenVenster } from '../lib/instellingen'
 
 export default function Periode({ van, tot, onWijzig }) {
   const { vroegst: minimum, laatst: maximum } = boekingsvenster()
+  const buiten = buitenVenster(van)
 
   return (
     <section className="vh__periode" aria-label="Je huurperiode">
@@ -48,7 +49,17 @@ export default function Periode({ van, tot, onWijzig }) {
           disabled={!van}
         />
       </div>
-      {van ? (
+      {buiten === 'te_vroeg' ? (
+        <p className="vh__waarschuwing vh__periode-uitleg" role="alert">
+          Online boeken kan vanaf {MIN_DAGEN_VOORAF} dagen vooraf. Heb je het eerder nodig? Mail ons op{' '}
+          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>; last minute regelen we per mail, en vaak kan het.
+        </p>
+      ) : buiten === 'te_ver' ? (
+        <p className="vh__waarschuwing vh__periode-uitleg" role="alert">
+          Online boeken kan tot een jaar vooruit. Voor later: mail ons op{' '}
+          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>.
+        </p>
+      ) : van ? (
         <p className="vh__klein vh__periode-uitleg">
           Allebei de dagen tellen mee: van de 12e tot en met de 14e is drie dagen.
         </p>
