@@ -12,7 +12,7 @@ import {
   setPrimaryContact,
   vatHint,
 } from '@lib/klanten'
-import { Acties, Badge, Button, Checkbox, Drawer, Field, GevaarKnop, Input, Select, Spinner, Textarea } from '@components/ds'
+import { Acties, Badge, Button, Checkbox, Dialog, Drawer, Field, GevaarKnop, Input, Select, Spinner, Textarea } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import Documents from '@components/common/Documents'
 import TaskDrawer from '@components/board/TaskDrawer'
@@ -63,23 +63,28 @@ export default function Customers() {
   }, [customers, zoek])
 
   /*
-    De knop gaat op slot zolang het aanmaken loopt.
+    Een nieuwe klant begint met een naam.
 
-    Dat stond er al (`disabled={nieuw}`) maar `nieuw` werd nooit op waar gezet,
-    dus deed het slot niets: twee keer klikken gaf twee fiches "Nieuwe klant",
-    en die tweede vindt pas iemand terug als hij een klant opzoekt en er twee
-    ziet staan. Het schrijven gaat over het netwerk, dus die tweede klik is op
-    een trage verbinding eerder regel dan uitzondering.
+    De knop maakte meteen een fiche "Nieuwe klant" aan en opende die. Wie de
+    lade daarna sloot zonder iets in te vullen, liet een lege klant achter met
+    "Nieuwe klant" als echte bedrijfsnaam; zo stonden er live al twee. Nu vraagt
+    een klein venster eerst de naam, en pas met een naam wordt er geschreven.
+
+    De knop gaat op slot zolang het aanmaken loopt: twee keer klikken op een
+    trage verbinding gaf vroeger twee fiches.
   */
-  const maak = async () => {
-    if (nieuw) return
+  const [naamVraag, setNaamVraag] = useState(false)
+  const [nieuweNaam, setNieuweNaam] = useState('')
+
+  const maak = async (e) => {
+    e?.preventDefault?.()
+    const naam = nieuweNaam.trim()
+    if (nieuw || !naam) return
     setNieuw(true)
     try {
-      // De naam die in de database terechtkomt blijft Nederlands: hij is
-      // vanaf dat moment een gegeven, en een fiche die voor de ene collega
-      // "Nieuwe klant" heet en voor de andere "New customer" is dezelfde
-      // fiche niet.
-      const id = await createCustomer({ name: 'Nieuwe klant', address: leegAdres() })
+      const id = await createCustomer({ name: naam, address: leegAdres() })
+      setNaamVraag(false)
+      setNieuweNaam('')
       setOpen(id)
       toast.success(t('klant.aangemaakt'))
     } catch (err) {
@@ -105,8 +110,27 @@ export default function Customers() {
             aria-label={t('klant.zoek_label')}
           />
         }
-        acties={{ hoofd: { label: t('klant.nieuw'), icon: 'plus', onClick: maak, uit: nieuw } }}
+        acties={{ hoofd: { label: t('klant.nieuw'), icon: 'plus', onClick: () => setNaamVraag(true) } }}
       />
+
+      <Dialog
+        open={naamVraag}
+        onClose={() => setNaamVraag(false)}
+        width={460}
+        title={t('klant.nieuw_titel')}
+        footer={
+          <Acties
+            terug={{ onClick: () => setNaamVraag(false) }}
+            hoofd={{ label: t('klant.nieuw_maak'), onClick: maak, bezig: nieuw, uit: !nieuweNaam.trim() }}
+          />
+        }
+      >
+        <form onSubmit={maak}>
+          <Field label={t('klant.nieuw_naam')} hint={t('klant.nieuw_naam_hint')}>
+            <Input autoFocus value={nieuweNaam} onChange={(e) => setNieuweNaam(e.target.value)} />
+          </Field>
+        </form>
+      </Dialog>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         {loading ? (
@@ -388,6 +412,7 @@ function KlantPaneel({ id, onClose, toast }) {
         <section className="grid gap-2 sm:grid-cols-4">
           <h3 className="label mb-0 sm:col-span-4">
             {t('klant.facturatie')}
+            {/* Een echte spatie: de marge alleen liet live "FACTURATIEWijkt af" staan. */}{' '}
             <span className="ml-2 font-normal normal-case text-ink-400">
               {factuur.eigen || factuurMail.eigen ? t('klant.facturatie_anders') : t('klant.facturatie_leeg')}
             </span>

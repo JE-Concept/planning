@@ -27,7 +27,7 @@ export default {
   'social.week.volgende': { nl: 'Volgende week', en: 'Next week' },
   'social.maand.vorige': { nl: 'Vorige maand', en: 'Previous month' },
   'social.maand.volgende': { nl: 'Volgende maand', en: 'Next month' },
-  'social.post.nieuw': { nl: '+ Post', en: '+ Post' },
+  'social.post.nieuw': { nl: 'Post', en: 'Post' },
   'social.post.toevoegen_op': { nl: 'Post toevoegen op {dag}', en: 'Add a post on {dag}' },
   'social.post.toevoegen_op_kanaal': {
     nl: 'Post toevoegen op {dag} voor {kanaal}',

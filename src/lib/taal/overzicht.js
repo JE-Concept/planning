@@ -16,10 +16,9 @@ export default {
   'overzicht.pijplijn': { nl: 'Waar staat het', en: 'Where it stands' },
 
   'overzicht.vraagt_aandacht': { nl: 'Vraagt aandacht', en: 'Needs attention' },
-  'overzicht.mist_aantal': {
-    nl: '{aantal} dingen vragen aandacht',
-    en: '{aantal} things need attention',
-  },
+  // Meervoud: "1 dingen vragen aandacht" stond er live.
+  'overzicht.mist_aantal_een': { nl: '{aantal} ding vraagt aandacht', en: '{aantal} thing needs attention' },
+  'overzicht.mist_aantal_meer': { nl: '{aantal} dingen vragen aandacht', en: '{aantal} things need attention' },
   'overzicht.mist_bekijk': { nl: 'bekijken', en: 'show' },
   'overzicht.in_orde': { nl: 'Alles in orde', en: 'All good' },
   'overzicht.in_orde_uitleg': {
@@ -31,6 +30,10 @@ export default {
   'overzicht.taken_klaar': { nl: 'Alles afgevinkt', en: 'All ticked off' },
   'overzicht.met_bestellijst': { nl: '{aantal} regels op de bestellijst', en: '{aantal} lines on the order list' },
   'overzicht.geen_bestellijst': { nl: 'Geen bestellijst', en: 'No order list' },
+  'overzicht.taken_geen': { nl: 'Nog geen taken', en: 'No tasks yet' },
+  'overzicht.gasten_leeg': { nl: 'Aantal nog in te vullen', en: 'Number still to fill in' },
+  'overzicht.bijlagen_wel': { nl: 'bij dit dossier', en: 'on this file' },
+  'overzicht.bijlagen_geen': { nl: 'Nog geen bestanden', en: 'No files yet' },
 
   // ── De kaarten ─────────────────────────────────────────────────────────
   'overzicht.kaart.taken': { nl: 'Taken', en: 'Tasks' },

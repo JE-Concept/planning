@@ -321,7 +321,47 @@ export function AssistantProvider({ children }) {
     [busy, team, profile, uid, navigate]
   )
 
-  const value = useMemo(() => ({ open, setOpen, messages, busy, ask }), [open, setOpen, messages, busy, ask])
+  /*
+    Staat de assistent er wel?
+
+    Zonder de Claude-sleutel wordt de functie niet uitgerold, en dan kreeg wie
+    op de knop drukte enkel "nog niet uitgerold… ANTHROPIC_API_KEY". Daar kan
+    een medewerker niets mee. Eén keer per sessie vragen we het na met een ping
+    die het model niet aanroept; zolang het antwoord niet binnen is of nee is,
+    staat de knop er niet.
+  */
+  const [beschikbaar, setBeschikbaar] = useState(() => {
+    try {
+      const v = sessionStorage.getItem('je-assistent-beschikbaar')
+      return v === null ? null : v === '1'
+    } catch {
+      return null
+    }
+  })
+  useEffect(() => {
+    if (!uid || beschikbaar !== null) return undefined
+    let geldig = true
+    const onthoud = (ja) => {
+      if (!geldig) return
+      setBeschikbaar(ja)
+      try {
+        sessionStorage.setItem('je-assistent-beschikbaar', ja ? '1' : '0')
+      } catch {
+        // Geen opslag: dan vragen we het bij de volgende keer laden opnieuw.
+      }
+    }
+    callAssistant({ ping: true })
+      .then(() => onthoud(true))
+      .catch((err) => onthoud(!['functions/not-found', 'functions/internal'].includes(err?.code)))
+    return () => {
+      geldig = false
+    }
+  }, [uid, beschikbaar])
+
+  const value = useMemo(
+    () => ({ open, setOpen, messages, busy, ask, beschikbaar: beschikbaar === true }),
+    [open, setOpen, messages, busy, ask, beschikbaar]
+  )
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>
 }
 

@@ -116,7 +116,14 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
         <Kaart
           titel={t('overzicht.kaart.taken')}
           groot={stand.taken.totaal ? `${stand.taken.af}/${stand.taken.totaal}` : '—'}
-          onder={stand.taken.open ? t('overzicht.taken_open', { aantal: stand.taken.open }) : t('overzicht.taken_klaar')}
+          onder={
+            // Nul taken is niet "alles afgevinkt": zo stond het er live.
+            !stand.taken.totaal
+              ? t('overzicht.taken_geen')
+              : stand.taken.open
+                ? t('overzicht.taken_open', { aantal: stand.taken.open })
+                : t('overzicht.taken_klaar')
+          }
           deel={stand.taken.deel}
           naar="taken"
           onTab={onTab}
@@ -132,7 +139,9 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
         <Kaart
           titel={t('overzicht.kaart.gasten')}
           groot={ev.pax ? String(ev.pax) : '—'}
-          onder={ev.customerName || t('overzicht.geen_klant')}
+          // De tegel gaat over gasten; "Nog geen klant" eronder las als een
+          // antwoord op een andere vraag. Die staat bij "Vraagt aandacht".
+          onder={ev.pax ? ev.customerName || '' : t('overzicht.gasten_leeg')}
         />
         <Kaart
           titel={t('overzicht.kaart.mail')}
@@ -155,11 +164,8 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
         <Kaart
           titel={t('overzicht.kaart.bijlagen')}
           groot={String(stand.bijlagen)}
-          onder={
-            stand.bestellijst
-              ? t('overzicht.met_bestellijst', { aantal: stand.bestellijst })
-              : t('overzicht.geen_bestellijst')
-          }
+          // Over bijlagen, niet over de bestellijst: die heeft een eigen tabblad.
+          onder={stand.bijlagen ? t('overzicht.bijlagen_wel') : t('overzicht.bijlagen_geen')}
           naar="bijlagen"
           onTab={onTab}
         />

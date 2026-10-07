@@ -239,6 +239,10 @@ export const assistant = onCall(
       throw new HttpsError('permission-denied', 'De assistent is er voor het planningsteam.')
     }
 
+    // De app vraagt bij het openen na of de assistent er is, zonder het model
+    // aan te roepen; zonder antwoord toont ze de knop niet.
+    if (data?.ping) return { ok: true }
+
     const nu = Date.now()
     const recent = (beurten.get(auth.uid) ?? []).filter((t) => nu - t < 60_000)
     if (recent.length >= 15) {

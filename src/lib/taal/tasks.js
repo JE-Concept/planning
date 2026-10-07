@@ -294,7 +294,7 @@ export default {
   'goals.lopend_een': { nl: '{aantal} lopend doel', en: '{aantal} running goal' },
   'goals.lopend_meer': { nl: '{aantal} lopende doelen', en: '{aantal} running goals' },
   'goals.filter': { nl: 'Filter', en: 'Filter' },
-  'goals.nieuw': { nl: '+ Goal', en: '+ Goal' },
+  'goals.nieuw': { nl: 'Goal', en: 'Goal' },
   'goals.leeg.titel': { nl: 'Nog geen doelen', en: 'No goals yet' },
   'goals.leeg.tekst': {
     nl: 'Een goal bundelt meetbare resultaten: omzet, aantal events, posts per maand.',

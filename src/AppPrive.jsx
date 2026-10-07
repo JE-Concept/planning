@@ -144,6 +144,8 @@ function Authenticated() {
           <Routes>
             <Route path="/" element={<Events />} />
             <Route path="/kalender" element={<Events />} />
+            {/* /events zelf bestond niet: wie het intypte of een oude link volgde, kreeg "Deze pagina bestaat niet". */}
+            <Route path="/events" element={<Navigate to="/" replace />} />
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/tasks" element={<Tasks />} />
             {/* De twee oude adressen blijven werken: ze staan in bladwijzers,

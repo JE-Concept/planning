@@ -120,6 +120,7 @@ export default function NewEventDialog({ open, onClose }) {
     <Dialog
       open={open}
       onClose={onClose}
+      vastHouden={Boolean(mail.trim() || name.trim())}
       title={t('events.nieuw')}
       width={modus === 'custom' ? 560 : 640}
       className="je-formule-dialog"

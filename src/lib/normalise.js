@@ -8,6 +8,8 @@
  * soort fout dat een unittest in één regel afdekt.
  */
 
+import { herstelClickupDatums } from './clickupdatum'
+
 /** Firestore Timestamp | Date | string → Date, or null. */
 export function toDate(value) {
   if (!value) return null
@@ -56,5 +58,6 @@ export function normalise(data, diepte = 0) {
       out[key] = normalise(value, diepte + 1)
     else out[key] = value
   }
-  return out
+  // Datums zonder uur uit ClickUp: zie clickupdatum.js.
+  return diepte === 0 ? herstelClickupDatums(out) : out
 }

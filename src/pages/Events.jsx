@@ -252,11 +252,26 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
       value: t('events.aantal', { aantal: inMonth.length }),
       sub: inMonth[0] ? t('events.stat.eerste', { dag: dayLabel(inMonth[0].eventDate) }) : t('events.stat.niets_gepland'),
     },
-    {
-      label: t('events.stat.factureren'),
-      value: euro(toInvoice.reduce((a, e) => a + (Number(e.quoteAmount) || 0), 0)) ?? '€ 0',
-      sub: t('events.stat.wacht', { aantal: toInvoice.length }),
-    },
+    /*
+      Een bedrag dat er niet is, telt niet als nul. De tegel zei live
+      "€ 0 · 13 events wachten op factuur": er stond geen enkel bedrag op die
+      events, en dat las als "er valt niets te factureren". Nu staat er het
+      bedrag dat gekend is, en hoeveel events nog geen bedrag hebben.
+    */
+    (() => {
+      const metBedrag = toInvoice.filter((e) => Number(e.quoteAmount) > 0)
+      const zonder = toInvoice.length - metBedrag.length
+      return {
+        label: t('events.stat.factureren'),
+        value: metBedrag.length ? euro(metBedrag.reduce((a, e) => a + Number(e.quoteAmount), 0)) : '—',
+        sub: [
+          t('events.stat.wacht', { aantal: toInvoice.length }),
+          zonder ? t('events.stat.zonder_bedrag', { aantal: zonder }) : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      }
+    })(),
   ]
 
   const groups = PHASES.map((ph) => ({
@@ -343,8 +358,12 @@ function ArchiefView({ jaren, concept, planningFilter, profileById, statuses, na
   const openEvent = useCallback((id) => navigate(`/events/${id}`), [navigate])
   const [gekozen, setGekozen] = useState(null)
 
-  // Zolang niemand koos: het recentste jaar dat er is.
-  const jaar = gekozen != null && jaren.includes(gekozen) ? gekozen : (jaren[0] ?? null)
+  // Zolang niemand koos: het lopende jaar, of anders het laatste voorbij jaar.
+  // Niet zomaar het hoogste: één event van 2027 dat al afgesloten werd, liet
+  // het archief live op 2027 openen.
+  const ditJaar = new Date().getFullYear()
+  const standaard = jaren.includes(ditJaar) ? ditJaar : (jaren.find((j) => j < ditJaar) ?? jaren[0] ?? null)
+  const jaar = gekozen != null && jaren.includes(gekozen) ? gekozen : standaard
   const { events, tasksByEvent, loading } = useArchiefJaar(jaar, { listId: eventsList?.id, brandById })
 
   // Dezelfde filters als op het bord: wie op een merk filtert en dan naar het

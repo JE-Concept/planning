@@ -328,15 +328,22 @@ function TeamTab() {
                 aria-label={t('inst.team.uurtarief')}
               />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={m.id === uid}
-              title={m.id === uid ? t('inst.team.zelf_archiveren') : undefined}
-              onClick={() => setMemberActive(m.id, false)}
-            >
-              {t('alg.archiveren')}
-            </Button>
+            {/* Jezelf archiveren kan niet, en de laatste eigenaar ook niet: wie
+                dat doet, sluit de zaak buiten. De knop stond er grijs maar
+                zichtbaar, en las als iets wat je wél kon. */}
+            {m.id === uid ? (
+              <span className="je-muted-caption" style={{ minWidth: 90 }}>{t('inst.team.dat_ben_jij')}</span>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={m.role === 'owner' && active.filter((p) => p.role === 'owner').length <= 1}
+                title={m.role === 'owner' ? t('inst.team.laatste_eigenaar') : undefined}
+                onClick={() => setMemberActive(m.id, false)}
+              >
+                {t('alg.archiveren')}
+              </Button>
+            )}
           </div>
         ))}
       </section>

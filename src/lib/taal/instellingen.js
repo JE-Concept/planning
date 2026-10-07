@@ -117,7 +117,11 @@ export default {
   'inst.team.geen_afdeling': { nl: 'Geen afdeling', en: 'No department' },
   'inst.team.uurtarief_plaatshouder': { nl: '€ per uur', en: '€ per hour' },
   'inst.team.uurtarief': { nl: 'Intern uurtarief', en: 'Internal hourly rate' },
-  'inst.team.zelf_archiveren': { nl: 'Jezelf archiveren kan niet.', en: 'You cannot archive yourself.' },
+  'inst.team.dat_ben_jij': { nl: 'Dat ben jij', en: 'That is you' },
+  'inst.team.laatste_eigenaar': {
+    nl: 'Er moet altijd een eigenaar overblijven. Maak eerst iemand anders eigenaar.',
+    en: 'There must always be an owner left. Make someone else owner first.',
+  },
   'inst.team.uitnodigen': { nl: 'Iemand uitnodigen', en: 'Invite someone' },
   'inst.team.google_account': { nl: 'Google-account', en: 'Google account' },
   'inst.team.uitnodigen_knop': { nl: 'Uitnodigen', en: 'Invite' },

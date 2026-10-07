@@ -62,7 +62,7 @@ export default function GlobalSearch({ narrow }) {
   const { events, tasks, eventById } = useEvents()
   const { customers } = useCustomers()
   const { meetings } = useMeetings(uid)
-  const { ask } = useAssistant()
+  const { ask, beschikbaar } = useAssistant()
   const { t } = useTaal()
   const navigate = useNavigate()
   const inputRef = useRef(null)
@@ -212,7 +212,7 @@ export default function GlobalSearch({ narrow }) {
       if (zichtbaar[active]) {
         zichtbaar[active].go()
         done()
-      } else if (q.trim()) {
+      } else if (q.trim() && beschikbaar) {
         const vraag = q
         done()
         ask(vraag)
@@ -319,19 +319,21 @@ export default function GlobalSearch({ narrow }) {
                 ? t('inst.zoek.resultaat', { aantal: zichtbaar.length })
                 : t('inst.zoek.niets', { vraag: q.trim() })}
             </span>
-            <button
-              type="button"
-              className="je-plainbtn"
-              onMouseDown={() => {
-                const vraag = q
-                done()
-                ask(vraag)
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, font: 'var(--type-caption)', color: 'var(--text-accent)' }}
-            >
-              <Icon name="sparkles" size={14} />
-              {t('inst.zoek.assistent')}
-            </button>
+            {beschikbaar ? (
+              <button
+                type="button"
+                className="je-plainbtn"
+                onMouseDown={() => {
+                  const vraag = q
+                  done()
+                  ask(vraag)
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, font: 'var(--type-caption)', color: 'var(--text-accent)' }}
+              >
+                <Icon name="sparkles" size={14} />
+                {t('inst.zoek.assistent')}
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -51,7 +51,7 @@ function Shell({ children }) {
   const toast = useToast()
   const narrow = useNarrow()
   const location = useLocation()
-  const { open, setOpen } = useAssistant()
+  const { open, setOpen, beschikbaar } = useAssistant()
   const { t } = useTaal()
   const nieuweVersie = useNieuweVersie()
   const [hulpOpen, setHulpOpen] = useState(false)
@@ -59,7 +59,7 @@ function Shell({ children }) {
   // Zoals in het design: op een breed scherm staat de assistent open tot je
   // hem sluit (dat wordt onthouden), op een telefoon dicht — daar zou hij het
   // hele scherm afdekken.
-  const chatOpen = !isStaff && !isSocial && (narrow ? open === true : open ?? true)
+  const chatOpen = beschikbaar && !isStaff && !isSocial && (narrow ? open === true : open ?? true)
 
   /*
     Een schrijfactie die niet doorging, zichtbaar maken.
@@ -163,7 +163,8 @@ function Shell({ children }) {
                 niets deed met wat er op het scherm staat — en wie ze zoekt,
                 vindt ze met `?` of in Instellingen. Zie `Sneltoetsen.jsx`.
               */}
-              {narrow ? (
+              {/* Zonder uitgerolde assistent geen knop: zie AssistantProvider. */}
+              {!beschikbaar ? null : narrow ? (
                 <IconButton icon="sparkles" label={t('schil.assistent')} variant="outline" onClick={() => setOpen(!chatOpen)} />
               ) : (
                 <Schakelknop aan={chatOpen} iconLeft="sparkles" onClick={() => setOpen(!chatOpen)}>

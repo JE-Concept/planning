@@ -39,6 +39,8 @@ export default {
   'events.stat.factureren': { nl: 'Te factureren', en: 'To invoice' },
   'events.stat.wacht_een': { nl: '{aantal} event wacht op factuur', en: '{aantal} event awaiting its invoice' },
   'events.stat.wacht_meer': { nl: '{aantal} events wachten op factuur', en: '{aantal} events awaiting their invoice' },
+  'events.stat.zonder_bedrag_een': { nl: '{aantal} zonder bedrag', en: '{aantal} without an amount' },
+  'events.stat.zonder_bedrag_meer': { nl: '{aantal} zonder bedrag', en: '{aantal} without an amount' },
   'events.leeg': { nl: 'Geen lopende events voor deze selectie.', en: 'No ongoing events for this selection.' },
 
   // ── Events: de drie fasen van de lijstweergave ─────────────────────────
@@ -193,7 +195,7 @@ export default {
   // ── Bijlagen en documenten ─────────────────────────────────────────────
   'events.bijlagen.titel': { nl: 'Bijlagen', en: 'Attachments' },
   'events.bijlagen.bezig': { nl: 'Bezig met opladen…', en: 'Uploading…' },
-  'events.bijlagen.sleep': { nl: 'Sleep een bestand hierheen', en: 'Drag a file here' },
+  'events.bijlagen.sleep': { nl: 'Sleep een bestand hierheen, of klik om er een te kiezen', en: 'Drag a file here, or click to choose one' },
   'events.doc.titel': { nl: 'Documenten', en: 'Documents' },
   'events.doc.vernieuwen': { nl: 'Vernieuwen', en: 'Refresh' },
   'events.doc.vernieuwen_uitleg': {
@@ -319,10 +321,10 @@ export default {
   // ── Een pagina die niet bestaat ────────────────────────────────────────
   'events.weg.titel': { nl: 'Deze pagina bestaat niet', en: 'This page does not exist' },
   'events.weg.tekst': {
-    nl: 'De link klopt niet meer, of het bord is verwijderd.',
-    en: 'The link is out of date, or the board has been deleted.',
+    nl: 'De link klopt niet meer, of wat erachter zat is verwijderd.',
+    en: 'The link is out of date, or what it pointed to has been deleted.',
   },
-  'events.weg.knop': { nl: 'Naar vandaag', en: 'Go to today' },
+  'events.weg.knop': { nl: 'Naar de events', en: 'Go to events' },
 
   // ── De bestellijst van een event ───────────────────────────────────────
   'bestellijst.titel': { nl: 'Bestellijst', en: 'Order list' },
@@ -361,7 +363,11 @@ export default {
     nl: 'Zoeken op naam, btw-nummer, stad of contactpersoon',
     en: 'Search by name, VAT number, town or contact',
   },
-  'klant.nieuw': { nl: '+ Klant', en: '+ Customer' },
+  'klant.nieuw': { nl: 'Klant', en: 'Customer' },
+  'klant.nieuw_titel': { nl: 'Nieuwe klant', en: 'New customer' },
+  'klant.nieuw_naam': { nl: 'Naam of bedrijfsnaam', en: 'Name or company name' },
+  'klant.nieuw_naam_hint': { nl: 'De rest vul je daarna in op de fiche.', en: 'You fill in the rest on the card afterwards.' },
+  'klant.nieuw_maak': { nl: 'Klant aanmaken', en: 'Create customer' },
   'klant.aangemaakt': { nl: 'Klant aangemaakt.', en: 'Customer created.' },
   'klant.geen_gevonden': { nl: 'Geen klant gevonden.', en: 'No customer found.' },
   'klant.leeg': {

@@ -227,7 +227,7 @@ export default {
   'uren.persoon': { nl: 'Persoon', en: 'Person' },
   'uren.mijn_uren': { nl: 'Mijn uren', en: 'My hours' },
   'uren.hele_team': { nl: 'Het hele team', en: 'The whole team' },
-  'uren.tijd_kort': { nl: '+ Tijd', en: '+ Time' },
+  'uren.tijd_kort': { nl: 'Tijd', en: 'Time' },
   'uren.registraties': { nl: 'Registraties', en: 'Entries' },
   'uren.kalender': { nl: 'Kalender', en: 'Calendar' },
   'uren.rapport': { nl: 'Rapport', en: 'Report' },
@@ -236,8 +236,8 @@ export default {
 
   'uren.leeg': { nl: 'Nog geen uren deze maand', en: 'No hours yet this month' },
   'uren.leeg_uitleg': {
-    nl: 'Start de timer in de bovenbalk of voeg tijd handmatig toe.',
-    en: 'Start the timer in the top bar, or add time by hand.',
+    nl: 'Start de timer in de zijbalk of voeg tijd handmatig toe.',
+    en: 'Start the timer in the sidebar, or add time by hand.',
   },
   'uren.tijd_toevoegen': { nl: 'Tijd toevoegen', en: 'Add time' },
   'uren.intern': { nl: 'intern', en: 'internal' },

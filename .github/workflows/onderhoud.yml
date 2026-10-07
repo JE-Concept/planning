@@ -30,6 +30,7 @@ on:
           - te-factureren-verantwoordelijke
           # Leest alleen; de keuze `schrijven` doet er niets toe.
           - meldingen-nakijken
+          - clickup-datums
       schrijven:
         description: Echt schrijven (anders alleen tonen wat het zou doen)
         required: true

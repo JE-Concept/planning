@@ -1,4 +1,4 @@
-import { Children, cloneElement, forwardRef, isValidElement, useEffect, useId, useRef, useState } from 'react'
+import { Children, cloneElement, forwardRef, isValidElement, useCallback, useEffect, useId, useRef, useState } from 'react'
 import {
   AlertTriangle, ArrowRight, ArrowUp, Briefcase, Building2, CalendarDays, Check, CheckCircle, ChevronDown,
   ChevronLeft, ChevronRight, Circle, ClipboardCheck, Clock, CloudOff, Copy, CornerDownLeft, Download, Euro,
@@ -402,14 +402,26 @@ function useDismiss(open, onClose, panelRef) {
   }, [open, onClose, panelRef])
 }
 
-export function Dialog({ open = false, title, onClose, footer, width, children, className }) {
+/*
+  `vastHouden`: zolang er iets ingevuld is dat verloren zou gaan, sluiten Escape
+  en een klik naast het venster het niet; het kruisje en Annuleren wel. Live
+  verdween zo een geplakte klantmail in Nieuw event door één toets.
+*/
+export function Dialog({ open = false, title, onClose, footer, width, children, className, vastHouden = false }) {
   const panel = useRef(null)
-  useDismiss(open, onClose, panel)
+  // Via een ref en niet door onClose weg te laten: dan liep useDismiss
+  // opnieuw bij de eerste letter, en zette het de focus terug op het venster.
+  const vast = useRef(vastHouden)
+  vast.current = vastHouden
+  const viaToets = useCallback(() => {
+    if (!vast.current) onClose?.()
+  }, [onClose])
+  useDismiss(open, viaToets, panel)
 
   if (!open) return null
   return (
     <div className={cn('je-dialog', className)} role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}>
-      <div className="je-dialog__scrim" onClick={onClose} />
+      <div className="je-dialog__scrim" onClick={vastHouden ? undefined : onClose} />
       <div ref={panel} tabIndex={-1} className="je-dialog__panel" style={width ? { maxWidth: width } : undefined}>
         {onClose ? (
           <span className="je-dialog__close">

@@ -2588,7 +2588,7 @@ await test('het overzicht zegt in één blik hoe een event ervoor staat', async 
   */
   const aandacht = page.locator('.je-overzicht__aandacht')
   const kop = aandacht.locator('.je-aandachtkop')
-  zouden(/\d+ dingen vragen aandacht/.test(await kop.innerText()), `de teller staat er niet: ${await kop.innerText()}`)
+  zouden(/\d+ (ding vraagt|dingen vragen) aandacht/.test(await kop.innerText()), `de teller staat er niet: ${await kop.innerText()}`)
   zouden(!(await aandacht.locator('li').first().isVisible()), 'de opsomming staat open in plaats van ingeklapt')
 
   await kop.click()
