@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { formatDate, relativeDay } from '@lib/dates'
 import { formatCurrency } from '@lib/format'
 import { labelOf } from '@lib/pipeline'
@@ -33,6 +34,7 @@ import {
   useCustomerTasks,
 } from '@data/customers'
 import { STANDAARD_KLEUR } from '@lib/kleur'
+import GekoppeldeNotities from '@components/notities/GekoppeldeNotities'
 
 /**
  * Klanten.
@@ -47,7 +49,9 @@ export default function Customers() {
   const { t } = useTaal()
   const toast = useToast()
   const [zoek, setZoek] = useState('')
-  const [open, setOpen] = useState(null)
+  // `?klant=<id>` opent die fiche meteen — daar landt een link vanuit een notitie.
+  const [params] = useSearchParams()
+  const [open, setOpen] = useState(() => params.get('klant'))
   const [nieuw, setNieuw] = useState(false)
 
   const zichtbaar = useMemo(() => {
@@ -629,6 +633,11 @@ function KlantPaneel({ id, onClose, toast }) {
           <TaskDrawer taskId={openEvent} onClose={() => setOpenEvent(null)} />
         ) : null}
 
+        <GekoppeldeNotities koppeling={{ soort: 'klant', id: klant.id, label: klant.name }} />
+
+        {/* Het oude vrije veld blijft: wat erin staat is van het team, en het
+            is de plek voor wat altijd geldt ("factuur altijd naar de
+            boekhouding"). Wat over een moment gaat, is een notitie. */}
         <Field label={t('klant.notities')}>
           <Textarea
             defaultValue={klant.notes}

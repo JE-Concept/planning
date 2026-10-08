@@ -62,6 +62,7 @@ export default {
   'nav.registraties': { nl: 'Registraties', en: 'Records' },
   'nav.team': { nl: 'Team', en: 'Team' },
   'nav.teamoverleg': { nl: 'Teamoverleg', en: 'Team meeting' },
+  'nav.notities': { nl: 'Notities', en: 'Notes' },
   'nav.rooster': { nl: 'Rooster', en: 'Rota' },
   'nav.uren': { nl: 'Uren', en: 'Hours' },
   'nav.logboek': { nl: 'Logboek', en: 'Audit log' },
@@ -285,20 +286,27 @@ export default {
     van wordt.
   */
   'inst.zoek.plaatshouder': {
-    nl: 'Zoek events, taken, klanten, verslagen',
-    en: 'Search events, tasks, customers, minutes',
+    nl: 'Zoek events, taken, klanten, notities',
+    en: 'Search events, tasks, customers, notes',
   },
   'inst.zoek.soort.events': { nl: 'Events', en: 'Events' },
   'inst.zoek.soort.taken': { nl: 'Taken', en: 'Tasks' },
   'inst.zoek.soort.klanten': { nl: 'Klanten', en: 'Customers' },
-  'inst.zoek.soort.verslagen': { nl: 'Verslagen', en: 'Minutes' },
+  'inst.zoek.soort.notities': { nl: 'Notities', en: 'Notes' },
+
+  // Waar een notitie aan kan hangen. In de kern en niet bij de notities: de
+  // soorten staan in `@lib/koppelingen`, en dat zit via de zoekbalk in de schil.
+  'koppeling.klant': { nl: 'Klant', en: 'Customer' },
+  'koppeling.event': { nl: 'Event', en: 'Event' },
+  'koppeling.taak': { nl: 'Taak', en: 'Task' },
+  'koppeling.materiaal': { nl: 'Materiaal', en: 'Equipment' },
+  'koppeling.uren': { nl: 'Uren', en: 'Time entry' },
+  'koppeling.offerte': { nl: 'Offerte', en: 'Quote' },
   'inst.zoek.soort.mensen': { nl: 'Mensen', en: 'People' },
   'inst.zoek.soort.templates': { nl: 'Templates', en: 'Templates' },
   'inst.zoek.klantfiche': { nl: 'klantfiche openen', en: 'open the customer' },
   'inst.zoek.teamoverleg': { nl: 'teamoverleg', en: 'team meeting' },
   'inst.zoek.overleg_van': { nl: 'Teamoverleg van {datum}', en: 'Team meeting of {datum}' },
-  'inst.zoek.punt_een': { nl: '{aantal} punt', en: '{aantal} item' },
-  'inst.zoek.punt_meer': { nl: '{aantal} punten', en: '{aantal} items' },
   'inst.zoek.mens_sub': {
     nl: '{aantal} open taken · werklast bekijken',
     en: '{aantal} open tasks · see the workload',

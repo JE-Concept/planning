@@ -2137,6 +2137,61 @@ await test('de zoekbalk vindt events en taken', async () => {
   await page.close()
 })
 
+await test('een notitie hangt aan een klant en staat op de fiche van die klant', async () => {
+  // De hele weg: schrijven op het scherm Notities, met de objectkiezer een
+  // klant kiezen, en de notitie daarna terugvinden waar ze hoort — bij de
+  // klant. Klikken en niet herladen: de demodatabase leeft in het tabblad.
+  const page = await tabblad('/notities')
+  await rustig(page)
+  const begin = await inhoud(page)
+  zouden(bevat(begin, 'Facturatie Blum'), 'de voorbeeldnotitie staat er niet')
+  zouden(bevat(begin, 'Weekstart events'), 'het verslag van het overleg staat niet tussen de notities')
+
+  await page.getByRole('button', { name: 'Nieuwe notitie' }).first().click()
+  await rustig(page)
+  const dialoog = page.getByRole('dialog')
+  await dialoog.getByPlaceholder('Wat moet het team hierover weten?').fill('Parking via de achteringang, poortcode 4411.')
+  const kiezer = dialoog.getByPlaceholder('Zoek een klant, event, materiaal, uren…')
+  await kiezer.fill('borgloon')
+  await rustig(page)
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  zouden(bevat(await dialoog.innerText(), 'Stad Borgloon'), 'de gekozen klant staat niet als pil in het venster')
+  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  await rustig(page)
+
+  // Gefilterd op die klant: alleen wat over Borgloon gaat.
+  await page.keyboard.press('Escape')
+  await rustig(page)
+  const over = page.getByPlaceholder('Alleen notities over een klant, event, materiaal…')
+  await over.fill('borgloon')
+  await rustig(page)
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  const gefilterd = await inhoud(page)
+  zouden(bevat(gefilterd, 'poortcode 4411'), 'de nieuwe notitie staat niet bij de klant waaraan ze hangt')
+  zouden(!bevat(gefilterd, 'Facturatie Blum'), 'het filter op een klant laat andere notities door')
+
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /Klanten/ }).first().click().catch(() => page.goto(`${adres}/klanten`))
+  await rustig(page)
+  await page.getByText('Stad Borgloon').first().click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'poortcode 4411'), 'de notitie staat niet op de fiche van de klant')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een notitie over materiaal staat ook bij het event dat ze raakt', async () => {
+  const page = await tabblad('/events/t-trouw')
+  await rustig(page)
+  const fiche = await inhoud(page)
+  zouden(bevat(fiche, 'Zijzeil tent 2 gescheurd'), 'de notitie over de tent staat niet op het event')
+  // Het verslag van het overleg waarin de trouw besproken werd, ook.
+  zouden(bevat(fiche, 'Weekstart events'), 'het gekoppelde verslag staat niet op het event')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('Ctrl+K opent de zoekbalk over taken, klanten en verslagen tegelijk', async () => {
   // De drie soorten die er los bij gekomen zijn, in één zoekopdracht: "Blum"
   // is een klant, een event met taken, én een punt in een verslag. Zonder
@@ -2148,7 +2203,7 @@ await test('Ctrl+K opent de zoekbalk over taken, klanten en verslagen tegelijk',
   await rustig(page)
 
   const lijst = await page.getByRole('listbox').innerText()
-  for (const kopje of ['Events', 'Taken', 'Klanten', 'Verslagen']) {
+  for (const kopje of ['Events', 'Taken', 'Klanten', 'Notities']) {
     zouden(bevat(lijst, kopje), `het kopje "${kopje}" ontbreekt: ${lijst.slice(0, 250)}`)
   }
   zouden(lijst.includes('Blum België'), 'de klant staat niet in de resultaten')
@@ -2165,7 +2220,8 @@ await test('een verslag van het teamoverleg is te vinden op wat erin staat', asy
   await rustig(page)
 
   const lijst = await page.getByRole('listbox').innerText()
-  zouden(bevat(lijst, 'Verslagen'), `geen verslag gevonden: ${lijst.slice(0, 250)}`)
+  // Een verslag is een notitie; het staat onder dat kopje.
+  zouden(bevat(lijst, 'Notities'), `geen verslag gevonden: ${lijst.slice(0, 250)}`)
   zouden(lijst.includes('Weekstart events'), 'het verslag staat er niet bij')
 
   await page.keyboard.press('Enter')

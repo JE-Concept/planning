@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronRight, Circle, ClipboardCheck, Clock, CloudOff, Copy, CornerDownLeft, Download, Euro,
   ExternalLink, FileText, Info, Kanban, Keyboard, LayoutDashboard, Lightbulb, ListChecks, Loader, Lock, LogIn, LogOut,
   Mail, MapPin, Menu, MessageSquare, MessagesSquare, Music4, Package, Paperclip, Pencil, Play, Plus, Printer, Repeat, Search, Settings, Share2,
-  ShieldCheck, Sparkles, Square, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
+  ShieldCheck, Sparkles, Square, StickyNote, Sun, Target, Timer, Trash2, Upload, Users, Utensils, X,
 } from 'lucide-react'
 import { cn } from '@lib/cn'
 import { badgeKleuren } from '@lib/kleur'
@@ -76,6 +76,7 @@ const ICONS = {
   'shield-check': ShieldCheck,
   sparkles: Sparkles,
   square: Square,
+  'sticky-note': StickyNote,
   sun: Sun,
   target: Target,
   timer: Timer,

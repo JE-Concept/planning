@@ -27,7 +27,13 @@ export const COL = {
   runningTimers: 'runningTimers',
   goals: 'goals',
   goalUpdates: 'goalUpdates',
-  meetings: 'meetings',
+  /*
+    Notities, los van waar ze over gaan: een klant, een event, materiaal, een
+    urenboeking. De verslagen van het teamoverleg staan hier ook in, als
+    `soort: 'overleg'`. De oude collectie `meetings` wordt door de app niet
+    meer gelezen; `scripts/seed.mjs` verhuist haar en laat ze staan.
+  */
+  notities: 'notities',
   agendaItems: 'agendaItems',
   checklists: 'checklists',
   checklistRuns: 'checklistRuns',

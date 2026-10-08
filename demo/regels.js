@@ -107,7 +107,11 @@ export const REGELS = {
   goalUpdates:    { lezen: isTeam, schrijven: isTeam },
   socialPosts:    { lezen: (rol) => isTeam(rol) || isSocial(rol), schrijven: (rol) => isTeam(rol) || isSocial(rol) },
   agendaItems:    { lezen: isTeam, schrijven: isTeam },
-  meetings:       { lezen: isMember, schrijven: isAdmin },
+  meetings:       { lezen: isMember, schrijven: () => false },
+  // Open notities leest het team, de verslagen van een overleg alleen wie in
+  // `viewerIds` staat — dat kijkt Firestore per document na, net als bij
+  // `meetings` hierboven. De tabel gaat over de rol.
+  notities:       { lezen: isMember, schrijven: isTeam },
   automations:    { lezen: isTeam, schrijven: isAdmin },
   automationRuns: { lezen: isTeam, schrijven: () => false },
   templates:      { lezen: isTeam, schrijven: isAdmin },

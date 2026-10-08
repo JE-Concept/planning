@@ -19,7 +19,12 @@ import { assistantTurn } from './assistant.js'
  * Wat waar landt:
  *   tasks/{id}          het overleg als taak op het takenbord
  *   tasks/{id} (sub)    elk actiepunt, met verantwoordelijke → staat in Mijn werk
- *   meetings/{taskId}   de samenvatting zelf, alleen leesbaar voor wie erin staat
+ *   notities/{taskId}   de samenvatting zelf, als notitie van de soort
+ *                       `overleg` — privé, alleen leesbaar voor wie in
+ *                       `viewerIds` staat. Tot de notities bestonden was dat
+ *                       een eigen collectie `meetings`; nu hangt een verslag
+ *                       net als elke notitie aan de events en klanten die erin
+ *                       besproken werden.
  *
  * Die splitsing is het antwoord op "wie mag dit zien": de titel van een overleg
  * staat op het bord voor het hele team, de inhoud niet.
@@ -111,15 +116,26 @@ async function bewaarOverleg({ samenvatting, datum, bron, aangemaaktDoor }) {
     updatedAt: FieldValue.serverTimestamp(),
   })
 
-  batch.set(db.collection('meetings').doc(taakRef.id), {
+  const schrijver = profiles.find((p) => p.id === aangemaaktDoor)
+  batch.set(db.collection('notities').doc(taakRef.id), {
+    soort: 'overleg',
     taskId: taakRef.id,
     titel: samenvatting.titel,
+    tekst: '',
     datum,
     deelnemers: samenvatting.deelnemers ?? [],
     samenvatting: samenvatting.samenvatting ?? [],
     bron: bron ?? null,
+    // Waarover het ging, zet een mens erbij: het model kent de namen van de
+    // events niet, en een verkeerde koppeling is erger dan geen.
+    koppelingen: [],
+    koppelsleutels: [],
+    prive: true,
     viewerIds: kijkers,
+    auteurId: aangemaaktDoor ?? null,
+    auteurNaam: schrijver?.fullName || schrijver?.email || '',
     createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   })
 
   let metVerantwoordelijke = 0

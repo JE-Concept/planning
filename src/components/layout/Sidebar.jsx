@@ -126,10 +126,14 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
       icon: 'messages-square',
       sleutel: 'nav.team',
       match: (p) =>
-        p === '/overleg' || p === '/uren' || p === '/rooster' || p === '/logboek'
+        p === '/overleg' || p === '/notities' || p === '/uren' || p === '/rooster' || p === '/logboek'
         || p === '/medewerkers' || p === '/planning',
       kinderen: [
         { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
+        // Naast het overleg, want de verslagen ervan zijn notities. Ze gaan
+        // wel over meer dan het team — een klant, een event, materiaal — maar
+        // het is het team dat ze schrijft en leest.
+        { to: '/notities', icon: 'sticky-note', sleutel: 'nav.notities' },
         // De ploeg die komt werken: studenten en flexi's. Staat bij Team en
         // niet achter het tandwiel, want dit is wekelijks werk en geen instelling.
         { to: '/medewerkers', icon: 'users', sleutel: 'nav.medewerkers' },
@@ -178,6 +182,7 @@ export const MORE = [
   { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
   { to: '/registraties', icon: 'file-text', sleutel: 'nav.registraties' },
   { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
+  { to: '/notities', icon: 'sticky-note', sleutel: 'nav.notities' },
   { to: '/uren', icon: 'timer', sleutel: 'nav.uren' },
   { to: '/goals', icon: 'target', sleutel: 'nav.goals' },
   { to: '/logboek', icon: 'file-text', sleutel: 'nav.logboek' },

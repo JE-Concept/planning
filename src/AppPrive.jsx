@@ -37,26 +37,27 @@ import Login from '@pages/Login'
 const Dashboard      = pagina(() => import('@pages/Dashboard'), 'planning', 'team')
 const Tasks          = pagina(() => import('@pages/Tasks'), 'events', 'tasks')
 const Events         = pagina(() => import('@pages/Events'), 'aanvraag', 'aapi', 'events', 'mail', 'planning')
-const EventDetail    = pagina(() => import('@pages/EventDetail'), 'aapi', 'events', 'mail', 'materiaal', 'offerte', 'overzicht', 'planning', 'tasks', 'voorstel')
+const EventDetail    = pagina(() => import('@pages/EventDetail'), 'aapi', 'events', 'mail', 'materiaal', 'notities', 'offerte', 'overzicht', 'planning', 'tasks', 'voorstel')
 const Workload       = pagina(() => import('@pages/Workload'), 'planning', 'tasks')
 const More           = pagina(() => import('@pages/More'))
 const Board          = pagina(() => import('@pages/Board'), 'events', 'tasks')
 const SocialCalendar = pagina(() => import('@pages/SocialCalendar'), 'events', 'socials', 'tasks')
 const Checklists     = pagina(() => import('@pages/Checklists'), 'bistro')
 const ChecklistReport = pagina(() => import('@pages/ChecklistReport'), 'bistro')
-const Meetings       = pagina(() => import('@pages/Meetings'), 'team')
+const Meetings       = pagina(() => import('@pages/Meetings'), 'notities', 'team')
+const Notities       = pagina(() => import('@pages/Notities'), 'notities')
 const Aanvragen      = pagina(() => import('@pages/Aanvragen'), 'aanvraag', 'events', 'mail')
 const TimeTracking   = pagina(() => import('@pages/TimeTracking'), 'events', 'team')
 const Rooster        = pagina(() => import('@pages/Rooster'), 'team')
 const Logboek        = pagina(() => import('@pages/Logboek'), 'logboek')
 const Goals          = pagina(() => import('@pages/Goals'), 'tasks')
-const Customers      = pagina(() => import('@pages/Customers'), 'events', 'tasks')
+const Customers      = pagina(() => import('@pages/Customers'), 'events', 'notities', 'tasks')
 const Settings       = pagina(() => import('@pages/Settings'), 'aapi', 'herhaling', 'instellingen', 'systeem', 'tasks')
 const Profiel        = pagina(() => import('@pages/Profiel'), 'kalenderfeed', 'profiel', 'team')
 const Medewerkers    = pagina(() => import('@pages/Medewerkers'), 'aapi', 'medewerkers')
 const MijnEvents     = pagina(() => import('@pages/MijnEvents'), 'aapi', 'medewerkers', 'planning')
 const Planning       = pagina(() => import('@pages/Planning'), 'aapi')
-const Materiaal      = pagina(() => import('@pages/Materiaal'), 'materiaal')
+const Materiaal      = pagina(() => import('@pages/Materiaal'), 'materiaal', 'notities')
 const NotFound       = pagina(() => import('@pages/NotFound'), 'events')
 
 function Loading() {
@@ -165,6 +166,7 @@ function Authenticated() {
             <Route path="/openen-sluiten" element={<Checklists />} />
             <Route path="/registraties" element={<ChecklistReport />} />
             <Route path="/overleg" element={<Meetings />} />
+            <Route path="/notities" element={<Notities />} />
             <Route path="/uren" element={<TimeTracking />} />
             <Route path="/rooster" element={<Rooster />} />
             <Route path="/medewerkers" element={<Medewerkers />} />

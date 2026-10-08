@@ -230,12 +230,6 @@ const VRAGEN = [
     sorteer: [['createdAt', DESC]],
   },
   {
-    naam: 'useMeetings — de verslagen waar ik in genoemd word (src/data/meetings.js)',
-    col: 'meetings',
-    eq: [['viewerIds', CONTAINS]],
-    sorteer: [['datum', DESC]],
-  },
-  {
     naam: 'useAgenda (src/data/agenda.js)',
     col: 'agendaItems',
     eq: [['status', EQ]],
@@ -326,6 +320,10 @@ const ONGEBRUIKT = [
   // Ook van een functie: "wat huurde deze klant" op de verhuursite
   // (`mijnHuren` in functions/verhuur.js) zoekt op het adres van de sessie.
   'huurorders: klant.email,createdAt',
+  // Van de oude verslagen, van vóór de notities. De app vraagt `meetings` niet
+  // meer op (zie `src/data/notities.js`); de index blijft tot de collectie
+  // zelf bewust opgeruimd wordt, want een index weghalen kost niets terug.
+  'meetings: viewerIds(contains),datum',
 ]
 
 const omschrijf = (index) =>
@@ -394,8 +392,15 @@ describe('nieuwe queries', () => {
     En 80 sinds messaging: Instellingen → Messaging leest de laatste honderd
     berichten op `ontvangen` aflopend (`src/data/messaging.js`). Eén
     `orderBy` zonder gelijkheid, dus uit de veldindex en niet in de tabel.
+
+    En 81 sinds de notities: `useMeetings` verdween, `useNotities` kwam met
+    twee vragen in de plaats (`src/data/notities.js`) — de open notities
+    (`prive ==`, eventueel met `koppelsleutels array-contains`) en de private
+    (`viewerIds array-contains`). Geen van beide sorteert: gelijkheid en
+    `array-contains` zonder `orderBy` bedient Firestore uit zijn veldindexen,
+    dus ze staan hier en niet in de tabel.
   */
-  const QUERIES_IN_DE_APP = 80
+  const QUERIES_IN_DE_APP = 81
 
   it('zijn in de tabel hierboven opgenomen', () => {
     const bestanden = [

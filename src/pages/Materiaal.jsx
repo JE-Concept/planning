@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { addDays, dayKey, formatDate, startOfDay } from '@lib/dates'
 import { conflicten, reeks, vrijInPeriode } from '@lib/voorraad'
 import { useNarrow } from '@lib/useNarrow'
@@ -42,6 +43,21 @@ export default function Materiaal() {
   const eind = useMemo(() => dayKey(addDays(new Date(`${start}T12:00:00`), dagen - 1)), [start, dagen])
 
   const { materiaal, laadt } = useMateriaal()
+
+  // `?artikel=<id>` opent dat stuk — daar landt een link vanuit een notitie.
+  // Alleen voor wie het stuk mag wijzigen; de anderen zien het in de lijst.
+  const [params, setParams] = useSearchParams()
+  const artikelId = params.get('artikel')
+  useEffect(() => {
+    if (!artikelId || laadt) return
+    const stuk = materiaal.find((m) => m.id === artikelId)
+    if (stuk && isAdmin) setBewerken(stuk)
+    setParams((p) => {
+      const volgende = new URLSearchParams(p)
+      volgende.delete('artikel')
+      return volgende
+    }, { replace: true })
+  }, [artikelId, laadt, materiaal, isAdmin, setParams])
   const { perMateriaal } = useReservaties({ van: start, tot: eind })
   const bezet = useBezet(materiaal, perMateriaal)
 

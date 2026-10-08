@@ -3901,3 +3901,25 @@ button.je-paneel-kaart:hover {
   .je-messaging__rij { padding: var(--space-3) var(--space-4); }
   .je-messaging__tijd { margin-left: 0; flex-basis: 100%; }
 }
+
+/* ── Notities: de objectkiezer en de pillen van wat een notitie raakt ──────── */
+.je-objectkiezer { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.je-objectkiezer__gekozen,
+.je-objectkiezer__soorten,
+.je-koppelingen { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.je-koppelingen { margin-top: var(--space-3); }
+.je-objectkiezer__soorten .je-tag,
+.je-koppelingen .je-tag,
+.je-objectkiezer__gekozen .je-tag { padding: 3px 10px; gap: var(--space-2); font: var(--type-caption); max-width: 100%; }
+.je-objectkiezer__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22ch; }
+/* De lijst hangt onder het veld en niet onder de zoekbalk bovenaan: eigen
+   ankerpunt, en in een dialoog mag ze over de voet heen vallen. */
+.je-objectkiezer__veld { position: relative; }
+.je-objectkiezer__lijst { top: calc(100% + 4px); z-index: 30; max-height: 320px; }
+.je-objectkiezer__optie { width: 100%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-5); text-align: left; }
+.je-objectkiezer__titel { display: block; font: var(--type-body-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.je-objectkiezer__sub { display: block; font: var(--type-caption); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Een pil die je kunt aanraken is een knop, en een knop is op een telefoon
+   minstens 32px hoog — `npm run mobiel` meet dat. */
+.je-koppelingen .je-tag--selectable,
+.je-objectkiezer__soorten .je-tag--selectable { min-height: 32px; }

@@ -24,6 +24,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import EventNotities from '@components/events/EventNotities'
+import GekoppeldeNotities from '@components/notities/GekoppeldeNotities'
 import { deleteDocument, leesbareGrootte, uploadDocument, useDocuments } from '@data/documents'
 import { addEventTask, deleteEvent, isDone, moveEvent, updateEvent, useEventTime, useEvents, useLosEvent } from '@data/events'
 import { durationOf } from '@lib/time-math'
@@ -283,6 +284,12 @@ export default function EventDetail() {
               */}
               {isAdmin ? <EventMarge event={ev} shifts={personeel.shifts} uren={time} /> : null}
               <EventOmschrijving ev={ev} />
+              {/* Wat over dit event opgeschreven werd buiten het gesprek
+                  rechts: losse notities en de verslagen van een overleg
+                  waarin het ter sprake kwam. */}
+              <div className="je-panel" style={{ padding: 'var(--space-5) var(--space-6)' }}>
+                <GekoppeldeNotities koppeling={{ soort: 'event', id: ev.id, label: ev.name }} />
+              </div>
             </>
           ) : tab === 'personeel' ? (
             <EventPersoneel event={ev} personeel={personeel} />

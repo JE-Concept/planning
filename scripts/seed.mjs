@@ -221,6 +221,8 @@ async function main() {
 
   await zetArchiefstand()
 
+  await verhuisVerslagen()
+
   await seedFacturatieRegel()
 
   await seedHerhalingen()
@@ -352,6 +354,60 @@ async function hernoemTasksKolommen() {
   }
 
   await lijstRef.set({ statuses, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+}
+
+/**
+ * De verslagen van het teamoverleg naar de notities.
+ *
+ * Een verslag stond in `meetings`; sinds de notities is het een notitie van
+ * de soort `overleg` in `notities`, zodat het net als elke notitie aan een
+ * event of klant kan hangen. De functie die samenvat schrijft al daar, maar
+ * wat er al lag moet mee — anders is het tabblad Verslagen op de dag van de
+ * uitrol leeg.
+ *
+ * Een kopie en geen verhuizing: het origineel in `meetings` blijft staan en
+ * blijft leesbaar voor wie het mocht lezen. Weggooien is een aparte, bewuste
+ * beslissing. Herhaalbaar: een verslag dat al als notitie bestaat (zelfde id)
+ * wordt niet aangeraakt — ook niet als iemand er intussen een koppeling aan
+ * gaf. En omdat dit bij elke uitrol draait, haalt het ook een verslag in dat
+ * de oude functie nog in `meetings` schreef wanneer `functions-meetings` bij
+ * een uitrol achterbleef.
+ */
+async function verhuisVerslagen() {
+  const verslagen = await db.collection('meetings').get()
+  const nieuw = []
+
+  for (const snap of verslagen.docs) {
+    const doel = db.collection('notities').doc(snap.id)
+    if ((await doel.get()).exists) continue
+    const m = snap.data()
+    nieuw.push([doel, {
+      soort: 'overleg',
+      taskId: m.taskId ?? snap.id,
+      titel: m.titel ?? '',
+      tekst: '',
+      datum: m.datum ?? null,
+      deelnemers: m.deelnemers ?? [],
+      samenvatting: m.samenvatting ?? [],
+      bron: m.bron ?? null,
+      koppelingen: [],
+      koppelsleutels: [],
+      prive: true,
+      // Wie het mocht lezen, mag het als notitie lezen — niet meer, niet minder.
+      viewerIds: m.viewerIds ?? [],
+      auteurId: null,
+      auteurNaam: '',
+      createdAt: m.createdAt ?? FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }])
+  }
+
+  for (const stuk of stukjes(nieuw, 400)) {
+    const batch = db.batch()
+    for (const [doel, data] of stuk) batch.set(doel, data)
+    await batch.commit()
+  }
+  if (nieuw.length) aangevuld.push(`verslagen naar notities: ${nieuw.length}`)
 }
 
 /** Firestore neemt hoogstens 500 schrijfbewerkingen per batch. */

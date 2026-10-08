@@ -1,5 +1,6 @@
 /**
- * Zoeken in de verslagen van het teamoverleg.
+ * Zoeken in de notities, en in de verslagen van het teamoverleg die er sinds
+ * kort ook toe horen.
  *
  * Een verslag is pas iets waard als je het terugvindt. "Hebben we die
  * leverancier besproken, en wat zeiden we toen?" is de vraag die mensen aan een
@@ -46,6 +47,10 @@ export function verslagTekst(verslag, acties = []) {
   const delen = [
     verslag?.titel,
     verslag?.datum,
+    // Een gewone notitie heeft geen samenvatting maar een tekst, en wat ze
+    // raakt telt ook: wie "Blum" zoekt, wil de notitie aan de klant Blum.
+    verslag?.tekst,
+    ...(verslag?.koppelingen ?? []).map((k) => k?.label),
     ...(verslag?.deelnemers ?? []),
     ...(verslag?.samenvatting ?? []).flatMap((p) => [p?.onderwerp, p?.tekst]),
     ...acties.flatMap((t) => [t?.title, t?.description]),
@@ -85,6 +90,9 @@ export function zoekVerslagen({ verslagen, actiesPerVerslag = {}, term }) {
       }
 
       const treffers = [
+        ...(verslag.tekst && raak(verslag.tekst)
+          ? [{ soort: 'tekst', tekst: uittreksel(verslag.tekst, woorden), detail: '' }]
+          : []),
         ...(verslag.samenvatting ?? [])
           .filter((p) => raak(`${p?.onderwerp ?? ''} ${p?.tekst ?? ''}`))
           .map((p) => ({ soort: 'samenvatting', tekst: p?.onderwerp ?? '', detail: p?.tekst ?? '' })),
@@ -96,6 +104,19 @@ export function zoekVerslagen({ verslagen, actiesPerVerslag = {}, term }) {
       return { ...verslag, treffers }
     })
     .filter(Boolean)
+}
+
+/**
+ * Het stukje tekst rond de eerste treffer, zodat de lijst laat zien waaróm
+ * een notitie er staat zonder de hele notitie te tonen.
+ */
+export function uittreksel(tekst, woorden, breedte = 60) {
+  const schoon = (tekst ?? '').toString().replace(/\s+/g, ' ').trim()
+  const p = plat(schoon)
+  const plek = Math.min(...woorden.map((w) => p.indexOf(w)).filter((i) => i >= 0))
+  if (!Number.isFinite(plek) || schoon.length <= breedte * 2) return schoon
+  const van = Math.max(0, plek - breedte / 2)
+  return `${van > 0 ? '…' : ''}${schoon.slice(van, van + breedte * 2).trim()}${van + breedte * 2 < schoon.length ? '…' : ''}`
 }
 
 /** De actiepunten gegroepeerd per verslag — de vorm die `zoekVerslagen` wil. */
