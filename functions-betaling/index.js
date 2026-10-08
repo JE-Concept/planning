@@ -491,7 +491,6 @@ async function klantfiche(order) {
       billingAddress: leegAdres,
       billingEmail: '',
       contacts: order.klant?.bedrijf && order.klant?.naam ? [{ name: order.klant.naam.trim(), email, phone: order.klant?.telefoon ?? '' }] : [],
-      notes: 'Aangemaakt bij de eerste online huur.',
       kortingMateriaal: 0,
       brandId: null,
       archived: false,
@@ -500,6 +499,25 @@ async function klantfiche(order) {
       updatedAt: FieldValue.serverTimestamp(),
     })
     klantId = ref.id
+
+    // Waar deze klant vandaan komt, als notitie aan de fiche — zoals elke
+    // notitie over een klant. Een eigen notitieveld op de klant bestaat niet
+    // meer.
+    const naam = order.klant?.bedrijf?.trim() || order.klant?.naam?.trim() || email
+    await db.collection('notities').add({
+      soort: 'notitie',
+      titel: '',
+      tekst: 'Aangemaakt bij de eerste online huur.',
+      datum: new Date().toISOString().slice(0, 10),
+      koppelingen: [{ soort: 'klant', id: klantId, label: naam }],
+      koppelsleutels: [`klant:${klantId}`],
+      prive: false,
+      viewerIds: [],
+      auteurId: null,
+      auteurNaam: 'Verhuursite',
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
   }
 
   await db.collection('huurorders').doc(order.id).update({

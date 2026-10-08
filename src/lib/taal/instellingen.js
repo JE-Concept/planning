@@ -625,7 +625,6 @@ export default {
   'regels.veld.customer.postalCode': { nl: 'Postcode', en: 'Postcode' },
   'regels.veld.customer.brandId': { nl: 'Merk', en: 'Brand' },
   'regels.veld.customer.tags': { nl: 'Labels', en: 'Labels' },
-  'regels.veld.customer.notes': { nl: 'Notities', en: 'Notes' },
   'regels.veld.customer.archived': { nl: 'Gearchiveerd', en: 'Archived' },
 
   'regels.veld.socialPost.title': { nl: 'Titel', en: 'Title' },

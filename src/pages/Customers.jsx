@@ -13,7 +13,7 @@ import {
   setPrimaryContact,
   vatHint,
 } from '@lib/klanten'
-import { Acties, Badge, Button, Checkbox, Dialog, Drawer, Field, GevaarKnop, Input, Select, Spinner, Textarea } from '@components/ds'
+import { Acties, Badge, Button, Checkbox, Dialog, Drawer, Field, GevaarKnop, Input, Select, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import Documents from '@components/common/Documents'
 import TaskDrawer from '@components/board/TaskDrawer'
@@ -633,19 +633,11 @@ function KlantPaneel({ id, onClose, toast }) {
           <TaskDrawer taskId={openEvent} onClose={() => setOpenEvent(null)} />
         ) : null}
 
+        {/* Het vrije notitieveld van vroeger is weg: wat erin stond, is een
+            notitie aan deze klant geworden (zie `scripts/seed.mjs`). Twee
+            plekken voor "wat we over deze klant weten" betekent dat het
+            altijd in de andere staat. */}
         <GekoppeldeNotities koppeling={{ soort: 'klant', id: klant.id, label: klant.name }} />
-
-        {/* Het oude vrije veld blijft: wat erin staat is van het team, en het
-            is de plek voor wat altijd geldt ("factuur altijd naar de
-            boekhouding"). Wat over een moment gaat, is een notitie. */}
-        <Field label={t('klant.notities')}>
-          <Textarea
-            defaultValue={klant.notes}
-            rows={4}
-            onBlur={(e) => zet({ notes: e.target.value })}
-            placeholder={t('klant.notities_hint')}
-          />
-        </Field>
       </div>
     </Drawer>
   )

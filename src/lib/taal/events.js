@@ -460,11 +460,6 @@ export default {
   'klant.geen_datum': { nl: 'geen datum', en: 'no date' },
   'klant.samen_offertes': { nl: 'Samen aan offertes', en: 'Quoted in total' },
   'klant.losse_taken': { nl: 'Losse taken ({aantal})', en: 'Loose tasks ({aantal})' },
-  'klant.notities': { nl: 'Notities', en: 'Notes' },
-  'klant.notities_hint': {
-    nl: 'Afspraken, voorkeuren, gevoeligheden…',
-    en: 'Agreements, preferences, sensitivities…',
-  },
 
   // ── De klant van een event kiezen ──────────────────────────────────────
   'klant.kiezen.gekoppeld': {

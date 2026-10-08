@@ -110,7 +110,6 @@ const KLANTEN = [
       { id: 'c-blum-1', name: 'Karen Vandeput', role: 'HR-manager', email: 'karen@blum.be', phone: '0478 12 34 56', primary: true },
       { id: 'c-blum-2', name: 'Tom Peeters', role: 'Boekhouding', email: 'facturen@blum.be', phone: '' },
     ],
-    notes: 'Factuur altijd naar boekhouding, nooit naar HR. Vegetarisch aanbod is een vast punt.',
   },
   {
     id: 'k-niels-inez', name: 'Niels & Inez', vatNumber: '',
@@ -118,7 +117,6 @@ const KLANTEN = [
     brandId: 'feestbeest',
     address: { street: 'Hoeve Vanhove', postalCode: '3720', city: 'Kortessem', country: 'België' },
     contacts: [{ id: 'c-ni-1', name: 'Inez Claes', role: 'Bruid', email: 'inez@telenet.be', phone: '0495 66 77 88', primary: true }],
-    notes: 'Regenplan in de schuur. Dansvloer breder dan bij de Odeurs-trouw.',
     // De sleutel van hun eigen pagina, waar al hun dossiers bij elkaar staan.
     portalToken: 'demo-klant-token-nielsinez',
   },
@@ -130,7 +128,6 @@ const KLANTEN = [
     contacts: [
       { id: 'c-bl-1', name: 'Marleen Gijsen', role: 'Dienst evenementen', email: 'marleen@borgloon.be', phone: '012 67 36 60', primary: true },
     ],
-    notes: 'Standenplan moet twee weken vooraf bij de dienst liggen.',
   },
 ]
 
@@ -927,6 +924,20 @@ const notitie = (id, velden) =>
     createdAt: dag(-2), updatedAt: dag(-2),
     ...velden,
   })
+
+// Wat vroeger in het vrije notitieveld van de klant stond, zoals de seed het
+// live verhuist: één notitie per klant, zonder titel.
+const klantnotitie = (klant, naam, tekst) =>
+  notitie(`klantnotities-${klant}`, {
+    titel: '', tekst, datum: '2026-09-01',
+    koppelingen: [{ soort: 'klant', id: klant, label: naam }],
+    koppelsleutels: [`klant:${klant}`],
+    auteurId: null, auteurNaam: '',
+  })
+
+klantnotitie('k-blum', 'Blum België', 'Factuur altijd naar boekhouding, nooit naar HR. Vegetarisch aanbod is een vast punt.')
+klantnotitie('k-niels-inez', 'Niels & Inez', 'Regenplan in de schuur. Dansvloer breder dan bij de Odeurs-trouw.')
+klantnotitie('k-borgloon', 'Stad Borgloon', 'Standenplan moet twee weken vooraf bij de dienst liggen.')
 
 notitie('n-blum-facturatie', {
   titel: 'Facturatie Blum', datum: '2026-09-30',

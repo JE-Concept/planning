@@ -223,6 +223,8 @@ async function main() {
 
   await verhuisVerslagen()
 
+  await verhuisKlantnotities()
+
   await seedFacturatieRegel()
 
   await seedHerhalingen()
@@ -408,6 +410,68 @@ async function verhuisVerslagen() {
     await batch.commit()
   }
   if (nieuw.length) aangevuld.push(`verslagen naar notities: ${nieuw.length}`)
+}
+
+/**
+ * Het vrije notitieveld van een klant wordt een notitie aan die klant.
+ *
+ * De klantfiche had een tekstvak "Notities" naast de gekoppelde notities.
+ * Twee plekken voor wat we over een klant weten, betekent dat het altijd in
+ * de andere staat — dus is het tekstvak weg. Wat erin stond, gaat niet
+ * verloren: het wordt één notitie, gekoppeld aan de klant, met de datum van
+ * de laatste wijziging van de fiche.
+ *
+ * Aanmaken en het veld weghalen gebeuren in één batch per klant: lukt het
+ * ene, dan ook het andere, en er is geen moment waarop de tekst op twee
+ * plekken of op geen enkele staat. Een vast id (`klantnotities-<klant>`)
+ * maakt het herhaalbaar: bestaat die notitie al, dan wordt het veld alleen
+ * nog weggehaald als het precies dezelfde tekst draagt — schreef een oude
+ * browser er intussen iets nieuws in, dan blijft dat staan en meldt de seed
+ * het, in plaats van het stil over te schrijven.
+ */
+async function verhuisKlantnotities() {
+  const klanten = await db.collection('customers').get()
+  let verhuisd = 0
+
+  for (const snap of klanten.docs) {
+    const data = snap.data()
+    if (data.notes === undefined) continue
+    const tekst = String(data.notes ?? '').trim()
+    const doel = db.collection('notities').doc(`klantnotities-${snap.id}`)
+    const batch = db.batch()
+
+    if (tekst) {
+      const bestaand = await doel.get()
+      if (bestaand.exists) {
+        if ((bestaand.data().tekst ?? '').trim() !== tekst) {
+          overgeslagen.push(`notitieveld van klant ${data.name ?? snap.id} (verschilt van de notitie, met de hand nakijken)`)
+          continue
+        }
+      } else {
+        const dag = data.updatedAt?.toDate?.() ?? data.createdAt?.toDate?.() ?? new Date()
+        batch.set(doel, {
+          soort: 'notitie',
+          titel: '',
+          tekst,
+          datum: dag.toISOString().slice(0, 10),
+          koppelingen: [{ soort: 'klant', id: snap.id, label: data.name ?? '' }],
+          koppelsleutels: [`klant:${snap.id}`],
+          prive: false,
+          viewerIds: [],
+          auteurId: null,
+          auteurNaam: '',
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        })
+        verhuisd += 1
+      }
+    }
+
+    batch.update(snap.ref, { notes: FieldValue.delete() })
+    await batch.commit()
+  }
+
+  if (verhuisd) aangevuld.push(`klantnotities naar notities: ${verhuisd}`)
 }
 
 /** Firestore neemt hoogstens 500 schrijfbewerkingen per batch. */
