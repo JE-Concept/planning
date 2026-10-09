@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { addMonths, formatDate, formatMonth, formatTime, startOfMonth } from '@lib/dates'
-import { maandVerslag, meetpunten, naarCsv, reeksVoorPunt } from '@lib/checklist-report'
+import { maandVerslag, meetStand, meetpunten, naarCsv, reeksVoorPunt } from '@lib/checklist-report'
 import { EmptyState, Icon, PeriodeKiezer, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
-import { useChecklists, useRunsInRange } from '@data/checklists'
+import { useChecklists, useRunsInRange, useSluiting } from '@data/checklists'
 
 /**
  * Het verslag waar een controle om vraagt.
@@ -45,14 +45,19 @@ export default function ChecklistReport() {
   const laatsteDag = new Date(maand.getFullYear(), maand.getMonth() + 1, 0).getDate()
 
   const { checklists } = useChecklists({ includeArchived: true })
-  const { runs, loading } = useRunsInRange(`${sleutel}-01`, `${sleutel}-${laatsteDag}`)
+  const { runs, loading: runsLaden } = useRunsInRange(`${sleutel}-01`, `${sleutel}-${laatsteDag}`)
+  const { sluiting, loading: sluitingLaadt } = useSluiting()
+  // Wachten op de sluitingsdagen: anders staat elke maandag even als "niet
+  // begonnen" op het scherm, en wie net dan afdrukt, drukt dat af.
+  const loading = runsLaden || sluitingLaadt
 
   const verslag = useMemo(
-    () => maandVerslag({ maand: sleutel, checklists, runs }),
-    [sleutel, checklists, runs]
+    () => maandVerslag({ maand: sleutel, checklists, runs, sluiting }),
+    [sleutel, checklists, runs, sluiting]
   )
 
   const grafieken = useMemo(() => meetpunten(verslag), [verslag])
+  const stand = meetStand(verslag)
 
   const downloadCsv = () => {
     // De byte order mark ervoor, anders leest Excel de accenten verkeerd en
@@ -121,16 +126,31 @@ export default function ChecklistReport() {
                 waarde={`${Math.round(verslag.ratio * 100)}%`}
                 onder={t('rapport.vak.punten', { gedaan: verslag.gedaan, totaal: verslag.verplicht })}
               />
+              {/* Gesloten dagen tellen niet mee in de noemer, maar staan er wel
+                  onder: "4/5" zonder meer laat de lezer raden waar de rest van
+                  de week bleef. */}
               <Vak
                 label={t('rapport.vak.volledige_dagen')}
                 waarde={`${verslag.volledigeDagen}/${verslag.dagenMetWerk}`}
-                onder={t('rapport.vak.alles_afgevinkt')}
+                onder={
+                  verslag.geslotenDagen
+                    ? `${t('rapport.vak.alles_afgevinkt')} · ${t('rapport.vak.gesloten', { aantal: verslag.geslotenDagen })}`
+                    : t('rapport.vak.alles_afgevinkt')
+                }
               />
+              {/* Nul overschrijdingen zonder één meting is geen goed nieuws maar
+                  een leeg blad; zie `meetStand`. */}
               <Vak
                 label={t('rapport.vak.overschrijdingen')}
-                waarde={verslag.overschrijdingen.length}
-                onder={verslag.overschrijdingen.length ? t('rapport.vak.buiten') : t('rapport.vak.binnen')}
-                slecht={verslag.overschrijdingen.length > 0}
+                waarde={stand === 'geen' ? '—' : verslag.overschrijdingen.length}
+                onder={
+                  stand === 'buiten'
+                    ? t('rapport.vak.buiten')
+                    : stand === 'binnen'
+                      ? t('rapport.vak.binnen_gemeten', { gemeten: verslag.gemeten, totaal: verslag.meetpunten })
+                      : t('rapport.vak.geen_metingen')
+                }
+                slecht={stand === 'buiten' || (stand === 'geen' && verslag.meetpunten > 0)}
               />
             </div>
 
@@ -191,12 +211,44 @@ export default function ChecklistReport() {
                 </thead>
                 <tbody>
                   {verslag.dagen.flatMap((dag) =>
-                    dag.lijsten.map((lijst) => (
-                      <tr key={`${dag.dag}-${lijst.checklistId}`} className={lijst.volledig ? undefined : 'je-report__open'}>
+                    // Een gesloten dag waarop niets gedaan werd, krijgt één regel
+                    // en geen rij per lijst. Weglaten zou een gat in de datums
+                    // laten; elke lijst als "niet begonnen" tonen was de fout.
+                    dag.gesloten && dag.lijsten.length === 0 ? (
+                      <tr key={dag.dag} className="je-report__gesloten">
                         <td>{formatDate(`${dag.dag}T12:00:00`)}</td>
+                        <td colSpan={4}>
+                          <em>
+                            {dag.gesloten.reden
+                              ? t('rapport.gesloten_reden', { reden: dag.gesloten.reden })
+                              : t('rapport.gesloten')}
+                          </em>
+                        </td>
+                      </tr>
+                    ) : dag.lijsten.map((lijst) => (
+                      <tr key={`${dag.dag}-${lijst.checklistId}`} className={lijst.volledig ? undefined : 'je-report__open'}>
+                        <td>
+                          {formatDate(`${dag.dag}T12:00:00`)}
+                          {dag.gesloten ? <span className="je-report__klein">{t('rapport.gesloten_toch')}</span> : null}
+                        </td>
                         <td>{lijst.checklistName}</td>
+                        {/*
+                          Het aantal verspringt met de herhaling van de punten —
+                          op de 1e telt het poetsplan er twaalf, op een donderdag
+                          vijf. Wie dat niet weet, leest het als een fout; vandaar
+                          eronder hoeveel er die dag periodiek bij kwamen, met de
+                          namen in de tooltip. Zie `@lib/checklist-report`.
+                        */}
                         <td style={{ fontVariantNumeric: 'tabular-nums' }}>
                           {lijst.gedaan.length}/{lijst.verplicht}
+                          {lijst.periodiek.length ? (
+                            <span
+                              className="je-report__klein"
+                              title={lijst.periodiek.map((p) => p.label).join(', ')}
+                            >
+                              {t('rapport.periodiek', { aantal: lijst.periodiek.length })}
+                            </span>
+                          ) : null}
                         </td>
                         <td>
                           {lijst.afgerondDoor
@@ -238,7 +290,7 @@ export default function ChecklistReport() {
             </section>
 
             <p className="je-report__voet">
-              {t('rapport.voet')}
+              {t('rapport.voet')} {t('rapport.voet_telling')}
               {isAdmin ? ` ${t('rapport.voet_admin')}` : ''} {t('rapport.csv_blijft_nl')}
             </p>
           </>

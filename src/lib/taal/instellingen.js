@@ -326,6 +326,36 @@ export default {
   'inst.lijst.punt_erbij': { nl: '+ Punt', en: '+ Item' },
   'inst.lijst.groep_erbij': { nl: '+ Groep', en: '+ Group' },
 
+  // De sluitingsdagen van de bistro: de openingsuren van het pand, niet wie
+  // er kan werken (dat staat in AAPI).
+  'inst.sluiting.titel': { nl: 'Sluitingsdagen', en: 'Closing days' },
+  'inst.sluiting.uitleg': {
+    nl: 'Op een sluitingsdag staan de lijsten in de registraties als "gesloten" en niet als "niet begonnen". Wat er toch afgevinkt wordt, telt gewoon mee.',
+    en: 'On a closing day the lists show as "closed" in the records, not as "not started". Anything ticked off anyway still counts.',
+  },
+  'inst.sluiting.vast': { nl: 'Elke week dicht op', en: 'Closed every week on' },
+  'inst.sluiting.vast_hint': {
+    nl: 'Een wijziging geldt vanaf vandaag; vorige maanden houden wat toen gold.',
+    en: 'A change applies from today; earlier months keep what applied then.',
+  },
+  'inst.sluiting.verloren': {
+    nl: 'Deze punten vallen altijd op een sluitingsdag en tellen dus nooit meer mee: {punten}. Zet ze op een andere dag.',
+    en: 'These items always fall on a closing day and will therefore never count: {punten}. Move them to another day.',
+  },
+  'inst.sluiting.periodes': { nl: 'Losse dagen en verlof', en: 'Single days and holidays' },
+  'inst.sluiting.geen_periodes': { nl: 'Nog geen losse sluitingsdagen.', en: 'No single closing days yet.' },
+  'inst.sluiting.van': { nl: 'Van', en: 'From' },
+  'inst.sluiting.tot': { nl: 'Tot en met', en: 'Up to and including' },
+  'inst.sluiting.tot_hint': { nl: 'Leeg voor één dag.', en: 'Leave empty for a single day.' },
+  'inst.sluiting.reden': { nl: 'Reden', en: 'Reason' },
+  'inst.sluiting.reden_plaatshouder': { nl: 'Bv. jaarlijks verlof', en: 'E.g. annual holiday' },
+  'inst.sluiting.toevoegen': { nl: 'Toevoegen', en: 'Add' },
+  'inst.sluiting.weg': { nl: 'Weg', en: 'Remove' },
+  'inst.sluiting.weg_vraag': {
+    nl: 'Deze sluitingsdagen weghalen? De registraties van die dagen tellen dan weer als gewone dagen.',
+    en: 'Remove these closing days? The records of those days will count as regular days again.',
+  },
+
   // Eén punt
   'inst.punt.plaatshouder': { nl: 'Wat moet er gebeuren?', en: 'What needs doing?' },
   'inst.punt.omschrijving': { nl: 'Omschrijving van het punt', en: 'Description of the item' },

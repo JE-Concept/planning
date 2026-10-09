@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react'
-import { huidigeLocaleVan } from '@lib/dates'
+import { dayKey, formatDate, huidigeLocaleVan } from '@lib/dates'
 import { herhalingProbleem, herhalingUitleg, herhalingVan, herhalingVoor } from '@lib/checklist-herhaling'
+import {
+  metPeriode,
+  metSluitingsdagen,
+  puntenOpSluitingsdag,
+  sluitingsdagenVan,
+  zonderPeriode,
+} from '@lib/checklist-report'
 import {
   AFDELINGEN,
   HERHALINGEN,
@@ -15,10 +22,12 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import {
   archiveChecklist,
+  bewaarSluiting,
   createChecklist,
   restoreChecklist,
   updateChecklist,
   useChecklists,
+  useSluiting,
 } from '@data/checklists'
 
 /**
@@ -135,6 +144,8 @@ export default function ChecklistEditor({ isAdmin }) {
         <p className="card px-4 py-6 text-center text-sm text-ink-500">{t('inst.lijst.geen')}</p>
       )}
 
+      <Sluitingsdagen checklists={checklists} isAdmin={isAdmin} toast={toast} />
+
       {isAdmin ? (
         <form onSubmit={maakLijst} className="card flex flex-wrap items-end gap-2 p-4">
           <Field label={t('inst.lijst.nieuwe')} className="min-w-[14rem] flex-1">
@@ -149,6 +160,154 @@ export default function ChecklistEditor({ isAdmin }) {
         </form>
       ) : null}
     </div>
+  )
+}
+
+// ─── Sluitingsdagen ─────────────────────────────────────────────────────────
+
+/**
+ * Wanneer de bistro dicht is.
+ *
+ * Zonder dit stond elke maandag in de registraties als "niet begonnen", en
+ * haalde geen enkele week de zeven volledige dagen — bij een FAVV-document is
+ * dat een verslag dat niet sluit. Het geldt voor de hele zaak, niet per lijst;
+ * het gaat over de openingsuren van het pand en niet over wie er kan werken.
+ *
+ * Een wijziging aan de vaste dagen herschrijft vorige maanden niet: ze geldt
+ * vanaf vandaag. Zie `metSluitingsdagen` in `@lib/checklist-report`.
+ */
+function Sluitingsdagen({ checklists, isAdmin, toast }) {
+  const { t } = useTaal()
+  const { sluiting, loading } = useSluiting()
+  const [periode, setPeriode] = useState({ van: '', tot: '', reden: '' })
+  const [bezig, setBezig] = useState(false)
+
+  const dagen = useMemo(() => sluitingsdagenVan(sluiting), [sluiting])
+  const periodes = sluiting?.periodes ?? []
+  // Wat er op een sluitingsdag valt, telt nooit meer mee. Dat hoort de
+  // beheerder te zien op het moment dat hij de dag aanklikt, niet een maand
+  // later in een verslag waar het punt stilletjes uit verdwenen is.
+  const verloren = useMemo(() => puntenOpSluitingsdag(checklists, dagen), [checklists, dagen])
+
+  const bewaar = (volgende) => bewaarSluiting(volgende).catch((err) => toast.error(err.message))
+
+  const zetDag = (dag) =>
+    bewaar(metSluitingsdagen(sluiting, dagen.includes(dag) ? dagen.filter((d) => d !== dag) : [...dagen, dag]))
+
+  const voegPeriodeToe = async (e) => {
+    e.preventDefault()
+    if (bezig || !periode.van) return
+    setBezig(true)
+    try {
+      await bewaarSluiting(metPeriode(sluiting, periode))
+      setPeriode({ van: '', tot: '', reden: '' })
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBezig(false)
+    }
+  }
+
+  if (loading) return null
+
+  return (
+    <section className="card space-y-3 p-4">
+      <div>
+        <h2 className="label">{t('inst.sluiting.titel')}</h2>
+        <p className="max-w-2xl text-sm text-ink-600">{t('inst.sluiting.uitleg')}</p>
+      </div>
+
+      <Field label={t('inst.sluiting.vast')} hint={t('inst.sluiting.vast_hint')}>
+        <div className="flex flex-wrap gap-1">
+          {WEEKDAGEN.map(({ dag, label }) => {
+            const aan = dagen.includes(dag)
+            return (
+              <button
+                key={dag}
+                type="button"
+                disabled={!isAdmin}
+                aria-pressed={aan}
+                onClick={() => zetDag(dag)}
+                className={`h-7 w-9 rounded-md border text-xs font-semibold ${
+                  aan ? 'border-accent-600 bg-accent-600 text-white' : 'border-ink-200 bg-white text-ink-500'
+                }`}
+              >
+                {t(DAG_SLEUTEL[dag] ?? label)}
+              </button>
+            )
+          })}
+        </div>
+      </Field>
+
+      {verloren.length ? (
+        <p className="je-herhaling-fout">
+          {t('inst.sluiting.verloren', {
+            punten: verloren.map((p) => `${p.label} (${p.lijst})`).join(', '),
+          })}
+        </p>
+      ) : null}
+
+      <div>
+        <span className="label">{t('inst.sluiting.periodes')}</span>
+        {periodes.length ? (
+          <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
+            {periodes.map((p, i) => (
+              <li key={`${p.van}-${p.tot}-${i}`} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
+                <span className="tabular-nums">
+                  {p.tot && p.tot !== p.van
+                    ? `${formatDate(`${p.van}T12:00:00`)} – ${formatDate(`${p.tot}T12:00:00`)}`
+                    : formatDate(`${p.van}T12:00:00`)}
+                </span>
+                {p.reden ? <span className="text-ink-500">{p.reden}</span> : null}
+                {isAdmin ? (
+                  <GevaarKnop
+                    label={t('inst.sluiting.weg')}
+                    size="sm"
+                    className="ml-auto"
+                    vraag={t('inst.sluiting.weg_vraag')}
+                    onConfirm={() => bewaar(zonderPeriode(sluiting, i))}
+                  />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-ink-400">{t('inst.sluiting.geen_periodes')}</p>
+        )}
+      </div>
+
+      {isAdmin ? (
+        <form onSubmit={voegPeriodeToe} className="flex flex-wrap items-end gap-2">
+          <Field label={t('inst.sluiting.van')}>
+            <Input
+              type="date"
+              value={periode.van}
+              onChange={(e) => setPeriode((p) => ({ ...p, van: e.target.value }))}
+              required
+            />
+          </Field>
+          <Field label={t('inst.sluiting.tot')} hint={t('inst.sluiting.tot_hint')}>
+            <Input
+              type="date"
+              value={periode.tot}
+              min={periode.van || undefined}
+              onChange={(e) => setPeriode((p) => ({ ...p, tot: e.target.value }))}
+            />
+          </Field>
+          <Field label={t('inst.sluiting.reden')} className="min-w-[12rem] flex-1">
+            <Input
+              value={periode.reden}
+              onChange={(e) => setPeriode((p) => ({ ...p, reden: e.target.value }))}
+              placeholder={t('inst.sluiting.reden_plaatshouder')}
+            />
+          </Field>
+          <Acties
+            plaats="rij"
+            hoofd={{ label: t('inst.sluiting.toevoegen'), type: 'submit', bezig, uit: !periode.van }}
+          />
+        </form>
+      ) : null}
+    </section>
   )
 }
 
@@ -172,6 +331,9 @@ function Lijst({ lijst, isAdmin, onBewaar, toast }) {
     const bestaande = secties.flatMap((s) => s.items).map((p) => p.id)
     const punt = {
       id: nieuwPuntId('nieuw punt', bestaande),
+      // Vanaf vandaag, niet met terugwerkende kracht: anders staat het nieuwe
+      // punt in het verslag van vorige maand als elke dag vergeten.
+      sinds: dayKey(new Date()),
       label: '',
       hint: '',
       secret: false,

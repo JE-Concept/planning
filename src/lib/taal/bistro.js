@@ -38,6 +38,14 @@ export default {
   // Het merkje op de lijst zelf; de balk bovenaan staat hieronder.
   'lijst.nog_op_toestel': { nl: 'Nog op dit toestel', en: 'Still on this device' },
   'lijst.geen_verbinding': { nl: 'Geen verbinding', en: 'No connection' },
+  'lijst.gesloten': {
+    nl: 'De bistro is op deze dag gesloten. Afvinken hoeft niet; wat je toch afvinkt, komt in de registraties.',
+    en: 'The bistro is closed on this day. No need to tick anything off; whatever you do tick off goes into the records.',
+  },
+  'lijst.gesloten_reden': {
+    nl: 'De bistro is op deze dag gesloten ({reden}). Afvinken hoeft niet; wat je toch afvinkt, komt in de registraties.',
+    en: 'The bistro is closed on this day ({reden}). No need to tick anything off; whatever you do tick off goes into the records.',
+  },
   'lijst.wordt_doorgestuurd': {
     nl: 'Wordt doorgestuurd zodra er weer bereik is',
     en: 'Goes across as soon as there is signal again',
@@ -111,6 +119,15 @@ export default {
   'rapport.vak.overschrijdingen': { nl: 'Overschrijdingen', en: 'Out of range' },
   'rapport.vak.buiten': { nl: 'buiten de grens', en: 'outside the limit' },
   'rapport.vak.binnen': { nl: 'alles binnen de grens', en: 'everything within the limit' },
+  // "Alles binnen de grens" alleen met het aantal metingen erbij, en nooit
+  // over een maand waarin niets gemeten is: zie `meetStand`.
+  'rapport.vak.binnen_gemeten': {
+    nl: 'alles binnen de grens · {gemeten} van {totaal} gemeten',
+    en: 'everything within the limit · {gemeten} of {totaal} measured',
+  },
+  'rapport.vak.geen_metingen': { nl: 'geen metingen', en: 'no readings' },
+  'rapport.vak.gesloten_een': { nl: '{aantal} dag gesloten', en: '{aantal} day closed' },
+  'rapport.vak.gesloten_meer': { nl: '{aantal} dagen gesloten', en: '{aantal} days closed' },
 
   'rapport.buiten.titel': { nl: 'Metingen buiten de grens', en: 'Readings outside the limit' },
   'rapport.kol.datum': { nl: 'Datum', en: 'Date' },
@@ -132,6 +149,10 @@ export default {
   'rapport.niet_afgerond': { nl: 'niet afgerond', en: 'not completed' },
   'rapport.niet_begonnen': { nl: 'niet begonnen', en: 'not started' },
   'rapport.niets_afgevinkt': { nl: 'niets afgevinkt', en: 'nothing ticked off' },
+  'rapport.gesloten': { nl: 'Gesloten', en: 'Closed' },
+  'rapport.gesloten_reden': { nl: 'Gesloten — {reden}', en: 'Closed — {reden}' },
+  'rapport.gesloten_toch': { nl: 'gesloten, toch afgevinkt', en: 'closed, ticked off anyway' },
+  'rapport.periodiek': { nl: 'waarvan {aantal} periodiek', en: 'incl. {aantal} periodic' },
 
   'rapport.grafiek.samenvatting': {
     nl: '{aantal} metingen · laagste {min} {eenheid} · hoogste {max} {eenheid}',
@@ -147,6 +168,10 @@ export default {
   'rapport.voet': {
     nl: 'Dit verslag komt rechtstreeks uit de afvinklijsten van JE Plan. Elk vinkje draagt de naam van wie het zette en het tijdstip; de gemeten waarden staan zoals ze ingevuld zijn.',
     en: 'This report comes straight from the JE Plan checklists. Every tick carries the name of whoever set it and the time; the measured values are shown as they were entered.',
+  },
+  'rapport.voet_telling': {
+    nl: 'Per dag telt elk punt dat volgens zijn frequentie op die dag viel: dagelijkse punten elke dag, weekend-, week-, maand- en kwartaalpunten alleen op hun dag. Op een sluitingsdag telt alleen wat er toch afgevinkt werd.',
+    en: 'Each day counts every item that fell on that day according to its frequency: daily items every day, weekend, weekly, monthly and quarterly items only on their day. On a closing day only what was ticked off anyway counts.',
   },
   'rapport.voet_admin': {
     nl: 'De lijsten zelf zijn aan te passen in Instellingen → Dagelijkse lijsten.',

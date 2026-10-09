@@ -834,6 +834,44 @@ await test('het registratieverslag toont de maand met zijn metingen', async () =
   await page.close()
 })
 
+/*
+  U16. De demo is op maandag dicht en meet vorige maand niets. Vorige maand dus:
+  die heeft altijd maandagen achter zich, wat de lopende maand op de 1e niet
+  heeft. Een sluitingsdag hoort er als "Gesloten" te staan, en een maand zonder
+  één meting mag niet "alles binnen de grens" heten.
+*/
+await test('sluitingsdagen zijn in te stellen, en een punt op een sluitingsdag valt op', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Dagelijkse lijsten' }).click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'Sluitingsdagen'), 'de sluitingsdagen staan niet bij de dagelijkse lijsten')
+  // De demo is op maandag dicht en de friteuse staat op maandag: dat punt telt
+  // nooit meer mee, en dat moet hier gezegd worden.
+  zouden(bevat(await inhoud(page), 'Friteuse volledig gereinigd'), 'een punt op een sluitingsdag valt niet op')
+
+  await page.getByLabel('Van', { exact: true }).fill('2026-11-11')
+  await page.getByLabel('Reden').fill('Wapenstilstand')
+  await page.getByRole('button', { name: 'Toevoegen' }).click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'Wapenstilstand'), 'een losse sluitingsdag komt niet in de lijst')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('het verslag kent sluitingsdagen en zegt het als er niets gemeten is', async () => {
+  const page = await tabblad('/registraties')
+  await rustig(page)
+  await page.getByRole('button', { name: 'Vorige maand' }).click()
+  await rustig(page)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Gesloten'), 'een maandag staat niet als gesloten in het verslag')
+  zouden(bevat(tekst, 'dagen gesloten'), 'het vak met de volledige dagen noemt de gesloten dagen niet')
+  zouden(bevat(tekst, 'geen metingen'), 'een maand zonder metingen zegt niet "geen metingen"')
+  zouden(!bevat(tekst, 'alles binnen de grens'), 'een maand zonder metingen heet "alles binnen de grens"')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('een te warme koelkast wordt meteen aangegeven', async () => {
   const page = await tabblad('/openen-sluiten')
   await page.getByRole('tab', { name: 'FAVV-registraties' }).click()

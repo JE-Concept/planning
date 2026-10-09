@@ -1380,6 +1380,15 @@ select.je-compact { padding-right: 24px; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* Een gesloten dag is geen open dag: grijs en niet rood, want er ontbreekt niets. */
+.je-report__gesloten td { color: var(--text-2); background: var(--surface-2); }
+/* De uitleg onder een cijfer: "waarvan 3 periodiek", "gesloten, toch gedaan". */
+.je-report__klein {
+  display: block;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-3);
+}
 .je-report__blok { margin-top: var(--space-5); }
 .je-report__grafiek { padding: var(--space-5); }
 .je-report__grafiek svg { width: 100%; height: 150px; display: block; }
