@@ -6,7 +6,7 @@ import { useToast } from '@context/ToastProvider'
 import { ontkoppelMail, useEventMails } from '@data/mails'
 
 /** Koppelingen waar niets aan te twijfelen valt. */
-const ZEKER = ['verstuurd', 'adres', 'draad', 'handmatig']
+const ZEKER = ['verstuurd', 'adres', 'draad', 'handmatig', 'geplakt']
 
 /**
  * De mailwisseling met de klant, op het event.
@@ -73,6 +73,16 @@ function MailBericht({ mail, toast, t }) {
         {mail.koppeling && !ZEKER.includes(mail.koppeling) ? (
           <Badge tone="warning" title={t(`mail.koppeling.${mail.koppeling}`)}>
             {t('mail.geraden')}
+          </Badge>
+        ) : null}
+        {/*
+          Een mail die iemand bij "Nieuw event" plakte, kwam niet van de
+          mailserver: er staan geen koppen bij, alleen wat in het vak stond.
+          Dat hoort te zien te zijn in een draad die als bewijs geldt.
+        */}
+        {mail.bron === 'geplakt' ? (
+          <Badge tone="neutral" title={t('mail.geplakt_uitleg')}>
+            {t('mail.geplakt')}
           </Badge>
         ) : null}
       </header>

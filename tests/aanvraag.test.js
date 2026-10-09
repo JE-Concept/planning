@@ -8,6 +8,14 @@ import {
   leesPersonen,
   leesSoort,
   leesVragen,
+  leesEmail,
+  leesTelefoon,
+  leesZaal,
+  naamVoorEvent,
+  ontleedTitel,
+  zoekKlant,
+  zelfdeMail,
+  afzenderUitKop,
 } from '../src/lib/aanvraag'
 
 // Woensdag 30 september 2026, zoals de rest van de tests.
@@ -95,7 +103,7 @@ describe('de datum', () => {
 
 describe('het aantal personen', () => {
   it('leest "een 40-tal personen"', () => {
-    expect(leesPersonen('We denken aan een 40-tal personen')).toEqual({ personen: 40, tot: null, vork: false })
+    expect(leesPersonen('We denken aan een 40-tal personen')).toMatchObject({ personen: 40, tot: null, vork: false })
   })
 
   it('leest "ongeveer 40 personen"', () => {
@@ -104,7 +112,7 @@ describe('het aantal personen', () => {
 
   // Wie op 50 rekent en er 40 krijgt, heeft te veel ingekocht.
   it('neemt bij een vork het laagste getal en zegt dat het er een is', () => {
-    expect(leesPersonen('40 à 50 gasten')).toEqual({ personen: 40, tot: 50, vork: true })
+    expect(leesPersonen('40 à 50 gasten')).toMatchObject({ personen: 40, tot: 50, vork: true })
     expect(leesPersonen('tussen de 80 tot 100 personen').vork).toBe(true)
   })
 
@@ -210,5 +218,236 @@ describe('de hele aanvraag van Kristien Maris', () => {
 
   it('houdt de mail zelf bij', () => {
     expect(uit.tekst.startsWith('Beste,')).toBe(true)
+  })
+})
+
+/*
+  Twee mails die live verkeerd gelezen werden (U7 en U8 in de overdracht).
+  De zinnen tussen aanhalingstekens in de melding staan er letterlijk in; de
+  rest is verzonnen, zoals alle gegevens in deze tests.
+*/
+const MAIL_SOFIE = `Dag,
+
+Wij zouden graag een feest organiseren op zaterdag 14 november 2026 voor 45 personen in Het Vinne.
+Kunnen jullie ons een voorstel doen met een walking dinner?
+
+Groetjes,
+Sofie Peeters
+sofie.peeters@example.be
+0470 12 34 56`
+
+const MAIL_OKRA = `Beste,
+
+Voor onze ORKA wandeldagen op 23, 24 en 25 februari verwachten we 200 à 250 bezoekers in het Vinne.
+Zouden jullie daar soep en broodjes kunnen voorzien?
+
+Met vriendelijke groeten,
+Marc Janssens
+OKRA Zoutleeuw`
+
+describe('de mail van Sofie Peeters (U7)', () => {
+  const uit = leesAanvraag(MAIL_SOFIE, { nu: NU, formules: FORMULES, plekken: PLEKKEN })
+
+  // Het jaartal staat er wél; dan is de datum geen gok en zegt het scherm dat
+  // ook niet.
+  it('leest de datum met het jaartal en noemt dat geen gok', () => {
+    expect(uit.datum.getFullYear()).toBe(2026)
+    expect(uit.datum.getMonth()).toBe(10)
+    expect(uit.datum.getDate()).toBe(14)
+    expect(uit.jaarGegeven).toBe(true)
+    expect(uit.onzeker).not.toContain('datum')
+  })
+
+  it('leest de gasten en de formule', () => {
+    expect(uit.personen).toBe(45)
+    expect(uit.formule.id).toBe('f-walking')
+  })
+
+  it('leest de afzender, het adres en het nummer', () => {
+    expect(uit.afzender).toBe('Sofie Peeters')
+    expect(uit.klant).toBe('Sofie Peeters')
+    expect(uit.email).toBe('sofie.peeters@example.be')
+    expect(uit.telefoon).toBe('0470 12 34 56')
+  })
+
+  it('zet Het Vinne als locatie én als concept', () => {
+    expect(uit.zaal).toEqual({ naam: 'Het Vinne', adres: 'Het Vinne, Zoutleeuw' })
+    expect(uit.plek.id).toBe('b-vinne')
+  })
+
+  it('geeft het event een naam', () => {
+    expect(naamVoorEvent(uit, { standaard: 'Aanvraag' })).toBe('Walking dinner — Sofie Peeters')
+  })
+
+  it('stelt de klant voor die al in de lijst staat, op het e-mailadres', () => {
+    const klanten = [
+      { id: 'k-1', name: 'Peeters BV', email: 'info@peeters.example' },
+      { id: 'k-2', name: 'Sofie Peeters', contacts: [{ email: 'Sofie.Peeters@example.be' }] },
+    ]
+    expect(zoekKlant(uit, klanten)?.id).toBe('k-2')
+  })
+})
+
+describe('de aanvraag van OKRA (U8)', () => {
+  const uit = leesAanvraag(`ORKA wandeldagen\n\n${MAIL_OKRA}`, { nu: NU, formules: FORMULES, plekken: PLEKKEN })
+
+  // Drie wandeldagen zijn een meerdaags event, geen dag.
+  it('leest "23, 24 en 25 februari" als een reeks van drie dagen', () => {
+    expect(uit.datum.getFullYear()).toBe(2027)
+    expect(uit.datum.getMonth()).toBe(1)
+    expect(uit.datum.getDate()).toBe(23)
+    expect(uit.tot.getMonth()).toBe(1)
+    expect(uit.tot.getDate()).toBe(25)
+  })
+
+  it('leest "200 à 250 bezoekers" als gasten, met de vork erbij', () => {
+    expect(uit.personen).toBe(200)
+    expect(uit.personenTot).toBe(250)
+    expect(uit.onzeker).toContain('personen')
+  })
+
+  it('zet het concept op Meer', () => {
+    expect(uit.plek.id).toBe('b-vinne')
+  })
+
+  it('vindt Het Vinne ook wanneer het merk live gewoon "Meer" heet', () => {
+    expect(leesZaal('in het Vinne', [{ id: 'meer', name: 'Meer' }])?.plek?.id).toBe('meer')
+  })
+
+  it('neemt het onderwerp als naam', () => {
+    expect(naamVoorEvent(uit, { onderwerp: 'Re: ORKA wandeldagen' })).toBe('ORKA wandeldagen')
+  })
+})
+
+describe('een datumreeks', () => {
+  it('leest "3 tot 5 mei" en "3-5 mei" als reeks', () => {
+    for (const tekst of ['van 3 tot 5 mei', 'op 3-5 mei', 'van 3 mei tot 5 mei']) {
+      const uit = leesDatum(tekst, { nu: NU })
+      expect(uit.datum.getDate()).toBe(3)
+      expect(uit.tot?.getDate()).toBe(5)
+    }
+  })
+
+  // Losse dagen zijn geen meerdaags event; dan blijft het bij de eerste, en
+  // staat erbij dat er meer gevraagd is.
+  it('maakt van losse dagen geen reeks', () => {
+    const uit = leesDatum('op 3 en 10 mei', { nu: NU })
+    expect(uit.datum.getDate()).toBe(3)
+    expect(uit.tot).toBe(null)
+    expect(uit.losseDagen).toBe(true)
+  })
+
+  it('loopt over de jaarwisseling', () => {
+    const uit = leesDatum('van 30 december tot 2 januari', { nu: NU })
+    expect(uit.datum.getFullYear()).toBe(2026)
+    expect(uit.tot.getFullYear()).toBe(2027)
+  })
+
+  it('leest een jaartal achter een datum in cijfers', () => {
+    const uit = leesDatum('datum: 14/11/2026', { nu: NU })
+    expect(uit.datum.getDate()).toBe(14)
+    expect(uit.jaarGegeven).toBe(true)
+  })
+
+  // Een telefoonnummer in de ondertekening is geen datum.
+  it('ziet een telefoonnummer niet aan voor een datum', () => {
+    expect(leesDatum('bel me op 0470 04 12 34', { nu: NU })).toBe(null)
+  })
+
+  // Een jaartal elders in de mail zegt niets over wanneer het feest is.
+  it('telt een jaartal elders in de mail niet als jaartal van de datum', () => {
+    const uit = leesAanvraag('Klant sinds 2019. Graag op 28 november.', { nu: NU })
+    expect(uit.onzeker).toContain('datum')
+  })
+})
+
+describe('gasten en klant in een titel (U8)', () => {
+  it.each([
+    ['Verjaardag 13 personen', 'Verjaardag', 13],
+    ['BBQ 8 Pers', 'BBQ', 8],
+    ['Lunch (4 personen)', 'Lunch', 4],
+    ['Wintermoods — An Peeters (24p)', 'Wintermoods — An Peeters', 24],
+  ])('haalt de gasten uit "%s"', (titel, naam, personen) => {
+    expect(ontleedTitel(titel)).toMatchObject({ naam, personen })
+  })
+
+  it('haalt de klant uit "Klant: Jolien en Bernd"', () => {
+    expect(ontleedTitel('Trouwfeest — Klant: Jolien en Bernd')).toMatchObject({
+      naam: 'Trouwfeest',
+      klant: 'Jolien en Bernd',
+    })
+  })
+
+  it('laat een naam zonder velden ongemoeid', () => {
+    expect(ontleedTitel('ORKA wandeldagen')).toEqual({ naam: 'ORKA wandeldagen', personen: null, personenTot: null, klant: null })
+  })
+
+  it('leest "Klant:" ook in de mail zelf', () => {
+    expect(leesAanvraag('Klant: Jolien en Bernd\nDatum: 12/06/2027', { nu: NU }).klant).toBe('Jolien en Bernd')
+  })
+})
+
+describe('wie er schrijft, zonder nette groet', () => {
+  it('leest een naam op de regel van de groet', () => {
+    expect(leesAfzender('Kan dit?\n\nMvg, Sofie Peeters')).toBe('Sofie Peeters')
+  })
+
+  it('leest een kop "Naam:"', () => {
+    expect(leesAfzender('Naam: Sofie Peeters\nE-mail: sofie@example.be')).toBe('Sofie Peeters')
+  })
+
+  it('leest een ondertekening zonder groet', () => {
+    expect(leesAfzender('Graag een offerte.\n\nSofie Peeters\nsofie@example.be')).toBe('Sofie Peeters')
+  })
+
+  it('neemt een zin na "dank u" niet voor een naam', () => {
+    expect(leesAfzender('Dank u voor uw snelle reactie')).toBe(null)
+  })
+})
+
+describe('contactgegevens', () => {
+  it('neemt ons eigen adres niet voor dat van de klant', () => {
+    expect(leesEmail('Aan: info@jeconcept.be\nVan: Sofie <sofie@example.be>')).toBe('sofie@example.be')
+  })
+
+  it('leest Belgische nummers in hun gewone vormen', () => {
+    expect(leesTelefoon('GSM: 0470/12.34.56')).toBe('0470/12.34.56')
+    expect(leesTelefoon('bel +32 470 12 34 56')).toBe('+32 470 12 34 56')
+  })
+
+  it('neemt een ondernemingsnummer niet voor een telefoonnummer', () => {
+    expect(leesTelefoon('BTW BE 0123.456.789')).toBe(null)
+  })
+})
+
+describe('een mail die al in het postvak staat', () => {
+  const POSTVAK = [{ id: 'm-sofie', tekst: MAIL_SOFIE.replace(/\n/g, '\r\n') }]
+
+  // Wie uit zijn eigen mailbox plakt, plakt vaak wat al via info@ binnenkwam.
+  it('vindt ze terug, ook met andere regeleinden en een kop erboven', () => {
+    expect(zelfdeMail(`Van: Sofie Peeters\nOnderwerp: feest\n\n${MAIL_SOFIE}`, POSTVAK)?.id).toBe('m-sofie')
+  })
+
+  it('verwart een andere mail er niet mee', () => {
+    expect(zelfdeMail(MAIL_OKRA, POSTVAK)).toBe(null)
+  })
+})
+
+describe('de kop van een opgehaalde mail', () => {
+  it('splitst naam en adres', () => {
+    expect(afzenderUitKop('Sofie Peeters <Sofie@Example.be>')).toEqual({ naam: 'Sofie Peeters', email: 'sofie@example.be' })
+    expect(afzenderUitKop('sofie@example.be')).toEqual({ naam: null, email: 'sofie@example.be' })
+  })
+
+  it('neemt ons eigen adres niet voor de klant', () => {
+    expect(afzenderUitKop('Plan <plan@jeconcept.be>').email).toBe(null)
+  })
+})
+
+describe('het concept', () => {
+  // "Meer" is een merk, "meer informatie" niet.
+  it('neemt het woord "meer" niet voor het merk Meer', () => {
+    expect(leesLocatie('We ontvangen graag wat meer informatie', [{ id: 'meer', name: 'Meer' }])).toBe(null)
+    expect(leesLocatie('Kan dit bij Meer?', [{ id: 'meer', name: 'Meer' }])?.id).toBe('meer')
   })
 })

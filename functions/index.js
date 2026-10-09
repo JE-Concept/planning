@@ -37,6 +37,7 @@ import { maakDrive } from './drive.js'
 import { maakMessagingVerwerking } from './messaging-verwerking.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
+import { maakMailPlakken } from './mail-plakken.js'
 import { maakPloegFuncties } from './ploeg.js'
 import { maakArchiveren } from './archiveren.js'
 
@@ -819,6 +820,13 @@ export const herhalingen = maakHerhalingen({ db, region: REGION })
   opvragen. Zie `linkvoorbeeld.js`.
 */
 export const { linkVoorbeeld } = maakLinkVoorbeeld({ db, region: REGION })
+
+/*
+  Een aanvraag die iemand in "Nieuw event › Uit een mail" plakte, komt in de
+  draad van het event en niet in de omschrijving. Een browser schrijft niet in
+  `mails`, dus doet de server het. Zie `mail-plakken.js`.
+*/
+export const { mailPlakken } = maakMailPlakken({ db, region: REGION })
 
 /*
   Aanmelden met een cijfercode, voor de ploeg: wie één zaterdag per maand komt

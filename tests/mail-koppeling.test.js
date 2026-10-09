@@ -7,7 +7,9 @@ import {
   draadVan,
   eventUitAdres,
   kiesEvent,
+  geplakteMail,
   klantVanAdres,
+  MAX_TEKST,
 } from '../functions/mail-koppeling.js'
 
 const KLANTEN = [
@@ -196,5 +198,43 @@ describe('de sleutel van een bericht', () => {
   it('valt terug op iets anders wanneer er geen Message-ID is', () => {
     expect(berichtSleutel('', 'uid-4711')).toBe('uid-4711')
     expect(berichtSleutel(null, null)).toBe('')
+  })
+})
+
+describe('een geplakte aanvraag (U8)', () => {
+  const NU = new Date(2026, 9, 8, 10, 0)
+  const rij = geplakteMail({
+    tekst: '  Voor onze ORKA wandeldagen op 23, 24 en 25 februari…  ',
+    van: 'Marc Janssens',
+    eventId: 't-orka',
+    door: 'u-jasper',
+    nu: NU,
+  })
+
+  // Op het tabblad Mail, en niet als omschrijving: daar leest de draad, en
+  // daar telt de tegel Post.
+  it('hangt aan het event, zoals de draad leest', () => {
+    expect(rij.data).toMatchObject({ richting: 'in', eventId: 't-orka', datum: NU, tekst: expect.stringMatching(/^Voor onze ORKA/) })
+  })
+
+  // De draad is bewijs; wat niet van de mailserver kwam, staat er als zodanig.
+  it('zegt dat hij geplakt is, en door wie', () => {
+    expect(rij.data).toMatchObject({ bron: 'geplakt', koppeling: 'geplakt', geplaktDoor: 'u-jasper', messageId: null })
+  })
+
+  it('geeft dezelfde tekst bij hetzelfde event dezelfde naam', () => {
+    const nogEens = geplakteMail({ tekst: 'Voor onze ORKA wandeldagen op 23, 24 en 25 februari…', eventId: 't-orka', door: 'u-ander' })
+    expect(nogEens.id).toBe(rij.id)
+    expect(geplakteMail({ tekst: 'iets anders', eventId: 't-orka', door: 'u-jasper' }).id).not.toBe(rij.id)
+  })
+
+  it('bewaart niets zonder tekst, event of wie', () => {
+    expect(geplakteMail({ tekst: '   ', eventId: 't-orka', door: 'u-jasper' })).toBe(null)
+    expect(geplakteMail({ tekst: 'dag', eventId: '', door: 'u-jasper' })).toBe(null)
+    expect(geplakteMail({ tekst: 'dag', eventId: 't-orka', door: null })).toBe(null)
+  })
+
+  it('kapt af zoals de ophaler', () => {
+    expect(geplakteMail({ tekst: 'x'.repeat(MAX_TEKST + 10), eventId: 't', door: 'u' }).data.tekst).toHaveLength(MAX_TEKST)
   })
 })

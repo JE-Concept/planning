@@ -67,6 +67,17 @@ export const httpsCallable = (_functions, naam) => async (gegevens) => {
     })
     return { data: { ok: true, stand: 'klaar' } }
   }
+  if (naam === 'mailPlakken') {
+    // Dezelfde rij als de functie, uit dezelfde bouwsteen, langs de regels heen.
+    const { allDocs, maakAlsServer } = await import('./firestore.js')
+    const { geplakteMail } = await import('../functions/mail-koppeling.js')
+    const event = allDocs().get(`tasks/${gegevens?.eventId}`)
+    if (!event || event.parentId) throw new Error('not-found')
+    const rij = geplakteMail({ ...gegevens, customerId: event.customerId ?? null, door: 'u-jasper' })
+    if (!rij) throw new Error('invalid-argument')
+    maakAlsServer('mails', rij.id, rij.data)
+    return { data: { id: rij.id } }
+  }
   if (naam === 'linkVoorbeeld') return { data: { url: gegevens?.url ?? null, ...VERZONNEN_KAARTJE } }
   if (naam === 'ploegLijst') {
     return { data: { mensen: DEMO_PLOEG.map(({ id, naam: n }) => ({ id, naam: n })) } }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { onSnapshot, orderBy, query, updateDoc, where } from 'firebase/firestore'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import { COL, col, fromQuery, ref } from '@lib/collections'
+import { app } from '@lib/firebase'
 
 /**
  * De post rond een event.
@@ -65,6 +67,16 @@ export function useLosseMails() {
 /** Een bericht met de hand aan een event hangen. */
 export const koppelMail = (id, { eventId, customerId = null }) =>
   updateDoc(ref(COL.mails, id), { eventId, customerId, koppeling: 'handmatig' })
+
+/**
+ * Een geplakte aanvraag in de draad van haar event zetten.
+ *
+ * Langs de server, want de browser schrijft niet in `mails` — zie
+ * `functions/mail-plakken.js`. De rij draagt `bron: 'geplakt'`, zodat de draad
+ * blijft zeggen wat er van de mailserver kwam en wat iemand in een vak zette.
+ */
+export const plakMail = ({ eventId, tekst, onderwerp = '', van = '' }) =>
+  httpsCallable(getFunctions(app, 'europe-west1'), 'mailPlakken')({ eventId, tekst, onderwerp, van }).then((r) => r.data)
 
 /** Losmaken: terug naar het postvak, zodat iemand anders ernaar kan kijken. */
 export const ontkoppelMail = (id) =>
