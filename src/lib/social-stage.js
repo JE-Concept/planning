@@ -12,6 +12,9 @@
  * antwoord in plaats van twee die uiteen kunnen lopen.
  */
 
+import { asDate, dayKey } from './dates'
+import { eindeVan } from './eventdagen'
+
 export const SOCIAL_STAGES = [
   {
     key: 'delivery',
@@ -72,3 +75,41 @@ export function heeftSocial(task) {
 /** De stand van een event, met de beginfase als het er nog geen heeft. */
 export const stageOf = (task) =>
   SOCIAL_STAGE_KEYS.includes(task?.socialStage) ? task.socialStage : 'delivery'
+
+/**
+ * Van het socialbord af, maar niet weg.
+ *
+ * ── Waarom een eigen vlag en niet `archived` ──────────────────────────────
+ * Het bord liep vol: negenenzestig kaarten in de eerste kolom, bijna allemaal
+ * events van maanden geleden waar nooit nog content van komt. `archived` kon
+ * dat niet oplossen — dat haalt het event zelf weg, van het eventbord, uit de
+ * kalender en uit de facturatie. Hier gaat het alleen over het socialbord.
+ *
+ * `socialWanted: false` evenmin: dat zegt "dit event levert geen content op",
+ * en dat is iets anders dan "dit is voorbij". Wie later toch nog een foto van
+ * die trouw wil posten, zet de kaart terug en ziet dan de stand die ze had.
+ *
+ * Er wordt niet op gefilterd in de query, alleen in de browser: dan hoeft het
+ * veld niet op elk bestaand event te staan (zie CLAUDE.md over `== false`).
+ */
+export const isSociaalGearchiveerd = (task) => task?.socialArchived === true
+
+/** De laatste dag van een event, ook voor de oude kaarten met alleen een deadline. */
+function laatsteDag(task) {
+  return eindeVan(task) ?? asDate(task?.dueDate) ?? null
+}
+
+/**
+ * Hoort deze kaart bij "alles van vóór vandaag archiveren"?
+ *
+ * Wat gepost is, is klaar, wanneer het event ook was. Wat nog openstaat gaat
+ * mee als het event voorbij is: een event van gisteren hoort er nog bij —
+ * daar moeten de foto's net van komen — vandaar "vóór vandaag" en niet "vóór
+ * nu". Een kaart zonder datum blijft staan; daar valt niets over te zeggen.
+ */
+export function moetNaarSociaalArchief(task, vandaag = new Date()) {
+  if (!task || isSociaalGearchiveerd(task)) return false
+  if (stageOf(task) === 'posted') return true
+  const dag = laatsteDag(task)
+  return Boolean(dag) && dayKey(dag) < dayKey(vandaag)
+}

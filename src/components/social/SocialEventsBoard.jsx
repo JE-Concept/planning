@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
-import { SOCIAL_STAGES, stageOf } from '@lib/social-stage'
-import { Button, EmptyState, Input, Spinner } from '@components/ds'
+import { SOCIAL_STAGES, isSociaalGearchiveerd, moetNaarSociaalArchief, stageOf } from '@lib/social-stage'
+import { Acties, Button, EmptyState, Input, Schakelknop, Spinner } from '@components/ds'
 import KanbanBoard from '@components/board/KanbanBoard'
 import TaskDrawer from '@components/board/TaskDrawer'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { createTask, updateTask, useSocialEvents, useTasks } from '@data/tasks'
+import { createTask, updateTask, useSocialEvents, useTasks, zetSociaalArchief } from '@data/tasks'
 import { useSocialEventKaarten } from '@data/social-events'
 import SocialEventPaneel from './SocialEventPaneel'
 
@@ -40,6 +40,9 @@ export default function SocialEventsBoard({ socialOwner = null }) {
   const [openTaskId, setOpenTaskId] = useState(null)
   const [nieuw, setNieuw] = useState('')
   const [bezig, setBezig] = useState(false)
+  // Het archief bekijken in plaats van het bord. Zie `isSociaalGearchiveerd`.
+  const [archief, setArchief] = useState(false)
+  const [opruimen, setOpruimen] = useState(false)
 
   /**
    * Alleen events, geen losse taken.
@@ -75,10 +78,31 @@ export default function SocialEventsBoard({ socialOwner = null }) {
     [socialLists]
   )
 
-  const events = useMemo(
+  const alleEvents = useMemo(
     () => alles.filter((taak) => eventBorden.has(taak.listId) || socialLijsten.has(taak.listId)),
     [alles, eventBorden, socialLijsten]
   )
+  const gearchiveerd = useMemo(() => alleEvents.filter(isSociaalGearchiveerd), [alleEvents])
+  const events = useMemo(
+    () => (archief ? gearchiveerd : alleEvents.filter((e) => !isSociaalGearchiveerd(e))),
+    [archief, alleEvents, gearchiveerd]
+  )
+  const voorbij = useMemo(() => {
+    const vandaag = new Date()
+    return alleEvents.filter((e) => moetNaarSociaalArchief(e, vandaag))
+  }, [alleEvents])
+
+  const archiveer = async (ids, aan) => {
+    setOpruimen(true)
+    try {
+      await zetSociaalArchief(ids, aan)
+      toast.success(t(aan ? 'social.bord.gearchiveerd' : 'social.bord.teruggezet', { aantal: ids.length }))
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setOpruimen(false)
+    }
+  }
 
   const columns = useMemo(
     () => SOCIAL_STAGES.map((stap) => ({ key: stap.key, label: stap.label, color: stap.color })),
@@ -87,7 +111,17 @@ export default function SocialEventsBoard({ socialOwner = null }) {
 
   const tasksByColumn = useMemo(() => {
     const map = Object.fromEntries(SOCIAL_STAGES.map((s) => [s.key, []]))
-    for (const event of events) map[stageOf(event)].push(event)
+    for (const event of events) {
+      /*
+        Wat gepost is, is voor dit bord klaar. Een socialtaak op een sociallijst
+        heeft daar geen afgeronde status voor, en de kaart zei dan "22 dagen te
+        laat" in de kolom waar niets meer te laat kán zijn. `open: false` is
+        hoe een kaart weet dat er niets meer te doen is (zie `@lib/laat`); het
+        wordt alleen hier gezet en nooit weggeschreven.
+      */
+      const stand = stageOf(event)
+      map[stand].push(stand === 'posted' ? { ...event, open: false } : event)
+    }
     return map
   }, [events])
 
@@ -146,13 +180,59 @@ export default function SocialEventsBoard({ socialOwner = null }) {
   ) : null
 
   const drop = ({ task, columnKey }) => {
-    if (stageOf(task) === columnKey) return
+    // Een kaart uit het archief naar een kolom slepen zet haar terug, ook in
+    // dezelfde kolom: dat is de manier om er één terug te halen.
+    if (stageOf(task) === columnKey && !isSociaalGearchiveerd(task)) return
     // Alleen de stand; de positie hoort bij het eventbord en mag hier niet
     // verschuiven, anders zet slepen op dit bord het andere bord door elkaar.
-    updateTask(task.id, { socialStage: columnKey, socialWanted: true }).catch((err) =>
-      toast.error(err.message)
-    )
+    updateTask(task.id, {
+      socialStage: columnKey,
+      socialWanted: true,
+      ...(isSociaalGearchiveerd(task) ? { socialArchived: false } : {}),
+    }).catch((err) => toast.error(err.message))
   }
+
+  /*
+    De balk boven het bord: links een losse taak, rechts het opruimen.
+
+    Opruimen gebeurt met de hand en niet vanzelf. Een kaart die vanzelf
+    verdwijnt, is een kaart waarvan niemand weet waar ze heen is; één knop met
+    een telling en een vraag ervoor laat zien wat er gaat gebeuren. En het is
+    terug te draaien — daarom een tweede actie en geen gevaar.
+  */
+  const balk = (
+    <div className="je-socialbalk">
+      {archief ? <p className="je-muted-caption">{t('social.bord.archief_uitleg')}</p> : nieuweTaakKnop}
+      <div className="je-socialbalk__rechts">
+        <Schakelknop aan={archief} onClick={() => setArchief((a) => !a)}>
+          {t('social.bord.archief', { aantal: gearchiveerd.length })}
+        </Schakelknop>
+        {archief ? (
+          gearchiveerd.length ? (
+            <Acties
+              plaats="rij"
+              tweede={{
+                label: t('social.bord.alles_terug'),
+                bezig: opruimen,
+                vraag: t('social.bord.alles_terug_vraag', { aantal: gearchiveerd.length }),
+                onClick: () => archiveer(gearchiveerd.map((e) => e.id), false),
+              }}
+            />
+          ) : null
+        ) : voorbij.length ? (
+          <Acties
+            plaats="rij"
+            tweede={{
+              label: t('social.bord.opruimen', { aantal: voorbij.length }),
+              bezig: opruimen,
+              vraag: t('social.bord.opruimen_vraag', { aantal: voorbij.length }),
+              onClick: () => archiveer(voorbij.map((e) => e.id), true),
+            }}
+          />
+        ) : null}
+      </div>
+    </div>
+  )
 
   if (loading) {
     return (
@@ -164,20 +244,32 @@ export default function SocialEventsBoard({ socialOwner = null }) {
 
   if (events.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-        <EmptyState
-          icon="▦"
-          title={t('social.bord.leeg.titel')}
-          description={t('social.bord.leeg.tekst')}
-        />
-        {nieuweTaakKnop}
-      </div>
+      <>
+        {alleEvents.length ? balk : null}
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
+          <EmptyState
+            icon="▦"
+            // Leeg omdat alles opgeruimd is, is iets anders dan leeg omdat er
+            // nog nooit iets stond; de uitleg over "ready to invoice" hoort
+            // alleen bij het tweede.
+            title={t(
+              archief
+                ? 'social.bord.archief_leeg'
+                : alleEvents.length
+                  ? 'social.bord.opgeruimd'
+                  : 'social.bord.leeg.titel'
+            )}
+            description={archief ? null : alleEvents.length ? t('social.bord.opgeruimd_tekst') : t('social.bord.leeg.tekst')}
+          />
+          {alleEvents.length ? null : nieuweTaakKnop}
+        </div>
+      </>
     )
   }
 
   return (
     <>
-      {nieuweTaakKnop}
+      {balk}
       <div className="min-h-0 flex-1">
         <KanbanBoard
           columns={columns}

@@ -95,7 +95,7 @@ export default function Goals() {
         acties={{ hoofd: { label: t('goals.nieuw'), icon: 'plus', onClick: () => setCreating(true) } }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+      <div className="je-paginarand min-h-0 flex-1 overflow-y-auto py-4">
         {loading ? (
           <div className="flex justify-center py-12">
             <Spinner className="h-6 w-6" />

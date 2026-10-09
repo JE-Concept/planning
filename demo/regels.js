@@ -61,7 +61,7 @@ export const REGELS = {
       isTeam(rol) ||
       (isSocial(rol) &&
         (ctx.velden.every((v) =>
-          ['socialStage', 'socialWanted', 'updatedAt', 'updatedBy', 'position'].includes(v)
+          ['socialStage', 'socialWanted', 'socialArchived', 'updatedAt', 'updatedBy', 'position'].includes(v)
         ) ||
           ctx.lijstIsSocial)),
   },

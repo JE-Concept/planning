@@ -666,7 +666,7 @@ await test('de kolommen van een bord zijn aanpasbaar via instellingen', async ()
 
 await test('de business rules staan in de instellingen', async () => {
   const page = await tabblad('/instellingen')
-  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.getByRole('tab', { name: 'Regels', exact: true }).click()
   await rustig(page)
   const tekst = await inhoud(page)
   // De eerste twee regels staan nog in de oude, enkelvoudige vorm in de
@@ -685,7 +685,7 @@ await test('een samengestelde regel is in het scherm op te bouwen', async () => 
   // Niet alleen op taken: deze gaat over klanten, met twee voorwaarden die met
   // OF aan elkaar hangen. Dat was voordien geen van beide mogelijk.
   const page = await tabblad('/instellingen')
-  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.getByRole('tab', { name: 'Regels', exact: true }).click()
   await rustig(page)
 
   const voor = await page.locator('li.card').count()
@@ -711,7 +711,7 @@ await test('een samengestelde regel is in het scherm op te bouwen', async () => 
 
   await form.getByLabel('Actie toevoegen', { exact: true }).selectOption('brand')
   await rustig(page)
-  await form.getByLabel('Merk toewijzen', { exact: true }).selectOption('je-concept')
+  await form.getByLabel('Concept toewijzen', { exact: true }).selectOption('je-concept')
   await rustig(page)
 
   const uitleg = await form.locator('.je-regel-uitleg').innerText()
@@ -738,7 +738,7 @@ await test('een samengestelde regel is in het scherm op te bouwen', async () => 
 
 await test('een beslissingstabel is in het scherm op te bouwen', async () => {
   const page = await tabblad('/instellingen')
-  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.getByRole('tab', { name: 'Regels', exact: true }).click()
   await rustig(page)
 
   const voor = await page.locator('li.card').count()
@@ -2719,7 +2719,12 @@ await test('een bord met weinig kolommen vult de rij en schuift niet', async () 
   for (const k of kolommen) breedtes.push(Math.round((await k.boundingBox()).width))
   // Samen vullen ze de rij: geen halfleeg scherm naast drie smalle kolommen.
   const samen = breedtes.reduce((a, b) => a + b, 0)
-  const beschikbaar = await rij.evaluate((el) => el.clientWidth)
+  // Zonder de paginarand: die is sinds de gelijke marges 48 pixels aan elke
+  // kant, en hoort niet als "halfleeg" te tellen.
+  const beschikbaar = await rij.evaluate((el) => {
+    const st = getComputedStyle(el)
+    return el.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight)
+  })
   zouden(samen > beschikbaar - 100, `de kolommen vullen de rij niet: ${samen} van ${beschikbaar}`)
 
   // En een bord met negen kolommen blijft wél schuiven: die passen nergens op.

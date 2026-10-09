@@ -88,8 +88,8 @@ export default function Meetings() {
 
       {tab === 'agenda' ? <Agenda items={agenda} /> : null}
 
-      <div className={tab === 'agenda' ? 'hidden' : 'min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6'}>
-        <div className="mx-auto max-w-3xl space-y-3 py-4">
+      <div className={tab === 'agenda' ? 'hidden' : 'je-paginarand min-h-0 flex-1 overflow-y-auto pb-8'}>
+        <div className="max-w-4xl space-y-3 py-4">
           {meetings.length === 0 ? (
             <EmptyState
               title={t('overleg.geen_verslagen')}
@@ -222,8 +222,8 @@ function Agenda({ items }) {
   const totaal = totalMinutes(items)
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6">
-      <div className="mx-auto max-w-3xl space-y-4 py-4">
+    <div className="je-paginarand min-h-0 flex-1 overflow-y-auto pb-8">
+      <div className="max-w-4xl space-y-4 py-4">
         <form onSubmit={submit} className="card space-y-3 p-4">
           <h2 className="label mb-0">{t('overleg.punt_toevoegen')}</h2>
           <Input

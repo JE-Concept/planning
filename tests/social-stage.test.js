@@ -4,7 +4,9 @@ import {
   SOCIAL_STAGE_KEYS,
   SOCIAL_VANAF,
   heeftSocial,
+  isSociaalGearchiveerd,
   isSocialEligible,
+  moetNaarSociaalArchief,
   stageLabel,
   stageOf,
 } from '../src/lib/social-stage.js'
@@ -70,5 +72,41 @@ describe('de drie stappen', () => {
     expect(stageLabel('delivery')).toBe('Social content delivery')
     expect(stageLabel('ready')).toBe('Social content ready')
     expect(stageLabel('posted')).toBe('Social content posted')
+  })
+})
+
+describe('opruimen van het socialbord', () => {
+  const vandaag = new Date('2026-10-08T09:00:00')
+
+  it('neemt voorbije events mee, in elke kolom', () => {
+    expect(moetNaarSociaalArchief(event({ eventDate: new Date('2026-09-01T18:00:00') }), vandaag)).toBe(true)
+    expect(
+      moetNaarSociaalArchief(event({ eventDate: new Date('2026-09-01T18:00:00'), socialStage: 'ready' }), vandaag)
+    ).toBe(true)
+  })
+
+  it('laat het event van vandaag en later staan: daar komen de foto’s nog van', () => {
+    expect(moetNaarSociaalArchief(event({ eventDate: new Date('2026-10-08T20:00:00') }), vandaag)).toBe(false)
+    expect(moetNaarSociaalArchief(event({ eventDate: new Date('2026-10-20T20:00:00') }), vandaag)).toBe(false)
+  })
+
+  it('kijkt naar de laatste dag van een meerdaags event', () => {
+    const festival = event({ eventDate: new Date('2026-10-06T12:00:00'), eventEndDate: new Date('2026-10-09T12:00:00') })
+    expect(moetNaarSociaalArchief(festival, vandaag)).toBe(false)
+  })
+
+  it('valt terug op de deadline van een oude kaart', () => {
+    expect(moetNaarSociaalArchief(event({ dueDate: new Date('2026-08-01T12:00:00') }), vandaag)).toBe(true)
+  })
+
+  it('neemt wat gepost is mee, ook zonder datum', () => {
+    expect(moetNaarSociaalArchief(event({ socialStage: 'posted' }), vandaag)).toBe(true)
+  })
+
+  it('laat een kaart zonder datum en een gearchiveerde staan', () => {
+    expect(moetNaarSociaalArchief(event({}), vandaag)).toBe(false)
+    const weg = event({ socialArchived: true, eventDate: new Date('2026-01-01T12:00:00') })
+    expect(isSociaalGearchiveerd(weg)).toBe(true)
+    expect(moetNaarSociaalArchief(weg, vandaag)).toBe(false)
   })
 })

@@ -65,14 +65,20 @@ export const prioSleutel = (waarde) => PRIO_SLEUTELS[waarde] ?? 'tasks.prio.geen
  * Hetzelfde als `relativeDay` in `dates`, maar dan vertaald. Die functie staat
  * in een lib die de taal niet kent en die ook buiten de taken gebruikt wordt;
  * hier is de taal er wel, want elk scherm dat dit toont heeft `t`.
+ *
+ * `afgerond`: er is niets meer te doen. Dan is een voorbije datum gewoon een
+ * datum. De kaart kleurde al niet meer rood (zie `@lib/laat`), maar de tekst
+ * zei nog altijd "22 dagen te laat" — op een event dat gefactureerd was, en op
+ * het socialbord in de kolom van wat al online staat.
  */
-export function vervaldag(t, value) {
+export function vervaldag(t, value, { afgerond = false } = {}) {
   if (!asDate(value)) return ''
   const dagen = daysUntil(value)
   if (dagen === 0) return t('alg.vandaag')
   if (dagen === 1) return t('alg.morgen')
   if (dagen === -1) return t('alg.gisteren')
   if (dagen > 0) return dagen < 7 ? t('tasks.verval.over', { aantal: dagen }) : formatDate(value)
+  if (afgerond) return formatDate(value)
   return t('tasks.verval.telaat', { aantal: Math.abs(dagen) })
 }
 

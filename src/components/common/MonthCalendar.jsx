@@ -34,7 +34,7 @@ export default function MonthCalendar({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
+      <div className="je-paginarand flex items-center gap-2 py-2">
         <Button variant="secondary" size="sm" onClick={() => onMonthChange(addMonths(month, -1))} aria-label={t('events.maand.vorige')}>
           ‹
         </Button>
@@ -48,7 +48,7 @@ export default function MonthCalendar({
         {legenda ? <div className="ml-auto flex items-center gap-2">{legenda}</div> : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-4 pb-4 sm:px-6">
+      <div className="je-paginarand min-h-0 flex-1 overflow-auto pb-4">
         <div className="grid grid-cols-7 border-b border-ink-200 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-500">
           {dagkoppen.map((d) => (
             <div key={d} className="py-1.5">

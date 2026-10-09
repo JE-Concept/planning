@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { cn } from '@lib/cn'
 import { formatDuration, priorityOf } from '@lib/format'
 import { prioSleutel, vervaldag } from '@lib/task-view'
-import { isTeLaat } from '@lib/laat'
+import { isAfgerond, isTeLaat } from '@lib/laat'
 import { AvatarStack, Badge } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { STANDAARD_KLEUR } from '@lib/kleur'
@@ -65,7 +65,7 @@ function TaskCard({ task, profiles, tags, subtaskCount = 0, onOpen, dragging, on
         {task.dueDate ? (
           <span className={cn('inline-flex items-center gap-1', overdue && 'font-medium text-red-600')}>
             <span aria-hidden="true">◷</span>
-            {vervaldag(t, task.dueDate)}
+            {vervaldag(t, task.dueDate, { afgerond: isAfgerond(task) })}
           </span>
         ) : null}
 

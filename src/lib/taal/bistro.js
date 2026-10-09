@@ -21,7 +21,9 @@
 export default {
 
   // ── De dagelijkse lijsten ──────────────────────────────────────────────
-  'lijst.titel': { nl: 'Openen en sluiten', en: 'Opening and closing' },
+  // Zelfde naam als in het menu; "Openen en sluiten" als titel onder
+  // "Openen & sluiten" in de zijbalk las als twee schermen.
+  'lijst.titel': { nl: 'Openen & sluiten', en: 'Opening & closing' },
   'lijst.vandaag': { nl: 'vandaag', en: 'today' },
   'lijst.vorige_dag': { nl: 'Vorige dag', en: 'Previous day' },
   'lijst.volgende_dag': { nl: 'Volgende dag', en: 'Next day' },

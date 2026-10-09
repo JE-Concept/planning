@@ -104,7 +104,7 @@ export default function Checklists() {
         })}
       />
 
-      <div className="flex items-center gap-3 border-b border-ink-200 bg-white px-4 py-2.5 sm:px-6">
+      <div className="je-paginarand flex items-center gap-3 border-b border-ink-200 bg-white py-2.5">
         <ProgressBar
           value={progress.ratio}
           color={progress.ratio === 1 ? 'var(--success)' : undefined}
@@ -137,8 +137,8 @@ export default function Checklists() {
           <Spinner className="h-6 w-6" />
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6">
-          <div className="mx-auto max-w-2xl space-y-5 py-4">
+        <div className="je-paginarand min-h-0 flex-1 overflow-y-auto pb-8">
+          <div className="max-w-4xl space-y-5 py-4">
             {current.sections.map((section) => (
               <Section
                 key={section.id}
