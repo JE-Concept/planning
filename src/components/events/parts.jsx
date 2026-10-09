@@ -158,7 +158,9 @@ export const hours = (seconds) => {
 
 export function StatusBadge({ statusName, statuses }) {
   return (
-    <Badge tone={toneOf(statusName)} dot>
+    // Een status is één woordgroep en breekt nooit over twee regels: een
+    // badge die half op de volgende regel staat, leest als twee statussen.
+    <Badge tone={toneOf(statusName)} dot style={{ whiteSpace: 'nowrap' }}>
       {labelOf(statusName, statuses)}
     </Badge>
   )

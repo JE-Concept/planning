@@ -19,7 +19,14 @@ import { Link } from 'react-router-dom'
 export default function PageHeader({ title, eyebrow, subtitle, bediening, acties, tabs, back, className }) {
   return (
     <header className={cn('je-pagehead', className)}>
-      <div style={{ minWidth: 0, flex: 1 }}>
+      {/*
+        Een ondergrens voor de titelkolom. Met `flex: 1` alleen kromp ze op een
+        telefoon tot een paar letters breed naast de knoppen: "JE Concept · 11
+        lopend" werd vier regels, en "Aanvragen" schoof over de titel. Nu
+        vallen de knoppen eronder zodra er voor de titel geen twaalf rem over
+        is, en blijft alles ernaast staan op een laptop.
+      */}
+      <div style={{ minWidth: 0, flex: '1 1 12rem' }}>
         {back ? (
           <Link
             to={back.to}

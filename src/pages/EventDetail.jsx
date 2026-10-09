@@ -1,10 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { startOfDay } from '@lib/dates'
 import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
 import { useNarrow } from '@lib/useNarrow'
 import { verwijderVraag } from '@lib/verwijdervraag'
-import { Avatar, bevestig, Button, Icon, IconButton, Input, Spinner, Tabs } from '@components/ds'
+import { Acties, Avatar, bevestig, Button, Icon, IconButton, Input, Spinner, Tabs } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import TaskDrawer from '@components/board/TaskDrawer'
 import Bestellijst from '@components/events/Bestellijst'
@@ -29,6 +29,9 @@ import { addEventTask, deleteEvent, isDone, moveEvent, updateEvent, useEventTime
 import { durationOf } from '@lib/time-math'
 import { useRunningTimer } from '@data/time'
 import { TAB_STAND_TEKST } from '@lib/aapi-weergave'
+
+/** Tabbladen die opgingen in een ander, en waar hun oude links nu heen gaan. */
+const OUDE_TABS = { draaiboek: 'personeel', bijlagen: 'mail' }
 
 /** Eén event: pijplijn, fiche, en de vier tabbladen uit het design. */
 export default function EventDetail() {
@@ -61,7 +64,13 @@ export default function EventDetail() {
   // tabblad Bijlagen leest dezelfde lijst nog eens, en dat is één abonnement
   // waard boven een vraag die liegt over wat ze weggooit.
   const { documents: documenten } = useDocuments({ taskId: id })
-  const tab = params.get('tab') || 'overzicht'
+  /*
+    Draaiboek en Bijlagen zijn geen eigen tabblad meer (zie de tabs hieronder),
+    maar er staan links naar in mails, notities en bladwijzers. Die openen het
+    tabblad waar ze nu in staan, in plaats van een leeg scherm.
+  */
+  const gevraagd = params.get('tab') || 'overzicht'
+  const tab = OUDE_TABS[gevraagd] ?? gevraagd
   /*
     Het personeel hangt aan één abonnement dat hier opengaat en niet in het
     tabblad: het bolletje op de tab moet er zijn vóór je de tab opent, want dat
@@ -85,6 +94,19 @@ export default function EventDetail() {
     next.delete('taak')
     setParams(next, { replace: true })
   }
+
+  // Het adres zelf ook rechtzetten, zodat wie de link nu kopieert de nieuwe
+  // doorgeeft. Een oude link naar het draaiboek scrolt meteen naar het
+  // draaiboek: dat staat onder het personeel, en anders moet je het zoeken.
+  useEffect(() => {
+    if (!OUDE_TABS[gevraagd]) return
+    const next = new URLSearchParams(params)
+    next.set('tab', OUDE_TABS[gevraagd])
+    setParams(next, { replace: true })
+    if (gevraagd === 'draaiboek') {
+      requestAnimationFrame(() => document.getElementById('draaiboek')?.scrollIntoView({ block: 'start' }))
+    }
+  }, [gevraagd, params, setParams])
 
   const taskIds = useMemo(() => [id, ...tasks.map((taak) => taak.id)], [id, tasks])
   const time = useEventTime(taskIds)
@@ -132,6 +154,25 @@ export default function EventDetail() {
   const openCount = tasks.filter((taak) => !isDone(taak)).length
   const bestelRegels = ev.bestellijst ?? []
 
+  /*
+    Een dubbel aangemaakt dossier of een test hoort niet in de geschiedenis,
+    dus verwijderen kan. Maar archiveren is bijna altijd het juiste, en de
+    vraag die erop volgt zegt precies wat er weggaat.
+  */
+  const verwijderen = {
+    label: t('events.detail.verwijderen'),
+    icon: 'trash-2',
+    toon: 'stil',
+    vraag: verwijderVraag({ task: ev, subtaken: tasks.length, bijlagen: documenten.length, soort: 'event' }),
+    onConfirm: () =>
+      deleteEvent(ev.id)
+        .then(() => {
+          toast.success(t('events.detail.verwijderd', { naam: ev.name }))
+          navigate('/')
+        })
+        .catch((err) => toast.error(err.message)),
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <PageHeader
@@ -155,27 +196,12 @@ export default function EventDetail() {
         }
         acties={{
           /*
-            Verwijderen staat stil en als pictogram, want archiveren is bijna
-            altijd het juiste; het woord "Verwijderen" naast twee stapknoppen
-            trok de aandacht naar de enige knop die iets onherstelbaars doet.
-            Maar een dubbel aangemaakt dossier of een test hoort niet in de
-            geschiedenis, en de vraag die erop volgt zegt precies wat er weggaat.
+            Verwijderen staat niet meer in de kop. Het stond er als stil
+            pictogram links van de twee stapknoppen, en op een telefoon kwam
+            het pal naast "Naar offerte maken" te staan — de knop die je tien
+            keer per dag indrukt, naast de enige die iets onherstelbaars doet.
+            Het staat nu onderaan het overzicht; zie `verwijderen` hieronder.
           */
-          gevaar: {
-            toon: 'stil',
-            size: 'sm',
-            icon: 'trash-2',
-            'aria-label': t('alg.verwijderen'),
-            title: t('alg.verwijderen'),
-            vraag: verwijderVraag({ task: ev, subtaken: tasks.length, bijlagen: documenten.length, soort: 'event' }),
-            onConfirm: () =>
-              deleteEvent(ev.id)
-                .then(() => {
-                  toast.success(t('events.detail.verwijderd', { naam: ev.name }))
-                  navigate('/')
-                })
-                .catch((err) => toast.error(err.message)),
-          },
           tweede: vorige
             ? {
                 label: t('alg.vorige'),
@@ -219,7 +245,19 @@ export default function EventDetail() {
             staat nu als tijdlijn in het overzicht, en verzetten doe je met de
             twee stapknoppen in de kop.
           */}
+          {/*
+            Zeven tabbladen in plaats van negen, en op een laptop in twee rijen
+            als ze niet op één passen.
+
+            Er stonden er negen naast elkaar en die pasten nergens: vanaf
+            Offerte schoof "Overzicht" links uit beeld en viel "Tijd" er rechts
+            af, zonder schuifbalk die zei dat er meer was. Draaiboek hoort bij
+            het personeel — wie staat er, en wat doen ze wanneer — en de
+            bijlagen bij de post, want het meeste wat er hangt, kwam per mail.
+            Op een telefoon schuiven ze wel: drie rijen tabs zijn een menu.
+          */}
           <Tabs
+            className={narrow ? undefined : 'je-tabs--rijen'}
             items={[
               { value: 'overzicht', label: t('events.tab.overzicht') },
               { value: 'taken', label: t('events.tab.taken', { aantal: openCount }) },
@@ -232,13 +270,15 @@ export default function EventDetail() {
               /*
                 Personeel staat vóór de offerte: "staat er volk" is de vraag
                 die het vaakst gesteld wordt zodra een event verkocht is. Het
-                bolletje beantwoordt haar zonder klik — zie `tabStand`.
+                bolletje beantwoordt haar zonder klik — zie `tabStand` — en het
+                getal zegt hoeveel mensen er volgens AAPI staan, zoals de
+                andere tabbladen hun aantal dragen.
               */
               {
                 value: 'personeel',
                 label: (
                   <span className="je-tab__met-bol">
-                    {t('aapi.tab.titel')}
+                    {t('events.tab.personeel', { aantal: personeel.telling.gepland })}
                     {personeel.stand ? (
                       <span
                         className={`je-bol je-bol--${personeel.stand}`}
@@ -252,9 +292,7 @@ export default function EventDetail() {
               },
               { value: 'materiaal', label: t('eventmat.tab', { aantal: materiaalStuks }) },
               { value: 'offerte', label: t('offerte.tab') },
-              { value: 'mail', label: t('mail.tab') },
-              { value: 'draaiboek', label: t('events.tab.draaiboek') },
-              { value: 'bijlagen', label: t('events.tab.bijlagen') },
+              { value: 'mail', label: t('events.tab.mail', { aantal: documenten.length }) },
               // Op een smal scherm past de notitiekolom niet naast het werk;
               // daar blijft ze een tabblad. Zonder dat zou communicatie op een
               // telefoon onvindbaar worden, en dat is net het toestel waarop
@@ -283,9 +321,19 @@ export default function EventDetail() {
               */}
               {isAdmin ? <EventMarge event={ev} shifts={personeel.shifts} uren={time} /> : null}
               <EventOmschrijving ev={ev} />
+              {/* Onderaan, apart, en ver van de stapknoppen in de kop. */}
+              <Acties plaats="rij" gevaar={verwijderen} />
             </>
           ) : tab === 'personeel' ? (
-            <EventPersoneel event={ev} personeel={personeel} />
+            <>
+              <EventPersoneel event={ev} personeel={personeel} />
+              <section id="draaiboek" className="je-tabdeel" aria-labelledby="draaiboek-kop">
+                <h2 id="draaiboek-kop" className="je-caps">
+                  {t('events.tab.draaiboek')}
+                </h2>
+                <RunsheetTab ev={ev} />
+              </section>
+            </>
           ) : tab === 'taken' ? (
             <TasksTab ev={ev} tasks={tasks} focus={params.get('taak')} onOpen={setDrawer} runningId={timer?.taskId} />
           ) : tab === 'bestellijst' ? (
@@ -295,11 +343,10 @@ export default function EventDetail() {
           ) : tab === 'offerte' ? (
             <OfferteTab ev={ev} />
           ) : tab === 'mail' ? (
-            <MailDraad ev={ev} />
-          ) : tab === 'draaiboek' ? (
-            <RunsheetTab ev={ev} />
-          ) : tab === 'bijlagen' ? (
-            <Attachments taskId={ev.id} />
+            <>
+              <MailDraad ev={ev} />
+              <Attachments taskId={ev.id} />
+            </>
           ) : tab === 'notities' ? (
             <EventNotities ev={ev} compact />
           ) : (

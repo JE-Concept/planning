@@ -2,28 +2,27 @@ import { useCallback, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { addMonths, dayKey, startOfDay, startOfMonth } from '@lib/dates'
 import { PHASES, PIPELINE, indexOf, labelOf } from '@lib/pipeline'
-import { PLANNING, planningKleur, planningVan } from '@lib/planning'
+import { PLANNING } from '@lib/planning'
 import { useNarrow } from '@lib/useNarrow'
 import { ARCHIEF_NA_DAGEN } from '@lib/archief'
-import { Badge, Button, IconButton, Select, Spinner, Stat, Tabs, Tag } from '@components/ds'
+import { Badge, Button, Select, Spinner, Stat, Tabs, Tag } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import NewEventDialog from '@components/events/NewEventDialog'
 import EventRow from '@components/events/EventRow'
 import EventBoardCard from '@components/events/EventBoardCard'
+import EventKalender from '@components/events/EventKalender'
 import {
   dayLabel,
   euro,
   maandNaam,
   progressOf,
-  weekdagKort,
 } from '@components/events/parts'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { byEventDate, moveEvent, useArchiefJaar, useArchiefStand, useEvents } from '@data/events'
 import { useLosseMails } from '@data/mails'
-import { dagenVan, raaktPeriode } from '@lib/eventdagen'
-import PlanningBol from '@components/events/PlanningBol'
+import { raaktPeriode } from '@lib/eventdagen'
 import { usePlanningStanden } from '@data/aapi'
 
 const VIEWS = [
@@ -137,9 +136,15 @@ export default function Events() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      {/*
+        Dezelfde kop voor elke weergave. Bij de kalender verdween de eyebrow en
+        heette de pagina ineens "Kalender"; de kop werd een regel lager en de
+        tabbladen sprongen omhoog — alsof je op een ander scherm stond, terwijl
+        je alleen een andere weergave van dezelfde events koos.
+      */}
       <PageHeader
-        eyebrow={view === 'kalender' ? null : `JE Concept · ${t('events.lopend', { aantal: lopend.length })}`}
-        title={view === 'kalender' ? t('nav.kalender') : t('nav.events')}
+        eyebrow={`JE Concept · ${t('events.lopend', { aantal: lopend.length })}`}
+        title={t('nav.events')}
         bediening={
           /*
             Het postvak hing als menu-ingang onder Events, en stond er elke dag
@@ -215,7 +220,7 @@ export default function Events() {
             onArchief={() => setView('archief')}
           />
         ) : view === 'kalender' ? (
-          <CalendarView events={filtered} narrow={narrow} />
+          <EventKalender events={filtered} narrow={narrow} />
         ) : (
           <BoardView events={filtered} tasksByEvent={tasksByEvent} profileById={profileById} statuses={eventStatuses} />
         )}
@@ -285,7 +290,12 @@ function ListView({ events, all, archief, tasksByEvent, profileById, statuses, n
     events: events.filter((e) => ph.keys.includes(e.statusName)),
   })).filter((g) => g.events.length)
 
-  const cols = narrow ? '44px minmax(0,1fr) 16px' : '48px minmax(120px,1fr) 64px 136px 84px 96px 16px'
+  /*
+    De statuskolom is zo breed als het langste label. Op 136 pixels brak
+    "Offerte verstuurd" als enige over twee regels, en dan staat er één rij
+    hoger dan de rest.
+  */
+  const cols = narrow ? '44px minmax(0,1fr) 16px' : '48px minmax(120px,1fr) 64px 184px 84px 96px 16px'
 
   return (
     <>
@@ -382,7 +392,7 @@ function ArchiefView({ jaren, concept, planningFilter, profileById, statuses, na
     [events, concept, brandById, planningFilter]
   )
 
-  const cols = narrow ? '44px minmax(0,1fr) 16px' : '48px minmax(120px,1fr) 64px 136px 84px 96px 16px'
+  const cols = narrow ? '44px minmax(0,1fr) 16px' : '48px minmax(120px,1fr) 64px 184px 84px 96px 16px'
 
   return (
     <>
@@ -485,194 +495,62 @@ function BoardView({ events, tasksByEvent, profileById, statuses }) {
     }
   }
 
-  return (
-    <div style={{ display: 'flex', gap: 'var(--space-4)', overflowX: 'auto', paddingBottom: 'var(--space-5)', alignItems: 'flex-start' }}>
-      {columns.map((col) => (
-        <div
-          key={col.key}
-          onDragOver={(e) => {
-            if (!dragging) return
-            e.preventDefault()
-            setOver(col.key)
-          }}
-          onDragLeave={() => setOver((o) => (o === col.key ? null : o))}
-          onDrop={(e) => {
-            e.preventDefault()
-            drop(col.key)
-          }}
-          style={{
-            flex: '0 0 248px',
-            background: 'var(--surface-2)',
-            border: `1px solid ${over === col.key ? 'var(--border-accent)' : 'var(--border-hairline)'}`,
-            borderRadius: 4,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-3)',
-              padding: 'var(--space-4) var(--space-5)',
-              borderBottom: '1px solid var(--border-hairline)',
-            }}
-          >
-            <span style={{ font: 'var(--type-caption)', color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>{col.n}</span>
-            <span className="je-eyebrow" style={{ letterSpacing: '.14em', color: 'var(--text-1)' }}>
-              {col.label}
-            </span>
-            <span style={{ marginLeft: 'auto', font: 'var(--type-caption)', color: 'var(--text-2)' }}>{col.events.length}</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-3)', minHeight: 80 }}>
-            {col.events.map((e) => (
-              <EventBoardCard
-                key={e.id}
-                event={e}
-                progress={progressOf(tasksByEvent[e.id])}
-                profileById={profileById}
-                planningStand={planningStanden.get(e.id)}
-                dragging={dragging === e.id}
-                onOpen={openEvent}
-                onDragStart={beginSleep}
-                onDragEnd={eindSleep}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─── Kalender ──────────────────────────────────────────────────────────────
-
-function CalendarView({ events, narrow }) {
-  const { t } = useTaal()
-  const planningStanden = usePlanningStanden(events)
-  const navigate = useNavigate()
-  const [month, setMonth] = useState(() => startOfMonth(new Date()))
-  const todayKey = dayKey(new Date())
-
-  const first = new Date(month)
-  const lead = (first.getDay() + 6) % 7
-  const start = new Date(first.getFullYear(), first.getMonth(), 1 - lead, 12)
-  const daysIn = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
-  const nCells = Math.ceil((lead + daysIn) / 7) * 7
-
   /*
-    Een meerdaags event staat op elk van zijn dagen, en niet alleen op de
-    eerste. Anders is een festival van vrijdag tot zondag op zaterdag
-    onzichtbaar, en net dan wil je weten wat er loopt.
+    Een lege kolom is smal en staat rechtop.
 
-    Het telt in de maandteller wel één keer: "twaalf events deze maand" gaat
-    over dossiers, niet over dagen.
+    Op een laptop pasten vier van de acht kolommen; de rest vroeg zijwaarts
+    schuiven, en er stonden altijd een paar lege kolommen tussen die evenveel
+    plaats namen als een volle. Leeg is nu een strookje met de naam en een
+    nul: het zegt nog steeds dat er niets staat, en de volle kolommen komen
+    erdoor in beeld. Tijdens het slepen gaan ze weer open, want dan wil je er
+    iets in kunnen loslaten.
   */
-  const byDay = {}
-  for (const e of events) {
-    for (const sleutel of dagenVan(e)) (byDay[sleutel] ??= []).push(e)
-  }
-  const monthKey = dayKey(first).slice(0, 7)
-  const count = events.filter((e) => raaktPeriode(e, `${monthKey}-01`, `${monthKey}-31`)).length
-
-  const cells = Array.from({ length: nCells }, (_, i) => {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
-    return { d, key: dayKey(d), inMonth: d.getMonth() === first.getMonth(), col: i % 7 }
-  })
-
   return (
-    <div className="je-panel">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-hairline)' }}>
-        <IconButton
-          icon="chevron-left"
-          label={t('events.maand.vorige')}
-          size="sm"
-          onClick={() => setMonth((m) => addMonths(m, -1))}
-        />
-        <span style={{ font: 'var(--type-h3)', textTransform: 'uppercase', minWidth: narrow ? 140 : 180, textAlign: 'center' }}>
-          {maandNaam(first)} {first.getFullYear()}
-        </span>
-        <IconButton
-          icon="chevron-right"
-          label={t('events.maand.volgende')}
-          size="sm"
-          onClick={() => setMonth((m) => addMonths(m, 1))}
-        />
-        <span className="je-muted-caption" style={{ marginLeft: 'auto' }}>
-          {t('events.aantal', { aantal: count })}
-        </span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
-        {cells.slice(0, 7).map((c) => (
+    <div className="je-eventbord">
+      {columns.map((col) => {
+        const smal = !col.events.length && !dragging
+        return (
           <div
-            key={c.key}
-            className="je-eyebrow"
-            style={{ padding: 'var(--space-3) var(--space-4)', letterSpacing: '.14em', color: 'var(--text-2)', borderBottom: '1px solid var(--border-hairline)' }}
-          >
-            {weekdagKort(c.d)}
-          </div>
-        ))}
-        {cells.map((c) => (
-          <div
-            key={c.key}
-            style={{
-              minHeight: narrow ? 64 : 112,
-              padding: 'var(--space-3)',
-              borderRight: c.col < 6 ? '1px solid var(--border-hairline)' : 'none',
-              borderBottom: '1px solid var(--border-hairline)',
-              background: c.inMonth ? 'var(--surface-1)' : 'var(--paper)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              minWidth: 0,
+            key={col.key}
+            className="je-eventbord__kolom"
+            data-smal={smal ? '' : undefined}
+            data-over={over === col.key ? '' : undefined}
+            onDragOver={(e) => {
+              if (!dragging) return
+              e.preventDefault()
+              setOver(col.key)
+            }}
+            onDragLeave={() => setOver((o) => (o === col.key ? null : o))}
+            onDrop={(e) => {
+              e.preventDefault()
+              drop(col.key)
             }}
           >
-            <span
-              style={{
-                font: 'var(--fw-medium) 15px/1 var(--font-display)',
-                color: c.key === todayKey ? 'var(--text-accent)' : c.inMonth ? 'var(--text-1)' : 'var(--text-3)',
-              }}
-            >
-              {c.d.getDate()}
-            </span>
-            {(byDay[c.key] ?? []).map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                // In een chip van tachtig pixels past geen badge; de stand
-                // staat er als tweede stipje en voluit in de tooltip.
-                title={[e.name, planningVan(e)?.label].filter(Boolean).join(' · ')}
-                onClick={() => navigate(`/events/${e.id}`)}
-                className="je-calchip"
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    flex: '0 0 6px',
-                    background: indexOf(e.statusName) >= indexOf('offer accepted') ? 'var(--navy-700)' : 'var(--navy-300)',
-                  }}
-                />
-                {planningKleur(e) ? (
-                  <span
-                    aria-hidden="true"
-                    style={{ width: 6, height: 6, flex: '0 0 6px', borderRadius: 3, background: planningKleur(e) }}
+            <div className="je-eventbord__kop" title={smal ? col.label : undefined}>
+              <span className="je-eventbord__n">{col.n}</span>
+              <span className="je-eyebrow je-eventbord__naam">{col.label}</span>
+              <span className="je-eventbord__aantal">{col.events.length}</span>
+            </div>
+            {smal ? null : (
+              <div className="je-eventbord__kaarten">
+                {col.events.map((e) => (
+                  <EventBoardCard
+                    key={e.id}
+                    event={e}
+                    progress={progressOf(tasksByEvent[e.id])}
+                    profileById={profileById}
+                    planningStand={planningStanden.get(e.id)}
+                    dragging={dragging === e.id}
+                    onOpen={openEvent}
+                    onDragStart={beginSleep}
+                    onDragEnd={eindSleep}
                   />
-                ) : null}
-                {/* En of er volk staat. In een chip van tachtig pixels is een
-                    derde stipje het maximum; wat het betekent staat in de
-                    tooltip van de chip. */}
-                <PlanningBol stand={planningStanden.get(e.id)} titel={false} />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {narrow ? e.name.split(' ')[0] : e.name}
-                </span>
-              </button>
-            ))}
+                ))}
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        )
+      })}
     </div>
   )
 }
-

@@ -9,7 +9,6 @@ export default {
   'nav.aanvragen': { nl: 'Aanvragen', en: 'Requests' },
 
   // ── De draad op een event ──────────────────────────────────────────────
-  'mail.tab': { nl: 'Mail', en: 'Mail' },
   'mail.geen_draad': {
     nl: 'Nog geen mail bij dit event. Wat er op info@jeconcept.be binnenkomt en bij dit dossier hoort, komt hier vanzelf te staan.',
     en: 'No mail on this event yet. Whatever arrives at info@jeconcept.be and belongs to this file shows up here by itself.',

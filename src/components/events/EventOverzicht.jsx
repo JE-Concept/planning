@@ -1,11 +1,11 @@
 import { DREMPELS, standVan } from '@lib/eventstand'
 import { PIPELINE, indexOf, labelOf } from '@lib/pipeline'
-import { Icon } from '@components/ds'
+import { Button, Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useOfferte } from '@data/offertes'
 import { useEventMails } from '@data/mails'
-import { PlanningBadge, StatusBadge, eventDatumTekst, eventTijd, hours } from './parts'
+import { eventDatumTekst, eventTijd, hours } from './parts'
 
 /**
  * Het overzicht: hoe staat dit event ervoor.
@@ -50,9 +50,12 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
     <div className="je-overzicht">
       {/* ── Waar staat het, en hoe dringend ─────────────────────────── */}
       <section className="je-panel je-overzicht__kop" data-stand={stand.stand}>
+        {/*
+          Geen statusbadge meer hier: die staat al in de kop van de pagina,
+          recht erboven, en twee keer "Aanvraag" onder elkaar las als twee
+          verschillende dingen. De kop blijft bij elk tabblad staan; dit niet.
+        */}
         <div className="je-overzicht__standen">
-          <StatusBadge statusName={ev.statusName} statuses={eventStatuses} />
-          <PlanningBadge event={ev} />
           <span className="je-muted-caption">
             {[eventDatumTekst(ev), eventTijd(ev), ev.location].filter(Boolean).join(' · ') || t('overzicht.geen_datum')}
           </span>
@@ -97,9 +100,23 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
             <span className="je-muted-caption">{t('overzicht.mist_bekijk')}</span>
           </summary>
           <ul>
-            {stand.aandacht.map((sleutel) => (
-              <li key={sleutel}>{t(sleutel, { dagen: DREMPELS.gegevens })}</li>
-            ))}
+            {stand.aandacht.map((sleutel) => {
+              const los = OPLOSSING[sleutel]
+              return (
+                <li key={sleutel}>
+                  <span>{t(sleutel, { dagen: DREMPELS.gegevens })}</span>
+                  {los ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => (los.veld ? naarVeld(los.veld) : onTab(los.tab))}
+                    >
+                      {t(los.label)}
+                    </Button>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
         </details>
       ) : (
@@ -115,7 +132,9 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
       <div className="je-overzicht__kaarten">
         <Kaart
           titel={t('overzicht.kaart.taken')}
-          groot={stand.taken.totaal ? `${stand.taken.af}/${stand.taken.totaal}` : '—'}
+          // Nul is een aantal, geen ontbrekend gegeven: een streepje las als
+          // "dat weten we niet".
+          groot={stand.taken.totaal ? `${stand.taken.af}/${stand.taken.totaal}` : '0'}
           onder={
             // Nul taken is niet "alles afgevinkt": zo stond het er live.
             !stand.taken.totaal
@@ -142,6 +161,8 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
           // De tegel gaat over gasten; "Nog geen klant" eronder las als een
           // antwoord op een andere vraag. Die staat bij "Vraagt aandacht".
           onder={ev.pax ? ev.customerName || '' : t('overzicht.gasten_leeg')}
+          // Zonder aantal brengt de tegel je naar het veld waar het hoort.
+          onKlik={ev.pax ? null : () => naarVeld('gasten')}
         />
         <Kaart
           titel={t('overzicht.kaart.mail')}
@@ -166,7 +187,7 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
           groot={String(stand.bijlagen)}
           // Over bijlagen, niet over de bestellijst: die heeft een eigen tabblad.
           onder={stand.bijlagen ? t('overzicht.bijlagen_wel') : t('overzicht.bijlagen_geen')}
-          naar="bijlagen"
+          naar="mail"
           onTab={onTab}
         />
       </div>
@@ -189,13 +210,53 @@ export default function EventOverzicht({ ev, tasks, documenten, totalSeconden, o
 }
 
 /**
+ * Wat elk aandachtspunt oplost: een veld op de fiche, of een tabblad.
+ *
+ * Een aandachtspunt was alleen een zin. "Er hangt nog geen klant aan dit
+ * dossier" — en dan moest je zelf gaan zoeken waar het klantveld stond, onder
+ * de tegels en de tijdlijn. De knop ernaast brengt je erheen en zet de cursor
+ * erin. Wat geen knop heeft (niet gefactureerd), los je op met de stapknop in
+ * de kop, en die staat al in beeld.
+ */
+const OPLOSSING = {
+  'overzicht.let.geen_datum': { veld: 'datum', label: 'overzicht.los.datum' },
+  'overzicht.let.geen_klant': { veld: 'klant', label: 'overzicht.los.klant' },
+  'overzicht.let.geen_gasten': { veld: 'gasten', label: 'overzicht.los.gasten' },
+  'overzicht.let.geen_locatie': { veld: 'locatie', label: 'overzicht.los.locatie' },
+  'overzicht.let.planning_open': { veld: 'planning', label: 'overzicht.los.planning' },
+  'overzicht.let.geen_offerte': { tab: 'offerte', label: 'overzicht.los.offerte_maken' },
+  'overzicht.let.offerte_concept': { tab: 'offerte', label: 'overzicht.los.offerte' },
+  'overzicht.let.offerte_verlopen': { tab: 'offerte', label: 'overzicht.los.offerte' },
+  'overzicht.let.taken_na_afloop': { tab: 'taken', label: 'overzicht.los.taken' },
+}
+
+/**
+ * Naar een veld op de fiche, en de cursor erin.
+ *
+ * De fiche staat op hetzelfde tabblad, onder het overzicht; ze merkt haar
+ * velden met `data-veld`. Via het document en niet via een ref: de fiche is
+ * een eigen component met eigen velden (de klantkiezer brengt zijn eigen
+ * invoer mee), en een ref door drie lagen heen is meer bedrading dan dit
+ * waard is. Het veld licht even op, zodat het oog volgt waar de pagina heen
+ * sprong.
+ */
+function naarVeld(naam) {
+  const cel = document.querySelector(`.je-fiche [data-veld="${naam}"]`)
+  if (!cel) return
+  cel.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  cel.querySelector('input:not([type="hidden"]):not([disabled]), select, textarea, button')?.focus({ preventScroll: true })
+  cel.setAttribute('data-gezocht', '')
+  setTimeout(() => cel.removeAttribute('data-gezocht'), 1600)
+}
+
+/**
  * Eén cijfer met zijn naam eronder.
  *
  * Klikbaar wanneer er een tabblad bij hoort: wie op het aantal taken kijkt en
  * er iets aan wil doen, hoort niet eerst naar boven te moeten om het juiste
  * tabblad te zoeken.
  */
-function Kaart({ titel, groot, onder, deel = null, naar = null, onTab = null, toon = null }) {
+function Kaart({ titel, groot, onder, deel = null, naar = null, onTab = null, onKlik = null, toon = null }) {
   const binnen = (
     <>
       <span className="je-overzicht__kaarttitel">{titel}</span>
@@ -209,7 +270,8 @@ function Kaart({ titel, groot, onder, deel = null, naar = null, onTab = null, to
     </>
   )
 
-  if (!naar || !onTab) {
+  const klik = onKlik ?? (naar && onTab ? () => onTab(naar) : null)
+  if (!klik) {
     return (
       <div className="je-paneel-kaart" data-toon={toon ?? undefined}>
         {binnen}
@@ -218,7 +280,7 @@ function Kaart({ titel, groot, onder, deel = null, naar = null, onTab = null, to
   }
 
   return (
-    <button type="button" className="je-paneel-kaart je-plainbtn" data-toon={toon ?? undefined} onClick={() => onTab(naar)}>
+    <button type="button" className="je-paneel-kaart je-plainbtn" data-toon={toon ?? undefined} onClick={klik}>
       {binnen}
     </button>
   )

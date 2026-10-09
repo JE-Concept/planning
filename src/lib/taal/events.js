@@ -79,6 +79,15 @@ export default {
   'events.maand.volgende': { nl: 'Volgende maand', en: 'Next month' },
   'events.maand.meer': { nl: '+{aantal} meer', en: '+{aantal} more' },
 
+  // ── De kalender: maand, week en de agenda op een telefoon ───────────────
+  'events.kal.maand': { nl: 'Maand', en: 'Month' },
+  'events.kal.week': { nl: 'Week', en: 'Week' },
+  'events.kal.vorige_week': { nl: 'Vorige week', en: 'Previous week' },
+  'events.kal.volgende_week': { nl: 'Volgende week', en: 'Next week' },
+  'events.kal.weektitel': { nl: 'Week {nummer} · {van} – {tot}', en: 'Week {nummer} · {van} – {tot}' },
+  'events.kal.vandaag_niets': { nl: 'Vandaag niets gepland', en: 'Nothing planned today' },
+  'events.kal.leeg': { nl: 'Niets gepland in deze periode.', en: 'Nothing planned in this period.' },
+
   // ── De fiche van een event ─────────────────────────────────────────────
   'events.fiche.klant': { nl: 'Klant', en: 'Customer' },
   'events.fiche.datum': { nl: 'Datum', en: 'Date' },
@@ -122,6 +131,7 @@ export default {
   'events.detail.naar_alle': { nl: 'Naar alle events', en: 'Go to all events' },
   'events.detail.naar_stap': { nl: 'Naar {stap}', en: 'To {stap}' },
   'events.detail.terug_stap': { nl: 'Terug naar {stap}', en: 'Back to {stap}' },
+  'events.detail.verwijderen': { nl: 'Event verwijderen', en: 'Delete event' },
   'events.detail.verwijderd': { nl: '{naam} is verwijderd.', en: '{naam} has been deleted.' },
 
   // ── De tabbladen van een event ─────────────────────────────────────────
@@ -129,7 +139,10 @@ export default {
   'events.tab.taken': { nl: 'Taken · {aantal}', en: 'Tasks · {aantal}' },
   'events.tab.bestellijst': { nl: 'Bestellijst · {aantal}', en: 'Order list · {aantal}' },
   'events.tab.draaiboek': { nl: 'Draaiboek', en: 'Run sheet' },
-  'events.tab.bijlagen': { nl: 'Bijlagen', en: 'Attachments' },
+  // Twee tabbladen in één: zie EventDetail. De naam zegt allebei, anders zoekt
+  // wie het draaiboek of een bijlage wil, naar een tabblad dat er niet is.
+  'events.tab.personeel': { nl: 'Personeel & draaiboek · {aantal}', en: 'Crew & run sheet · {aantal}' },
+  'events.tab.mail': { nl: 'Mail & bijlagen · {aantal}', en: 'Mail & files · {aantal}' },
   // ── Het klantenportaal ─────────────────────────────────────────────────
   'klant.portaal.titel': { nl: 'Klantenpagina', en: 'Customer page' },
   'klant.portaal.nog_niet': {

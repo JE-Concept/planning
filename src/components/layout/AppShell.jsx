@@ -44,7 +44,7 @@ export default function AppShell({ children }) {
 }
 
 function Shell({ children }) {
-  const { isStaff, isAdmin, isSocial, uid } = useAuth()
+  const { isStaff, isSocial, uid } = useAuth()
   const { loading, error, vastgelopen } = useWorkspace()
   const { events } = useEvents()
   const navCounts = useNavCounts()
@@ -112,7 +112,7 @@ function Shell({ children }) {
     [navCounts, events]
   )
 
-  const nav = mainNav({ isAdmin, isStaff, isSocial })
+  const nav = mainNav({ isStaff, isSocial })
 
   return (
     <div className="je-shell">
@@ -151,7 +151,7 @@ function Shell({ children }) {
         */}
         <InstallBalk />
 
-        {narrow ? <MobileBar uid={uid} isStaff={isStaff} isSocial={isSocial} /> : null}
+        {narrow ? <MobileBar uid={uid} isStaff={isStaff} /> : null}
 
         {isStaff || isSocial ? null : (
           <div className="je-topbar">
@@ -175,7 +175,13 @@ function Shell({ children }) {
           </div>
         )}
 
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {/*
+          De ruimte voor de schuifbalk blijft gereserveerd, ook als er niets te
+          schuiven valt. Zonder dat schoof de hele kop opzij zodra een scherm
+          korter werd dan het venster — op Tasks bij elke wissel tussen lijst
+          en bord, en dat las als een pagina die verspringt.
+        */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', scrollbarGutter: 'stable', display: 'flex', flexDirection: 'column' }}>
           {loading && vastgelopen ? (
             // Geen fout en geen gegevens: de opgeslagen kopie op dit toestel
             // antwoordt niet. Eerder bleef hier alleen een molentje draaien.
@@ -230,7 +236,7 @@ function Shell({ children }) {
   )
 }
 
-function MobileBar({ uid, isStaff, isSocial }) {
+function MobileBar({ uid, isStaff }) {
   const { timer, elapsed } = useRunningTimer(isStaff ? null : uid)
   const toast = useToast()
   const { logOut } = useAuth()
@@ -255,15 +261,10 @@ function MobileBar({ uid, isStaff, isSocial }) {
           {formatDuration(elapsed, { withSeconds: true })}
         </button>
       ) : null}
-      {/* Afmelden en de extra schermen: op een telefoon via Meer. Personeel en
-          de socialrol hebben één scherm, dus voor hen is Meer een knop die je
-          terugzet waar je al stond. */}
+      {/* Meer staat in de onderbalk, tussen de andere bestemmingen; hier
+          bovenaan stond het als een hamburger die niemand vond. Afmelden
+          blijft hier, want dat zoek je niet tussen de schermen. */}
       <span style={{ marginLeft: timer ? 0 : 'auto', color: 'var(--navy-300)', display: 'flex', gap: 4 }}>
-        {isStaff || isSocial ? null : (
-          <NavLink to="/meer" aria-label={t('menu.meer')} className="je-iconbtn je-iconbtn--sm" style={{ color: 'inherit', border: 0 }}>
-            <Icon name="menu" size={16} />
-          </NavLink>
-        )}
         <IconButton icon="log-out" label={t('schil.afmelden')} size="sm" onClick={logOut} />
       </span>
     </div>
