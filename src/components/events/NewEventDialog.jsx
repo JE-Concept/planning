@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addDays, dayKey } from '@lib/dates'
+import { naamVoorEvent, ontleedTitel, zoekKlant } from '@lib/aanvraag'
 import { bestelTekst, bestellijstVan, prijsVan, standaardKeuzes } from '@lib/formules'
-import { leegLocatie } from '@lib/kaart'
+import { leegLocatie, vrijeLocatie } from '@lib/kaart'
 import { Acties, Dialog, Field, Icon, Input, Select, Tabs } from '@components/ds'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { createEventFromTemplate } from '@data/events'
+import { useCustomers } from '@data/customers'
+import { createEventFromTemplate, updateEvent } from '@data/events'
+import { koppelMail, plakMail } from '@data/mails'
 import { resolveTemplate, templateSummary } from '@data/templates'
 import { formuleSamenvatting } from '@data/formules'
 import CustomerPicker from './CustomerPicker'
@@ -28,6 +31,7 @@ const euro = (bedrag) =>
  */
 export default function NewEventDialog({ open, onClose }) {
   const { eventsList, brands, templates, formules, profiles } = useWorkspace()
+  const { customers } = useCustomers()
   const { uid } = useAuth()
   const { t } = useTaal()
   const toast = useToast()
@@ -36,7 +40,13 @@ export default function NewEventDialog({ open, onClose }) {
   const concepts = useMemo(() => brands.filter((b) => !b.archived), [brands])
   const [modus, setModus] = useState('custom')
   const [name, setName] = useState('')
+  // Wie zelf een naam typt, krijgt die niet terug overschreven door wat er
+  // uit de mail gelezen wordt.
+  const [naamZelf, setNaamZelf] = useState(false)
   const [date, setDate] = useState(() => dayKey(addDays(new Date(), 45)))
+  // Leeg is één dag. Alleen een aanvraag die om een reeks vraagt ("23, 24 en
+  // 25 februari") vult dit in; op de fiche blijft het daarna aan te passen.
+  const [eindDatum, setEindDatum] = useState('')
   const [brandId, setBrandId] = useState('')
   // De zaal is bijna altijd bekend op het moment dat de telefoon opgelegd
   // wordt. Hier vragen scheelt een tweede keer de fiche opendoen — en een
@@ -50,10 +60,15 @@ export default function NewEventDialog({ open, onClose }) {
   const [keuzes, setKeuzes] = useState({})
   const [personen, setPersonen] = useState('50')
   const [busy, setBusy] = useState(false)
-  // De mail van de klant, zoals ze binnenkwam. Ze wordt de omschrijving van
-  // het event: dan blijft de vraag bij het antwoord staan.
+  // De mail van de klant, zoals ze binnenkwam. Ze komt in de draad van het
+  // event (tabblad Mail), en niet in de omschrijving: die is van het team.
   const [mail, setMail] = useState('')
   const [soort, setSoort] = useState('')
+  const [afzender, setAfzender] = useState('')
+  const [contact, setContact] = useState({ email: '', phone: '' })
+  // Dezelfde mail die al in Aanvragen staat: die hangen we aan het event in
+  // plaats van er een kopie naast te zetten.
+  const [uitPostvak, setUitPostvak] = useState(null)
 
   const formule = formules.find((f) => f.id === formuleId) ?? null
   const pax = Math.max(0, parseInt(personen || '0', 10) || 0)
@@ -77,36 +92,75 @@ export default function NewEventDialog({ open, onClose }) {
     name.trim() && eventsList && (modus === 'custom' || modus === 'aanvraag' || (formule && pax > 0))
   )
 
+  /*
+    De mail in de draad van het nieuwe event: de rij uit het postvak als ze
+    daar al stond, anders een geplakte rij via de server.
+
+    Lukt dat niet — geen verbinding met de functie, een rol die het niet mag —
+    dan gaat de mail alsnog in de omschrijving. Een event zonder de vraag van
+    de klant is erger dan een vraag op de verkeerde plek; die kan iemand
+    daarna verplaatsen, een verloren mail niet.
+  */
+  const bewaarMail = async (eventId) => {
+    try {
+      if (uitPostvak) {
+        await koppelMail(uitPostvak.id, { eventId, customerId: klant.customerId || null })
+      } else {
+        await plakMail({ eventId, tekst: mail.trim(), van: afzender })
+      }
+    } catch {
+      await updateEvent(eventId, { description: mail.trim() })
+      toast.error(t('aanvraag.mail_niet_bewaard'))
+    }
+  }
+
   const create = async () => {
     if (!klaar) return
     setBusy(true)
     try {
       const template = resolveTemplate(gekozenTemplate, profiles)
+      /*
+        "Verjaardag 13 personen", "BBQ 8 Pers", "Klant: Jolien en Bernd": wat
+        in de naam getypt wordt omdat er geen vakje voor leek te zijn, gaat
+        naar zijn eigen veld. Anders staat het aantal in de titel en is het
+        veld Gasten leeg — en rekent elke lijst die op `pax` telt met niets.
+        Wat iemand in het vakje zelf zette, wint.
+      */
+      const titel = ontleedTitel(name)
+      const naam = titel.naam || name.trim()
+      const gasten = modus === 'formule' ? pax : modus === 'aanvraag' && pax > 0 ? pax : titel.personen
+      const geenKlant = !klant.customerId && !klant.customerName?.trim()
       const id = await createEventFromTemplate({
         list: eventsList,
-        name,
+        name: naam,
         eventDate: date,
+        eventEndDate: eindDatum && eindDatum > date ? eindDatum : null,
         brandId: brandId || null,
         template,
         createdBy: uid,
         customerId: klant.customerId,
-        customerName: klant.customerName,
+        customerName: geenKlant && titel.klant ? titel.klant : klant.customerName,
         plek,
         formule: modus === 'custom' ? null : formule,
         keuzes: modus === 'custom' ? null : keuzes,
-        pax: modus === 'custom' ? null : pax,
-        // De mail van de klant wordt de omschrijving van het event, en het
-        // soort dat eruit gelezen is het eventtype. Zo staat de vraag bij het
-        // antwoord in plaats van in iemands mailbox.
-        omschrijving: modus === 'aanvraag' ? mail.trim() : '',
+        pax: gasten ?? null,
+        // Het soort dat uit de mail gelezen is, wordt het eventtype. De mail
+        // zelf gaat hieronder naar de draad.
+        omschrijving: '',
         soort: modus === 'aanvraag' ? soort : null,
       })
-      toast.success(t('events.nieuw.gemaakt', { naam: name.trim() }))
+      if (modus === 'aanvraag' && mail.trim()) await bewaarMail(id)
+      toast.success(t('events.nieuw.gemaakt', { naam }))
       setName('')
+      setNaamZelf(false)
+      setEindDatum('')
       setKlant({ customerId: '', customerName: '' })
       setPlek(leegLocatie())
       setMail('')
       setSoort('')
+      setAfzender('')
+      setContact({ email: '', phone: '' })
+      setUitPostvak(null)
       onClose()
       navigate(`/events/${id}`)
     } catch (err) {
@@ -137,7 +191,14 @@ export default function NewEventDialog({ open, onClose }) {
             { value: 'aanvraag', label: t('aanvraag.tab') },
           ]}
           value={modus}
-          onChange={setModus}
+          onChange={(m) => {
+            // Vijftig gasten is een vertrekpunt om een formule mee door te
+            // rekenen, geen aantal dat een klant vroeg. Een aanvraag begint
+            // leeg; anders krijgt een mail zonder aantal er stil vijftig bij.
+            if (m === 'aanvraag' && !mail.trim()) setPersonen('')
+            if (m === 'formule' && !personen) setPersonen('50')
+            setModus(m)
+          }}
         />
 
         {modus === 'aanvraag' ? (
@@ -146,16 +207,35 @@ export default function NewEventDialog({ open, onClose }) {
             onTekst={setMail}
             formules={formules}
             plekken={concepts}
+            onPostvak={setUitPostvak}
             onGelezen={(uit) => {
               // Alleen invullen wat leeg is: wie zelf iets aanpaste, mag dat
               // niet bij de volgende aanslag weer kwijtspelen.
               if (uit.datum) setDate(dayKey(uit.datum))
+              setEindDatum(uit.tot ? dayKey(uit.tot) : '')
               if (uit.personen) setPersonen(String(uit.personen))
               if (uit.soort) setSoort(uit.soort)
               if (uit.formule) setFormuleId(uit.formule.id)
               if (uit.plek) setBrandId(uit.plek.id)
-              if (uit.afzender) setKlant((k) => (k.customerId || k.customerName ? k : { customerId: '', customerName: uit.afzender }))
-              setName((n) => n || [uit.soort, uit.afzender].filter(Boolean).join(' — '))
+              if (uit.zaal) setPlek((p) => (p.location ? p : vrijeLocatie(uit.zaal.adres)))
+              // "Naam <adres>", zoals een mailprogramma het schrijft: zo leest
+              // de draad een geplakte mail net als een opgehaalde.
+              setAfzender(uit.email ? (uit.klant ? `${uit.klant} <${uit.email}>` : uit.email) : uit.klant ?? '')
+              setContact({ email: uit.email ?? '', phone: uit.telefoon ?? '' })
+              if (uit.klant || uit.email || uit.telefoon) {
+                // Een klant die al in de lijst staat, op adres, nummer of
+                // naam; anders de naam als vrije tekst, met het adres en het
+                // nummer klaar voor wie er een klantfiche van maakt.
+                const bekend = zoekKlant(uit, customers)
+                setKlant((k) =>
+                  k.customerId || k.customerName
+                    ? k
+                    : bekend
+                      ? { customerId: bekend.id, customerName: bekend.name }
+                      : { customerId: '', customerName: uit.klant ?? '' }
+                )
+              }
+              if (!naamZelf) setName(naamVoorEvent(uit, { standaard: t('aanvraag.naam_standaard') }))
             }}
           />
         ) : null}
@@ -163,7 +243,10 @@ export default function NewEventDialog({ open, onClose }) {
         <Field label={t('events.velden.naam')} required>
           <Input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value)
+              setNaamZelf(true)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') create()
             }}
@@ -175,10 +258,21 @@ export default function NewEventDialog({ open, onClose }) {
           customerId={klant.customerId}
           customerName={klant.customerName}
           onChange={setKlant}
+          voorstel={modus === 'aanvraag' ? contact : null}
         />
         <Field label={t('events.velden.datum')} hint={t('events.nieuw.datum_hint')}>
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
+        {eindDatum ? (
+          <Field label={t('events.fiche.tot_en_met')} hint={t('events.fiche.meerdaags')}>
+            <Input type="date" min={date} value={eindDatum} onChange={(e) => setEindDatum(e.target.value)} />
+          </Field>
+        ) : null}
+        {modus === 'aanvraag' && !formule ? (
+          <Field label={t('events.nieuw.personen')}>
+            <Input type="number" min="1" step="1" value={personen} onChange={(e) => setPersonen(e.target.value)} />
+          </Field>
+        ) : null}
         <LocatieVeld value={plek} onChange={setPlek} />
         <Field label={t('events.velden.concept')}>
           <Select

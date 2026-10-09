@@ -28,6 +28,11 @@ export default {
     nl: 'Deze klant heeft meer dan één lopend dossier; kies zelf welk.',
     en: 'This customer has more than one open file; pick the right one yourself.',
   },
+  'mail.geplakt': { nl: 'Geplakt', en: 'Pasted' },
+  'mail.geplakt_uitleg': {
+    nl: 'Deze mail is bij het aanmaken van het event geplakt; ze kwam niet via info@ binnen.',
+    en: 'This email was pasted in when the event was created; it did not arrive through info@.',
+  },
   'mail.meer': { nl: 'Volledige mail', en: 'Full message' },
   'mail.minder': { nl: 'Inklappen', en: 'Collapse' },
   'mail.losmaken': { nl: 'Hoort hier niet', en: 'Does not belong here' },

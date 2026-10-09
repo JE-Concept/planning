@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { dayKey } from '@lib/dates'
-import { leesAanvraag } from '@lib/aanvraag'
+import { formatDate } from '@lib/dates'
+import { leesAanvraag, zelfdeMail } from '@lib/aanvraag'
 import { Badge, Field, Icon, Textarea } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
+import { useLosseMails } from '@data/mails'
 
 /**
  * Een aanvraag van een klant plakken en er een event van maken.
@@ -13,23 +14,46 @@ import { useTaal } from '@context/TaalProvider'
  * staat, gaat de deur uit en de klant rekent erop; dan is één seconde
  * nakijken in dit scherm de goedkoopste seconde van het hele dossier.
  *
+ * De uitleg bij een gok zegt wélke gok het is. Eerst stond er bij elke datum
+ * "er staat geen jaartal in de mail", ook wanneer het jaartal er pal naast
+ * stond — en een uitleg die niet klopt, leert mensen de uitleg niet te lezen.
+ *
  * Het lezen zelf staat in `@lib/aanvraag` — geen model, geen sleutel, en
  * getest op de mails die hier echt binnenkomen.
  */
-export default function AanvraagInlezen({ tekst, onTekst, formules, plekken, onGelezen }) {
+export default function AanvraagInlezen({ tekst, onTekst, formules, plekken, onGelezen, onPostvak }) {
   const { t } = useTaal()
   const laatste = useRef(null)
+  const { mails: postvak } = useLosseMails()
 
   const gelezen = useMemo(() => {
     if (!tekst.trim()) return null
     return leesAanvraag(tekst, { formules, plekken })
   }, [tekst, formules, plekken])
 
+  // Staat deze mail al in Aanvragen, dan hangt díé straks aan het event.
+  const uitPostvak = useMemo(() => (tekst.trim() ? zelfdeMail(tekst, postvak) : null), [tekst, postvak])
+  useEffect(() => {
+    onPostvak?.(uitPostvak)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uitPostvak?.id])
+
   // Doorgeven aan de dialoog eromheen, maar alleen wanneer er echt iets
   // veranderde: anders zet dit bij elke aanslag de velden terug en kan er niets
   // meer met de hand aangepast worden.
   const sleutel = gelezen
-    ? JSON.stringify([gelezen.datum, gelezen.personen, gelezen.soort, gelezen.formule?.id, gelezen.plek?.id])
+    ? JSON.stringify([
+        gelezen.datum,
+        gelezen.tot,
+        gelezen.personen,
+        gelezen.soort,
+        gelezen.formule?.id,
+        gelezen.plek?.id,
+        gelezen.zaal?.adres,
+        gelezen.klant,
+        gelezen.email,
+        gelezen.telefoon,
+      ])
     : ''
   useEffect(() => {
     if (!gelezen || sleutel === laatste.current) return
@@ -40,13 +64,26 @@ export default function AanvraagInlezen({ tekst, onTekst, formules, plekken, onG
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sleutel])
 
+  const datumUitleg = gelezen
+    ? [
+        !gelezen.jaarGegeven && t('aanvraag.jaar_geraden'),
+        !gelezen.weekdagKlopt && t('aanvraag.weekdag_klopt_niet'),
+        gelezen.losseDagen && t('aanvraag.losse_dagen'),
+      ]
+        .filter(Boolean)
+        .join(' ')
+    : ''
+
   const regels = gelezen
     ? [
         gelezen.datum && {
           sleutel: 'events.velden.datum',
-          waarde: dayKey(gelezen.datum),
+          // Zoals elke andere datum in de tool, en niet als 2026-11-14.
+          waarde: gelezen.tot
+            ? t('aanvraag.reeks', { van: formatDate(gelezen.datum), tot: formatDate(gelezen.tot) })
+            : formatDate(gelezen.datum),
           geraden: gelezen.onzeker.includes('datum'),
-          uitleg: t('aanvraag.jaar_geraden'),
+          uitleg: datumUitleg || null,
         },
         gelezen.personen && {
           sleutel: 'events.fiche.gasten',
@@ -62,8 +99,11 @@ export default function AanvraagInlezen({ tekst, onTekst, formules, plekken, onG
           waarde: gelezen.formule.name,
           geraden: gelezen.onzeker.includes('formule'),
         },
+        gelezen.zaal && { sleutel: 'events.fiche.locatie', waarde: gelezen.zaal.adres },
         gelezen.plek && { sleutel: 'events.velden.concept', waarde: gelezen.plek.name },
-        gelezen.afzender && { sleutel: 'events.fiche.klant', waarde: gelezen.afzender },
+        gelezen.klant && { sleutel: 'events.fiche.klant', waarde: gelezen.klant },
+        gelezen.email && { sleutel: 'klant.email', waarde: gelezen.email },
+        gelezen.telefoon && { sleutel: 'klant.telefoon', waarde: gelezen.telefoon },
       ].filter(Boolean)
     : []
 
@@ -121,7 +161,7 @@ export default function AanvraagInlezen({ tekst, onTekst, formules, plekken, onG
           ) : null}
 
           <p className="je-muted-caption" style={{ margin: 0 }}>
-            {t('aanvraag.mail_bewaard')}
+            {uitPostvak ? t('aanvraag.mail_uit_postvak', { van: uitPostvak.van || '' }) : t('aanvraag.mail_bewaard')}
           </p>
         </div>
       ) : null}

@@ -2874,12 +2874,18 @@ await test('een aanvraagmail wordt een event met datum, gasten en formule', asyn
 
   const fiche = await inhoud(page)
   zouden(bevat(fiche, 'Kristien Maris'), `het event opende niet: ${fiche.slice(0, 200)}`)
-  // De mail blijft bij het dossier staan in plaats van in iemands mailbox.
-  zouden(
-    bevat(await page.getByLabel('Omschrijving').inputValue(), 'winterbarbecue'),
-    'de mail staat niet als omschrijving op het event'
-  )
   zouden((await veldwaarde(page, 'Gasten')) === '40', 'het aantal gasten staat niet op de fiche')
+  // De mail staat op het tabblad Mail, waar de rest van de wisseling met de
+  // klant ook komt — en niet als omschrijving tussen de notities (U8).
+  zouden(
+    !bevat(await page.getByLabel('Omschrijving').inputValue(), 'winterbarbecue'),
+    'de mail staat nog als omschrijving op het event'
+  )
+  await page.getByRole('tab', { name: 'Mail' }).click()
+  await rustig(page)
+  const draad = await inhoud(page)
+  zouden(bevat(draad, 'winterbarbecue'), `de geplakte mail staat niet op het tabblad Mail: ${draad.slice(0, 300)}`)
+  zouden(bevat(draad, 'Geplakt'), 'er staat niet bij dat de mail geplakt is')
 
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()

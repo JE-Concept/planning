@@ -159,3 +159,72 @@ export function berichtSleutel(messageId, terugval = '') {
   if (!bron) return ''
   return bron.replace(/[^A-Za-z0-9._@-]/g, '_').slice(0, 180)
 }
+
+/** Even lang als wat de ophaler bewaart; zie `bewaar` in `functions-mail/postvak.js`. */
+export const MAX_TEKST = 20000
+
+/**
+ * Een korte, vaste vingerafdruk van een tekst (FNV-1a, 32 bits).
+ *
+ * Geen beveiliging, alleen een naam: wie twee keer op "aanmaken" drukt, of
+ * wiens verbinding de vraag herhaalt, komt op hetzelfde document uit in plaats
+ * van op twee keer dezelfde mail in de draad. Zonder `node:crypto`, zodat dit
+ * bestand zonder imports blijft.
+ */
+export function vingerafdruk(tekst) {
+  let h = 0x811c9dc5
+  for (const teken of String(tekst ?? '')) {
+    h ^= teken.codePointAt(0)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h.toString(16).padStart(8, '0')
+}
+
+/**
+ * Een aanvraag die iemand in "Nieuw event › Uit een mail" plakte, als bericht
+ * in de draad van dat event.
+ *
+ * ── Waarom in `mails` en niet in de omschrijving ──────────────────────────
+ * Zo stond het eerst: de geplakte mail werd de omschrijving van het event. Dan
+ * staat de vraag van de klant tussen de notities van het team, telt de tegel
+ * Post nul en is het tabblad Mail leeg — net dat tabblad waar iedereen de
+ * wisseling met de klant zoekt. Een aanvraag die via info@ binnenkwam en een
+ * die iemand uit zijn eigen mailbox plakte, horen op dezelfde plek te staan.
+ *
+ * ── Waarom het te zien blijft dat hij geplakt is ──────────────────────────
+ * De draad is bewijs van wat er gezegd is; daarom schrijft geen browser in
+ * `mails`. Deze rij schrijft de server, met `bron: 'geplakt'` en wie het deed.
+ * Wat de ophaler binnenhaalde, heeft koppen van de mailserver; dit heeft
+ * alleen wat iemand in een vak zette, en dat hoort men te kunnen zien.
+ *
+ * Geeft `null` terug als er niets te bewaren valt.
+ */
+export function geplakteMail({ tekst, onderwerp = '', van = '', eventId, customerId = null, door, nu = new Date() }) {
+  const inhoud = String(tekst ?? '').trim().slice(0, MAX_TEKST)
+  if (!inhoud || !eventId || !door) return null
+  return {
+    id: `geplakt-${String(eventId).replace(/[^A-Za-z0-9_-]/g, '_')}-${vingerafdruk(inhoud)}`,
+    data: {
+      richting: 'in',
+      bron: 'geplakt',
+      uid: null,
+      messageId: null,
+      inReplyTo: null,
+      references: null,
+      van: String(van ?? '').trim().slice(0, 200),
+      aan: '',
+      cc: '',
+      onderwerp: String(onderwerp ?? '').trim().slice(0, 300),
+      tekst: inhoud,
+      bijlagen: [],
+      datum: nu,
+      eventId: String(eventId),
+      customerId: customerId || null,
+      // Met de hand aan dit event gehangen, door wie hem plakte: daar valt
+      // niets aan te raden, dus geen knop "hoort hier niet".
+      koppeling: 'geplakt',
+      geplaktDoor: door,
+      opgehaaldOp: nu,
+    },
+  }
+}

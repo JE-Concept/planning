@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { leesAanvraag } from '@lib/aanvraag'
-import { formatDateTime } from '@lib/dates'
+import { afzenderUitKop, leesAanvraag, naamVoorEvent, ontleedTitel, zoekKlant } from '@lib/aanvraag'
+import { dayKey, formatDate, formatDateTime } from '@lib/dates'
+import { vrijeLocatie } from '@lib/kaart'
 import { postvakAchterSinds } from '@lib/systeem'
 import { Acties, Badge, EmptyState, Icon, Select, Spinner } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
@@ -170,12 +171,22 @@ function Aanvraag({ mail }) {
   const [bezig, setBezig] = useState(false)
   const [koppelAan, setKoppelAan] = useState('')
 
-  const gelezen = useMemo(
-    () => leesAanvraag(`${mail.onderwerp ?? ''}\n\n${mail.tekst ?? ''}`, { formules, plekken: brands }),
-    [mail.onderwerp, mail.tekst, formules, brands]
-  )
+  // Een gearchiveerd merk is geen concept meer om een nieuw event op te
+  // zetten; de dialoog Nieuw event kiest er ook niet uit.
+  const plekken = useMemo(() => brands.filter((b) => !b.archived), [brands])
 
-  const klant = customers.find((c) => c.id === mail.customerId) ?? null
+  const gelezen = useMemo(() => {
+    const uit = leesAanvraag(`${mail.onderwerp ?? ''}\n\n${mail.tekst ?? ''}`, { formules, plekken })
+    // De afzender uit de kop van de mail telt als de ondertekening niets zegt.
+    const kop = afzenderUitKop(mail.van)
+    return { ...uit, email: uit.email ?? kop.email, klant: uit.klant ?? kop.naam }
+  }, [mail.onderwerp, mail.tekst, mail.van, formules, plekken])
+
+  // De klant waar de server de mail al aan hing, anders die uit de mail zelf.
+  const klant = customers.find((c) => c.id === mail.customerId) ?? zoekKlant(gelezen, customers)
+  // Het onderwerp is de naam ("ORKA wandeldagen"); staat er een aantal of
+  // een klant in, dan gaan die naar hun eigen veld.
+  const titel = ontleedTitel(mail.onderwerp)
   const events = Object.values(eventById ?? {}).filter((e) => !e.archived)
 
   const maakEvent = async () => {
@@ -189,19 +200,28 @@ function Aanvraag({ mail }) {
 
       const id = await createEventFromTemplate({
         list: eventsList,
-        name: [gelezen.soort, gelezen.afzender ?? mail.van].filter(Boolean).join(' — ') || mail.onderwerp,
-        eventDate: gelezen.datum ? gelezen.datum.toISOString().slice(0, 10) : null,
+        name:
+          naamVoorEvent(gelezen, { onderwerp: mail.onderwerp, standaard: t('aanvraag.naam_standaard') }) ||
+          mail.onderwerp ||
+          t('aanvraag.naam_standaard'),
+        eventDate: gelezen.datum ? dayKey(gelezen.datum) : null,
+        eventEndDate: gelezen.tot ? dayKey(gelezen.tot) : null,
         brandId: gelezen.plek?.id ?? null,
         template: resolveTemplate(template, profiles),
         createdBy: uid,
         customerId: klant?.id ?? null,
-        customerName: klant?.name ?? gelezen.afzender ?? '',
+        customerName: klant?.name ?? titel.klant ?? gelezen.klant ?? '',
+        plek: gelezen.zaal ? vrijeLocatie(gelezen.zaal.adres) : null,
         formule: gelezen.formule ?? null,
         keuzes: null,
-        pax: gelezen.personen,
-        // De mail blijft bij het dossier staan, ook los van de draad: wie het
-        // event opent, leest meteen waar het over ging.
-        omschrijving: mail.tekst ?? '',
+        pax: gelezen.personen ?? titel.personen,
+        /*
+          Geen omschrijving: de mail hangt hieronder aan het event en staat
+          dan op het tabblad Mail, waar de rest van de wisseling met de klant
+          ook komt. Ze ook als omschrijving zetten, gaf dezelfde tekst twee
+          keer — en een omschrijving die het team niet zelf schreef.
+        */
+        omschrijving: '',
         soort: gelezen.soort,
       })
 
@@ -233,11 +253,18 @@ function Aanvraag({ mail }) {
 
       <div className="je-aanvraag__gelezen">
         {[
-          gelezen.datum && ['events.velden.datum', gelezen.datum.toLocaleDateString('nl-BE')],
-          gelezen.personen && ['events.fiche.gasten', `${gelezen.personen} pax`],
+          gelezen.datum && [
+            'events.velden.datum',
+            gelezen.tot
+              ? t('aanvraag.reeks', { van: formatDate(gelezen.datum), tot: formatDate(gelezen.tot) })
+              : formatDate(gelezen.datum),
+          ],
+          (gelezen.personen ?? titel.personen) && ['events.fiche.gasten', `${gelezen.personen ?? titel.personen} pax`],
           gelezen.soort && ['events.velden.type', gelezen.soort],
           gelezen.formule && ['events.fiche.formule', gelezen.formule.name],
+          gelezen.zaal && ['events.fiche.locatie', gelezen.zaal.adres],
           gelezen.plek && ['events.velden.concept', gelezen.plek.name],
+          (klant?.name ?? titel.klant ?? gelezen.klant) && ['events.fiche.klant', klant?.name ?? titel.klant ?? gelezen.klant],
         ]
           .filter(Boolean)
           .map(([sleutel, waarde]) => (

@@ -26,7 +26,7 @@ export const NIEUWE_KLANT = '__nieuw'
  * rij de klant moet opzoeken, leest zich scheef. Een hernoeming werkt die kopie
  * server-side bij (`spreadCustomerRename`).
  */
-export default function CustomerPicker({ customerId, customerName, onChange, required = false }) {
+export default function CustomerPicker({ customerId, customerName, onChange, required = false, voorstel = null }) {
   const { customers } = useCustomers()
   const { t } = useTaal()
   const toast = useToast()
@@ -39,8 +39,9 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
   const kies = (waarde) => {
     if (waarde === NIEUWE_KLANT) {
       // De naam die er al staat is bijna altijd de naam van de klant; die
-      // meenemen scheelt hem opnieuw typen.
-      setNieuw({ name: customerName ?? '', vatNumber: '', email: '' })
+      // meenemen scheelt hem opnieuw typen. Kwam het event uit een mail, dan
+      // staan het adres en het nummer van de afzender er ook al klaar.
+      setNieuw({ name: customerName ?? '', vatNumber: '', email: voorstel?.email ?? '', phone: voorstel?.phone ?? '' })
       return
     }
     setNieuw(null)
@@ -57,6 +58,7 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
         name: naam,
         vatNumber: formatVat(nieuw.vatNumber),
         email: nieuw.email.trim(),
+        phone: nieuw.phone.trim(),
       })
       onChange({ customerId: id, customerName: naam })
       setNieuw(null)
@@ -118,6 +120,13 @@ export default function CustomerPicker({ customerId, customerName, onChange, req
               type="email"
               value={nieuw.email}
               onChange={(e) => setNieuw((x) => ({ ...x, email: e.target.value }))}
+            />
+          </Field>
+          <Field label={t('klant.telefoon')}>
+            <Input
+              type="tel"
+              value={nieuw.phone}
+              onChange={(e) => setNieuw((x) => ({ ...x, phone: e.target.value }))}
             />
           </Field>
           <Acties
