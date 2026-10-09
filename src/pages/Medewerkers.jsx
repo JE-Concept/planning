@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatDate } from '@lib/dates'
-import { Badge, EmptyState } from '@components/ds'
+import { Badge, Button, EmptyState } from '@components/ds'
 import PloegCode from '@components/ploeg/PloegCode'
 import PageHeader from '@components/layout/PageHeader'
 import { useTaal } from '@context/TaalProvider'
-import { useAapiMedewerkers } from '@data/aapi'
-import { STATUUT_TEKST, afdelingLabel as aapiAfdeling, kleurVan } from '@lib/aapi-weergave'
+import { useAapiMedewerkers, useAapiShifts } from '@data/aapi'
+import { afdelingLabel as aapiAfdeling, kaartVanMedewerker, kleurVan, statuutLabel } from '@lib/aapi-weergave'
 
 /**
  * De medewerkers: studenten, flexi's, iedereen die komt werken.
@@ -34,19 +34,39 @@ import { STATUUT_TEKST, afdelingLabel as aapiAfdeling, kleurVan } from '@lib/aap
  * statuut, e-mail, gsm, sinds wanneer hij meedraait. Geen rijksregisternummer,
  * geen rekeningnummer, geen adres — die staan in AAPI en worden bewust niet
  * meegenomen. Zie `functions/aapi/personeel.js`.
+ *
+ * Wie alleen uit de planningsexport komt, heeft op zijn kaartje geen afdeling
+ * en geen statuut; die staan op zijn shifts. Zie `kaartVanMedewerker`.
  */
+
+// Ruim genoeg om voor iedereen die meedraait minstens één shift te vinden.
+const SHIFTS_TERUG_DAGEN = 180
+const SHIFTS_VOORUIT_DAGEN = 180
+
 export default function Medewerkers() {
   const { t } = useTaal()
   const navigate = useNavigate()
   const { medewerkers, loading } = useAapiMedewerkers()
 
+  // Eén keer per bezoek vastgelegd: een venster dat bij elke render opschuift,
+  // opent bij elke render een nieuw abonnement.
+  const venster = useMemo(() => {
+    const nu = Date.now()
+    return {
+      van: new Date(nu - SHIFTS_TERUG_DAGEN * 86400000),
+      tot: new Date(nu + SHIFTS_VOORUIT_DAGEN * 86400000),
+    }
+  }, [])
+  const { shifts } = useAapiShifts(venster)
+
   const ploeg = useMemo(
     () =>
-      [...medewerkers].sort((a, b) =>
-        String(a.displayName ?? '').localeCompare(String(b.displayName ?? ''))
-      ),
-    [medewerkers]
+      [...medewerkers]
+        .sort((a, b) => String(a.displayName ?? '').localeCompare(String(b.displayName ?? '')))
+        .map((m) => ({ ...m, kaart: kaartVanMedewerker(m, shifts) })),
+    [medewerkers, shifts]
   )
+  const zonderContact = ploeg.filter((m) => m.kaart.zonderContact).length
 
   return (
     <div>
@@ -85,21 +105,34 @@ export default function Medewerkers() {
               <p className="je-muted-caption" style={{ padding: 'var(--space-3) var(--space-6) 0' }}>
                 {t('medewerkers.uit_aapi_uitleg')}
               </p>
+              {zonderContact > 0 ? (
+                /*
+                  Wie alleen uit de planningsexport komt, heeft geen e-mail of
+                  gsm. Dat zeggen we één keer bovenaan, met de weg ernaartoe,
+                  in plaats van vijftien keer een streepje.
+                */
+                <p className="je-muted-caption" style={{ padding: 'var(--space-2) var(--space-6) 0' }}>
+                  {t(zonderContact === 1 ? 'medewerkers.zonder_contact_een' : 'medewerkers.zonder_contact', { aantal: zonderContact })}{' '}
+                  <Button variant="ghost" size="sm" icon="upload" onClick={() => navigate('/planning?tab=import')}>
+                    {t('medewerkers.naar_import')}
+                  </Button>
+                </p>
+              ) : null}
               {ploeg.map((m) => (
                 <div key={m.id} className="je-medewerker">
                   <span
                     className="je-personeelrij__streep"
                     aria-hidden="true"
-                    style={{ '--afdeling': kleurVan(m.afdeling) }}
+                    style={{ '--afdeling': kleurVan(m.kaart.afdeling) }}
                   />
                   <div style={{ flex: '1 1 200px', minWidth: 160 }}>
                     <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{m.displayName}</div>
                     <div className="je-muted-caption">
-                      {[m.email, m.gsm].filter(Boolean).join(' · ') || '—'}
+                      {[m.email, m.gsm].filter(Boolean).join(' · ') || t('medewerkers.geen_contact')}
                     </div>
                   </div>
-                  <Badge tone="neutral">{aapiAfdeling(t, m.afdeling)}</Badge>
-                  <Badge tone="neutral">{t(STATUUT_TEKST[m.statuut] ?? 'aapi.statuut.onbekend')}</Badge>
+                  {m.kaart.afdeling ? <Badge tone="neutral">{aapiAfdeling(t, m.kaart.afdeling)}</Badge> : null}
+                  <Badge tone="neutral">{statuutLabel(t, m.kaart.statuut)}</Badge>
                   {m.inDienstSinds ? (
                     <span className="je-muted-caption">
                       {t('medewerkers.sinds', { datum: formatDate(m.inDienstSinds) })}

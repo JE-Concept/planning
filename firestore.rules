@@ -228,7 +228,7 @@ service cloud.firestore {
       een sociallijst en heeft met geld niets te maken.
     */
     function socialVelden() {
-      return changedKeys().hasOnly(['socialStage', 'socialWanted', 'updatedAt', 'updatedBy', 'position']);
+      return changedKeys().hasOnly(['socialStage', 'socialWanted', 'socialArchived', 'updatedAt', 'updatedBy', 'position']);
     }
 
     // Een sociallijst herken je aan de lijst zelf (`kind: 'social'`), niet aan

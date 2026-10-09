@@ -36,6 +36,10 @@ export const VELDEN = [
   'statusKind',
   'socialStage',
   'socialWanted',
+  // Van het socialbord gehaald; zie `isSociaalGearchiveerd` in
+  // `src/lib/social-stage.js`. Zonder dit veld zag de socialrol de kaarten
+  // die het team net opgeruimd had gewoon terugkomen.
+  'socialArchived',
   'dueDate',
   'eventDate',
   'eventEndDate',

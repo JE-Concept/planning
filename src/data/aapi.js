@@ -152,10 +152,23 @@ export function useShiftsVanEvent(eventId) {
 /** De medewerkers uit AAPI, op id. */
 export function useAapiMedewerkers() {
   const [medewerkers, setMedewerkers] = useState([])
+  // De medewerkerspagina vroeg `loading` en kreeg niets, en toonde dus "nog
+  // geen medewerkers" tot de eerste momentopname er was.
+  const [loading, setLoading] = useState(true)
 
   useEffect(
     () =>
-      onSnapshot(query(col(COL.aapiEmployees)), (snap) => setMedewerkers(fromQuery(snap)), () => setMedewerkers([])),
+      onSnapshot(
+        query(col(COL.aapiEmployees)),
+        (snap) => {
+          setMedewerkers(fromQuery(snap))
+          setLoading(false)
+        },
+        () => {
+          setMedewerkers([])
+          setLoading(false)
+        }
+      ),
     []
   )
 
@@ -164,7 +177,7 @@ export function useAapiMedewerkers() {
     [medewerkers]
   )
 
-  return { medewerkers, opId }
+  return { medewerkers, opId, loading }
 }
 
 /** De vorige importbeurten, nieuwste eerst. */

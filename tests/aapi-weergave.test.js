@@ -3,6 +3,7 @@ import {
   AFDELINGEN,
   ZEKER_VANAF,
   isOpen,
+  kaartVanMedewerker,
   kleurVan,
   minutenVan,
   mogelijkVoor,
@@ -17,6 +18,7 @@ import {
   vraagtAandacht,
 } from '../src/lib/aapi-weergave'
 import { AFDELINGEN as BRON_AFDELINGEN } from '../functions/aapi/normaliseer'
+import { medewerkerUitBron, shiftUitBron } from '../functions/aapi/import'
 
 /*
   De afdelingen staan twee keer: in `functions/` omdat de import ze normaliseert,
@@ -351,5 +353,52 @@ describe('de standen voor een lijst events', () => {
       venster
     )
     expect(uit.get('e1')).toBe('rood')
+  })
+})
+
+/*
+  De medewerkerspagina toonde vijftien keer "—" en "Onbekend": de kaartjes uit
+  de planningsexport dragen geen afdeling en geen statuut, hun shifts wel. Deze
+  test zet de echte vorm van de import naast het scherm, zodat een veld dat
+  aan één kant hernoemd wordt hier opvalt en niet pas op de pagina.
+*/
+describe('een medewerker op de lijst', () => {
+  const rij = {
+    aapiPlanningId: 'p1',
+    aapiEmployeeId: 'e1',
+    naam: 'Jumana Mhanawi',
+    ruweNaam: 'MHANAWI JUMANA',
+    afdeling: 'bar',
+    statuut: 'flexi',
+    dimonaType: 'FLX_DAY',
+    planningType: 'PLANNING',
+    start: new Date('2026-03-14T17:00:00Z'),
+    eind: new Date('2026-03-14T23:00:00Z'),
+  }
+
+  it('neemt afdeling en statuut van de shifts als het kaartje uit de planning komt', () => {
+    const kaartje = { id: 'e1', ...medewerkerUitBron(rij) }
+    const uit = kaartVanMedewerker(kaartje, [shiftUitBron(rij)])
+    expect(uit).toEqual({ afdeling: 'bar', statuut: 'flexi', zonderContact: true })
+  })
+
+  it('laat het kaartje uit de personeelslijst winnen', () => {
+    const kaartje = { id: 'e1', aapiEmployeeId: 'e1', afdeling: 'keuken', statuut: 'student', email: 'j@example.be' }
+    expect(kaartVanMedewerker(kaartje, [shiftUitBron(rij)])).toEqual({
+      afdeling: 'keuken',
+      statuut: 'student',
+      zonderContact: false,
+    })
+  })
+
+  it('neemt het statuut van de laatste shift en negeert afgezegde', () => {
+    const oud = shiftUitBron({ ...rij, statuut: 'student' })
+    const nieuw = shiftUitBron({ ...rij, aapiPlanningId: 'p2', start: new Date('2026-04-01T17:00:00Z') })
+    const afgezegd = { ...shiftUitBron({ ...rij, aapiPlanningId: 'p3', statuut: 'vast', start: new Date('2026-05-01T17:00:00Z') }), canceled: true }
+    expect(kaartVanMedewerker({ id: 'e1' }, [oud, nieuw, afgezegd]).statuut).toBe('flexi')
+  })
+
+  it('zegt onbekend zonder shifts en zonder kaartje', () => {
+    expect(kaartVanMedewerker({ id: 'e9' }, [])).toEqual({ afdeling: null, statuut: 'onbekend', zonderContact: true })
   })
 })

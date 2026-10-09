@@ -125,7 +125,12 @@ export default function Settings() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            <Tabs items={TABS.map((x) => ({ value: x.value, label: t(x.sleutel) }))} value={tab} onChange={setTab} />
+            <Tabs
+              items={TABS.map((x) => ({ value: x.value, label: t(x.sleutel) }))}
+              value={tab}
+              onChange={setTab}
+              className="je-tabs--wrap"
+            />
             {tab === 'team' ? <TeamTab /> : null}
             {tab === 'pijplijn' ? <PipelineTab /> : null}
             {tab === 'templates' ? <TemplatesTab initial={params.get('template')} /> : null}
@@ -282,7 +287,13 @@ function TeamTab() {
             <Avatar profile={m} size={34} tone="ink" />
             <div style={{ flex: 1, minWidth: 180 }}>
               <div style={{ font: 'var(--type-body-sm)', fontWeight: 600 }}>{m.fullName || m.email}</div>
-              <div className="je-muted-caption">{[m.email, ...(m.aliases ?? [])].join(' · ')}</div>
+              {/* Wie met een ploegcode binnenkomt, heeft geen e-mailadres: dat
+                  account maakt `functions/ploeg.js` uit de AAPI-lijst. Een lege
+                  regel las als een vergeten veld. */}
+              <div className="je-muted-caption">
+                {[m.email, ...(m.aliases ?? [])].filter(Boolean).join(' · ') ||
+                  t(m.viaCode ? 'inst.team.via_code' : 'inst.team.geen_email')}
+              </div>
             </div>
             {/*
               Je eigen rol staat vast. Wie zichzelf op "personeel" zet is zijn
@@ -290,6 +301,7 @@ function TeamTab() {
               regels weigeren het ook; dit zorgt dat je er niet tegenaan loopt.
             */}
             <div style={{ width: 150 }}>
+              <div className="je-teamrij__kop">{t('inst.team.rol')}</div>
               <Select
                 boxed
                 options={rollenVoor(m.role).map((r) => ({ value: r.value, label: t(r.sleutel) }))}
@@ -300,8 +312,12 @@ function TeamTab() {
                 title={m.id === uid ? t('inst.team.eigen_rol') : undefined}
               />
             </div>
+            {/* Alleen bij personeel: de afdeling beslist welke dagelijkse
+                lijsten hij krijgt. Daarom staat er bij hen één keuzelijst
+                meer, en zegt de kop erboven waarvoor. */}
             {m.role === 'staff' ? (
               <div style={{ width: 150 }}>
+                <div className="je-teamrij__kop">{t('inst.team.afdeling')}</div>
                 <Select
                   boxed
                   value={m.department ?? ''}
@@ -317,16 +333,23 @@ function TeamTab() {
                 />
               </div>
             ) : null}
-            <div style={{ width: 110 }}>
-              <Input
-                type="number"
-                min="0"
-                step="0.5"
-                defaultValue={m.hourlyRate ?? ''}
-                onBlur={(e) => setHourlyRate(m.id, e.target.value)}
-                placeholder={t('inst.team.uurtarief_plaatshouder')}
-                aria-label={t('inst.team.uurtarief')}
-              />
+            {/* "38" stond er zonder eenheid: euro of uren? Het is een bedrag
+                per uur, en dat staat er nu naast en erboven. */}
+            <div style={{ width: 130 }}>
+              <div className="je-teamrij__kop">{t('inst.team.uurtarief')}</div>
+              <div className="je-teamrij__bedrag">
+                <span aria-hidden="true">€</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  defaultValue={m.hourlyRate ?? ''}
+                  onBlur={(e) => setHourlyRate(m.id, e.target.value)}
+                  placeholder="0"
+                  aria-label={t('inst.team.uurtarief_van', { wie: m.fullName || m.email || '' })}
+                />
+                <span aria-hidden="true">{t('inst.team.per_uur')}</span>
+              </div>
             </div>
             {/* Jezelf archiveren kan niet, en de laatste eigenaar ook niet: wie
                 dat doet, sluit de zaak buiten. De knop stond er grijs maar

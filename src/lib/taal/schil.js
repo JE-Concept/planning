@@ -354,8 +354,8 @@ export default {
   */
   'uren.waarop': { nl: 'Waarop geboekt', en: 'Booked on' },
   'uren.waarop_hint': {
-    nl: 'Het event of de taak. Het bord en het merk komen daaruit mee.',
-    en: 'The event or task. The board and brand follow from it.',
+    nl: 'Het event of de taak. Het bord en het concept komen daaruit mee.',
+    en: 'The event or task. The board and concept follow from it.',
   },
   'uren.kies_taak': { nl: 'Kies een event of taak', en: 'Choose an event or task' },
   'uren.zoek_taak': { nl: 'Zoeken', en: 'Search' },

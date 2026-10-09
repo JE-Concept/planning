@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
-import { deadlineGroep, filter, groepeer, perDag, sorteer } from '../src/lib/task-view'
+import { deadlineGroep, filter, groepeer, perDag, sorteer, vervaldag } from '../src/lib/task-view'
 import { laadCatalogus } from '../src/lib/i18n'
 
 /*
@@ -165,5 +165,21 @@ describe('perDag', () => {
     ])
     expect(Object.keys(map)).toEqual(['2026-10-01'])
     expect(map['2026-10-01']).toHaveLength(2)
+  })
+})
+
+describe('de vervaldag in woorden', () => {
+  // Een `t` die de sleutel en het aantal teruggeeft: hier telt welke zin er
+  // gekozen wordt, niet hoe hij vertaald is.
+  const t = (sleutel, { aantal } = {}) => (aantal == null ? sleutel : `${sleutel}:${aantal}`)
+
+  it('zegt te laat over wat nog openstaat', () => {
+    expect(vervaldag(t, new Date('2026-09-09T12:00:00'))).toBe('tasks.verval.telaat:22')
+  })
+
+  it('zegt de datum over wat afgerond is', () => {
+    const tekst = vervaldag(t, new Date('2026-09-09T12:00:00'), { afgerond: true })
+    expect(tekst).not.toMatch(/telaat/)
+    expect(tekst).toMatch(/9/)
   })
 })

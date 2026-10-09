@@ -225,11 +225,11 @@ export default {
 
   'uren.per_persoon': { nl: 'Per persoon', en: 'Per person' },
   'uren.per_lijst': { nl: 'Per lijst', en: 'Per list' },
-  'uren.per_merk': { nl: 'Per merk', en: 'Per brand' },
+  'uren.per_merk': { nl: 'Per concept', en: 'Per concept' },
   'uren.per_dag': { nl: 'Per dag', en: 'Per day' },
   'uren.onbekend': { nl: 'Onbekend', en: 'Unknown' },
   'uren.zonder_lijst': { nl: 'Zonder lijst', en: 'Without a list' },
-  'uren.zonder_merk': { nl: 'Zonder merk', en: 'Without a brand' },
+  'uren.zonder_merk': { nl: 'Zonder concept', en: 'Without a concept' },
   'uren.totaal': { nl: 'Totaal', en: 'Total' },
 
   // De kolomkoppen van de uitvoer naar een rekenblad. Die uitvoer is het stuk

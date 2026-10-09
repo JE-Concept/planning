@@ -26,6 +26,15 @@ export default {
     en: 'From the AAPI staff list. Read-only — change it there. This holds what you need to schedule and reach someone; addresses, national numbers and bank details stay in AAPI.',
   },
   'medewerkers.sinds': { nl: 'sinds {datum}', en: 'since {datum}' },
+  'medewerkers.geen_contact': { nl: 'Nog geen e-mail of gsm', en: 'No email or phone yet' },
+  'medewerkers.zonder_contact_een': {
+    nl: 'Eén medewerker kennen we alleen uit de planning. E-mail, gsm en statuut komen uit de personeelslijst van AAPI.',
+    en: 'One crew member is only known from the schedule. Email, phone and status come from the AAPI staff list.',
+  },
+  'medewerkers.zonder_contact': {
+    nl: '{aantal} medewerkers kennen we alleen uit de planning. E-mail, gsm en statuut komen uit de personeelslijst van AAPI.',
+    en: '{aantal} crew members are only known from the schedule. Email, phone and status come from the AAPI staff list.',
+  },
 
   // ── Wat een medewerker zelf ziet ───────────────────────────────────────
   'mijnevents.eyebrow': { nl: 'Waar jij staat', en: 'Where you work' },

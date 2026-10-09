@@ -42,8 +42,8 @@ export default {
 
   // ── De kalender ────────────────────────────────────────────────────────
   'social.geen_merk': {
-    nl: 'Maak eerst een merk aan bij Instellingen.',
-    en: 'Create a brand under Settings first.',
+    nl: 'Maak eerst een concept aan bij Instellingen.',
+    en: 'Create a concept under Settings first.',
   },
   'social.in_te_plannen': { nl: 'Nog in te plannen ({aantal})', en: 'Still to schedule ({aantal})' },
   'social.onderwerp.plaatshouder': { nl: 'Onderwerp toevoegen…', en: 'Add a subject…' },
@@ -77,7 +77,7 @@ export default {
   'social.post.niet_gepubliceerd': { nl: 'Nog niet gepubliceerd', en: 'Not published yet' },
   'social.post.verwijder_vraag': { nl: 'Deze post verwijderen?', en: 'Delete this post?' },
   'social.veld.titel': { nl: 'Titel', en: 'Title' },
-  'social.veld.merk': { nl: 'Merk', en: 'Brand' },
+  'social.veld.merk': { nl: 'Concept', en: 'Concept' },
   'social.veld.status': { nl: 'Status', en: 'Status' },
   'social.veld.publiceren_op': { nl: 'Publiceren op', en: 'Publish on' },
   'social.veld.publiceren_op_hint': {
@@ -138,8 +138,8 @@ export default {
     en: 'The time lands on the event this post hangs from.',
   },
   'social.tijd.op_merk': {
-    nl: 'Deze post hangt niet aan een event; de tijd wordt geboekt op het merk.',
-    en: 'This post hangs from no event; the time is logged against the brand.',
+    nl: 'Deze post hangt niet aan een event; de tijd wordt geboekt op het concept.',
+    en: 'This post hangs from no event; the time is logged against the concept.',
   },
 
   // ── Het project onder een post ─────────────────────────────────────────
@@ -179,6 +179,30 @@ export default {
     en: 'An event turns up here by itself once it reaches “ready to invoice”. Sooner works too: switch it on in the event. Work that stands apart from an event, you add here.',
   },
   'social.bord.sleep_hier': { nl: 'Sleep hier een event naartoe', en: 'Drag an event over here' },
+  // Opruimen: van het socialbord af, niet van het eventbord. Zie `isSociaalGearchiveerd`.
+  'social.bord.opruimen': { nl: 'Voorbij en gepost archiveren ({aantal})', en: 'Archive past and posted ({aantal})' },
+  'social.bord.opruimen_vraag': {
+    nl: '{aantal} kaarten van events vóór vandaag of al gepost van het socialbord halen? Het event zelf blijft staan, en je zet ze terug vanuit het archief.',
+    en: 'Remove {aantal} cards for events before today or already posted from the social board? The event itself stays, and you can restore them from the archive.',
+  },
+  'social.bord.archief': { nl: 'Archief ({aantal})', en: 'Archive ({aantal})' },
+  'social.bord.archief_uitleg': {
+    nl: 'Gearchiveerd van het socialbord. Sleep een kaart naar een kolom om ze terug te zetten.',
+    en: 'Archived from the social board. Drag a card to a column to restore it.',
+  },
+  'social.bord.archief_leeg': { nl: 'Het archief is leeg', en: 'The archive is empty' },
+  'social.bord.opgeruimd': { nl: 'Alles is opgeruimd', en: 'Everything is cleared' },
+  'social.bord.opgeruimd_tekst': {
+    nl: 'Wat voorbij of gepost was, staat in het archief. Nieuwe events komen hier vanzelf op.',
+    en: 'What was past or posted is in the archive. New events turn up here by themselves.',
+  },
+  'social.bord.alles_terug': { nl: 'Alles terugzetten', en: 'Restore all' },
+  'social.bord.alles_terug_vraag': {
+    nl: '{aantal} kaarten terug op het socialbord zetten?',
+    en: 'Put {aantal} cards back on the social board?',
+  },
+  'social.bord.gearchiveerd': { nl: '{aantal} kaarten gearchiveerd', en: '{aantal} cards archived' },
+  'social.bord.teruggezet': { nl: '{aantal} kaarten teruggezet', en: '{aantal} cards restored' },
 
   // ── Het event zoals de socialrol het opent ─────────────────────────────
   'social.event.geen_naam': { nl: 'Event zonder naam', en: 'Event without a name' },

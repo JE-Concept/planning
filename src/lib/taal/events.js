@@ -398,10 +398,10 @@ export default {
   },
   'klant.bedrijfsnaam': { nl: 'Bedrijfsnaam', en: 'Company name' },
   'klant.btw': { nl: 'Btw-nummer', en: 'VAT number' },
-  'klant.merk': { nl: 'Merk', en: 'Brand' },
+  'klant.merk': { nl: 'Concept', en: 'Concept' },
   'klant.merk_hint': {
-    nl: 'Onder welk merk valt deze klant meestal?',
-    en: 'Which brand does this customer usually fall under?',
+    nl: 'Onder welk concept valt deze klant meestal?',
+    en: 'Which concept does this customer usually fall under?',
   },
   'klant.email': { nl: 'E-mail', en: 'Email' },
   'klant.telefoon': { nl: 'Telefoon', en: 'Phone' },

@@ -136,7 +136,7 @@ export default function Customers() {
         </form>
       </Dialog>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+      <div className="je-paginarand min-h-0 flex-1 overflow-y-auto py-4">
         {loading ? (
           <div className="flex justify-center py-10">
             <Spinner />
@@ -295,6 +295,11 @@ function KlantPaneel({ id, onClose, toast }) {
             tasks.length === 0
               ? {
                   label: t('alg.verwijderen'),
+                  // Stil, zoals op de taakfiche: "uit gebruik" ernaast is de
+                  // gewone keuze, en het rode kader maakte van de uitzondering
+                  // de knop die het eerst opviel. Zie "Call to action" in
+                  // docs/design-je-concept.md.
+                  toon: 'stil',
                   size: 'sm',
                   vraag: t('klant.weg_vraag'),
                   onConfirm: () => deleteCustomer(id).then(onClose),
