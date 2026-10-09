@@ -13,6 +13,8 @@ import {
 import { COL, col, fromQuery, newRef, ref } from '@lib/collections'
 import { meldSnapshot, vergeetBron } from '@lib/offline'
 import { isWeekend, runId } from '@lib/checklist-templates'
+import { dayKey } from '@lib/dates'
+import { auth } from '@lib/firebase'
 
 export { isWeekend, runId }
 
@@ -290,11 +292,68 @@ export function createChecklist({ name, kind = 'other' }) {
  * bij een FAVV-lijst geen detail.
  */
 export function archiveChecklist(id) {
-  return updateChecklist(id, { archived: true })
+  // De dag erbij, zodat het verslag weet tot wanneer de lijst gold. Zonder die
+  // datum blijft een lijst die niemand meer gebruikt elke dag als gemist staan.
+  return updateChecklist(id, { archived: true, archivedOn: dayKey(new Date()) })
 }
 
 export function restoreChecklist(id) {
-  return updateChecklist(id, { archived: false })
+  return updateChecklist(id, { archived: false, archivedOn: null })
+}
+
+// ─── Sluitingsdagen ─────────────────────────────────────────────────────────
+
+/**
+ * Wanneer de bistro dicht is: `config/bistro`, veld `gesloten`.
+ *
+ * Eén document voor de zaak en niet een veld per lijst — de bistro is dicht,
+ * niet de openingslijst. Wat erin staat en waarom de vaste weekdagen een
+ * geschiedenis dragen, staat bij `sluitingOp` in `@lib/checklist-report`.
+ *
+ * `config` mag iedereen met een profiel lezen, en dat is hier nodig: ook wie
+ * 's ochtends opent, moet kunnen zien dat het vandaag een sluitingsdag is.
+ * Schrijven doet alleen een beheerder.
+ */
+export function useSluiting({ aan = true } = {}) {
+  const [sluiting, setSluiting] = useState(null)
+  const [loading, setLoading] = useState(aan)
+
+  useEffect(() => {
+    if (!aan) {
+      setLoading(false)
+      return undefined
+    }
+    return onSnapshot(
+      ref(COL.config, 'bistro'),
+      (snap) => {
+        setSluiting(snap.exists() ? (snap.data().gesloten ?? null) : null)
+        setLoading(false)
+      },
+      // Niet te lezen is hier geen reden om het verslag te stranden; het telt
+      // dan zonder sluitingsdagen, zoals voor dit veld bestond.
+      () => setLoading(false)
+    )
+  }, [aan])
+
+  return { sluiting, loading }
+}
+
+/**
+ * Het hele `gesloten`-veld in één keer.
+ *
+ * Een merge voegt mappen samen maar vervangt lijsten, dus beide lijsten gaan
+ * altijd mee: zo kan een weggehaalde periode niet blijven hangen.
+ */
+export function bewaarSluiting(gesloten) {
+  return setDoc(
+    ref(COL.config, 'bistro'),
+    {
+      gesloten: { weekdagen: gesloten?.weekdagen ?? [], periodes: gesloten?.periodes ?? [] },
+      updatedBy: auth.currentUser?.uid ?? null,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  )
 }
 
 /** Alleen voor een lijst die nog nooit gebruikt is; anders archiveren. */

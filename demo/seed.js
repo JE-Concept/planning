@@ -709,6 +709,20 @@ CHECKLIST_TEMPLATES.forEach((template, position) =>
   }))
 
 /*
+  De bistro is op maandag dicht, en tussen kerst en nieuw. Zo toont het verslag
+  in de demo "gesloten" in plaats van elke maandag "niet begonnen" — de fout uit
+  U16 — en heeft het scherm in Instellingen iets om te tonen.
+*/
+seedDoc('config', 'bistro', {
+  gesloten: {
+    weekdagen: [{ vanaf: null, ingesteld: '2026-01-05', dagen: [1] }],
+    periodes: [{ van: '2026-12-24', tot: '2027-01-01', reden: 'Kerstverlof' }],
+  },
+  updatedBy: 'u-jasper',
+  updatedAt: dag(-30),
+})
+
+/*
   De ochtendlijst van vandaag, half afgewerkt door twee mensen — zo leest de
   demo als een dienst die bezig is in plaats van als een leeg formulier.
 
