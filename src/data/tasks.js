@@ -152,6 +152,28 @@ export function archiveTask(id) {
 }
 
 /**
+ * Kaarten van het socialbord halen of terugzetten, in één keer.
+ *
+ * Eén batch en niet een schrijfbeurt per kaart: het gaat om tientallen
+ * kaarten, en een halve opruiming — de helft weg, de rest niet omdat de
+ * verbinding wegviel — laat een bord achter waar niemand nog iets van snapt.
+ * Alleen `socialArchived` en de wie-en-wanneer: dat zijn velden die ook de
+ * socialrol mag schrijven (zie `socialVelden` in `firestore.rules`). Een
+ * Firestore-batch neemt hoogstens vijfhonderd schrijfbeurten; dit bord komt
+ * daar niet in de buurt, maar het wordt toch in stukken gesneden.
+ */
+export async function zetSociaalArchief(ids, aan = true) {
+  const door = doorWie()
+  for (let i = 0; i < ids.length; i += 400) {
+    const batch = writeBatch(db)
+    for (const id of ids.slice(i, i + 400)) {
+      batch.update(ref(COL.tasks, id), { socialArchived: aan, updatedBy: door, updatedAt: serverTimestamp() })
+    }
+    await batch.commit()
+  }
+}
+
+/**
  * Removes the task and everything that only existed because of it.
  *
  * Het activiteitslog blijft staan: wie wil weten wie een taak weggooide, heeft

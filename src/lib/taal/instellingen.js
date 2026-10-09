@@ -28,7 +28,7 @@ export default {
   'inst.tab.formules': { nl: 'Formules', en: 'Formulas' },
   'inst.tab.lijsten': { nl: 'Concepten & kostenplaatsen', en: 'Concepts & cost centres' },
   'inst.tab.structuur': { nl: 'Ruimtes & lijsten', en: 'Spaces & lists' },
-  'inst.tab.merken': { nl: 'Merken & labels', en: 'Brands & labels' },
+  'inst.tab.merken': { nl: 'Kleuren & labels', en: 'Colours & labels' },
   'inst.tab.dagelijks': { nl: 'Dagelijkse lijsten', en: 'Daily lists' },
   'inst.tab.marge': { nl: 'Marge', en: 'Margin' },
   'marge.tarieven.titel': { nl: 'Uurkost per statuut', en: 'Hourly cost per status' },
@@ -80,7 +80,7 @@ export default {
     en: 'Each row is a message an outside site sent to JE Plan: Wintermoods, the rental site, later Bar Vue and Feestbeest. Per processor you see what happened. If something fails, JE Plan retries every quarter of an hour, up to three times; after that the admins get a notification and you can replay here once the cause is gone.',
   },
   'inst.tab.systeem': { nl: 'Systeem', en: 'System' },
-  'inst.tab.regels': { nl: 'Business rules', en: 'Business rules' },
+  'inst.tab.regels': { nl: 'Regels', en: 'Business rules' },
   'inst.tab.herhalingen': { nl: 'Herhalingen', en: 'Recurring' },
 
   'inst.kop.beheer': {
@@ -115,8 +115,13 @@ export default {
   },
   'inst.team.afdeling_van': { nl: 'Afdeling van {wie}', en: 'Department of {wie}' },
   'inst.team.geen_afdeling': { nl: 'Geen afdeling', en: 'No department' },
-  'inst.team.uurtarief_plaatshouder': { nl: '€ per uur', en: '€ per hour' },
+  'inst.team.rol': { nl: 'Rol', en: 'Role' },
+  'inst.team.afdeling': { nl: 'Afdeling', en: 'Department' },
   'inst.team.uurtarief': { nl: 'Intern uurtarief', en: 'Internal hourly rate' },
+  'inst.team.uurtarief_van': { nl: 'Intern uurtarief van {wie}, in euro per uur', en: 'Internal hourly rate of {wie}, in euro per hour' },
+  'inst.team.per_uur': { nl: '/ uur', en: '/ hour' },
+  'inst.team.via_code': { nl: 'Geen e-mail — meldt zich aan met de ploegcode', en: 'No email — signs in with the crew code' },
+  'inst.team.geen_email': { nl: 'Geen e-mailadres', en: 'No email address' },
   'inst.team.dat_ben_jij': { nl: 'Dat ben jij', en: 'That is you' },
   'inst.team.laatste_eigenaar': {
     nl: 'Er moet altijd een eigenaar overblijven. Maak eerst iemand anders eigenaar.',
@@ -247,13 +252,17 @@ export default {
   'inst.struct.takenbord': { nl: 'Takenbord', en: 'Task board' },
   'inst.struct.socialcontent': { nl: 'Socialcontent', en: 'Social content' },
 
-  // ── Merken & labels ────────────────────────────────────────────────────
-  'inst.merk.kop': { nl: 'Merken', en: 'Brands' },
+  // ── Kleuren & labels ───────────────────────────────────────────────────
+  // De sleutels heten nog "merk", zoals `brandId` in de database. Op het
+  // scherm is het overal "concept": de eventfiche, de instellingen en de
+  // klantfiche noemden hetzelfde veld elk anders, en dan zoekt niemand de
+  // drie op dezelfde plek.
+  'inst.merk.kop': { nl: 'Concepten', en: 'Concepts' },
   'inst.merk.kleur_van': { nl: 'Kleur van {naam}', en: 'Colour of {naam}' },
-  'inst.merk.naam': { nl: 'Merknaam', en: 'Brand name' },
-  'inst.merk.toegevoegd': { nl: 'Merk toegevoegd.', en: 'Brand added.' },
+  'inst.merk.naam': { nl: 'Naam van het concept', en: 'Concept name' },
+  'inst.merk.toegevoegd': { nl: 'Concept toegevoegd.', en: 'Concept added.' },
   'inst.merk.kleur': { nl: 'Kleur', en: 'Colour' },
-  'inst.merk.nieuw': { nl: 'Nieuw merk', en: 'New brand' },
+  'inst.merk.nieuw': { nl: 'Nieuw concept', en: 'New concept' },
   'inst.label.kop': { nl: 'Labels', en: 'Labels' },
   'inst.label.nieuw': { nl: 'Nieuw label', en: 'New label' },
   'inst.label.geen': { nl: 'Nog geen labels.', en: 'No labels yet.' },
@@ -325,6 +334,36 @@ export default {
   'inst.lijst.geen_punten': { nl: 'Nog geen punten in deze groep.', en: 'No items in this group yet.' },
   'inst.lijst.punt_erbij': { nl: '+ Punt', en: '+ Item' },
   'inst.lijst.groep_erbij': { nl: '+ Groep', en: '+ Group' },
+
+  // De sluitingsdagen van de bistro: de openingsuren van het pand, niet wie
+  // er kan werken (dat staat in AAPI).
+  'inst.sluiting.titel': { nl: 'Sluitingsdagen', en: 'Closing days' },
+  'inst.sluiting.uitleg': {
+    nl: 'Op een sluitingsdag staan de lijsten in de registraties als "gesloten" en niet als "niet begonnen". Wat er toch afgevinkt wordt, telt gewoon mee.',
+    en: 'On a closing day the lists show as "closed" in the records, not as "not started". Anything ticked off anyway still counts.',
+  },
+  'inst.sluiting.vast': { nl: 'Elke week dicht op', en: 'Closed every week on' },
+  'inst.sluiting.vast_hint': {
+    nl: 'Een wijziging geldt vanaf vandaag; vorige maanden houden wat toen gold.',
+    en: 'A change applies from today; earlier months keep what applied then.',
+  },
+  'inst.sluiting.verloren': {
+    nl: 'Deze punten vallen altijd op een sluitingsdag en tellen dus nooit meer mee: {punten}. Zet ze op een andere dag.',
+    en: 'These items always fall on a closing day and will therefore never count: {punten}. Move them to another day.',
+  },
+  'inst.sluiting.periodes': { nl: 'Losse dagen en verlof', en: 'Single days and holidays' },
+  'inst.sluiting.geen_periodes': { nl: 'Nog geen losse sluitingsdagen.', en: 'No single closing days yet.' },
+  'inst.sluiting.van': { nl: 'Van', en: 'From' },
+  'inst.sluiting.tot': { nl: 'Tot en met', en: 'Up to and including' },
+  'inst.sluiting.tot_hint': { nl: 'Leeg voor één dag.', en: 'Leave empty for a single day.' },
+  'inst.sluiting.reden': { nl: 'Reden', en: 'Reason' },
+  'inst.sluiting.reden_plaatshouder': { nl: 'Bv. jaarlijks verlof', en: 'E.g. annual holiday' },
+  'inst.sluiting.toevoegen': { nl: 'Toevoegen', en: 'Add' },
+  'inst.sluiting.weg': { nl: 'Weg', en: 'Remove' },
+  'inst.sluiting.weg_vraag': {
+    nl: 'Deze sluitingsdagen weghalen? De registraties van die dagen tellen dan weer als gewone dagen.',
+    en: 'Remove these closing days? The records of those days will count as regular days again.',
+  },
 
   // Eén punt
   'inst.punt.plaatshouder': { nl: 'Wat moet er gebeuren?', en: 'What needs doing?' },
@@ -604,7 +643,7 @@ export default {
   'regels.veld.task.tags': { nl: 'Labels', en: 'Labels' },
   'regels.veld.task.assignees': { nl: 'Toegewezen aan', en: 'Assigned to' },
   'regels.veld.task.customerName': { nl: 'Klant', en: 'Customer' },
-  'regels.veld.task.brandId': { nl: 'Merk', en: 'Brand' },
+  'regels.veld.task.brandId': { nl: 'Concept', en: 'Concept' },
   'regels.veld.task.dueDate': { nl: 'Vervaldag', en: 'Due date' },
   'regels.veld.task.startDate': { nl: 'Startdag', en: 'Start date' },
   'regels.veld.task.eventDate': { nl: 'Dag van het event', en: 'Day of the event' },
@@ -623,9 +662,8 @@ export default {
   'regels.veld.customer.phone': { nl: 'Telefoon', en: 'Phone' },
   'regels.veld.customer.city': { nl: 'Gemeente', en: 'Town' },
   'regels.veld.customer.postalCode': { nl: 'Postcode', en: 'Postcode' },
-  'regels.veld.customer.brandId': { nl: 'Merk', en: 'Brand' },
+  'regels.veld.customer.brandId': { nl: 'Concept', en: 'Concept' },
   'regels.veld.customer.tags': { nl: 'Labels', en: 'Labels' },
-  'regels.veld.customer.notes': { nl: 'Notities', en: 'Notes' },
   'regels.veld.customer.archived': { nl: 'Gearchiveerd', en: 'Archived' },
 
   'regels.veld.socialPost.title': { nl: 'Titel', en: 'Title' },
@@ -634,7 +672,7 @@ export default {
   'regels.veld.socialPost.assigneeId': { nl: 'Van wie', en: 'Whose' },
   'regels.veld.socialPost.reviewState': { nl: 'Review', en: 'Review' },
   'regels.veld.socialPost.reviewerId': { nl: 'Reviewer', en: 'Reviewer' },
-  'regels.veld.socialPost.brandId': { nl: 'Merk', en: 'Brand' },
+  'regels.veld.socialPost.brandId': { nl: 'Concept', en: 'Concept' },
   'regels.veld.socialPost.publishAt': { nl: 'Publicatiemoment', en: 'Publication moment' },
   'regels.veld.socialPost.taskId': { nl: 'Hangt aan event', en: 'Hangs from an event' },
   'regels.veld.socialPost.caption': { nl: 'Tekst', en: 'Copy' },
@@ -670,7 +708,7 @@ export default {
   'regels.actie.task.tag': { nl: 'Label toevoegen', en: 'Add a label' },
   'regels.actie.task.dueDate': { nl: 'Vervaldag zetten', en: 'Set the due date' },
   'regels.actie.task.startDate': { nl: 'Startdag zetten', en: 'Set the start date' },
-  'regels.actie.customer.brand': { nl: 'Merk toewijzen', en: 'Assign a brand' },
+  'regels.actie.customer.brand': { nl: 'Concept toewijzen', en: 'Assign a concept' },
   'regels.actie.customer.tag': { nl: 'Label toevoegen', en: 'Add a label' },
   'regels.actie.customer.archive': { nl: 'Archiveren', en: 'Archive' },
   'regels.actie.socialPost.assignee': { nl: 'Toewijzen', en: 'Assign' },

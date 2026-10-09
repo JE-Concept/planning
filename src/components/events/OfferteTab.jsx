@@ -7,6 +7,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import {
+  bewerkOfferte,
   maakOfferte,
   offerteLink,
   useOffertes,
@@ -16,6 +17,7 @@ import {
   wijzigRegel,
   wisRegel,
 } from '@data/offertes'
+import KlantKiezer from '@components/common/KlantKiezer'
 import OfferteBlad from './OfferteBlad'
 import VoorstelWerk from './VoorstelWerk'
 
@@ -186,6 +188,25 @@ export default function OfferteTab({ ev }) {
             {offerte.feedback ? <span className="je-offertewerk__feedback">{offerte.feedback}</span> : null}
           </p>
         ) : null}
+
+        {/*
+          De klant staat bij het aanmaken over van het event, maar een offerte
+          gaat soms naar iemand anders: het bedrijf betaalt het personeelsfeest
+          dat de vzw organiseert. Hetzelfde veld als op de fiche, zodat "mist:
+          klant" hierboven meteen hier op te lossen is, met aanmaken erbij.
+        */}
+        <KlantKiezer
+          className="je-offertewerk__klant"
+          label={t('offerte.klant')}
+          veldnaam={t('klant.kiezen.offerte')}
+          id={offerte.klantId ?? null}
+          naam={offerte.klantNaam ?? ''}
+          onChange={(klant) =>
+            bewerkOfferte(offerte.id, { klantId: klant.id ?? null, klantNaam: klant.naam ?? '' }, uid).catch((err) =>
+              toast.error(err.message)
+            )
+          }
+        />
 
         {mist.length ? (
           <p className="je-offertewerk__mist">

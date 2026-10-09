@@ -50,6 +50,55 @@
   flex-shrink: 0;
 }
 
+/* Tabbladen die op een tweede regel mogen. Schuiven zonder schuifbalk is goed
+   voor vier tabs op een telefoon; Instellingen heeft er veertien, en vanaf
+   "Business rules" vielen ze weg zonder dat iets zei dat er meer waren. */
+/* Een rij in Team & toegang: een kleine kop boven elke keuze, zodat een
+   getal zonder eenheid of een keuzelijst die er bij één persoon meer staat
+   zegt wat het is. */
+.je-teamrij__kop {
+  font: var(--type-caption);
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+.je-teamrij__bedrag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-body-sm);
+  color: var(--text-2);
+}
+.je-teamrij__bedrag .je-input { width: 64px; flex: 0 0 auto; }
+
+.je-tabs--wrap {
+  flex-wrap: wrap;
+  overflow: visible;
+  row-gap: var(--space-4);
+  column-gap: var(--space-6);
+}
+
+/*
+  Tabbladen die in rijen breken in plaats van uit beeld te schuiven. Voor een
+  rij waar alles telt en niets ontbreken mag (de tabbladen van een event):
+  een tab die rechts wegvalt zonder schuifbalk, bestaat voor wie hem zoekt
+  niet. De onderlijn van de actieve tab staat onder zijn eigen rij.
+*/
+.je-tabs--rijen.je-tabs--scroll {
+  flex-wrap: wrap;
+  overflow: visible;
+  column-gap: var(--space-6);
+  row-gap: var(--space-4);
+}
+
+/* Een tweede deel onder een tabblad dat twee dingen draagt. */
+.je-tabdeel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  scroll-margin-top: var(--space-6);
+}
+
 /* ── Vlakken ───────────────────────────────────────────────────────────── */
 
 .je-panel {
@@ -323,12 +372,33 @@
   padding: var(--space-3) 0;
 }
 
+/*
+  De rand van een pagina: één maat voor de titel en alles eronder.
+
+  Er stonden er drie naast elkaar. De paginakop sprong 48 pixels in, de
+  schermen in de ontwerpstijl ook, en de oudere schermen (Klanten, Tasks,
+  Goals, Socials, Rooster, Uren) met Tailwinds `px-4 sm:px-6` maar 24 — hun
+  inhoud begon daardoor een duim links van hun eigen titel, en een bord plakte
+  tegen de zijbalk. Nu leest alles dezelfde variabele, en wie een nieuw scherm
+  maakt, zet `je-paginarand` op de buitenste laag in plaats van een getal.
+*/
+:root {
+  --paginarand: var(--space-8);
+}
+@media (max-width: 999px) {
+  :root { --paginarand: var(--space-5); }
+}
+.je-paginarand {
+  padding-left: var(--paginarand);
+  padding-right: var(--paginarand);
+}
+
 .je-pagehead {
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
   gap: var(--space-5);
-  padding: var(--space-6) var(--space-8);
+  padding: var(--space-6) var(--paginarand);
   border-bottom: 1px solid var(--border-hairline);
   background: var(--surface-1);
 }
@@ -346,7 +416,7 @@
   text-wrap: pretty;
 }
 .je-pagebody {
-  padding: var(--space-7) var(--space-8);
+  padding: var(--space-7) var(--paginarand);
 }
 
 .je-bottomnav {
@@ -421,10 +491,10 @@
     padding-right: var(--space-5);
   }
   .je-pagehead {
-    padding: var(--space-5);
+    padding: var(--space-5) var(--paginarand);
   }
   .je-pagebody {
-    padding: var(--space-5);
+    padding: var(--space-5) var(--paginarand);
   }
   .je-chat {
     position: absolute;
@@ -435,6 +505,108 @@
 }
 
 /* ── Events ────────────────────────────────────────────────────────────── */
+
+/*
+  Het eventbord. De schuifbalk staat er zichtbaar onder: met de verborgen balk
+  van het systeem zag niemand dat er rechts nog vier kolommen stonden.
+*/
+.je-eventbord {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding-bottom: var(--space-4);
+  align-items: flex-start;
+  scrollbar-width: auto;
+  scrollbar-color: var(--navy-300) var(--surface-2);
+}
+/*
+  Op een laptop schuift het bord in zichzelf, ook verticaal. Anders stond de
+  schuifbalk onder de langste kolom, een scherm lager dan waar je keek — en
+  een schuifbalk die je niet ziet, is er niet. Nu staat ze altijd onderaan in
+  beeld, en blijven de kolomkoppen staan terwijl je door een volle kolom gaat.
+*/
+@media (min-width: 860px) {
+  .je-eventbord {
+    max-height: max(420px, calc(100dvh - 250px));
+    overflow: auto;
+  }
+  .je-eventbord__kop {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--surface-2);
+  }
+}
+.je-eventbord::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+.je-eventbord::-webkit-scrollbar-track {
+  background: var(--surface-2);
+}
+.je-eventbord::-webkit-scrollbar-thumb {
+  background: var(--navy-300);
+  border-radius: 5px;
+}
+.je-eventbord__kolom {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 4px;
+  transition: flex-basis 160ms var(--ease-brand);
+}
+.je-eventbord__kolom[data-over] {
+  border-color: var(--border-accent);
+}
+.je-eventbord__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-eventbord__n {
+  font: var(--type-caption);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.je-eventbord__naam {
+  letter-spacing: 0.14em;
+  color: var(--text-1);
+}
+.je-eventbord__aantal {
+  margin-left: auto;
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+.je-eventbord__kaarten {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  min-height: 80px;
+}
+/* Leeg: een strookje met de naam rechtop, van boven naar onder te lezen. */
+.je-eventbord__kolom[data-smal] {
+  flex-basis: 44px;
+}
+.je-eventbord__kolom[data-smal] .je-eventbord__kop {
+  flex-direction: column;
+  padding: var(--space-4) 0;
+  border-bottom: 0;
+  min-height: 200px;
+}
+.je-eventbord__kolom[data-smal] .je-eventbord__naam {
+  writing-mode: vertical-rl;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.je-eventbord__kolom[data-smal] .je-eventbord__aantal {
+  margin-left: 0;
+  margin-top: auto;
+}
 
 .je-boardcard {
   display: flex;
@@ -451,11 +623,32 @@
   border-color: var(--border-accent);
   box-shadow: var(--shadow-1);
 }
+.je-boardcard__klant {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font: var(--type-body-sm);
+  color: var(--text-1);
+  min-width: 0;
+}
+.je-boardcard__klantnaam {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-boardcard__bedrag {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .je-calchip {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
+  width: 100%;
   background: var(--navy-50);
   border: 1px solid var(--border-hairline);
   border-radius: 2px;
@@ -467,6 +660,163 @@
 }
 .je-calchip:hover {
   border-color: var(--border-accent);
+}
+.je-calchip__regel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.je-calchip__stip {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+}
+.je-calchip__naam {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.je-calchip__onder {
+  font-weight: 400;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* In de week en de agenda is er plaats: de naam mag over twee regels. */
+.je-calchip--groot {
+  padding: 6px 8px;
+  gap: 4px;
+}
+.je-calchip--groot .je-calchip__naam {
+  white-space: normal;
+  font-weight: 600;
+}
+
+/* ── De eventkalender ─────────────────────────────────────────────────── */
+
+.je-kal__kop {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-kal__titel {
+  font: var(--type-h3);
+  text-transform: uppercase;
+  margin: 0;
+}
+.je-kal__periode {
+  margin-left: auto;
+}
+.je-kal__periode .je-tab {
+  padding: 6px 14px;
+  min-height: 32px;
+}
+.je-kal__raster {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.je-kal__weekdag {
+  padding: var(--space-3) var(--space-4);
+  letter-spacing: 0.14em;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-kal__dag {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 112px;
+  padding: var(--space-3);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-hairline);
+  border-right: 1px solid var(--border-hairline);
+}
+.je-kal__dag:nth-child(7n) {
+  border-right: 0;
+}
+.je-kal__raster[data-periode='week'] .je-kal__dag {
+  min-height: 320px;
+  border-bottom: 0;
+}
+.je-kal__dag--buiten {
+  background: var(--paper);
+}
+.je-kal__dag--buiten .je-kal__nummer {
+  color: var(--text-3);
+}
+.je-kal__nummer {
+  font: var(--fw-medium) 15px/1 var(--font-display);
+  color: var(--text-1);
+  align-self: flex-start;
+}
+/*
+  Vandaag: een gevuld vakje rond het cijfer en een zachte tint op de dag.
+  Alleen het cijfer van kleur veranderen viel niet op — in een maand vol
+  donkerblauwe cijfers is één iets lichter blauw cijfer geen markering.
+*/
+.je-kal__dag--vandaag {
+  background: var(--accent-quiet);
+}
+.je-kal__dag--vandaag .je-kal__nummer {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  padding: 4px 6px;
+  border-radius: 2px;
+}
+.je-kal__dagkop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-kal__meer {
+  align-self: flex-start;
+  font: var(--type-caption);
+  color: var(--text-accent);
+  padding: 2px 4px;
+}
+.je-kal__meer:hover {
+  text-decoration: underline;
+}
+.je-kal__agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.je-kal__agendadag {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-hairline);
+}
+.je-kal__agendadag:first-child {
+  border-top: 0;
+}
+.je-kal__agendadatum {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.je-kal__agendaevents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.je-kal__leeg {
+  padding: var(--space-6) var(--space-5);
 }
 .je-link-quiet:hover {
   color: var(--text-accent) !important;
@@ -496,6 +846,13 @@
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
+}
+/* Het veld waar een aandachtspunt naartoe sprong, licht even op. */
+.je-fiche__cel[data-gezocht] {
+  outline: 2px solid var(--border-accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+  transition: outline-color 400ms var(--ease-brand);
 }
 /* De locatie heeft een lijst met adressen onder zich en een cel breed is
    daarvoor te smal om een straatnaam in te lezen. */
@@ -815,6 +1172,9 @@
   font: var(--type-caption);
   color: var(--warning);
 }
+/* De klant van de offerte: smal genoeg dat de lijst eronder er niet over
+   de hele breedte uitziet als een tweede tabel. */
+.je-offertewerk__klant { max-width: 420px; }
 /* De klantenpagina: het adres dat de klant krijgt, om te openen of te kopiëren. */
 .je-offertewerk__link {
   display: flex;
@@ -1005,7 +1365,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-3) var(--paginarand);
   border-bottom: 1px solid var(--border-hairline);
   background: var(--surface-1);
 }
@@ -1123,7 +1483,7 @@ select.je-compact { padding-right: 24px; }
   min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-5) var(--paginarand);
   scroll-snap-type: x proximity;
 }
 .je-boardcol {
@@ -1380,6 +1740,15 @@ select.je-compact { padding-right: 24px; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* Een gesloten dag is geen open dag: grijs en niet rood, want er ontbreekt niets. */
+.je-report__gesloten td { color: var(--text-2); background: var(--surface-2); }
+/* De uitleg onder een cijfer: "waarvan 3 periodiek", "gesloten, toch gedaan". */
+.je-report__klein {
+  display: block;
+  font: var(--type-caption);
+  font-weight: 400;
+  color: var(--text-3);
+}
 .je-report__blok { margin-top: var(--space-5); }
 .je-report__grafiek { padding: var(--space-5); }
 .je-report__grafiek svg { width: 100%; height: 150px; display: block; }
@@ -1481,17 +1850,9 @@ select.je-compact { padding-right: 24px; }
 
 /* ── Klanten ───────────────────────────────────────────────────────────── */
 
-/* De velden voor een klant die vanuit een event aangemaakt wordt. Ze staan in
-   een kadertje omdat het formulier middenin een ander formulier zit: zonder
-   rand leest "Naam" als de naam van het event. */
-.je-klantnieuw {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  border: 1px solid var(--border-hairline);
-  background: var(--surface-2);
-}
+/* Het btw-nummer met de knop om naam en adres op te zoeken ernaast. */
+.je-btwveld { display: flex; align-items: center; gap: var(--space-3); }
+.je-btwveld > :first-child { flex: 1; min-width: 0; }
 
 /* Een regel uit de historiek: datum, naam, status, bedrag. Grid en geen flex,
    zodat de bedragen onder elkaar uitkomen — een kolom cijfers die niet
@@ -1973,12 +2334,28 @@ select.je-compact { padding-right: 24px; }
 /* Los socialwerk toevoegen, boven het socialbord. Eén regel met een veld en een
    knop: het is geen formulier maar een invulling, en een dialoog ervoor openen
    maakt van een idee noteren een handeling. */
+/* De balk boven het socialbord: links een losse taak, rechts het archief en
+   het opruimen. Zelfde rand en zelfde inspringing als het bord eronder. */
+.je-socialbalk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-4) var(--paginarand);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.je-socialbalk__rechts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
 .je-sociallos {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--border-hairline);
+  flex: 1 1 280px;
 }
 .je-sociallos .je-input { max-width: 320px; }
 
@@ -1991,7 +2368,7 @@ select.je-compact { padding-right: 24px; }
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-5) var(--paginarand);
 }
 .je-rooster__tabel {
   width: 100%;
@@ -2774,12 +3151,25 @@ select.je-compact { padding-right: 24px; }
 
 .je-overzicht__aandacht ul {
   margin: 0;
-  padding-left: var(--space-5);
+  padding-left: 0;
+  list-style: none;
   font: var(--type-body-sm);
 }
 
 .je-overzicht__aandacht li + li {
   margin-top: var(--space-2);
+}
+/* De zin links, de knop die het oplost ernaast; op een telefoon eronder. */
+.je-overzicht__aandacht li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+.je-overzicht__aandacht li > span {
+  flex: 1 1 16rem;
+  min-width: 0;
 }
 
 .je-overzicht__kaarten {
@@ -3124,6 +3514,25 @@ button.je-paneel-kaart:hover {
   flex-wrap: wrap;
 }
 .je-planfilters > select { width: auto; min-width: 160px; }
+
+/* De filterregel van het logboek: zoeken, wie, wat en periode op één lijn.
+   Een `je-select` is standaard zo breed als zijn ouder — goed in een
+   formulier, maar in een flexrij nam elke keuzelijst daardoor een eigen
+   regel. Hier zijn ze zo breed als hun langste keuze; op een telefoon
+   staan ze twee aan twee onder het zoekveld. */
+.je-filterbalk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.je-filterbalk__zoek { flex: 1 1 220px; min-width: 200px; }
+.je-filterbalk > .je-select { width: auto; flex: 0 1 auto; min-width: 150px; }
+@media (max-width: 559px) {
+  .je-filterbalk__zoek { flex-basis: 100%; }
+  .je-filterbalk > .je-select { flex: 1 1 calc(50% - var(--space-3)); min-width: 0; }
+}
 /* De legende van de afdelingskleuren: een stipje en een woord. */
 .je-planlegende {
   display: flex;
@@ -3901,3 +4310,26 @@ button.je-paneel-kaart:hover {
   .je-messaging__rij { padding: var(--space-3) var(--space-4); }
   .je-messaging__tijd { margin-left: 0; flex-basis: 100%; }
 }
+
+/* ── Notities: de objectkiezer en de pillen van wat een notitie raakt ──────── */
+.je-objectkiezer { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.je-objectkiezer__gekozen,
+.je-objectkiezer__soorten,
+.je-koppelingen { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.je-koppelingen { margin-top: var(--space-3); }
+.je-objectkiezer__soorten .je-tag,
+.je-koppelingen .je-tag,
+.je-objectkiezer__gekozen .je-tag { padding: 3px 10px; gap: var(--space-2); font: var(--type-caption); max-width: 100%; }
+.je-objectkiezer__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 22ch; }
+/* De lijst hangt onder het veld en niet onder de zoekbalk bovenaan: eigen
+   ankerpunt, en in een dialoog mag ze over de voet heen vallen. */
+.je-objectkiezer__veld { position: relative; }
+.je-objectkiezer__lijst { top: calc(100% + 4px); z-index: 30; max-height: 320px; }
+.je-objectkiezer__optie { width: 100%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-5); text-align: left; }
+.je-objectkiezer__titel { display: block; font: var(--type-body-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.je-objectkiezer__nieuw { border-top: 1px solid var(--border-hairline); }
+.je-objectkiezer__sub { display: block; font: var(--type-caption); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Een pil die je kunt aanraken is een knop, en een knop is op een telefoon
+   minstens 32px hoog — `npm run mobiel` meet dat. */
+.je-koppelingen .je-tag--selectable,
+.je-objectkiezer__soorten .je-tag--selectable { min-height: 32px; }

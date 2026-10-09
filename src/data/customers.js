@@ -169,7 +169,6 @@ export function createCustomer(data) {
     billingAddress: data.billingAddress ?? leegAdres(),
     billingEmail: data.billingEmail ?? '',
     contacts: data.contacts ?? [],
-    notes: data.notes ?? '',
     /*
       Vaste korting op verhuurmateriaal, in procent.
 

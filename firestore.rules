@@ -228,7 +228,7 @@ service cloud.firestore {
       een sociallijst en heeft met geld niets te maken.
     */
     function socialVelden() {
-      return changedKeys().hasOnly(['socialStage', 'socialWanted', 'updatedAt', 'updatedBy', 'position']);
+      return changedKeys().hasOnly(['socialStage', 'socialWanted', 'socialArchived', 'updatedAt', 'updatedBy', 'position']);
     }
 
     // Een sociallijst herken je aan de lijst zelf (`kind: 'social'`), niet aan
@@ -477,9 +477,56 @@ service cloud.firestore {
         && (resource.data.ownerId == request.auth.uid || isAdmin());
     }
 
+    /*
+      De oude verslagen. De app leest ze niet meer — ze staan sinds de
+      notities in `notities` met `soort: 'overleg'`, verhuisd door
+      `scripts/seed.mjs`. Lezen blijft zoals het was, zodat er niets verloren
+      gaat tot iemand bewust beslist ze weg te doen. Schrijven doet niemand
+      meer: de functie schrijft in `notities`, en een tweede plek waar een
+      verslag kan ontstaan is een plek waar het zoekraakt.
+    */
     match /meetings/{id} {
       allow read:   if isMember() && request.auth.uid in resource.data.viewerIds;
-      allow write:  if isAdmin();
+      allow write:  if false;
+    }
+
+    /*
+      Notities, gekoppeld aan een klant, event, materiaal, urenboeking…
+
+      Twee soorten lezers, en daarom twee takken:
+       - een open notitie (`prive == false`) leest het hele team;
+       - een privénotitie — het verslag van een overleg — alleen wie in
+         `viewerIds` staat.
+      De app vraagt ze met twee aparte queries op, één per tak: Firestore
+      weigert een query die documenten zou kunnen opleveren die de regel
+      afwijst, en een `prive == false`-filter of een `viewerIds
+      array-contains`-filter bewijst telkens één tak.
+
+      Een privénotitie maakt alleen `functions-meetings/` (met
+      beheerdersrechten, dus niet langs hier). Vanuit de browser mag wie haar
+      leest er alleen de koppelingen van wijzigen: zeggen over welk event een
+      overleg ging, is precies wat het model niet kan. De inhoud, en vooral
+      wie haar mag lezen, blijft zoals de functie ze schreef.
+    */
+    match /notities/{id} {
+      allow read:   if (isTeam() && resource.data.prive == false)
+                    || (isMember() && request.auth.uid in resource.data.viewerIds);
+      allow create: if isTeam()
+                    && request.resource.data.prive == false
+                    && request.resource.data.soort == 'notitie'
+                    && request.resource.data.auteurId == request.auth.uid;
+      allow update: if (isTeam()
+                        && resource.data.prive == false
+                        && request.resource.data.prive == false
+                        && request.resource.data.soort == resource.data.soort
+                        && request.resource.data.auteurId == resource.data.auteurId)
+                    || (isMember()
+                        && request.auth.uid in resource.data.viewerIds
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['koppelingen', 'koppelsleutels', 'updatedAt', 'updatedBy']));
+      allow delete: if isTeam()
+                    && resource.data.prive == false
+                    && (resource.data.auteurId == request.auth.uid || isAdmin());
     }
 
     // Business rules: het team ziet waarom een taak ineens van eigenaar wisselt,

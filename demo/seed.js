@@ -110,7 +110,6 @@ const KLANTEN = [
       { id: 'c-blum-1', name: 'Karen Vandeput', role: 'HR-manager', email: 'karen@blum.be', phone: '0478 12 34 56', primary: true },
       { id: 'c-blum-2', name: 'Tom Peeters', role: 'Boekhouding', email: 'facturen@blum.be', phone: '' },
     ],
-    notes: 'Factuur altijd naar boekhouding, nooit naar HR. Vegetarisch aanbod is een vast punt.',
   },
   {
     id: 'k-niels-inez', name: 'Niels & Inez', vatNumber: '',
@@ -118,7 +117,6 @@ const KLANTEN = [
     brandId: 'feestbeest',
     address: { street: 'Hoeve Vanhove', postalCode: '3720', city: 'Kortessem', country: 'België' },
     contacts: [{ id: 'c-ni-1', name: 'Inez Claes', role: 'Bruid', email: 'inez@telenet.be', phone: '0495 66 77 88', primary: true }],
-    notes: 'Regenplan in de schuur. Dansvloer breder dan bij de Odeurs-trouw.',
     // De sleutel van hun eigen pagina, waar al hun dossiers bij elkaar staan.
     portalToken: 'demo-klant-token-nielsinez',
   },
@@ -130,7 +128,6 @@ const KLANTEN = [
     contacts: [
       { id: 'c-bl-1', name: 'Marleen Gijsen', role: 'Dienst evenementen', email: 'marleen@borgloon.be', phone: '012 67 36 60', primary: true },
     ],
-    notes: 'Standenplan moet twee weken vooraf bij de dienst liggen.',
   },
 ]
 
@@ -712,6 +709,20 @@ CHECKLIST_TEMPLATES.forEach((template, position) =>
   }))
 
 /*
+  De bistro is op maandag dicht, en tussen kerst en nieuw. Zo toont het verslag
+  in de demo "gesloten" in plaats van elke maandag "niet begonnen" — de fout uit
+  U16 — en heeft het scherm in Instellingen iets om te tonen.
+*/
+seedDoc('config', 'bistro', {
+  gesloten: {
+    weekdagen: [{ vanaf: null, ingesteld: '2026-01-05', dagen: [1] }],
+    periodes: [{ van: '2026-12-24', tot: '2027-01-01', reden: 'Kerstverlof' }],
+  },
+  updatedBy: 'u-jasper',
+  updatedAt: dag(-30),
+})
+
+/*
   De ochtendlijst van vandaag, half afgewerkt door twee mensen — zo leest de
   demo als een dienst die bezig is in plaats van als een leeg formulier.
 
@@ -879,30 +890,89 @@ seedDoc('agendaItems', 'a0', {
   createdBy: 'u-elke', createdAt: dag(-10), updatedAt: dag(-7),
 })
 
-seedDoc('meetings', 't-overleg-1', {
-  taskId: 't-overleg-1', titel: 'Weekstart events', datum: '2026-09-21',
+/*
+  De verslagen van het overleg zijn notities van de soort `overleg`, privé voor
+  wie in `viewerIds` staat — zoals `functions-meetings/` ze schrijft. Het
+  eerste hangt al aan de events die erin besproken werden, zodat het ook op
+  die eventpagina's opduikt.
+*/
+const overleg = (id, velden) =>
+  seedDoc('notities', id, {
+    soort: 'overleg', taskId: id, tekst: '', bron: null, prive: true,
+    viewerIds: ['u-jasper', 'u-anneleen', 'u-maxine', 'u-elke'],
+    koppelingen: [], koppelsleutels: [], auteurId: 'u-jasper', auteurNaam: 'Jasper Hansen',
+    ...velden,
+  })
+
+overleg('t-overleg-1', {
+  titel: 'Weekstart events', datum: '2026-09-21',
   deelnemers: ['Jasper Hansen', 'Elke Motmans', 'Anneleen Coenen'],
   samenvatting: [
     { onderwerp: 'Trouw Niels en Inez', tekst: 'De offerte gaat deze week de deur uit. Het regenplan is bevestigd met de eigenaar; de drankenlijst moet nog afgewerkt worden voor de bestelling kan.' },
     { onderwerp: 'Blum personeelsfeest', tekst: 'De klant verhoogde naar 220 personen. De offerte wordt herzien op aantallen, niet op formule.' },
     { onderwerp: 'Haspengouw Culinair', tekst: 'Het standenplan is klaar maar moet nog naar de stad. Anneleen volgt op; deadline vrijdag.' },
   ],
-  bron: null,
-  viewerIds: ['u-jasper', 'u-anneleen', 'u-maxine', 'u-elke'],
+  koppelingen: [
+    { soort: 'event', id: 't-trouw', label: 'Trouw Niels en Inez' },
+    { soort: 'event', id: 't-blum', label: 'Blum België — 20-jarig bestaan' },
+  ],
+  koppelsleutels: ['event:t-trouw', 'event:t-blum'],
   createdAt: dag(-7),
 })
 
 // Een tweede verslag, zodat de zoekfunctie ook echt iets te filteren heeft.
-seedDoc('meetings', 't-overleg-2', {
-  taskId: 't-overleg-2', titel: 'Maandoverleg bistro', datum: '2026-09-07',
+overleg('t-overleg-2', {
+  titel: 'Maandoverleg bistro', datum: '2026-09-07',
   deelnemers: ['Jasper Hansen', 'Elke Motmans'],
   samenvatting: [
     { onderwerp: 'Winterkaart Bar Vue', tekst: 'De nieuwe kaart gaat half oktober in. De wijnen worden herzien met de leverancier.' },
     { onderwerp: 'Personeel zaal', tekst: 'Twee extra weekendkrachten gezocht voor november en december.' },
   ],
-  bron: null,
-  viewerIds: ['u-jasper', 'u-anneleen', 'u-maxine', 'u-elke'],
   createdAt: dag(-21),
+})
+
+// Gewone notities: open voor het team, elk aan iets anders gekoppeld.
+const notitie = (id, velden) =>
+  seedDoc('notities', id, {
+    soort: 'notitie', prive: false, viewerIds: [], koppelingen: [], koppelsleutels: [],
+    createdAt: dag(-2), updatedAt: dag(-2),
+    ...velden,
+  })
+
+// Wat vroeger in het vrije notitieveld van de klant stond, zoals de seed het
+// live verhuist: één notitie per klant, zonder titel.
+const klantnotitie = (klant, naam, tekst) =>
+  notitie(`klantnotities-${klant}`, {
+    titel: '', tekst, datum: '2026-09-01',
+    koppelingen: [{ soort: 'klant', id: klant, label: naam }],
+    koppelsleutels: [`klant:${klant}`],
+    auteurId: null, auteurNaam: '',
+  })
+
+klantnotitie('k-blum', 'Blum België', 'Factuur altijd naar boekhouding, nooit naar HR. Vegetarisch aanbod is een vast punt.')
+klantnotitie('k-niels-inez', 'Niels & Inez', 'Regenplan in de schuur. Dansvloer breder dan bij de Odeurs-trouw.')
+klantnotitie('k-borgloon', 'Stad Borgloon', 'Standenplan moet twee weken vooraf bij de dienst liggen.')
+
+notitie('n-blum-facturatie', {
+  titel: 'Facturatie Blum', datum: '2026-09-30',
+  tekst: 'Blum wil één factuur per kwartaal, met de PO-nummers per event erop. Hun boekhouding stuurt anders terug.',
+  koppelingen: [
+    { soort: 'klant', id: 'k-blum', label: 'Blum België' },
+    { soort: 'event', id: 't-blum', label: 'Blum België — 20-jarig bestaan' },
+  ],
+  koppelsleutels: ['klant:k-blum', 'event:t-blum'],
+  auteurId: 'u-elke', auteurNaam: 'Elke Motmans',
+})
+
+notitie('n-tent-zeil', {
+  titel: 'Zijzeil tent 2 gescheurd', datum: '2026-10-02',
+  tekst: 'Na Loonse Feesten: één zijzeil van de tweede partytent heeft een scheur van 30 cm. Hersteld tegen de trouw van Niels en Inez, anders de reserve meenemen.',
+  koppelingen: [
+    { soort: 'materiaal', id: 'm-tent', label: 'Partytent 6 × 12 m' },
+    { soort: 'event', id: 't-trouw', label: 'Trouw Niels en Inez' },
+  ],
+  koppelsleutels: ['materiaal:m-tent', 'event:t-trouw'],
+  auteurId: 'u-jasper', auteurNaam: 'Jasper Hansen',
 })
 
 // ─── Business rules ─────────────────────────────────────────────────────────

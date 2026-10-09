@@ -88,6 +88,13 @@ export const schrijfAlsServer = (col, id, patch) => {
   store.set(path, { ...existing, ...patch })
   geschreven(path)
 }
+/** Hetzelfde, voor een rij die er nog niet is — zoals `create` op de server. Bestaat ze al, dan blijft ze staan. */
+export const maakAlsServer = (col, id, data) => {
+  const path = `${col}/${id}`
+  if (store.has(path)) return
+  store.set(path, { ...data })
+  geschreven(path)
+}
 export const allDocs = () => store
 
 function notify() {

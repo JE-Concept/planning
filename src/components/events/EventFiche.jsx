@@ -6,11 +6,11 @@ import { verantwoordelijkeVan, zetVerantwoordelijke } from '@lib/eventteam'
 import { aantalDagen, eindeVan, isMeerdaags, zetDatum, zetEinddatum, zetMeerdaags } from '@lib/eventdagen'
 import { Checkbox, Icon, Input, Select } from '@components/ds'
 import { euro, longDate } from '@components/events/parts'
+import KlantKiezer from '@components/common/KlantKiezer'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { updateEvent } from '@data/events'
-import CustomerPicker from './CustomerPicker'
 import LocatieVeld from './LocatieVeld'
 
 /**
@@ -57,16 +57,18 @@ export default function EventFiche({ ev }) {
   return (
     <section className="je-fiche" aria-label={t('events.fiche.titel')}>
       <div className="je-fiche__velden">
-        {/* De klantkiezer brengt zijn eigen label en uitleg mee. */}
-        <div className="je-fiche__cel">
-          <CustomerPicker
-            customerId={ev.customerId ?? ''}
-            customerName={ev.customerName ?? ''}
-            onChange={(klant) => bewaar({ customerId: klant.customerId || null, customerName: klant.customerName?.trim() || null })}
+        {/* De klantkiezer brengt zijn eigen label en uitleg mee.
+            `data-veld` is waar een aandachtspunt op het overzicht naartoe
+            springt — zie `naarVeld` in EventOverzicht. */}
+        <div className="je-fiche__cel" data-veld="klant">
+          <KlantKiezer
+            id={ev.customerId ?? null}
+            naam={ev.customerName ?? ''}
+            onChange={(klant) => bewaar({ customerId: klant.id || null, customerName: klant.naam?.trim() || null })}
           />
         </div>
 
-        <Cel label={t('events.velden.datum')}>
+        <Cel label={t('events.velden.datum')} veld="datum">
           <Input
             type="date"
             defaultValue={ev.eventDate ? dayKey(ev.eventDate) : ''}
@@ -131,12 +133,13 @@ export default function EventFiche({ ev }) {
           waarde={ev.pax}
           onBewaar={(n) => bewaar({ pax: n })}
           eenheid="pax"
+          veld="gasten"
         />
         <Getal label={t('events.velden.kinderen')} waarde={ev.kids} onBewaar={(n) => bewaar({ kids: n })} />
 
         {/* Breed: onder dit veld hangt een lijst met adressen, en in één
             kolom past een straatnaam er niet leesbaar in. */}
-        <div className="je-fiche__cel" data-breed="">
+        <div className="je-fiche__cel" data-breed="" data-veld="locatie">
           <LocatieVeld value={ev} onChange={(plek) => bewaar(plek)} />
         </div>
 
@@ -156,7 +159,7 @@ export default function EventFiche({ ev }) {
           waar het dossier tegenover de klant staat, dit zegt of het intern
           rond is. Die twee lopen niet gelijk.
         */}
-        <Cel label={t('planning.titel')}>
+        <Cel label={t('planning.titel')} veld="planning">
           <Select
             aria-label={t('planning.titel')}
             value={ev.planning ?? ''}
@@ -222,9 +225,9 @@ export default function EventFiche({ ev }) {
 }
 
 /** Eén hokje op de fiche: een kopje en wat eronder hoort. */
-function Cel({ label, breed = false, children }) {
+function Cel({ label, breed = false, veld, children }) {
   return (
-    <div className="je-fiche__cel" data-breed={breed ? '' : undefined}>
+    <div className="je-fiche__cel" data-breed={breed ? '' : undefined} data-veld={veld}>
       {label ? <span className="je-caps">{label}</span> : null}
       {children}
     </div>
@@ -277,7 +280,7 @@ function Tekst({ label, waarde, hint, onBewaar }) {
 }
 
 /** Hetzelfde, maar voor een getal. Leeg betekent niets, niet nul. */
-function Getal({ label, waarde, eenheid, onder, onBewaar }) {
+function Getal({ label, waarde, eenheid, onder, veld: veldNaam, onBewaar }) {
   const id = useId()
   const veld = useRef(null)
   const [tekst, setTekst] = useState(waarde == null ? '' : String(waarde))
@@ -295,7 +298,7 @@ function Getal({ label, waarde, eenheid, onder, onBewaar }) {
   }
 
   return (
-    <div className="je-fiche__cel">
+    <div className="je-fiche__cel" data-veld={veldNaam}>
       <label className="je-caps" htmlFor={id}>
         {label}
       </label>

@@ -9,7 +9,16 @@ import { useAuth } from '@context/AuthProvider'
 import { useOffline } from '@context/OfflineProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
-import { useChecklists, useRunsForDay, closeRun, saveNotes, setItemValue, toggleItem } from '@data/checklists'
+import { sluitingOp } from '@lib/checklist-report'
+import {
+  useChecklists,
+  useRunsForDay,
+  useSluiting,
+  closeRun,
+  saveNotes,
+  setItemValue,
+  toggleItem,
+} from '@data/checklists'
 
 /**
  * Openen en sluiten van de bistro.
@@ -44,6 +53,8 @@ export default function Checklists() {
 
   const { byChecklist, wachtendeRuns, loading: runsLoading } = useRunsForDay(day)
   const { online } = useOffline()
+  const { sluiting } = useSluiting()
+  const gesloten = sluitingOp(sluiting, day)
 
   const current = useMemo(
     () => checklists.find((c) => c.id === active) ?? checklists[0] ?? null,
@@ -104,7 +115,7 @@ export default function Checklists() {
         })}
       />
 
-      <div className="flex items-center gap-3 border-b border-ink-200 bg-white px-4 py-2.5 sm:px-6">
+      <div className="je-paginarand flex items-center gap-3 border-b border-ink-200 bg-white py-2.5">
         <ProgressBar
           value={progress.ratio}
           color={progress.ratio === 1 ? 'var(--success)' : undefined}
@@ -137,8 +148,18 @@ export default function Checklists() {
           <Spinner className="h-6 w-6" />
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6">
-          <div className="mx-auto max-w-2xl space-y-5 py-4">
+        <div className="je-paginarand min-h-0 flex-1 overflow-y-auto pb-8">
+          <div className="max-w-4xl space-y-5 py-4">
+            {/* Wat het verslag als "gesloten" toont, hoort ook hier te staan:
+                anders vinkt iemand op een sluitingsdag uit plichtsbesef een
+                lijst af, of vraagt zich af waarom niemand dat deed. Afvinken
+                blijft kunnen — een meting op een gesloten dag is ook een meting. */}
+            {gesloten ? (
+              <p className="card flex items-start gap-2 p-3 text-sm text-ink-700">
+                <Icon name="info" size={16} />
+                {gesloten.reden ? t('lijst.gesloten_reden', { reden: gesloten.reden }) : t('lijst.gesloten')}
+              </p>
+            ) : null}
             {current.sections.map((section) => (
               <Section
                 key={section.id}

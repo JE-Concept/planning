@@ -1,43 +1,17 @@
 import { useEffect, useState } from 'react'
-import { onSnapshot, orderBy, query, where } from 'firebase/firestore'
+import { onSnapshot, query, where } from 'firebase/firestore'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { COL, col, fromQuery } from '@lib/collections'
 import { app } from '@lib/firebase'
 
 const functions = getFunctions(app, 'europe-west1')
 
-/**
- * Teamoverleg.
- *
- * De samenvatting staat in een eigen collectie met een lijst van wie ze mag
- * lezen, en de query filtert op datzelfde veld. Dat is geen dubbel werk maar
- * een voorwaarde: Firestore weigert een query die documenten zou kunnen
- * teruggeven die de regels afwijzen, dus de filter móét overeenkomen met de
- * regel of het hele overzicht faalt in plaats van korter te worden.
- */
-export function useMeetings(uid) {
-  const [meetings, setMeetings] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!uid) {
-      setMeetings([])
-      setLoading(false)
-      return undefined
-    }
-
-    return onSnapshot(
-      query(col(COL.meetings), where('viewerIds', 'array-contains', uid), orderBy('datum', 'desc')),
-      (snap) => {
-        setMeetings(fromQuery(snap))
-        setLoading(false)
-      },
-      () => setLoading(false)
-    )
-  }, [uid])
-
-  return { meetings, loading }
-}
+/*
+  De verslagen zelf staan sinds de notities in `notities` met `soort:
+  'overleg'` — zie `src/data/notities.js`. Hier blijft wat aan het overleg
+  hangt maar geen notitie is: de actiepunten (gewone taken) en het
+  samenvatten.
+*/
 
 /** De actiepunten van één overleg — gewone taken, dus ook zichtbaar in Mijn werk. */
 export function useMeetingTasks(meetingId) {

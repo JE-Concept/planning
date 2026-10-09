@@ -9,10 +9,10 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import Documents from '@components/common/Documents'
+import KlantKiezer from '@components/common/KlantKiezer'
 import { useDocuments } from '@data/documents'
 import { herkomstVanTaak } from '@lib/taak-herkomst'
 import { verwijderVraag } from '@lib/verwijdervraag'
-import { useCustomers } from '@data/customers'
 import { upsertTag } from '@data/workspace'
 import { SOCIAL_STAGES, heeftSocial, isSocialEligible, stageOf } from '@lib/social-stage'
 import {
@@ -358,37 +358,24 @@ function Labels({ task, tags, toast }) {
  * daar kun je niets mee opzoeken. Dit is dezelfde informatie, maar dan zo dat
  * je van de klant naar zijn events kunt en terug. De naam gaat als kopie mee op
  * de taak, want een bord dat per kaart de klant moet ophalen leest zich scheef.
+ *
+ * Hetzelfde veld als op de fiche van een event en op een offerte: zoeken
+ * terwijl je typt, en aanmaken wat er nog niet is. Een klant die intussen uit
+ * gebruik is, blijft als pil staan met de naam die de taak al droeg, in plaats
+ * van stilletjes op "geen klant" te vallen.
  */
 function KlantVeld({ task }) {
   const { t } = useTaal()
-  const { customers } = useCustomers()
 
   return (
-    <Field label={t('bord.veld.klant')} className="sm:col-span-2">
-      <Select
-        aria-label={t('bord.klant_van_event')}
-        value={task.customerId ?? ''}
-        onChange={(e) => {
-          const klant = customers.find((c) => c.id === e.target.value) ?? null
-          updateTask(task.id, {
-            customerId: klant?.id ?? null,
-            customerName: klant?.name ?? null,
-          })
-        }}
-      >
-        <option value="">{t('bord.geen_klant')}</option>
-        {customers.map((klant) => (
-          <option key={klant.id} value={klant.id}>
-            {klant.name}
-          </option>
-        ))}
-        {/* Hoort de taak bij een klant die intussen uit gebruik is, dan blijft
-            die hier staan in plaats van stilletjes op "geen klant" te vallen. */}
-        {task.customerId && !customers.some((c) => c.id === task.customerId) ? (
-          <option value={task.customerId}>{task.customerName ?? t('bord.klant_uit_gebruik')}</option>
-        ) : null}
-      </Select>
-    </Field>
+    <KlantKiezer
+      className="sm:col-span-2"
+      label={t('bord.veld.klant')}
+      veldnaam={t('bord.klant_van_event')}
+      id={task.customerId ?? null}
+      naam={task.customerName ?? ''}
+      onChange={(klant) => updateTask(task.id, { customerId: klant.id ?? null, customerName: klant.naam ?? null })}
+    />
   )
 }
 

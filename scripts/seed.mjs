@@ -221,6 +221,10 @@ async function main() {
 
   await zetArchiefstand()
 
+  await verhuisVerslagen()
+
+  await verhuisKlantnotities()
+
   await seedFacturatieRegel()
 
   await seedHerhalingen()
@@ -352,6 +356,122 @@ async function hernoemTasksKolommen() {
   }
 
   await lijstRef.set({ statuses, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+}
+
+/**
+ * De verslagen van het teamoverleg naar de notities.
+ *
+ * Een verslag stond in `meetings`; sinds de notities is het een notitie van
+ * de soort `overleg` in `notities`, zodat het net als elke notitie aan een
+ * event of klant kan hangen. De functie die samenvat schrijft al daar, maar
+ * wat er al lag moet mee — anders is het tabblad Verslagen op de dag van de
+ * uitrol leeg.
+ *
+ * Een kopie en geen verhuizing: het origineel in `meetings` blijft staan en
+ * blijft leesbaar voor wie het mocht lezen. Weggooien is een aparte, bewuste
+ * beslissing. Herhaalbaar: een verslag dat al als notitie bestaat (zelfde id)
+ * wordt niet aangeraakt — ook niet als iemand er intussen een koppeling aan
+ * gaf. En omdat dit bij elke uitrol draait, haalt het ook een verslag in dat
+ * de oude functie nog in `meetings` schreef wanneer `functions-meetings` bij
+ * een uitrol achterbleef.
+ */
+async function verhuisVerslagen() {
+  const verslagen = await db.collection('meetings').get()
+  const nieuw = []
+
+  for (const snap of verslagen.docs) {
+    const doel = db.collection('notities').doc(snap.id)
+    if ((await doel.get()).exists) continue
+    const m = snap.data()
+    nieuw.push([doel, {
+      soort: 'overleg',
+      taskId: m.taskId ?? snap.id,
+      titel: m.titel ?? '',
+      tekst: '',
+      datum: m.datum ?? null,
+      deelnemers: m.deelnemers ?? [],
+      samenvatting: m.samenvatting ?? [],
+      bron: m.bron ?? null,
+      koppelingen: [],
+      koppelsleutels: [],
+      prive: true,
+      // Wie het mocht lezen, mag het als notitie lezen — niet meer, niet minder.
+      viewerIds: m.viewerIds ?? [],
+      auteurId: null,
+      auteurNaam: '',
+      createdAt: m.createdAt ?? FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }])
+  }
+
+  for (const stuk of stukjes(nieuw, 400)) {
+    const batch = db.batch()
+    for (const [doel, data] of stuk) batch.set(doel, data)
+    await batch.commit()
+  }
+  if (nieuw.length) aangevuld.push(`verslagen naar notities: ${nieuw.length}`)
+}
+
+/**
+ * Het vrije notitieveld van een klant wordt een notitie aan die klant.
+ *
+ * De klantfiche had een tekstvak "Notities" naast de gekoppelde notities.
+ * Twee plekken voor wat we over een klant weten, betekent dat het altijd in
+ * de andere staat — dus is het tekstvak weg. Wat erin stond, gaat niet
+ * verloren: het wordt één notitie, gekoppeld aan de klant, met de datum van
+ * de laatste wijziging van de fiche.
+ *
+ * Aanmaken en het veld weghalen gebeuren in één batch per klant: lukt het
+ * ene, dan ook het andere, en er is geen moment waarop de tekst op twee
+ * plekken of op geen enkele staat. Een vast id (`klantnotities-<klant>`)
+ * maakt het herhaalbaar: bestaat die notitie al, dan wordt het veld alleen
+ * nog weggehaald als het precies dezelfde tekst draagt — schreef een oude
+ * browser er intussen iets nieuws in, dan blijft dat staan en meldt de seed
+ * het, in plaats van het stil over te schrijven.
+ */
+async function verhuisKlantnotities() {
+  const klanten = await db.collection('customers').get()
+  let verhuisd = 0
+
+  for (const snap of klanten.docs) {
+    const data = snap.data()
+    if (data.notes === undefined) continue
+    const tekst = String(data.notes ?? '').trim()
+    const doel = db.collection('notities').doc(`klantnotities-${snap.id}`)
+    const batch = db.batch()
+
+    if (tekst) {
+      const bestaand = await doel.get()
+      if (bestaand.exists) {
+        if ((bestaand.data().tekst ?? '').trim() !== tekst) {
+          overgeslagen.push(`notitieveld van klant ${data.name ?? snap.id} (verschilt van de notitie, met de hand nakijken)`)
+          continue
+        }
+      } else {
+        const dag = data.updatedAt?.toDate?.() ?? data.createdAt?.toDate?.() ?? new Date()
+        batch.set(doel, {
+          soort: 'notitie',
+          titel: '',
+          tekst,
+          datum: dag.toISOString().slice(0, 10),
+          koppelingen: [{ soort: 'klant', id: snap.id, label: data.name ?? '' }],
+          koppelsleutels: [`klant:${snap.id}`],
+          prive: false,
+          viewerIds: [],
+          auteurId: null,
+          auteurNaam: '',
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        })
+        verhuisd += 1
+      }
+    }
+
+    batch.update(snap.ref, { notes: FieldValue.delete() })
+    await batch.commit()
+  }
+
+  if (verhuisd) aangevuld.push(`klantnotities naar notities: ${verhuisd}`)
 }
 
 /** Firestore neemt hoogstens 500 schrijfbewerkingen per batch. */

@@ -10,23 +10,23 @@ import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { useCustomers } from '@data/customers'
 import { isDone, useEvents } from '@data/events'
-import { useMeetings } from '@data/meetings'
+import { useNotities } from '@data/notities'
 import { templateSummary } from '@data/templates'
 
 /**
- * De zoekbalk bovenaan: events, taken, klanten, de verslagen van het
- * teamoverleg, mensen en (voor beheerders) templates.
+ * De zoekbalk bovenaan: events, taken, klanten, notities (met de verslagen
+ * van het teamoverleg), mensen en (voor beheerders) templates.
  *
  * ⌘K of Ctrl+K opent hem van waar je ook staat, ook vanuit een invoerveld; /
  * doet hetzelfde met één toets zolang je niet aan het typen bent. Pijltjes door
  * de lijst, Enter opent. Vindt hij niets, dan gaat de vraag naar de assistent —
  * dat is vaker het juiste antwoord dan "geen resultaten".
  *
- * De verslagen komen uit `useMeetings`, die filtert op `viewerIds`. Dat is geen
- * nette extra maar een voorwaarde: de regels laten alleen documenten door waar
- * je in die lijst staat, en een query die dat niet spiegelt faalt in zijn
- * geheel in plaats van korter te worden. Wie niet bij een overleg hoorde, vindt
- * het hier dus ook niet — en dat klopt.
+ * De notities komen uit `useNotities`, en de verslagen van een overleg daarin
+ * alleen voor wie in `viewerIds` staat. Dat is geen nette extra maar een
+ * voorwaarde: de regels laten alleen die documenten door, en een query die
+ * dat niet spiegelt faalt in zijn geheel in plaats van korter te worden. Wie
+ * niet bij een overleg hoorde, vindt het hier dus ook niet — en dat klopt.
  *
  * Het rangschikken staat in @lib/zoeken, met tests. Een handvol verslagen naast
  * honderden taken op één hoop sorteren betekent dat de verslagen er nooit bij
@@ -34,7 +34,7 @@ import { templateSummary } from '@data/templates'
  */
 
 /** De volgorde van de kopjes. Vast, want ze mogen niet wisselen onder je vinger. */
-const SOORTEN = ['Events', 'Taken', 'Klanten', 'Verslagen', 'Mensen', 'Templates']
+const SOORTEN = ['Events', 'Taken', 'Klanten', 'Notities', 'Mensen', 'Templates']
 
 /**
  * Het kopje zoals het op het scherm staat.
@@ -46,13 +46,13 @@ const SOORT_LABEL = {
   Events: 'inst.zoek.soort.events',
   Taken: 'inst.zoek.soort.taken',
   Klanten: 'inst.zoek.soort.klanten',
-  Verslagen: 'inst.zoek.soort.verslagen',
+  Notities: 'inst.zoek.soort.notities',
   Mensen: 'inst.zoek.soort.mensen',
   Templates: 'inst.zoek.soort.templates',
 }
 
 /** Tiebreaker bij een gelijke score: waar het vaakst naar gezocht wordt, staat boven. */
-const GEWICHT = { Events: 5, Taken: 4, Klanten: 3, Verslagen: 2, Mensen: 1, Templates: 0 }
+const GEWICHT = { Events: 5, Taken: 4, Klanten: 3, Notities: 2, Mensen: 1, Templates: 0 }
 
 const samen = (...stukken) => stukken.filter(Boolean).join(' · ')
 
@@ -61,7 +61,7 @@ export default function GlobalSearch({ narrow }) {
   const { profiles, templates, eventStatuses } = useWorkspace()
   const { events, tasks, eventById } = useEvents()
   const { customers } = useCustomers()
-  const { meetings } = useMeetings(uid)
+  const { notities } = useNotities({ uid })
   const { ask, beschikbaar } = useAssistant()
   const { t } = useTaal()
   const navigate = useNavigate()
@@ -147,21 +147,27 @@ export default function GlobalSearch({ narrow }) {
         sub: samen(c.address?.city, c.vatNumber, t('inst.zoek.klantfiche')),
         go: () => navigate('/klanten'),
       })),
-      ...meetings.map((m) => ({
-        soort: 'Verslagen',
-        titel: m.titel || t('inst.zoek.overleg_van', { datum: m.datum }),
+      ...notities.map((n) => ({
+        soort: 'Notities',
+        titel:
+          n.titel ||
+          (n.soort === 'overleg'
+            ? t('inst.zoek.overleg_van', { datum: n.datum })
+            : (n.tekst ?? '').split('\n')[0].slice(0, 80)),
         extra: [
-          ...(m.samenvatting ?? []).map((s) => s.onderwerp),
-          ...(m.samenvatting ?? []).map((s) => s.tekst),
-          ...(m.deelnemers ?? []),
+          n.tekst,
+          ...(n.koppelingen ?? []).map((k) => k.label),
+          ...(n.samenvatting ?? []).map((s) => s.onderwerp),
+          ...(n.samenvatting ?? []).map((s) => s.tekst),
+          ...(n.deelnemers ?? []),
         ],
-        icon: 'messages-square',
+        icon: n.soort === 'overleg' ? 'messages-square' : 'sticky-note',
         sub: samen(
-          m.datum ? formatDay(m.datum) : null,
-          t('inst.zoek.punt', { aantal: (m.samenvatting ?? []).length }),
-          t('inst.zoek.teamoverleg')
+          n.datum ? formatDay(n.datum) : null,
+          n.soort === 'overleg' ? t('inst.zoek.teamoverleg') : null,
+          ...(n.koppelingen ?? []).slice(0, 2).map((k) => k.label)
         ),
-        go: () => navigate('/overleg'),
+        go: () => navigate(`/notities?notitie=${n.id}`),
       })),
       ...profiles
         .filter((p) => p.active !== false && p.role !== 'staff')
@@ -191,7 +197,7 @@ export default function GlobalSearch({ narrow }) {
     }
 
     return uit.map((k) => ({ ...k, gewicht: GEWICHT[k.soort] ?? 0 }))
-  }, [events, tasks, customers, meetings, profiles, templates, isAdmin, eventById, eventStatuses, navigate, t])
+  }, [events, tasks, customers, notities, profiles, templates, isAdmin, eventById, eventStatuses, navigate, t])
 
   const ranglijst = useMemo(() => rangschik(kandidaten, q), [kandidaten, q])
   const groups = useMemo(() => groepeer(ranglijst, SOORTEN), [ranglijst])

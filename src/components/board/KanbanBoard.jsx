@@ -92,7 +92,7 @@ export default function KanbanBoard({
 
   return (
     <div
-      className="je-kanban flex h-full gap-3 overflow-x-auto px-4 pb-4 sm:px-6"
+      className="je-kanban je-paginarand flex h-full gap-3 overflow-x-auto pb-4"
       // Een bord met een handvol kolommen hoort de rij te vullen; een bord met
       // negen kolommen past op geen enkel scherm en schuift. Het aantal staat
       // hier omdat CSS zijn broers en zussen niet kan tellen.

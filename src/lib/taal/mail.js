@@ -9,7 +9,6 @@ export default {
   'nav.aanvragen': { nl: 'Aanvragen', en: 'Requests' },
 
   // ── De draad op een event ──────────────────────────────────────────────
-  'mail.tab': { nl: 'Mail', en: 'Mail' },
   'mail.geen_draad': {
     nl: 'Nog geen mail bij dit event. Wat er op info@jeconcept.be binnenkomt en bij dit dossier hoort, komt hier vanzelf te staan.',
     en: 'No mail on this event yet. Whatever arrives at info@jeconcept.be and belongs to this file shows up here by itself.',
@@ -27,6 +26,11 @@ export default {
   'mail.koppeling.klant_meerdere': {
     nl: 'Deze klant heeft meer dan één lopend dossier; kies zelf welk.',
     en: 'This customer has more than one open file; pick the right one yourself.',
+  },
+  'mail.geplakt': { nl: 'Geplakt', en: 'Pasted' },
+  'mail.geplakt_uitleg': {
+    nl: 'Deze mail is bij het aanmaken van het event geplakt; ze kwam niet via info@ binnen.',
+    en: 'This email was pasted in when the event was created; it did not arrive through info@.',
   },
   'mail.meer': { nl: 'Volledige mail', en: 'Full message' },
   'mail.minder': { nl: 'Inklappen', en: 'Collapse' },

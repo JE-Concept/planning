@@ -118,8 +118,6 @@ export default {
     nl: 'Geen verslag met "{term}" in de samenvatting of de actiepunten.',
     en: 'No report with "{term}" in the summary or the action points.',
   },
-  'overleg.treffer_actiepunt': { nl: 'actiepunt', en: 'action point' },
-  'overleg.treffer_besproken': { nl: 'besproken', en: 'discussed' },
   'overleg.nog_andere': { nl: 'en {aantal} andere', en: 'and {aantal} more' },
 
   // ── Teamoverleg: de agenda ─────────────────────────────────────────────
@@ -175,26 +173,6 @@ export default {
   'overleg.taak_aangemaakt_voor': { nl: 'Taak aangemaakt voor {wie}.', en: 'Task created for {wie}.' },
   'overleg.taak_aangemaakt': { nl: 'Taak aangemaakt.', en: 'Task created.' },
 
-  // ── Teamoverleg: een verslag ───────────────────────────────────────────
-  'overleg.deelnemers': { nl: 'Deelnemers', en: 'Attendees' },
-  'overleg.besproken_kop': { nl: 'Besproken', en: 'Discussed' },
-  'overleg.actiepunten': { nl: 'Actiepunten ({aantal})', en: 'Action points ({aantal})' },
-  'overleg.geen_wie': { nl: 'niemand', en: 'nobody' },
-  'overleg.geen_actiepunten': {
-    nl: 'Geen actiepunten uit dit overleg.',
-    en: 'No action points from this meeting.',
-  },
-  'overleg.actiepunten_zijn_taken': {
-    nl: 'Actiepunten zijn gewone taken: wie er een kreeg, ziet hem ook in Mijn werk.',
-    en: 'Action points are ordinary tasks: whoever got one sees it in their own work as well.',
-  },
-  'overleg.bron': { nl: 'Bron', en: 'Source' },
-  'overleg.de_opname': { nl: 'de opname', en: 'the recording' },
-  'overleg.door_ai': {
-    nl: 'Samengevat door AI. Lees na voor je erop voortgaat — wat er niet in stond, staat er ook niet in.',
-    en: 'Summarised by AI. Read it over before you build on it — what was not said is not in here either.',
-  },
-
   // ── Teamoverleg: een transcript samenvatten ────────────────────────────
   'overleg.datum_overleg': { nl: 'Datum van het overleg', en: 'Date of the meeting' },
   'overleg.link_opname': { nl: 'Link naar de opname', en: 'Link to the recording' },
@@ -247,11 +225,11 @@ export default {
 
   'uren.per_persoon': { nl: 'Per persoon', en: 'Per person' },
   'uren.per_lijst': { nl: 'Per lijst', en: 'Per list' },
-  'uren.per_merk': { nl: 'Per merk', en: 'Per brand' },
+  'uren.per_merk': { nl: 'Per concept', en: 'Per concept' },
   'uren.per_dag': { nl: 'Per dag', en: 'Per day' },
   'uren.onbekend': { nl: 'Onbekend', en: 'Unknown' },
   'uren.zonder_lijst': { nl: 'Zonder lijst', en: 'Without a list' },
-  'uren.zonder_merk': { nl: 'Zonder merk', en: 'Without a brand' },
+  'uren.zonder_merk': { nl: 'Zonder concept', en: 'Without a concept' },
   'uren.totaal': { nl: 'Totaal', en: 'Total' },
 
   // De kolomkoppen van de uitvoer naar een rekenblad. Die uitvoer is het stuk

@@ -88,7 +88,6 @@ const VELD_SLEUTELS = {
     'address.postalCode': 'regels.veld.customer.postalCode',
     brandId: 'regels.veld.customer.brandId',
     tags: 'regels.veld.customer.tags',
-    notes: 'regels.veld.customer.notes',
     archived: 'regels.veld.customer.archived',
   },
   socialPost: {

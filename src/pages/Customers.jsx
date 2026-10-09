@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { formatDate, relativeDay } from '@lib/dates'
 import { formatCurrency } from '@lib/format'
 import { labelOf } from '@lib/pipeline'
@@ -11,8 +12,9 @@ import {
   primaryContact,
   setPrimaryContact,
   vatHint,
+  viesVoorstel,
 } from '@lib/klanten'
-import { Acties, Badge, Button, Checkbox, Dialog, Drawer, Field, GevaarKnop, Input, Select, Spinner, Textarea } from '@components/ds'
+import { Acties, Badge, Button, Checkbox, Dialog, Drawer, Field, GevaarKnop, Input, Select, Spinner, bevestig } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
 import Documents from '@components/common/Documents'
 import TaskDrawer from '@components/board/TaskDrawer'
@@ -32,7 +34,9 @@ import {
   useCustomers,
   useCustomerTasks,
 } from '@data/customers'
+import { zoekBtwOp } from '@data/btw'
 import { STANDAARD_KLEUR } from '@lib/kleur'
+import GekoppeldeNotities from '@components/notities/GekoppeldeNotities'
 
 /**
  * Klanten.
@@ -47,7 +51,9 @@ export default function Customers() {
   const { t } = useTaal()
   const toast = useToast()
   const [zoek, setZoek] = useState('')
-  const [open, setOpen] = useState(null)
+  // `?klant=<id>` opent die fiche meteen — daar landt een link vanuit een notitie.
+  const [params] = useSearchParams()
+  const [open, setOpen] = useState(() => params.get('klant'))
   const [nieuw, setNieuw] = useState(false)
 
   const zichtbaar = useMemo(() => {
@@ -132,7 +138,7 @@ export default function Customers() {
         </form>
       </Dialog>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+      <div className="je-paginarand min-h-0 flex-1 overflow-y-auto py-4">
         {loading ? (
           <div className="flex justify-center py-10">
             <Spinner />
@@ -249,10 +255,54 @@ function KlantPaneel({ id, onClose, toast }) {
   // Het rekenwerk staat in @lib/klanten en niet hier: zo is te testen dat "te
   // factureren" echt telt wat op die stap staat, zonder een browser te openen.
   const historiek = useMemo(() => customerHistory(tasks), [tasks])
+  const [zoektBtw, setZoektBtw] = useState(false)
 
   if (!klant) return null
 
   const zet = (patch) => updateCustomer(id, patch).catch((err) => toast.error(err.message))
+
+  /*
+    Naam en adres ophalen met het btw-nummer. Wat leeg is, wordt meteen
+    ingevuld; wat al gevuld is, pas na een ja — wat er staat kan juister zijn
+    dan wat VIES zegt (zie `viesVoorstel`). Het btw-nummer zelf blijft zoals
+    het getypt is: dat is de vraag, niet het antwoord.
+  */
+  const zoekBtw = async (btw) => {
+    if (!btw?.trim() || zoektBtw) return
+    setZoektBtw(true)
+    try {
+      const gevonden = await zoekBtwOp(btw)
+      if (!gevonden.geldig) {
+        toast.error(t(`klant.vies.${gevonden.reden ?? 'onbekend'}`))
+        return
+      }
+      const { patch, vragen } = viesVoorstel(klant, gevonden)
+      let overnemen = {}
+      if (vragen.length) {
+        const lijst = vragen
+          .map((v) =>
+            v.veld === 'name'
+              ? t('klant.vies.vraag_naam', { nu: v.nu, nieuw: v.nieuw })
+              : t('klant.vies.vraag_adres', { nu: v.nu, nieuw: addressLine(v.nieuw) })
+          )
+          .join('\n')
+        if (await bevestig(t('klant.vies.vraag', { lijst }), { knop: t('klant.vies.overnemen') })) {
+          overnemen = Object.fromEntries(vragen.map((v) => [v.veld, v.nieuw]))
+        }
+      }
+      const alles = { ...patch, ...overnemen }
+      if (Object.keys(alles).length) {
+        await updateCustomer(id, alles)
+        toast.success(t('klant.vies.ingevuld'))
+      } else if (!vragen.length) {
+        toast.success(t(gevonden.reden === 'geheim' ? 'klant.vies.geheim' : 'klant.vies.klopt'))
+      }
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setZoektBtw(false)
+    }
+  }
 
   const zetContact = (contactId, patch) =>
     zet({
@@ -291,6 +341,11 @@ function KlantPaneel({ id, onClose, toast }) {
             tasks.length === 0
               ? {
                   label: t('alg.verwijderen'),
+                  // Stil, zoals op de taakfiche: "uit gebruik" ernaast is de
+                  // gewone keuze, en het rode kader maakte van de uitzondering
+                  // de knop die het eerst opviel. Zie "Call to action" in
+                  // docs/design-je-concept.md.
+                  toon: 'stil',
                   size: 'sm',
                   vraag: t('klant.weg_vraag'),
                   onConfirm: () => deleteCustomer(id).then(onClose),
@@ -315,6 +370,8 @@ function KlantPaneel({ id, onClose, toast }) {
         <section className="grid gap-2 sm:grid-cols-2">
           <Field label={t('klant.bedrijfsnaam')} className="sm:col-span-2">
             <Input
+              // Een sleutel, zodat een naam uit VIES ook in het veld verschijnt.
+              key={klant.name}
               defaultValue={klant.name}
               onBlur={(e) => e.target.value.trim() && zet({ name: e.target.value.trim() })}
             />
@@ -331,13 +388,35 @@ function KlantPaneel({ id, onClose, toast }) {
           {/* Wat je typt wordt netjes gezet, niet geweigerd: een half nummer
               is beter dan een leeg veld, en de opmerking eronder zegt waarom
               het nagekeken moet worden. */}
+          {/* Een nieuw nummer zoekt meteen naam en adres op: daarvoor typ
+              je het meestal in. De knop is voor later, wanneer een klant
+              verhuisd is of het eerst niet lukte. */}
           <Field label={t('klant.btw')} hint={vatHint(klant.vatNumber)}>
-            <Input
-              key={klant.vatNumber}
-              defaultValue={klant.vatNumber}
-              placeholder="BE 0123.456.789"
-              onBlur={(e) => zet({ vatNumber: formatVat(e.target.value) })}
-            />
+            <div className="je-btwveld">
+              <Input
+                key={klant.vatNumber}
+                defaultValue={klant.vatNumber}
+                placeholder="BE 0123.456.789"
+                aria-label={t('klant.btw')}
+                onBlur={(e) => {
+                  const nummer = formatVat(e.target.value)
+                  if (nummer === (klant.vatNumber ?? '')) return
+                  zet({ vatNumber: nummer })
+                  if (nummer) zoekBtw(nummer)
+                }}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                iconLeft="search"
+                loading={zoektBtw}
+                disabled={!klant.vatNumber}
+                title={t('klant.vies.uitleg')}
+                onClick={() => zoekBtw(klant.vatNumber)}
+              >
+                {t('klant.vies.knop')}
+              </Button>
+            </div>
           </Field>
           <Field label={t('klant.merk')} hint={t('klant.merk_hint')}>
             <Select value={klant.brandId ?? ''} onChange={(e) => zet({ brandId: e.target.value || null })}>
@@ -381,24 +460,28 @@ function KlantPaneel({ id, onClose, toast }) {
         <section className="grid gap-2 sm:grid-cols-4">
           <Field label={t('klant.straat')} className="sm:col-span-4">
             <Input
+              key={`straat-${klant.address?.street ?? ''}`}
               defaultValue={klant.address?.street ?? ''}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, street: e.target.value } })}
             />
           </Field>
           <Field label={t('klant.postcode')}>
             <Input
+              key={`postcode-${klant.address?.postalCode ?? ''}`}
               defaultValue={klant.address?.postalCode ?? ''}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, postalCode: e.target.value } })}
             />
           </Field>
           <Field label={t('klant.gemeente')} className="sm:col-span-2">
             <Input
+              key={`gemeente-${klant.address?.city ?? ''}`}
               defaultValue={klant.address?.city ?? ''}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, city: e.target.value } })}
             />
           </Field>
           <Field label={t('klant.land')}>
             <Input
+              key={`land-${klant.address?.country ?? ''}`}
               defaultValue={klant.address?.country ?? 'België'}
               onBlur={(e) => zet({ address: { ...leegAdres(), ...klant.address, country: e.target.value } })}
             />
@@ -629,14 +712,11 @@ function KlantPaneel({ id, onClose, toast }) {
           <TaskDrawer taskId={openEvent} onClose={() => setOpenEvent(null)} />
         ) : null}
 
-        <Field label={t('klant.notities')}>
-          <Textarea
-            defaultValue={klant.notes}
-            rows={4}
-            onBlur={(e) => zet({ notes: e.target.value })}
-            placeholder={t('klant.notities_hint')}
-          />
-        </Field>
+        {/* Het vrije notitieveld van vroeger is weg: wat erin stond, is een
+            notitie aan deze klant geworden (zie `scripts/seed.mjs`). Twee
+            plekken voor "wat we over deze klant weten" betekent dat het
+            altijd in de andere staat. */}
+        <GekoppeldeNotities koppeling={{ soort: 'klant', id: klant.id, label: klant.name }} />
       </div>
     </Drawer>
   )

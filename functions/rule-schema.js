@@ -287,7 +287,6 @@ export const ENTITIES = [
       { key: 'address.postalCode', label: 'Postcode', type: 'text' },
       { key: 'brandId', label: 'Merk', type: 'select', options: 'brands' },
       { key: 'tags', label: 'Labels', type: 'list', options: 'tags' },
-      { key: 'notes', label: 'Notities', type: 'text' },
       { key: 'archived', label: 'Gearchiveerd', type: 'boolean' },
     ],
     actions: [

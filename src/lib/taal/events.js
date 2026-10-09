@@ -79,6 +79,15 @@ export default {
   'events.maand.volgende': { nl: 'Volgende maand', en: 'Next month' },
   'events.maand.meer': { nl: '+{aantal} meer', en: '+{aantal} more' },
 
+  // ── De kalender: maand, week en de agenda op een telefoon ───────────────
+  'events.kal.maand': { nl: 'Maand', en: 'Month' },
+  'events.kal.week': { nl: 'Week', en: 'Week' },
+  'events.kal.vorige_week': { nl: 'Vorige week', en: 'Previous week' },
+  'events.kal.volgende_week': { nl: 'Volgende week', en: 'Next week' },
+  'events.kal.weektitel': { nl: 'Week {nummer} · {van} – {tot}', en: 'Week {nummer} · {van} – {tot}' },
+  'events.kal.vandaag_niets': { nl: 'Vandaag niets gepland', en: 'Nothing planned today' },
+  'events.kal.leeg': { nl: 'Niets gepland in deze periode.', en: 'Nothing planned in this period.' },
+
   // ── De fiche van een event ─────────────────────────────────────────────
   'events.fiche.klant': { nl: 'Klant', en: 'Customer' },
   'events.fiche.datum': { nl: 'Datum', en: 'Date' },
@@ -122,6 +131,7 @@ export default {
   'events.detail.naar_alle': { nl: 'Naar alle events', en: 'Go to all events' },
   'events.detail.naar_stap': { nl: 'Naar {stap}', en: 'To {stap}' },
   'events.detail.terug_stap': { nl: 'Terug naar {stap}', en: 'Back to {stap}' },
+  'events.detail.verwijderen': { nl: 'Event verwijderen', en: 'Delete event' },
   'events.detail.verwijderd': { nl: '{naam} is verwijderd.', en: '{naam} has been deleted.' },
 
   // ── De tabbladen van een event ─────────────────────────────────────────
@@ -129,7 +139,10 @@ export default {
   'events.tab.taken': { nl: 'Taken · {aantal}', en: 'Tasks · {aantal}' },
   'events.tab.bestellijst': { nl: 'Bestellijst · {aantal}', en: 'Order list · {aantal}' },
   'events.tab.draaiboek': { nl: 'Draaiboek', en: 'Run sheet' },
-  'events.tab.bijlagen': { nl: 'Bijlagen', en: 'Attachments' },
+  // Twee tabbladen in één: zie EventDetail. De naam zegt allebei, anders zoekt
+  // wie het draaiboek of een bijlage wil, naar een tabblad dat er niet is.
+  'events.tab.personeel': { nl: 'Personeel & draaiboek · {aantal}', en: 'Crew & run sheet · {aantal}' },
+  'events.tab.mail': { nl: 'Mail & bijlagen · {aantal}', en: 'Mail & files · {aantal}' },
   // ── Het klantenportaal ─────────────────────────────────────────────────
   'klant.portaal.titel': { nl: 'Klantenpagina', en: 'Customer page' },
   'klant.portaal.nog_niet': {
@@ -398,14 +411,44 @@ export default {
   },
   'klant.bedrijfsnaam': { nl: 'Bedrijfsnaam', en: 'Company name' },
   'klant.btw': { nl: 'Btw-nummer', en: 'VAT number' },
-  'klant.merk': { nl: 'Merk', en: 'Brand' },
+  'klant.merk': { nl: 'Concept', en: 'Concept' },
   'klant.merk_hint': {
-    nl: 'Onder welk merk valt deze klant meestal?',
-    en: 'Which brand does this customer usually fall under?',
+    nl: 'Onder welk concept valt deze klant meestal?',
+    en: 'Which concept does this customer usually fall under?',
   },
   'klant.email': { nl: 'E-mail', en: 'Email' },
   'klant.telefoon': { nl: 'Telefoon', en: 'Phone' },
   'klant.website': { nl: 'Website', en: 'Website' },
+
+  // ── Naam en adres uit VIES, met het btw-nummer ─────────────────────────
+  'klant.vies.knop': { nl: 'Opzoeken', en: 'Look up' },
+  'klant.vies.uitleg': {
+    nl: 'Naam en adres ophalen uit VIES, de Europese btw-databank',
+    en: 'Fetch name and address from VIES, the European VAT database',
+  },
+  'klant.vies.vraag': {
+    nl: 'VIES kent dit nummer anders dan de fiche:\n\n{lijst}\n\nOvernemen wat VIES zegt?',
+    en: 'VIES knows this number differently from the record:\n\n{lijst}\n\nTake over what VIES says?',
+  },
+  'klant.vies.vraag_naam': { nl: 'Naam: {nu} → {nieuw}', en: 'Name: {nu} → {nieuw}' },
+  'klant.vies.vraag_adres': { nl: 'Adres: {nu} → {nieuw}', en: 'Address: {nu} → {nieuw}' },
+  'klant.vies.overnemen': { nl: 'Overnemen', en: 'Take over' },
+  'klant.vies.ingevuld': { nl: 'Naam en adres ingevuld uit VIES.', en: 'Name and address filled in from VIES.' },
+  'klant.vies.klopt': { nl: 'VIES zegt hetzelfde als de fiche.', en: 'VIES agrees with the record.' },
+  'klant.vies.geheim': {
+    nl: 'Geldig nummer, maar dit land geeft naam en adres niet vrij.',
+    en: 'Valid number, but this country does not release name and address.',
+  },
+  'klant.vies.ongeldig': { nl: 'VIES kent dit btw-nummer niet.', en: 'VIES does not know this VAT number.' },
+  'klant.vies.vorm': {
+    nl: 'Dit ziet er niet uit als een btw-nummer uit de EU.',
+    en: 'This does not look like an EU VAT number.',
+  },
+  'klant.vies.onbereikbaar': {
+    nl: 'VIES antwoordt nu niet. Probeer het straks opnieuw.',
+    en: 'VIES is not answering right now. Try again later.',
+  },
+  'klant.vies.onbekend': { nl: 'VIES gaf een antwoord dat we niet kennen.', en: 'VIES gave an answer we do not know.' },
   'klant.korting_materiaal': { nl: 'Korting verhuur (%)', en: 'Rental discount (%)' },
   'klant.korting_materiaal_hint': {
     nl: 'Geldt op verhuurmateriaal, ook wanneer deze klant zelf op de verhuursite afrekent. Niet op catering.',
@@ -460,38 +503,25 @@ export default {
   'klant.geen_datum': { nl: 'geen datum', en: 'no date' },
   'klant.samen_offertes': { nl: 'Samen aan offertes', en: 'Quoted in total' },
   'klant.losse_taken': { nl: 'Losse taken ({aantal})', en: 'Loose tasks ({aantal})' },
-  'klant.notities': { nl: 'Notities', en: 'Notes' },
-  'klant.notities_hint': {
-    nl: 'Afspraken, voorkeuren, gevoeligheden…',
-    en: 'Agreements, preferences, sensitivities…',
-  },
 
-  // ── De klant van een event kiezen ──────────────────────────────────────
+  // ── De klant van een event, taak of offerte kiezen ─────────────────────
   'klant.kiezen.gekoppeld': {
     nl: 'Gekoppeld — historiek en facturatie staan op de fiche van {naam}.',
     en: 'Linked — history and invoicing live on {naam}’s record.',
   },
   'klant.kiezen.hint': {
-    nl: 'Kies een klant, maak er een aan, of typ een naam voor een particulier.',
-    en: 'Pick a customer, create one, or type a name for a private client.',
+    nl: 'Typ om te zoeken. Staat de klant er niet bij, dan maak je hem onderaan de lijst aan.',
+    en: 'Type to search. Not there yet? Create the customer at the bottom of the list.',
+  },
+  'klant.kiezen.los': {
+    nl: '“{naam}” heeft nog geen klantfiche: zoek de klant of maak hem aan.',
+    en: '“{naam}” has no customer record yet: search for it or create it.',
   },
   'klant.kiezen.veld': { nl: 'Klant van dit event', en: 'Customer of this event' },
-  'klant.kiezen.geen': { nl: 'Geen klant uit de lijst', en: 'No customer from the list' },
-  'klant.kiezen.nieuw': { nl: '+ Nieuwe klant aanmaken…', en: '+ Create a new customer…' },
-  'klant.kiezen.naam': { nl: 'Naam van de klant', en: 'Name of the customer' },
-  'klant.kiezen.naam_hint': { nl: 'bv. Blum België', en: 'e.g. Blum België' },
-  'klant.kiezen.email_hint': {
-    nl: 'De rest van de gegevens vul je aan op de klantfiche.',
-    en: 'The rest of the details you fill in on the customer record.',
-  },
-  'klant.kiezen.aanmaken': { nl: 'Klant aanmaken', en: 'Create customer' },
+  'klant.kiezen.offerte': { nl: 'Klant van deze offerte', en: 'Customer of this quote' },
+  'klant.kiezen.plaatshouder': { nl: 'Zoek een klant…', en: 'Search for a customer…' },
+  'klant.kiezen.nieuw': { nl: 'Nieuwe klant ‘{naam}’ maken', en: 'Create new customer ‘{naam}’' },
   'klant.kiezen.toegevoegd': { nl: '{naam} staat nu bij de klanten.', en: '{naam} is now with the customers.' },
-  'klant.kiezen.vrije_naam': { nl: 'Klantnaam', en: 'Customer name' },
-  'klant.kiezen.vrije_hint': {
-    nl: 'Zonder fiche: geen historiek, geen btw-nummer.',
-    en: 'Without a record: no history, no VAT number.',
-  },
-  'klant.kiezen.vrije_plaats': { nl: 'bv. Familie Peeters', en: 'e.g. the Peeters family' },
 
   /*
     De marge van een event.

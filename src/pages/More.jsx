@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { Icon } from '@components/ds'
 import PageHeader from '@components/layout/PageHeader'
+import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { MORE } from '@components/layout/Sidebar'
@@ -8,10 +9,14 @@ import { MORE } from '@components/layout/Sidebar'
 /** Op een telefoon: de schermen die niet in de balk onderaan passen. */
 export default function More() {
   const { boards, eventsList } = useWorkspace()
+  const { isAdmin } = useAuth()
   const { t } = useTaal()
   const items = [
     ...MORE,
     ...boards.filter((l) => l.id !== eventsList?.id).map((l) => ({ to: `/bord/${l.id}`, icon: 'kanban', label: l.name })),
+    // Onderaan en alleen voor wie er iets mag: het stond in de onderbalk, op
+    // de plek van een scherm dat elke dag open gaat.
+    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', sleutel: 'nav.instellingen' }] : []),
   ]
   return (
     <div>

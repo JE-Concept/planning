@@ -40,8 +40,24 @@ export default {
   'aanvraag.vraag.locatie': { nl: 'Een locatie voorstellen', en: 'Suggest a venue' },
   'aanvraag.vraag.beschikbaar': { nl: 'Of die datum vrij is', en: 'Whether that date is free' },
   'aanvraag.vraag.menu': { nl: 'Het menu', en: 'The menu' },
+  'aanvraag.losse_dagen': {
+    nl: 'De klant noemt meer dan één losse dag; ik zet de eerste. Even navragen.',
+    en: 'The customer names more than one separate day; I am using the first. Worth checking.',
+  },
+  'aanvraag.reeks': { nl: '{van} t/m {tot}', en: '{van} to {tot}' },
+  // De naam van een event wanneer er geen soort feest uit de mail te lezen is:
+  // "Aanvraag — Sofie Peeters".
+  'aanvraag.naam_standaard': { nl: 'Aanvraag', en: 'Request' },
   'aanvraag.mail_bewaard': {
-    nl: 'De mail komt als omschrijving op het event te staan, zodat de vraag bij het antwoord blijft.',
-    en: 'The email becomes the event description, so the question stays with the answer.',
+    nl: 'De mail komt op het tabblad Mail van het event te staan, zodat de vraag bij het antwoord blijft.',
+    en: 'The email goes on the event’s Mail tab, so the question stays with the answer.',
+  },
+  'aanvraag.mail_uit_postvak': {
+    nl: 'Deze mail van {van} staat al in Aanvragen. Ze komt aan het nieuwe event te hangen en verdwijnt uit het postvak.',
+    en: 'This email from {van} is already in Requests. It will be attached to the new event and leave the inbox.',
+  },
+  'aanvraag.mail_niet_bewaard': {
+    nl: 'Het event staat er, maar de mail kon niet bij het tabblad Mail. Ze staat nu in de omschrijving.',
+    en: 'The event is created, but the email could not go on the Mail tab. It is in the description instead.',
   },
 }

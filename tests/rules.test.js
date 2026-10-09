@@ -6,7 +6,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, deleteDoc, where } from 'firebase/firestore'
 
 /**
  * De echte `firestore.rules`, tegen een echte database.
@@ -108,6 +108,14 @@ beforeEach(async () => {
     await setDoc(doc(db, 'comments/c-1'), { taskId: 't-1', authorId: 'u-lid', body: 'Van mij' })
     await setDoc(doc(db, 'customers/k-1'), { name: 'Blum België' })
     await setDoc(doc(db, 'mails/m-1'), { van: 'klant@example.be', tekst: 'dag', eventId: null })
+    await setDoc(doc(db, 'notities/n-open'), {
+      soort: 'notitie', titel: 'Facturatie', tekst: 'Per kwartaal', prive: false, viewerIds: [],
+      koppelingen: [], koppelsleutels: ['klant:k-1'], auteurId: 'u-lid',
+    })
+    await setDoc(doc(db, 'notities/n-overleg'), {
+      soort: 'overleg', titel: 'Weekstart', tekst: '', prive: true, viewerIds: ['u-lid'],
+      koppelingen: [], koppelsleutels: [], auteurId: null,
+    })
   })
 })
 
@@ -207,6 +215,64 @@ beschrijf('notities', () => {
   // Een notitie die achteraf anders kan gaan luiden, is geen gesprek.
   it('niemand herschrijft een notitie, ook de schrijver niet', async () => {
     await assertFails(updateDoc(doc(alsWie('u-lid'), 'comments/c-1'), { body: 'Iets anders' }))
+  })
+})
+
+beschrijf('gekoppelde notities', () => {
+  // De twee vragen die de app stelt, elk één tak van de leesregel.
+  it('het team leest de open notities, ook gefilterd op een object', async () => {
+    const db = alsWie('u-tweede')
+    await assertSucceeds(getDocs(query(collection(db, 'notities'), where('prive', '==', false))))
+    await assertSucceeds(
+      getDocs(query(collection(db, 'notities'), where('prive', '==', false), where('koppelsleutels', 'array-contains', 'klant:k-1')))
+    )
+  })
+
+  it('een verslag leest alleen wie in viewerIds staat', async () => {
+    await assertSucceeds(getDoc(doc(alsWie('u-lid'), 'notities/n-overleg')))
+    await assertSucceeds(getDocs(query(collection(alsWie('u-lid'), 'notities'), where('viewerIds', 'array-contains', 'u-lid'))))
+    await assertFails(getDoc(doc(alsWie('u-tweede'), 'notities/n-overleg')))
+    // Zonder filter zou de vraag ook verslagen kunnen opleveren; dan weigert Firestore de hele vraag.
+    await assertFails(getDocs(collection(alsWie('u-tweede'), 'notities')))
+  })
+
+  it('personeel leest geen notities', async () => {
+    await assertFails(getDoc(doc(alsWie('u-personeel'), 'notities/n-open')))
+  })
+
+  it('een nieuwe notitie is open en op je eigen naam', async () => {
+    const basis = { soort: 'notitie', titel: '', tekst: 'x', prive: false, viewerIds: [], koppelingen: [], koppelsleutels: [] }
+    await assertSucceeds(setDoc(doc(alsWie('u-lid'), 'notities/n-2'), { ...basis, auteurId: 'u-lid' }))
+    await assertFails(setDoc(doc(alsWie('u-lid'), 'notities/n-3'), { ...basis, auteurId: 'u-tweede' }))
+    // Een privénotitie maakt alleen de functie die een overleg samenvat.
+    await assertFails(
+      setDoc(doc(alsWie('u-eigenaar'), 'notities/n-4'), { ...basis, soort: 'overleg', prive: true, viewerIds: ['u-eigenaar'], auteurId: 'u-eigenaar' })
+    )
+  })
+
+  it('een open notitie wordt nooit stilletjes privé', async () => {
+    await assertFails(updateDoc(doc(alsWie('u-lid'), 'notities/n-open'), { prive: true, viewerIds: ['u-lid'] }))
+    await assertSucceeds(updateDoc(doc(alsWie('u-tweede'), 'notities/n-open'), { tekst: 'Per maand' }))
+  })
+
+  it('aan een verslag verandert een lezer alleen de koppelingen', async () => {
+    const db = alsWie('u-lid')
+    await assertSucceeds(
+      updateDoc(doc(db, 'notities/n-overleg'), {
+        koppelingen: [{ soort: 'event', id: 't-1', label: 'Trouw' }], koppelsleutels: ['event:t-1'],
+      })
+    )
+    await assertFails(updateDoc(doc(db, 'notities/n-overleg'), { viewerIds: ['u-lid', 'u-tweede'] }))
+    await assertFails(updateDoc(doc(db, 'notities/n-overleg'), { titel: 'Anders' }))
+    await assertFails(
+      updateDoc(doc(alsWie('u-tweede'), 'notities/n-overleg'), { koppelingen: [], koppelsleutels: [] })
+    )
+  })
+
+  it('wissen doet de schrijver of een beheerder, en een verslag niemand', async () => {
+    await assertFails(deleteDoc(doc(alsWie('u-tweede'), 'notities/n-open')))
+    await assertSucceeds(deleteDoc(doc(alsWie('u-eigenaar'), 'notities/n-open')))
+    await assertFails(deleteDoc(doc(alsWie('u-lid'), 'notities/n-overleg')))
   })
 })
 

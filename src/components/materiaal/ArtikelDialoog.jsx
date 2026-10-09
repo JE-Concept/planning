@@ -4,6 +4,7 @@ import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { maakMateriaal, uploadFoto, verwijderFoto, wijzigMateriaal } from '@data/materiaal'
 import { prijsVoorPeriode } from '@lib/huurprijs'
+import GekoppeldeNotities from '@components/notities/GekoppeldeNotities'
 
 /**
  * Een artikel in het magazijn: wat het is, hoeveel ervan, en wat het kost.
@@ -245,6 +246,16 @@ export default function ArtikelDialoog({ open, artikel, categorieen = [], onClos
           />
           {magDirect && vorm.directTeHuren ? <Voorbeeld vorm={vorm} /> : null}
         </div>
+
+        {/* Wat het team over dit stuk weet: dat de poot van tafel 4 wiebelt,
+            dat de leverancier een nieuwer model heeft. Pas na het aanmaken —
+            een notitie heeft iets nodig om aan te hangen. */}
+        {artikel?.id ? (
+          <GekoppeldeNotities
+            className="je-artikelvorm__breed"
+            koppeling={{ soort: 'materiaal', id: artikel.id, label: artikel.naam }}
+          />
+        ) : null}
       </div>
     </Dialog>
   )

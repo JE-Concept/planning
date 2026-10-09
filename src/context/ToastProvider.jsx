@@ -39,8 +39,15 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
+      {/*
+        Bovenaan en niet onderaan. Onderaan staat de voet van elke lade en
+        dialoog: "Klant aangemaakt" viel live over de knop Verwijderen van de
+        fiche die net openging, precies waar je muis daarna heen gaat. Een
+        melding hoort niets te bedekken wat je kunt aanklikken, en bovenaan
+        staat nooit een actie die je meteen na het bewaren nodig hebt.
+      */}
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4"
+        className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-[100] flex flex-col items-center gap-2 px-4"
         role="status"
         aria-live="polite"
       >

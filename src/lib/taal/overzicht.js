@@ -50,6 +50,16 @@ export default {
   'overzicht.offerte.goedgekeurd': { nl: 'Goedgekeurd door de klant', en: 'Approved by the customer' },
   'overzicht.offerte.feedback': { nl: 'De klant heeft een vraag', en: 'The customer has a question' },
 
+  // ── Wat een aandachtspunt oplost: de knop ernaast ──────────────────────
+  'overzicht.los.datum': { nl: 'Datum invullen', en: 'Fill in date' },
+  'overzicht.los.klant': { nl: 'Klant koppelen', en: 'Link customer' },
+  'overzicht.los.gasten': { nl: 'Gasten invullen', en: 'Fill in guests' },
+  'overzicht.los.locatie': { nl: 'Locatie invullen', en: 'Fill in venue' },
+  'overzicht.los.planning': { nl: 'Planning bijwerken', en: 'Update planning' },
+  'overzicht.los.offerte_maken': { nl: 'Offerte opmaken', en: 'Draft quote' },
+  'overzicht.los.offerte': { nl: 'Naar de offerte', en: 'Go to quote' },
+  'overzicht.los.taken': { nl: 'Naar de taken', en: 'Go to tasks' },
+
   // ── Wat aandacht vraagt ────────────────────────────────────────────────
   'overzicht.let.geen_datum': {
     nl: 'Er staat nog geen datum op dit event.',

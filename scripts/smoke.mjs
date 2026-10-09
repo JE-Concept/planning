@@ -376,10 +376,13 @@ await test('de klantfiche toont de historiek en wat er nog te factureren valt', 
 await test('een klant kiezen op een event zet hem in de historiek van die klant', async () => {
   const page = await tabblad('/events/t-ruben')
 
-  // Geen potlood en geen venster meer: de fiche is het formulier.
-  await page.getByLabel('Klant van dit event').selectOption({ label: 'Stad Borgloon' })
+  // Geen keuzelijst meer: typen zoekt, Enter kiest het bovenste resultaat.
+  await page.getByLabel('Klant van dit event').fill('borgloon')
   await rustig(page)
-  zouden(bevat(await inhoud(page), 'Stad Borgloon'), 'de klant staat niet op de fiche van het event')
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  const pil = await page.locator('.je-fiche .je-objectkiezer__gekozen').innerText()
+  zouden(bevat(pil, 'Stad Borgloon'), `de klant staat niet op de fiche van het event: ${pil}`)
 
   // En dan het punt van de hele koppeling: het dossier hoort meteen bij de klant.
   await page.goto(`${adres}/#/klanten`, { waitUntil: 'networkidle' })
@@ -392,30 +395,68 @@ await test('een klant kiezen op een event zet hem in de historiek van die klant'
   await page.close()
 })
 
-await test('een klant die nog niet bestaat maak je aan vanaf het event', async () => {
+await test('een klant die nog niet bestaat maak je aan vanuit hetzelfde zoekveld', async () => {
   // De reden dat de klantenlijst leeg bleef: wie eerst naar Klanten moest,
-  // typte in de praktijk gewoon een naam in het vrije veld.
+  // typte in de praktijk gewoon een naam in het vrije veld. Nu is aanmaken de
+  // laatste regel onder wat je zoekt.
   const page = await tabblad('/events/t-jolien')
 
-  await page.getByLabel('Klant van dit event').selectOption('__nieuw')
+  const zoek = page.getByLabel('Klant van dit event')
+  await zoek.fill('Jolien en Bernd')
   await rustig(page)
-  await page.getByLabel('Naam van de klant').fill('Jolien en Bernd')
-  await page.getByLabel('Btw-nummer').fill('0400378485')
-  await page.getByRole('button', { name: 'Klant aanmaken' }).click()
+  await page.getByRole('option', { name: 'Nieuwe klant ‘Jolien en Bernd’ maken' }).click()
   await rustig(page)
+  const pil = await page.locator('.je-fiche .je-objectkiezer__gekozen').innerText()
+  zouden(bevat(pil, 'Jolien en Bernd'), `de nieuwe klant staat niet gekozen: ${pil}`)
 
-  const gekozen = await page.getByLabel('Klant van dit event').evaluate((el) => el.selectedOptions[0].text)
-  zouden(gekozen === 'Jolien en Bernd', `de nieuwe klant staat niet gekozen: ${gekozen}`)
+  // Een naam die er al precies zo staat, biedt geen tweede fiche aan.
+  await zoek.fill('stad borgloon')
+  await rustig(page)
+  zouden(
+    (await page.getByRole('option', { name: /Nieuwe klant/ }).count()) === 0,
+    'een bestaande klant kan een tweede keer aangemaakt worden'
+  )
+  await page.keyboard.press('Escape')
 
   await page.goto(`${adres}/#/klanten`, { waitUntil: 'networkidle' })
   await rustig(page)
   await page.getByText('Jolien en Bernd').first().click()
   await rustig(page)
   const paneel = page.getByRole('dialog')
-  const velden = await paneel.locator('input').evaluateAll((els) => els.map((e) => e.value))
-  // Ingetypt als 0400378485, bewaard als een leesbaar nummer.
-  zouden(velden.includes('BE 0400.378.485'), `het btw-nummer is niet netgezet: ${velden.slice(0, 5).join(' | ')}`)
   zouden(bevat(await paneel.innerText(), 'doopsel'), 'het event hangt niet aan de nieuwe klant')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een btw-nummer haalt naam en adres op, en vraagt voor het iets overschrijft', async () => {
+  // De demo kent geen VIES; elk nummer hoort er bij dezelfde verzonnen
+  // brouwerij (zie `demo/stubs.js`). Wat getest wordt, is wat het scherm
+  // ermee doet: wat leeg is vullen, wat gevuld is eerst vragen.
+  const page = await tabblad('/klanten')
+  // Een nieuwe klant, want de klanten uit de demo hebben al een adres.
+  await page.getByRole('button', { name: 'Klant', exact: true }).click()
+  const naamvenster = page.getByRole('dialog', { name: 'Nieuwe klant' })
+  await naamvenster.locator('input').fill('Jolien en Bernd')
+  await naamvenster.getByRole('button', { name: 'Klant aanmaken' }).click()
+  await rustig(page)
+  const paneel = page.getByRole('dialog').filter({ hasText: 'Btw-nummer' })
+  await paneel.waitFor()
+
+  await paneel.getByLabel('Btw-nummer').fill('0400378485')
+  await paneel.getByLabel('Btw-nummer').blur()
+  // De naam stond er al: die wordt niet zonder vragen vervangen.
+  const venster = page.getByRole('dialog', { name: 'Zeker weten?' })
+  await venster.waitFor()
+  const vraag = await venster.innerText()
+  zouden(bevat(vraag, 'Brouwerij De Verzonnen Hop BV'), `de vraag noemt de naam uit VIES niet: ${vraag}`)
+  await venster.getByRole('button', { name: 'Annuleren' }).click()
+  await rustig(page)
+
+  const velden = await paneel.locator('input').evaluateAll((els) => els.map((e) => e.value))
+  zouden(velden.includes('BE 0400.378.485'), `het btw-nummer is niet netgezet: ${velden.slice(0, 5).join(' | ')}`)
+  zouden(velden.includes('Jolien en Bernd'), `de naam is toch overschreven: ${velden.slice(0, 5).join(' | ')}`)
+  // Het adres was leeg: dat is zonder vragen ingevuld.
+  zouden(velden.includes('Hopveld 12') && velden.includes('3800'), `het adres is niet ingevuld: ${velden.join(' | ')}`)
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
@@ -429,8 +470,10 @@ await test('een event toont zijn klant en zijn social-schakelaar', async () => {
   zouden(bevat(tekst, 'Social content'), 'de social-sectie ontbreekt')
   zouden(bevat(tekst, 'Bijlagen bij dit event'), 'de bijlagen ontbreken')
 
-  const klant = await paneel.getByLabel('Klant van dit event').inputValue()
-  zouden(klant === 'k-blum', `de klant staat niet gekozen: ${klant}`)
+  // Hetzelfde zoekveld als op de fiche, met de klant als pil erboven.
+  zouden((await paneel.getByLabel('Klant van dit event').count()) === 1, 'het klantveld ontbreekt in het zijpaneel')
+  const klant = await paneel.locator('.je-objectkiezer__gekozen').innerText()
+  zouden(bevat(klant, 'Blum België'), `de klant staat niet gekozen: ${klant}`)
   await page.close()
 })
 
@@ -666,7 +709,7 @@ await test('de kolommen van een bord zijn aanpasbaar via instellingen', async ()
 
 await test('de business rules staan in de instellingen', async () => {
   const page = await tabblad('/instellingen')
-  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.getByRole('tab', { name: 'Regels', exact: true }).click()
   await rustig(page)
   const tekst = await inhoud(page)
   // De eerste twee regels staan nog in de oude, enkelvoudige vorm in de
@@ -685,7 +728,7 @@ await test('een samengestelde regel is in het scherm op te bouwen', async () => 
   // Niet alleen op taken: deze gaat over klanten, met twee voorwaarden die met
   // OF aan elkaar hangen. Dat was voordien geen van beide mogelijk.
   const page = await tabblad('/instellingen')
-  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.getByRole('tab', { name: 'Regels', exact: true }).click()
   await rustig(page)
 
   const voor = await page.locator('li.card').count()
@@ -711,7 +754,7 @@ await test('een samengestelde regel is in het scherm op te bouwen', async () => 
 
   await form.getByLabel('Actie toevoegen', { exact: true }).selectOption('brand')
   await rustig(page)
-  await form.getByLabel('Merk toewijzen', { exact: true }).selectOption('je-concept')
+  await form.getByLabel('Concept toewijzen', { exact: true }).selectOption('je-concept')
   await rustig(page)
 
   const uitleg = await form.locator('.je-regel-uitleg').innerText()
@@ -738,7 +781,7 @@ await test('een samengestelde regel is in het scherm op te bouwen', async () => 
 
 await test('een beslissingstabel is in het scherm op te bouwen', async () => {
   const page = await tabblad('/instellingen')
-  await page.getByRole('tab', { name: 'Business rules' }).click()
+  await page.getByRole('tab', { name: 'Regels', exact: true }).click()
   await rustig(page)
 
   const voor = await page.locator('li.card').count()
@@ -830,6 +873,44 @@ await test('het registratieverslag toont de maand met zijn metingen', async () =
   // Een maand die nog loopt hoort niet vooruit te kijken.
   const volgende = page.getByRole('button', { name: 'Volgende maand' })
   zouden(await volgende.isDisabled(), 'je kunt naar een maand in de toekomst bladeren')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+/*
+  U16. De demo is op maandag dicht en meet vorige maand niets. Vorige maand dus:
+  die heeft altijd maandagen achter zich, wat de lopende maand op de 1e niet
+  heeft. Een sluitingsdag hoort er als "Gesloten" te staan, en een maand zonder
+  één meting mag niet "alles binnen de grens" heten.
+*/
+await test('sluitingsdagen zijn in te stellen, en een punt op een sluitingsdag valt op', async () => {
+  const page = await tabblad('/instellingen')
+  await page.getByRole('tab', { name: 'Dagelijkse lijsten' }).click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'Sluitingsdagen'), 'de sluitingsdagen staan niet bij de dagelijkse lijsten')
+  // De demo is op maandag dicht en de friteuse staat op maandag: dat punt telt
+  // nooit meer mee, en dat moet hier gezegd worden.
+  zouden(bevat(await inhoud(page), 'Friteuse volledig gereinigd'), 'een punt op een sluitingsdag valt niet op')
+
+  await page.getByLabel('Van', { exact: true }).fill('2026-11-11')
+  await page.getByLabel('Reden').fill('Wapenstilstand')
+  await page.getByRole('button', { name: 'Toevoegen' }).click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'Wapenstilstand'), 'een losse sluitingsdag komt niet in de lijst')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('het verslag kent sluitingsdagen en zegt het als er niets gemeten is', async () => {
+  const page = await tabblad('/registraties')
+  await rustig(page)
+  await page.getByRole('button', { name: 'Vorige maand' }).click()
+  await rustig(page)
+  const tekst = await inhoud(page)
+  zouden(bevat(tekst, 'Gesloten'), 'een maandag staat niet als gesloten in het verslag')
+  zouden(bevat(tekst, 'dagen gesloten'), 'het vak met de volledige dagen noemt de gesloten dagen niet')
+  zouden(bevat(tekst, 'geen metingen'), 'een maand zonder metingen zegt niet "geen metingen"')
+  zouden(!bevat(tekst, 'alles binnen de grens'), 'een maand zonder metingen heet "alles binnen de grens"')
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
@@ -2137,6 +2218,61 @@ await test('de zoekbalk vindt events en taken', async () => {
   await page.close()
 })
 
+await test('een notitie hangt aan een klant en staat op de fiche van die klant', async () => {
+  // De hele weg: schrijven op het scherm Notities, met de objectkiezer een
+  // klant kiezen, en de notitie daarna terugvinden waar ze hoort — bij de
+  // klant. Klikken en niet herladen: de demodatabase leeft in het tabblad.
+  const page = await tabblad('/notities')
+  await rustig(page)
+  const begin = await inhoud(page)
+  zouden(bevat(begin, 'Facturatie Blum'), 'de voorbeeldnotitie staat er niet')
+  zouden(bevat(begin, 'Weekstart events'), 'het verslag van het overleg staat niet tussen de notities')
+
+  await page.getByRole('button', { name: 'Nieuwe notitie' }).first().click()
+  await rustig(page)
+  const dialoog = page.getByRole('dialog')
+  await dialoog.getByPlaceholder('Wat moet het team hierover weten?').fill('Parking via de achteringang, poortcode 4411.')
+  const kiezer = dialoog.getByPlaceholder('Zoek een klant, event, materiaal, uren…')
+  await kiezer.fill('borgloon')
+  await rustig(page)
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  zouden(bevat(await dialoog.innerText(), 'Stad Borgloon'), 'de gekozen klant staat niet als pil in het venster')
+  await dialoog.getByRole('button', { name: 'Bewaren' }).click()
+  await rustig(page)
+
+  // Gefilterd op die klant: alleen wat over Borgloon gaat.
+  await page.keyboard.press('Escape')
+  await rustig(page)
+  const over = page.getByPlaceholder('Alleen notities over een klant, event, materiaal…')
+  await over.fill('borgloon')
+  await rustig(page)
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  const gefilterd = await inhoud(page)
+  zouden(bevat(gefilterd, 'poortcode 4411'), 'de nieuwe notitie staat niet bij de klant waaraan ze hangt')
+  zouden(!bevat(gefilterd, 'Facturatie Blum'), 'het filter op een klant laat andere notities door')
+
+  await page.getByLabel('Hoofdnavigatie').getByRole('link', { name: /Klanten/ }).first().click().catch(() => page.goto(`${adres}/klanten`))
+  await rustig(page)
+  await page.getByText('Stad Borgloon').first().click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'poortcode 4411'), 'de notitie staat niet op de fiche van de klant')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een notitie over materiaal staat ook bij het event dat ze raakt', async () => {
+  const page = await tabblad('/events/t-trouw')
+  await rustig(page)
+  const fiche = await inhoud(page)
+  zouden(bevat(fiche, 'Zijzeil tent 2 gescheurd'), 'de notitie over de tent staat niet op het event')
+  // Het verslag van het overleg waarin de trouw besproken werd, ook.
+  zouden(bevat(fiche, 'Weekstart events'), 'het gekoppelde verslag staat niet op het event')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
 await test('Ctrl+K opent de zoekbalk over taken, klanten en verslagen tegelijk', async () => {
   // De drie soorten die er los bij gekomen zijn, in één zoekopdracht: "Blum"
   // is een klant, een event met taken, én een punt in een verslag. Zonder
@@ -2148,7 +2284,7 @@ await test('Ctrl+K opent de zoekbalk over taken, klanten en verslagen tegelijk',
   await rustig(page)
 
   const lijst = await page.getByRole('listbox').innerText()
-  for (const kopje of ['Events', 'Taken', 'Klanten', 'Verslagen']) {
+  for (const kopje of ['Events', 'Taken', 'Klanten', 'Notities']) {
     zouden(bevat(lijst, kopje), `het kopje "${kopje}" ontbreekt: ${lijst.slice(0, 250)}`)
   }
   zouden(lijst.includes('Blum België'), 'de klant staat niet in de resultaten')
@@ -2165,7 +2301,8 @@ await test('een verslag van het teamoverleg is te vinden op wat erin staat', asy
   await rustig(page)
 
   const lijst = await page.getByRole('listbox').innerText()
-  zouden(bevat(lijst, 'Verslagen'), `geen verslag gevonden: ${lijst.slice(0, 250)}`)
+  // Een verslag is een notitie; het staat onder dat kopje.
+  zouden(bevat(lijst, 'Notities'), `geen verslag gevonden: ${lijst.slice(0, 250)}`)
   zouden(lijst.includes('Weekstart events'), 'het verslag staat er niet bij')
 
   await page.keyboard.press('Enter')
@@ -2701,6 +2838,15 @@ await test('de offerte staat er vanzelf en is regel voor regel aan te passen', a
     'de aangepaste regel staat niet op het blad'
   )
 
+  // De klant van de offerte: hetzelfde zoekveld als op de fiche.
+  const klantveld = werk.getByLabel('Klant van deze offerte')
+  zouden((await klantveld.count()) === 1, 'de offerte heeft geen klantveld')
+  await klantveld.fill('borgloon')
+  await rustig(page)
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  zouden(bevat(await blad.innerText(), 'Stad Borgloon'), 'de gekozen klant staat niet op het blad')
+
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
@@ -2719,7 +2865,12 @@ await test('een bord met weinig kolommen vult de rij en schuift niet', async () 
   for (const k of kolommen) breedtes.push(Math.round((await k.boundingBox()).width))
   // Samen vullen ze de rij: geen halfleeg scherm naast drie smalle kolommen.
   const samen = breedtes.reduce((a, b) => a + b, 0)
-  const beschikbaar = await rij.evaluate((el) => el.clientWidth)
+  // Zonder de paginarand: die is sinds de gelijke marges 48 pixels aan elke
+  // kant, en hoort niet als "halfleeg" te tellen.
+  const beschikbaar = await rij.evaluate((el) => {
+    const st = getComputedStyle(el)
+    return el.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight)
+  })
   zouden(samen > beschikbaar - 100, `de kolommen vullen de rij niet: ${samen} van ${beschikbaar}`)
 
   // En een bord met negen kolommen blijft wél schuiven: die passen nergens op.
@@ -2874,12 +3025,18 @@ await test('een aanvraagmail wordt een event met datum, gasten en formule', asyn
 
   const fiche = await inhoud(page)
   zouden(bevat(fiche, 'Kristien Maris'), `het event opende niet: ${fiche.slice(0, 200)}`)
-  // De mail blijft bij het dossier staan in plaats van in iemands mailbox.
-  zouden(
-    bevat(await page.getByLabel('Omschrijving').inputValue(), 'winterbarbecue'),
-    'de mail staat niet als omschrijving op het event'
-  )
   zouden((await veldwaarde(page, 'Gasten')) === '40', 'het aantal gasten staat niet op de fiche')
+  // De mail staat op het tabblad Mail, waar de rest van de wisseling met de
+  // klant ook komt — en niet als omschrijving tussen de notities (U8).
+  zouden(
+    !bevat(await page.getByLabel('Omschrijving').inputValue(), 'winterbarbecue'),
+    'de mail staat nog als omschrijving op het event'
+  )
+  await page.getByRole('tab', { name: 'Mail' }).click()
+  await rustig(page)
+  const draad = await inhoud(page)
+  zouden(bevat(draad, 'winterbarbecue'), `de geplakte mail staat niet op het tabblad Mail: ${draad.slice(0, 300)}`)
+  zouden(bevat(draad, 'Geplakt'), 'er staat niet bij dat de mail geplakt is')
 
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
@@ -2920,11 +3077,16 @@ await test('de planningstand staat op het event en in elk overzicht', async () =
 await test('een event verwijderen zegt eerst wat er weggaat', async () => {
   const page = await tabblad('/events/t-jolien')
 
-  await page.getByRole('button', { name: /^Verwijderen$/ }).click()
+  // Niet meer in de kop naast de stapknoppen, maar onderaan het overzicht.
+  zouden(
+    (await page.locator('.je-pagehead').getByRole('button', { name: /verwijderen/i }).count()) === 0,
+    'verwijderen staat nog in de kop, naast de stapknoppen'
+  )
+  await page.getByRole('button', { name: /^Event verwijderen$/ }).click()
   const venster = page.getByRole('dialog', { name: 'Zeker weten?' })
   await venster.waitFor()
   const vraag = await venster.innerText()
-  await venster.getByRole('button', { name: /^Verwijderen$/ }).click()
+  await venster.getByRole('button', { name: /verwijderen$/i }).click()
   await rustig(page)
 
   zouden(bevat(vraag, 'definitief verwijderen'), `geen vraag voor het verwijderen: ${vraag}`)
@@ -3245,6 +3407,107 @@ await test('het wachtscherm uit index.html wordt door de app vervangen', async (
   // Blijft het staan, dan kijkt iedereen naar een molentje dat nooit stopt.
   const page = await tabblad('/')
   zouden((await page.locator('.je-start').count()) === 0, 'het wachtscherm van index.html bleef staan')
+  await page.close()
+})
+
+// ─── De ronde van de overdrachtslijst: kalender, tabbladen, onderbalk ──────
+
+await test('de eventkalender heeft een week, markeert vandaag en houdt de kop gelijk', async () => {
+  const page = await tabblad('/?weergave=bord')
+  const kopBord = await page.locator('.je-pagehead').innerText()
+  await page.getByRole('tab', { name: 'Kalender' }).click()
+  await rustig(page)
+  // Dezelfde kop als op het bord: geen andere titel, geen verdwenen eyebrow.
+  const kopKalender = await page.locator('.je-pagehead').innerText()
+  zouden(kopKalender === kopBord, `de kop verandert bij de kalender: "${kopBord}" werd "${kopKalender}"`)
+
+  // De demodag is maandag 28 september 2026.
+  const vandaag = page.locator('.je-kal__dag--vandaag')
+  zouden((await vandaag.count()) === 1, 'vandaag is niet gemarkeerd in de maand')
+  zouden((await vandaag.innerText()).includes('28'), `de verkeerde dag is vandaag: ${await vandaag.innerText()}`)
+
+  await page.getByRole('tab', { name: 'Week' }).click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'Week 40'), 'de weekweergave toont het weeknummer niet')
+  zouden((await page.locator('.je-kal__raster[data-periode="week"] .je-kal__dag').count()) === 7, 'de week heeft geen zeven dagen')
+  zouden(page.url().includes('periode=week'), `de keuze staat niet in het adres: ${page.url()}`)
+
+  // Een week verder staat het trouwfeest, met uur en gasten erbij.
+  await page.getByRole('button', { name: 'Volgende week' }).click()
+  await rustig(page)
+  const chip = page.locator('.je-calchip').filter({ hasText: 'Trouw Niels en Inez' }).first()
+  zouden(bevat(await chip.innerText(), '140 pax'), `de week toont de gasten niet: ${await chip.innerText()}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('op een telefoon is de kalender een agenda en staat Checklists in de onderbalk', async () => {
+  const page = await tabblad('/kalender', { breedte: 390, hoogte: 844 })
+  zouden((await page.locator('.je-kal__agenda').count()) === 1, 'de kalender toont op een telefoon geen agendalijst')
+  zouden((await page.locator('.je-kal__raster').count()) === 0, 'er staat nog een maandraster op de telefoon')
+
+  const balk = await page.locator('.je-bottomnav').innerText()
+  for (const moet of ['Dashboard', 'Events', 'Tasks', 'Checklists', 'Socials', 'Meer']) {
+    zouden(bevat(balk, moet), `"${moet}" ontbreekt in de onderbalk: ${balk}`)
+  }
+  for (const weg of ['Werklast', 'Instellingen']) {
+    zouden(!bevat(balk, weg), `"${weg}" staat nog in de onderbalk`)
+  }
+  // Wat eruit ging, staat onder Meer.
+  await page.locator('.je-bottomnav').getByText('Meer').click()
+  await rustig(page)
+  const meer = await inhoud(page)
+  for (const moet of ['Klanten', 'Werklast', 'Instellingen']) {
+    zouden(bevat(meer, moet), `"${moet}" staat niet onder Meer`)
+  }
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('lege kolommen op het eventbord zijn smal, en een kaart toont klant en bedrag', async () => {
+  const page = await tabblad('/?weergave=bord')
+  const smal = page.locator('.je-eventbord__kolom[data-smal]')
+  for (let i = 0; i < (await smal.count()); i += 1) {
+    const breed = (await smal.nth(i).boundingBox()).width
+    zouden(breed < 80, `een lege kolom is ${breed}px breed`)
+  }
+  const kaart = page.locator('.je-boardcard').filter({ hasText: 'Trouw Niels en Inez' }).first()
+  const tekst = await kaart.innerText()
+  zouden(tekst.includes('Niels & Inez') && tekst.includes('€'), `klant of bedrag ontbreekt op de kaart: ${tekst}`)
+  zouden(!(await inhoud(page)).includes('— pax'), 'er staat nog "— pax" op het bord')
+  await page.close()
+})
+
+await test('een event heeft minder tabbladen, en de oude adressen werken nog', async () => {
+  const page = await tabblad('/events/t-trouw?tab=draaiboek')
+  zouden(page.url().includes('tab=personeel'), `een oude link naar het draaiboek wordt niet omgezet: ${page.url()}`)
+  zouden(bevat(await inhoud(page), 'Opbouw tent'), 'het draaiboek staat niet onder het personeel')
+  const tabs = await page.getByRole('tab').allInnerTexts()
+  zouden(!tabs.some((x) => /^draaiboek$|^bijlagen$/i.test(x.trim())), `er staan nog losse tabbladen: ${tabs.join(', ')}`)
+  zouden(tabs.some((x) => /personeel.*· \d/i.test(x)), `personeel heeft geen teller: ${tabs.join(', ')}`)
+  // Alle tabbladen staan in beeld: niets valt er rechts af.
+  const breedte = await page.evaluate(() => document.documentElement.clientWidth)
+  for (const box of await Promise.all((await page.getByRole('tab').all()).map((t) => t.boundingBox()))) {
+    zouden(box.x + box.width <= breedte, 'een tabblad valt rechts uit beeld')
+  }
+
+  await page.goto(`${adres}/#/events/t-trouw?tab=bijlagen`, { waitUntil: 'networkidle' })
+  await rustig(page)
+  zouden(page.url().includes('tab=mail'), `een oude link naar de bijlagen wordt niet omgezet: ${page.url()}`)
+  zouden(bevat(await inhoud(page), 'Bijlagen'), 'de bijlagen staan niet bij de mail')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een aandachtspunt heeft de knop die het oplost, en de status staat er één keer', async () => {
+  const page = await tabblad('/events/t-ruben')
+  await page.locator('.je-aandachtkop').click()
+  await page.getByRole('button', { name: 'Klant koppelen' }).click()
+  await page.waitForTimeout(300)
+  const inKlantveld = await page.evaluate(() => Boolean(document.activeElement?.closest('[data-veld="klant"]')))
+  zouden(inKlantveld, 'Klant koppelen zet de cursor niet in het klantveld')
+  zouden((await page.locator('.je-overzicht__kop .je-badge').count()) === 0, 'de status staat nog een tweede keer in het overzicht')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
 

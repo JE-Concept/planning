@@ -253,7 +253,7 @@ export default function SocialCalendar() {
       />
 
       {view === 'events' ? null : (
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-ink-200 bg-white px-4 py-2 sm:px-6">
+      <div className="je-paginarand flex flex-wrap items-center gap-1.5 border-b border-ink-200 bg-white py-2">
         {brands.map((brand) => (
           <button key={brand.id} type="button" onClick={() => toggleBrand(brand.id)} aria-pressed={brandFilter.includes(brand.id)}>
             <Badge color={brand.color} subtle={brandFilter.length > 0 && !brandFilter.includes(brand.id)}>
@@ -334,7 +334,7 @@ export default function SocialCalendar() {
           onMove={(post, status) => updatePost(post.id, { status }).catch((e) => toast.error(e.message))}
         />
       ) : (
-        <div className="flex min-h-0 flex-1 gap-3 overflow-hidden px-4 pb-4 sm:px-6">
+        <div className="je-paginarand flex min-h-0 flex-1 gap-3 overflow-hidden pb-4">
           <div className="flex min-w-0 flex-1 flex-col overflow-auto">
             <div className="grid grid-cols-7 border-b border-ink-200 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-500">
               {WEEKDAYS.map((d) => (
@@ -488,7 +488,7 @@ function ProductionBoard({ posts, brandById, onOpen, onMove }) {
   }
 
   return (
-    <div className="flex h-full gap-3 overflow-x-auto px-4 pb-4 sm:px-6">
+    <div className="je-paginarand flex h-full gap-3 overflow-x-auto pb-4">
       {POST_STATUSES.map((status) => (
         <section
           key={status.key}

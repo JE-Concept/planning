@@ -10,7 +10,10 @@ import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
-import { summariseMeeting, useAlleActiepunten, useMeetingTasks, useMeetings } from '@data/meetings'
+import { summariseMeeting, useAlleActiepunten } from '@data/meetings'
+import { useNotities } from '@data/notities'
+import NotitieDetail from '@components/notities/NotitieDetail'
+import NotitieLijst from '@components/notities/NotitieLijst'
 import {
   addAgendaItem,
   besprekenEnTaak,
@@ -20,7 +23,6 @@ import {
   totalMinutes,
   useAgenda,
 } from '@data/agenda'
-import { STANDAARD_KLEUR } from '@lib/kleur'
 
 /**
  * Teamoverleg.
@@ -28,14 +30,21 @@ import { STANDAARD_KLEUR } from '@lib/kleur'
  * Wat je hier leest is de samenvatting; de actiepunten eronder zijn gewone
  * taken, dus ze staan ook in Mijn werk van wie ze kreeg. Dat is met opzet: een
  * actiepunt dat alleen in een verslag staat, gebeurt niet.
+ *
+ * Een verslag is een notitie van de soort `overleg` (zie `@data/notities`).
+ * Dit tabblad toont alleen die soort; op het scherm Notities staan ze tussen
+ * de rest, en daar en hier opent hetzelfde venster.
  */
 export default function Meetings() {
   const { uid, isAdmin } = useAuth()
   const { t } = useTaal()
-  const { meetings, loading } = useMeetings(uid)
+  const { notities, laadt: loading } = useNotities({ uid })
+  const meetings = useMemo(() => notities.filter((n) => n.soort === 'overleg'), [notities])
   const { items: agenda } = useAgenda('open')
   const [tab, setTab] = useState('agenda')
-  const [open, setOpen] = useState(null)
+  // Het id, zodat het venster na een nieuwe koppeling de verse versie toont.
+  const [openId, setOpenId] = useState(null)
+  const open = meetings.find((m) => m.id === openId) ?? null
   const [pasting, setPasting] = useState(false)
   const [zoek, setZoek] = useState('')
 
@@ -88,8 +97,8 @@ export default function Meetings() {
 
       {tab === 'agenda' ? <Agenda items={agenda} /> : null}
 
-      <div className={tab === 'agenda' ? 'hidden' : 'min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6'}>
-        <div className="mx-auto max-w-3xl space-y-3 py-4">
+      <div className={tab === 'agenda' ? 'hidden' : 'je-paginarand min-h-0 flex-1 overflow-y-auto pb-8'}>
+        <div className="max-w-4xl space-y-3 py-4">
           {meetings.length === 0 ? (
             <EmptyState
               title={t('overleg.geen_verslagen')}
@@ -113,64 +122,14 @@ export default function Meetings() {
                   description={t('overleg.niets_gevonden_uitleg', { term: zoek.trim() })}
                 />
               ) : (
-                <ul className="space-y-2">
-                  {gevonden.map((meeting) => (
-                    <li key={meeting.id}>
-                      <button
-                        type="button"
-                        onClick={() => setOpen(meeting)}
-                        className="card w-full p-4 text-left transition hover:shadow-cue-md"
-                      >
-                        <div className="flex flex-wrap items-baseline gap-2">
-                          <span className="font-display text-base font-extrabold text-ink-900">
-                            {meeting.titel}
-                          </span>
-                          <span className="text-xs text-ink-500">{formatDate(meeting.datum)}</span>
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-sm text-ink-600">
-                          {meeting.samenvatting?.[0]?.tekst ?? ''}
-                        </p>
-
-                        {/* Waarom dit verslag in de lijst staat. Zonder die
-                            regel moet je alsnog elk verslag openen. */}
-                        {meeting.treffers?.length ? (
-                          <ul className="je-verslagtreffers">
-                            {meeting.treffers.slice(0, 3).map((treffer, i) => (
-                              <li key={`${treffer.soort}-${i}`}>
-                                <Badge subtle>
-                                  {treffer.soort === 'actiepunt'
-                                    ? t('overleg.treffer_actiepunt')
-                                    : t('overleg.treffer_besproken')}
-                                </Badge>
-                                <span>{treffer.tekst || treffer.detail}</span>
-                              </li>
-                            ))}
-                            {meeting.treffers.length > 3 ? (
-                              <li className="text-ink-500">
-                                {t('overleg.nog_andere', { aantal: meeting.treffers.length - 3 })}
-                              </li>
-                            ) : null}
-                          </ul>
-                        ) : null}
-
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {(meeting.deelnemers ?? []).slice(0, 6).map((naam) => (
-                            <Badge key={naam} subtle>
-                              {naam}
-                            </Badge>
-                          ))}
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <NotitieLijst notities={gevonden} onOpen={(n) => setOpenId(n.id)} />
               )}
             </>
           )}
         </div>
       </div>
 
-      {open ? <MeetingDetail meeting={open} onClose={() => setOpen(null)} /> : null}
+      {open ? <NotitieDetail notitie={open} onClose={() => setOpenId(null)} /> : null}
       {pasting ? <PasteTranscript onClose={() => setPasting(false)} /> : null}
     </div>
   )
@@ -222,8 +181,8 @@ function Agenda({ items }) {
   const totaal = totalMinutes(items)
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 sm:px-6">
-      <div className="mx-auto max-w-3xl space-y-4 py-4">
+    <div className="je-paginarand min-h-0 flex-1 overflow-y-auto pb-8">
+      <div className="max-w-4xl space-y-4 py-4">
         <form onSubmit={submit} className="card space-y-3 p-4">
           <h2 className="label mb-0">{t('overleg.punt_toevoegen')}</h2>
           <Input
@@ -483,100 +442,6 @@ function Afronden({ item, onClose }) {
         ) : (
           <p className="text-[11px] text-amber-700">{t('overleg.geen_takenlijst')}</p>
         )}
-      </div>
-    </Dialog>
-  )
-}
-
-function MeetingDetail({ meeting, onClose }) {
-  const { t } = useTaal()
-  const tasks = useMeetingTasks(meeting.taskId)
-  const { profileById } = useWorkspace()
-
-  const [acties, verslag] = useMemo(
-    () => [tasks.filter((t) => t.parentId), tasks.find((t) => !t.parentId)],
-    [tasks]
-  )
-
-  return (
-    <Dialog open onClose={onClose} title={meeting.titel} width={672}>
-      <div className="space-y-5 px-5 py-4">
-        <p className="text-xs text-ink-500">
-          {formatDate(meeting.datum)}
-          {verslag ? ` · ${verslag.statusName}` : ''}
-        </p>
-
-        <section>
-          <h3 className="label">{t('overleg.deelnemers')}</h3>
-          <div className="flex flex-wrap gap-1.5">
-            {(meeting.deelnemers ?? []).map((naam) => (
-              <Badge key={naam} subtle>
-                {naam}
-              </Badge>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <h3 className="label">{t('overleg.besproken_kop')}</h3>
-          <ul className="space-y-2.5">
-            {(meeting.samenvatting ?? []).map((punt) => (
-              <li key={punt.onderwerp}>
-                <p className="text-sm font-semibold text-ink-900">{punt.onderwerp}</p>
-                <p className="text-sm text-ink-700">{punt.tekst}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="label">{t('overleg.actiepunten', { aantal: acties.length })}</h3>
-          <ul className="space-y-1">
-            {acties.map((taak) => {
-              const wie = taak.assignees?.[0] ? profileById[taak.assignees[0]] : null
-              return (
-                <li
-                  key={taak.id}
-                  className="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 px-3 py-2"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: taak.statusColor ?? STANDAARD_KLEUR }}
-                  />
-                  <span className="min-w-0 flex-1 text-sm text-ink-800">{taak.title}</span>
-                  {wie ? (
-                    <span className="flex shrink-0 items-center gap-1.5 text-xs text-ink-600">
-                      <Avatar profile={wie} size="xs" />
-                      {wie.fullName || wie.email}
-                    </span>
-                  ) : (
-                    <Badge tone="warning">
-                      {taak.voorgesteldeVerantwoordelijke
-                        ? `${taak.voorgesteldeVerantwoordelijke}?`
-                        : t('overleg.geen_wie')}
-                    </Badge>
-                  )}
-                </li>
-              )
-            })}
-            {acties.length === 0 ? (
-              <li className="px-1 py-2 text-sm text-ink-500">{t('overleg.geen_actiepunten')}</li>
-            ) : null}
-          </ul>
-          <p className="mt-2 text-[11px] text-ink-500">{t('overleg.actiepunten_zijn_taken')}</p>
-        </section>
-
-        {meeting.bron ? (
-          <p className="text-xs text-ink-500">
-            {t('overleg.bron')}:{' '}
-            <a href={meeting.bron} target="_blank" rel="noreferrer" className="underline">
-              {t('overleg.de_opname')}
-            </a>
-          </p>
-        ) : null}
-
-        <p className="rounded-xl bg-ink-50 px-3 py-2 text-[11px] text-ink-600">{t('overleg.door_ai')}</p>
       </div>
     </Dialog>
   )

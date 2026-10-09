@@ -77,16 +77,8 @@ export default function Logboek() {
           {t('logboek.uitleg')} {t('logboek.bewaartermijn')}
         </p>
 
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 'var(--space-3)',
-            marginBottom: 'var(--space-5)',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ minWidth: 200, flex: 1 }}>
+        <div className="je-filterbalk">
+          <div className="je-filterbalk__zoek">
             <Input
               value={zoek}
               onChange={(e) => setZoek(e.target.value)}

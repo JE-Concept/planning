@@ -3,6 +3,7 @@ import { doc, getDocs, onSnapshot, query, where, writeBatch } from 'firebase/fir
 import { COL, col, fromQuery, newRef } from '@lib/collections'
 import { auth, db } from '@lib/firebase'
 import { addDays, startOfDay } from '@lib/dates'
+import { zetEinddatum } from '@lib/eventdagen'
 import { bestellijstVoorEvent, prijsVan } from '@lib/formules'
 import { isDone } from '@lib/taak'
 import { kaartMensen, medewerkersVan, verantwoordelijkeVan } from '@lib/eventteam'
@@ -225,6 +226,7 @@ export async function createEventFromTemplate({
   list,
   name,
   eventDate,
+  eventEndDate = null,
   brandId,
   template,
   createdBy,
@@ -283,9 +285,11 @@ export async function createEventFromTemplate({
       title: name.trim(),
       description: omschrijving ?? '',
       eventDate: date,
-      // Leeg: een nieuw event duurt één dag tot iemand "meerdaags" aanvinkt.
-      // Het veld staat er wél, zodat elk eventdocument dezelfde vorm heeft.
-      eventEndDate: null,
+      // Leeg: een nieuw event duurt één dag tot iemand "meerdaags" aanvinkt —
+      // of tot een aanvraag om drie dagen vraagt ("23, 24 en 25 februari").
+      // Het veld staat er altijd, zodat elk eventdocument dezelfde vorm heeft;
+      // `zetEinddatum` houdt een einde vóór het begin tegen.
+      eventEndDate: date && eventEndDate ? zetEinddatum({ eventDate: date }, new Date(`${eventEndDate}T12:00:00`)).eventEndDate : null,
       dueDate: date,
       // De klant staat op het event en niet op zijn taken: anders telt de
       // historiek op de klantfiche elk dossier zo vaak als het taken heeft.

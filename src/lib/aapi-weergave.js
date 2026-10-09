@@ -72,6 +72,16 @@ export const STATUUT_TEKST = {
   onbekend: 'aapi.statuut.onbekend',
 }
 
+/**
+ * Het statuut op het scherm. Om dezelfde reden als `afdelingLabel`: een
+ * statuut dat AAPI voluit schrijft en wij niet kennen ("jobstudent"), zegt
+ * meer als zichzelf dan als "Onbekend".
+ */
+export function statuutLabel(t, statuut) {
+  if (!statuut) return t('aapi.statuut.onbekend')
+  return STATUUT_TEKST[statuut] ? t(STATUUT_TEKST[statuut]) : statuut
+}
+
 /** De koppelingen, met de sleutel van hun label. */
 export const KOPPELING_TEKST = {
   auto: 'aapi.koppeling.auto',
@@ -363,4 +373,52 @@ export function vraagtAandacht(shift) {
   // is een gat of de koppeling nu klopt of niet.
   if (shift.open) return true
   return ['ambiguous', 'unlinked'].includes(shift.linkStatus)
+}
+
+/**
+ * Afdeling en statuut van een medewerker, zoals ze op de lijst horen.
+ *
+ * ── Waarom er een omweg via de shifts is ──────────────────────────────────
+ * Een kaartje kan op twee manieren ontstaan. De personeelslijst zet er
+ * `afdeling`, `statuut`, e-mail en gsm op. De planningsexport doet dat niet:
+ * die zet alleen de naam en de ruwe `dimonaType` op het kaartje, en de
+ * genormaliseerde afdeling (`locationName`) en het statuut op elke shift. Wie
+ * alleen uit de planning bekend was, stond daardoor op de medewerkerspagina
+ * met "—" en "Onbekend", terwijl zijn eigen shifts het antwoord al droegen.
+ *
+ * Dus: eerst het kaartje, dan wat de import op zijn shifts schreef. Hier wordt
+ * niets herberekend — beide waarden zijn server-side genormaliseerd — er wordt
+ * alleen gekozen welke er staat. De afdeling is die waar hij het vaakst staat;
+ * het statuut dat van zijn laatste shift, want dat kan veranderen (student
+ * wordt flexi) en dan geldt het nieuwste.
+ */
+export function kaartVanMedewerker(medewerker, shifts = []) {
+  const id = medewerker?.aapiEmployeeId ?? medewerker?.id
+  const eigen = id ? shifts.filter((s) => s.aapiEmployeeId === id && leeftNog(s)) : []
+
+  let afdeling = medewerker?.afdeling ?? null
+  if (!afdeling) {
+    const telling = new Map()
+    for (const s of eigen) {
+      if (s.locationName) telling.set(s.locationName, (telling.get(s.locationName) ?? 0) + 1)
+    }
+    afdeling = [...telling.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null
+  }
+
+  let statuut = medewerker?.statuut && medewerker.statuut !== 'onbekend' ? medewerker.statuut : null
+  if (!statuut) {
+    const laatste = eigen
+      .filter((s) => s.statuut && s.statuut !== 'onbekend')
+      .sort((a, b) => (alsDatum(b.start)?.getTime() ?? 0) - (alsDatum(a.start)?.getTime() ?? 0))[0]
+    statuut = laatste?.statuut ?? 'onbekend'
+  }
+
+  return {
+    afdeling,
+    statuut,
+    // Zonder e-mail én gsm komt het kaartje niet uit de personeelslijst. Dat
+    // is geen ontbrekend gegeven maar een import die nog moet gebeuren, en zo
+    // hoort het scherm het ook te zeggen.
+    zonderContact: !medewerker?.email && !medewerker?.gsm,
+  }
 }
