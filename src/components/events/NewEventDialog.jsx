@@ -5,6 +5,7 @@ import { naamVoorEvent, ontleedTitel, zoekKlant } from '@lib/aanvraag'
 import { bestelTekst, bestellijstVan, prijsVan, standaardKeuzes } from '@lib/formules'
 import { leegLocatie, vrijeLocatie } from '@lib/kaart'
 import { Acties, Dialog, Field, Icon, Input, Select, Tabs } from '@components/ds'
+import KlantKiezer from '@components/common/KlantKiezer'
 import { useAuth } from '@context/AuthProvider'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
@@ -14,7 +15,6 @@ import { createEventFromTemplate, updateEvent } from '@data/events'
 import { koppelMail, plakMail } from '@data/mails'
 import { resolveTemplate, templateSummary } from '@data/templates'
 import { formuleSamenvatting } from '@data/formules'
-import CustomerPicker from './CustomerPicker'
 import LocatieVeld from './LocatieVeld'
 import AanvraagInlezen from './AanvraagInlezen'
 
@@ -254,10 +254,10 @@ export default function NewEventDialog({ open, onClose }) {
             autoFocus
           />
         </Field>
-        <CustomerPicker
-          customerId={klant.customerId}
-          customerName={klant.customerName}
-          onChange={setKlant}
+        <KlantKiezer
+          id={klant.customerId || null}
+          naam={klant.customerName}
+          onChange={(k) => setKlant({ customerId: k.id ?? '', customerName: k.naam ?? '' })}
           voorstel={modus === 'aanvraag' ? contact : null}
         />
         <Field label={t('events.velden.datum')} hint={t('events.nieuw.datum_hint')}>

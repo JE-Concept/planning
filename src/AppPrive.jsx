@@ -35,13 +35,13 @@ import Login from '@pages/Login'
  * want een vergeten lijst is een scherm vol sleutels.
  */
 const Dashboard      = pagina(() => import('@pages/Dashboard'), 'planning', 'team')
-const Tasks          = pagina(() => import('@pages/Tasks'), 'events', 'tasks')
-const Events         = pagina(() => import('@pages/Events'), 'aanvraag', 'aapi', 'events', 'mail', 'planning')
+const Tasks          = pagina(() => import('@pages/Tasks'), 'events', 'notities', 'tasks')
+const Events         = pagina(() => import('@pages/Events'), 'aanvraag', 'aapi', 'events', 'mail', 'notities', 'planning')
 const EventDetail    = pagina(() => import('@pages/EventDetail'), 'aapi', 'events', 'mail', 'materiaal', 'notities', 'offerte', 'overzicht', 'planning', 'tasks', 'voorstel')
 const Workload       = pagina(() => import('@pages/Workload'), 'planning', 'tasks')
 const More           = pagina(() => import('@pages/More'))
-const Board          = pagina(() => import('@pages/Board'), 'events', 'tasks')
-const SocialCalendar = pagina(() => import('@pages/SocialCalendar'), 'events', 'socials', 'tasks')
+const Board          = pagina(() => import('@pages/Board'), 'events', 'notities', 'tasks')
+const SocialCalendar = pagina(() => import('@pages/SocialCalendar'), 'events', 'notities', 'socials', 'tasks')
 const Checklists     = pagina(() => import('@pages/Checklists'), 'bistro')
 const ChecklistReport = pagina(() => import('@pages/ChecklistReport'), 'bistro')
 const Meetings       = pagina(() => import('@pages/Meetings'), 'notities', 'team')

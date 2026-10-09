@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatDay } from '@lib/dates'
 import { SOORT, koppelsleutel } from '@lib/koppelingen'
-import { kiezerKandidaten, kiezerResultaten } from '@lib/objectkiezer'
+import { kiezerKandidaten, kiezerResultaten, magNieuw } from '@lib/objectkiezer'
 import { urenTekst } from '@lib/rooster'
 import { Icon } from '@components/ds'
 import { useTaal } from '@context/TaalProvider'
@@ -16,7 +16,7 @@ import { useTimeEntries } from '@data/time'
  * De lijst onder het veld. Een eigen component, zodat de abonnementen pas
  * starten wanneer hij er staat — en stoppen wanneer hij weggaat.
  */
-export default function Resultaten({ id, vraag, soorten, gekozen, onKies }) {
+export default function Resultaten({ id, vraag, soorten, gekozen, onKies, nieuw = null }) {
   const { t } = useTaal()
   const [actief, setActief] = useState(0)
   const bronnen = useBronnen(soorten)
@@ -29,7 +29,11 @@ export default function Resultaten({ id, vraag, soorten, gekozen, onKies }) {
     () => kiezerResultaten(kandidaten, vraag, { soorten, gekozen }),
     [kandidaten, vraag, soorten, gekozen]
   )
-  const nu = Math.min(actief, Math.max(0, resultaten.length - 1))
+  // De keuze "nieuw maken" staat altijd als laatste, ook voor de pijltjes.
+  const metNieuw = !!nieuw && magNieuw(kandidaten, vraag, nieuw.soort)
+  const aantal = resultaten.length + (metNieuw ? 1 : 0)
+  const nu = Math.min(actief, Math.max(0, aantal - 1))
+  const kiesOp = (i) => (i < resultaten.length ? onKies(resultaten[i]) : metNieuw ? nieuw.onMaak() : null)
 
   /*
     De pijltjes luisteren op het document en niet op het veld: het veld is van
@@ -37,28 +41,32 @@ export default function Resultaten({ id, vraag, soorten, gekozen, onKies }) {
     Alleen zolang de lijst er is, en alleen wanneer de cursor in een kiezer
     staat — anders zou Enter in een ander veld van dezelfde dialoog ineens
     iets koppelen.
+
+    Zonder lijst van afhankelijkheden: de luisteraar moet de lijst kennen
+    zoals ze nu getekend is, en een lijst die per toetsaanslag verandert
+    zou hem toch elke keer opnieuw zetten.
   */
   useEffect(() => {
     const luister = (e) => {
       if (!e.target?.closest?.('.je-objectkiezer')) return
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setActief(Math.min(nu + 1, resultaten.length - 1))
+        setActief(Math.min(nu + 1, aantal - 1))
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setActief(Math.max(nu - 1, 0))
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        if (resultaten[nu]) onKies(resultaten[nu])
+        kiesOp(nu)
       }
     }
     document.addEventListener('keydown', luister)
     return () => document.removeEventListener('keydown', luister)
-  }, [nu, resultaten, onKies])
+  })
 
   return (
     <div className="je-results je-objectkiezer__lijst" role="listbox" id={id}>
-      {resultaten.length === 0 ? (
+      {resultaten.length === 0 && !metNieuw ? (
         <p className="je-muted-caption" style={{ margin: 0, padding: 'var(--space-3) var(--space-5)' }}>
           {t('notities.kiezer.niets', { vraag: vraag.trim() })}
         </p>
@@ -91,6 +99,27 @@ export default function Resultaten({ id, vraag, soorten, gekozen, onKies }) {
           </button>
         ))
       )}
+      {metNieuw ? (
+        <button
+          type="button"
+          role="option"
+          aria-selected={nu === resultaten.length}
+          className="je-plainbtn je-objectkiezer__optie je-objectkiezer__nieuw"
+          style={{ background: nu === resultaten.length ? 'var(--accent-quiet)' : 'transparent' }}
+          onMouseEnter={() => setActief(resultaten.length)}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            nieuw.onMaak()
+          }}
+        >
+          <span style={{ color: 'var(--text-accent)', display: 'flex' }}>
+            <Icon name="plus" size={16} />
+          </span>
+          <span className="je-objectkiezer__titel" style={{ flex: 1, minWidth: 0 }}>
+            {nieuw.label}
+          </span>
+        </button>
+      ) : null}
     </div>
   )
 }

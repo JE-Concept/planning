@@ -864,6 +864,9 @@
   font: var(--type-caption);
   color: var(--warning);
 }
+/* De klant van de offerte: smal genoeg dat de lijst eronder er niet over
+   de hele breedte uitziet als een tweede tabel. */
+.je-offertewerk__klant { max-width: 420px; }
 /* De klantenpagina: het adres dat de klant krijgt, om te openen of te kopiëren. */
 .je-offertewerk__link {
   display: flex;
@@ -1539,17 +1542,9 @@ select.je-compact { padding-right: 24px; }
 
 /* ── Klanten ───────────────────────────────────────────────────────────── */
 
-/* De velden voor een klant die vanuit een event aangemaakt wordt. Ze staan in
-   een kadertje omdat het formulier middenin een ander formulier zit: zonder
-   rand leest "Naam" als de naam van het event. */
-.je-klantnieuw {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  border: 1px solid var(--border-hairline);
-  background: var(--surface-2);
-}
+/* Het btw-nummer met de knop om naam en adres op te zoeken ernaast. */
+.je-btwveld { display: flex; align-items: center; gap: var(--space-3); }
+.je-btwveld > :first-child { flex: 1; min-width: 0; }
 
 /* Een regel uit de historiek: datum, naam, status, bedrag. Grid en geen flex,
    zodat de bedragen onder elkaar uitkomen — een kolom cijfers die niet
@@ -4011,6 +4006,7 @@ button.je-paneel-kaart:hover {
 .je-objectkiezer__lijst { top: calc(100% + 4px); z-index: 30; max-height: 320px; }
 .je-objectkiezer__optie { width: 100%; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-5); text-align: left; }
 .je-objectkiezer__titel { display: block; font: var(--type-body-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.je-objectkiezer__nieuw { border-top: 1px solid var(--border-hairline); }
 .je-objectkiezer__sub { display: block; font: var(--type-caption); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Een pil die je kunt aanraken is een knop, en een knop is op een telefoon
    minstens 32px hoog — `npm run mobiel` meet dat. */

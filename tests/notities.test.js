@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { koppelsleutel, raakt, routeVan, schoneKoppeling, voegSamen, zetKoppelingen } from '../src/lib/koppelingen'
-import { kiezerKandidaten, kiezerResultaten } from '../src/lib/objectkiezer'
+import { kiezerKandidaten, kiezerResultaten, magNieuw } from '../src/lib/objectkiezer'
 import { zoekVerslagen } from '../src/lib/verslag-zoek'
 
 /**
@@ -104,6 +104,27 @@ describe('de objectkiezer', () => {
       label: 'Tafelschikking Blum doorgeven',
       eventId: 't-blum',
     })
+  })
+})
+
+describe('een klant aanmaken vanuit de kiezer', () => {
+  const kandidaten = kiezerKandidaten({
+    klanten: [{ id: 'k-blum', name: 'Blum België' }],
+    events: [{ id: 't-jolien', name: 'Jolien en Bernd' }],
+  })
+
+  it('biedt aanmaken aan voor een naam die er nog niet is', () => {
+    expect(magNieuw(kandidaten, 'Jolien en Bernd', 'klant')).toBe(true)
+    expect(magNieuw(kandidaten, 'Blum', 'klant')).toBe(true)
+  })
+
+  it('niet wanneer een klant al precies zo heet, hoofdletters en accenten niet meegeteld', () => {
+    expect(magNieuw(kandidaten, 'blum belgie', 'klant')).toBe(false)
+    expect(magNieuw(kandidaten, '  Blum   België ', 'klant')).toBe(false)
+  })
+
+  it('niet zonder vraag', () => {
+    expect(magNieuw(kandidaten, '   ', 'klant')).toBe(false)
   })
 })
 

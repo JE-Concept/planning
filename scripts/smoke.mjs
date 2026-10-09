@@ -376,10 +376,13 @@ await test('de klantfiche toont de historiek en wat er nog te factureren valt', 
 await test('een klant kiezen op een event zet hem in de historiek van die klant', async () => {
   const page = await tabblad('/events/t-ruben')
 
-  // Geen potlood en geen venster meer: de fiche is het formulier.
-  await page.getByLabel('Klant van dit event').selectOption({ label: 'Stad Borgloon' })
+  // Geen keuzelijst meer: typen zoekt, Enter kiest het bovenste resultaat.
+  await page.getByLabel('Klant van dit event').fill('borgloon')
   await rustig(page)
-  zouden(bevat(await inhoud(page), 'Stad Borgloon'), 'de klant staat niet op de fiche van het event')
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  const pil = await page.locator('.je-fiche .je-objectkiezer__gekozen').innerText()
+  zouden(bevat(pil, 'Stad Borgloon'), `de klant staat niet op de fiche van het event: ${pil}`)
 
   // En dan het punt van de hele koppeling: het dossier hoort meteen bij de klant.
   await page.goto(`${adres}/#/klanten`, { waitUntil: 'networkidle' })
@@ -392,30 +395,68 @@ await test('een klant kiezen op een event zet hem in de historiek van die klant'
   await page.close()
 })
 
-await test('een klant die nog niet bestaat maak je aan vanaf het event', async () => {
+await test('een klant die nog niet bestaat maak je aan vanuit hetzelfde zoekveld', async () => {
   // De reden dat de klantenlijst leeg bleef: wie eerst naar Klanten moest,
-  // typte in de praktijk gewoon een naam in het vrije veld.
+  // typte in de praktijk gewoon een naam in het vrije veld. Nu is aanmaken de
+  // laatste regel onder wat je zoekt.
   const page = await tabblad('/events/t-jolien')
 
-  await page.getByLabel('Klant van dit event').selectOption('__nieuw')
+  const zoek = page.getByLabel('Klant van dit event')
+  await zoek.fill('Jolien en Bernd')
   await rustig(page)
-  await page.getByLabel('Naam van de klant').fill('Jolien en Bernd')
-  await page.getByLabel('Btw-nummer').fill('0400378485')
-  await page.getByRole('button', { name: 'Klant aanmaken' }).click()
+  await page.getByRole('option', { name: 'Nieuwe klant ‘Jolien en Bernd’ maken' }).click()
   await rustig(page)
+  const pil = await page.locator('.je-fiche .je-objectkiezer__gekozen').innerText()
+  zouden(bevat(pil, 'Jolien en Bernd'), `de nieuwe klant staat niet gekozen: ${pil}`)
 
-  const gekozen = await page.getByLabel('Klant van dit event').evaluate((el) => el.selectedOptions[0].text)
-  zouden(gekozen === 'Jolien en Bernd', `de nieuwe klant staat niet gekozen: ${gekozen}`)
+  // Een naam die er al precies zo staat, biedt geen tweede fiche aan.
+  await zoek.fill('stad borgloon')
+  await rustig(page)
+  zouden(
+    (await page.getByRole('option', { name: /Nieuwe klant/ }).count()) === 0,
+    'een bestaande klant kan een tweede keer aangemaakt worden'
+  )
+  await page.keyboard.press('Escape')
 
   await page.goto(`${adres}/#/klanten`, { waitUntil: 'networkidle' })
   await rustig(page)
   await page.getByText('Jolien en Bernd').first().click()
   await rustig(page)
   const paneel = page.getByRole('dialog')
-  const velden = await paneel.locator('input').evaluateAll((els) => els.map((e) => e.value))
-  // Ingetypt als 0400378485, bewaard als een leesbaar nummer.
-  zouden(velden.includes('BE 0400.378.485'), `het btw-nummer is niet netgezet: ${velden.slice(0, 5).join(' | ')}`)
   zouden(bevat(await paneel.innerText(), 'doopsel'), 'het event hangt niet aan de nieuwe klant')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een btw-nummer haalt naam en adres op, en vraagt voor het iets overschrijft', async () => {
+  // De demo kent geen VIES; elk nummer hoort er bij dezelfde verzonnen
+  // brouwerij (zie `demo/stubs.js`). Wat getest wordt, is wat het scherm
+  // ermee doet: wat leeg is vullen, wat gevuld is eerst vragen.
+  const page = await tabblad('/klanten')
+  // Een nieuwe klant, want de klanten uit de demo hebben al een adres.
+  await page.getByRole('button', { name: 'Klant', exact: true }).click()
+  const naamvenster = page.getByRole('dialog', { name: 'Nieuwe klant' })
+  await naamvenster.locator('input').fill('Jolien en Bernd')
+  await naamvenster.getByRole('button', { name: 'Klant aanmaken' }).click()
+  await rustig(page)
+  const paneel = page.getByRole('dialog').filter({ hasText: 'Btw-nummer' })
+  await paneel.waitFor()
+
+  await paneel.getByLabel('Btw-nummer').fill('0400378485')
+  await paneel.getByLabel('Btw-nummer').blur()
+  // De naam stond er al: die wordt niet zonder vragen vervangen.
+  const venster = page.getByRole('dialog', { name: 'Zeker weten?' })
+  await venster.waitFor()
+  const vraag = await venster.innerText()
+  zouden(bevat(vraag, 'Brouwerij De Verzonnen Hop BV'), `de vraag noemt de naam uit VIES niet: ${vraag}`)
+  await venster.getByRole('button', { name: 'Annuleren' }).click()
+  await rustig(page)
+
+  const velden = await paneel.locator('input').evaluateAll((els) => els.map((e) => e.value))
+  zouden(velden.includes('BE 0400.378.485'), `het btw-nummer is niet netgezet: ${velden.slice(0, 5).join(' | ')}`)
+  zouden(velden.includes('Jolien en Bernd'), `de naam is toch overschreven: ${velden.slice(0, 5).join(' | ')}`)
+  // Het adres was leeg: dat is zonder vragen ingevuld.
+  zouden(velden.includes('Hopveld 12') && velden.includes('3800'), `het adres is niet ingevuld: ${velden.join(' | ')}`)
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
@@ -429,8 +470,10 @@ await test('een event toont zijn klant en zijn social-schakelaar', async () => {
   zouden(bevat(tekst, 'Social content'), 'de social-sectie ontbreekt')
   zouden(bevat(tekst, 'Bijlagen bij dit event'), 'de bijlagen ontbreken')
 
-  const klant = await paneel.getByLabel('Klant van dit event').inputValue()
-  zouden(klant === 'k-blum', `de klant staat niet gekozen: ${klant}`)
+  // Hetzelfde zoekveld als op de fiche, met de klant als pil erboven.
+  zouden((await paneel.getByLabel('Klant van dit event').count()) === 1, 'het klantveld ontbreekt in het zijpaneel')
+  const klant = await paneel.locator('.je-objectkiezer__gekozen').innerText()
+  zouden(bevat(klant, 'Blum België'), `de klant staat niet gekozen: ${klant}`)
   await page.close()
 })
 
@@ -2794,6 +2837,15 @@ await test('de offerte staat er vanzelf en is regel voor regel aan te passen', a
     bevat(await blad.innerText(), 'Winterbarbecue, all-in'),
     'de aangepaste regel staat niet op het blad'
   )
+
+  // De klant van de offerte: hetzelfde zoekveld als op de fiche.
+  const klantveld = werk.getByLabel('Klant van deze offerte')
+  zouden((await klantveld.count()) === 1, 'de offerte heeft geen klantveld')
+  await klantveld.fill('borgloon')
+  await rustig(page)
+  await page.keyboard.press('Enter')
+  await rustig(page)
+  zouden(bevat(await blad.innerText(), 'Stad Borgloon'), 'de gekozen klant staat niet op het blad')
 
   zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()

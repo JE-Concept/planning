@@ -38,6 +38,7 @@ import { maakMessagingVerwerking } from './messaging-verwerking.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
 import { maakMailPlakken } from './mail-plakken.js'
+import { maakBtwOpzoeken } from './btw-opzoeken.js'
 import { maakPloegFuncties } from './ploeg.js'
 import { maakArchiveren } from './archiveren.js'
 
@@ -827,6 +828,13 @@ export const { linkVoorbeeld } = maakLinkVoorbeeld({ db, region: REGION })
   `mails`, dus doet de server het. Zie `mail-plakken.js`.
 */
 export const { mailPlakken } = maakMailPlakken({ db, region: REGION })
+
+/*
+  Naam en adres van een klant uit VIES, met zijn btw-nummer. Ook hier omdat
+  een browser die databank niet mag lezen; geen sleutel nodig, dus geen eigen
+  codebase. Zie `btw-opzoeken.js` en, voor het leeswerk, `vies.js`.
+*/
+export const { btwOpzoeken } = maakBtwOpzoeken({ region: REGION })
 
 /*
   Aanmelden met een cijfercode, voor de ploeg: wie één zaterdag per maand komt

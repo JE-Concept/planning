@@ -41,6 +41,11 @@ const VERZONNEN_KAARTJE = {
   leeg: false,
 }
 
+const VERZONNEN_BEDRIJF = {
+  naam: 'Brouwerij De Verzonnen Hop BV',
+  adres: { street: 'Hopveld 12', postalCode: '3800', city: 'Sint-Truiden', country: 'België' },
+}
+
 /*
   De ploeg van de demo, met hun code. Verzonnen, net als de rest — maar het
   aanmeldscherm moet wél een lijst krijgen, anders is er niets te kiezen.
@@ -79,6 +84,18 @@ export const httpsCallable = (_functions, naam) => async (gegevens) => {
     return { data: { id: rij.id } }
   }
   if (naam === 'linkVoorbeeld') return { data: { url: gegevens?.url ?? null, ...VERZONNEN_KAARTJE } }
+  /*
+    VIES bestaat in de demo niet: elk nummer hoort bij dezelfde verzonnen
+    brouwerij, in de vorm die `leesViesAntwoord` teruggeeft. Behalve een
+    nummer met alleen nullen — dan zegt de demo "ongeldig", zodat ook dat
+    antwoord te zien is.
+  */
+  if (naam === 'btwOpzoeken') {
+    if (/^(be)?[\s.0]*$/i.test(gegevens?.btw ?? '')) {
+      return { data: { geldig: false, naam: '', adres: null, reden: 'ongeldig' } }
+    }
+    return { data: { geldig: true, naam: VERZONNEN_BEDRIJF.naam, adres: { ...VERZONNEN_BEDRIJF.adres }, reden: null } }
+  }
   if (naam === 'ploegLijst') {
     return { data: { mensen: DEMO_PLOEG.map(({ id, naam: n }) => ({ id, naam: n })) } }
   }
