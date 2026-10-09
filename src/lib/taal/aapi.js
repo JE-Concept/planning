@@ -102,7 +102,6 @@ export default {
     en: 'Shifts scheduled in AAPI with nobody on them. Fill them in AAPI.',
   },
   'aapi.open.niemand': { nl: 'Nog niemand', en: 'Nobody yet' },
-  'aapi.tab.titel': { nl: 'Personeel', en: 'Crew' },
   'aapi.tab.rond': { nl: 'De planning is rond', en: 'Crew is complete' },
   'aapi.tab.aandacht': { nl: 'Er staat nog iets open', en: 'Something needs a look' },
   'aapi.tab.gat': { nl: 'Er is een gat in de planning', en: 'There is a gap in the crew' },

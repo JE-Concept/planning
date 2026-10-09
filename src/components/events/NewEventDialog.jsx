@@ -176,7 +176,9 @@ export default function NewEventDialog({ open, onClose }) {
       onClose={onClose}
       vastHouden={Boolean(mail.trim() || name.trim())}
       title={t('events.nieuw')}
-      width={modus === 'custom' ? 560 : 640}
+      // Eén breedte voor de drie tabbladen. Het venster werd breder zodra je
+      // "Uit een mail" koos, en de tabs onder je muis schoven dan opzij.
+      width={640}
       className="je-formule-dialog"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>

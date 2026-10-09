@@ -3077,11 +3077,16 @@ await test('de planningstand staat op het event en in elk overzicht', async () =
 await test('een event verwijderen zegt eerst wat er weggaat', async () => {
   const page = await tabblad('/events/t-jolien')
 
-  await page.getByRole('button', { name: /^Verwijderen$/ }).click()
+  // Niet meer in de kop naast de stapknoppen, maar onderaan het overzicht.
+  zouden(
+    (await page.locator('.je-pagehead').getByRole('button', { name: /verwijderen/i }).count()) === 0,
+    'verwijderen staat nog in de kop, naast de stapknoppen'
+  )
+  await page.getByRole('button', { name: /^Event verwijderen$/ }).click()
   const venster = page.getByRole('dialog', { name: 'Zeker weten?' })
   await venster.waitFor()
   const vraag = await venster.innerText()
-  await venster.getByRole('button', { name: /^Verwijderen$/ }).click()
+  await venster.getByRole('button', { name: /verwijderen$/i }).click()
   await rustig(page)
 
   zouden(bevat(vraag, 'definitief verwijderen'), `geen vraag voor het verwijderen: ${vraag}`)
@@ -3402,6 +3407,107 @@ await test('het wachtscherm uit index.html wordt door de app vervangen', async (
   // Blijft het staan, dan kijkt iedereen naar een molentje dat nooit stopt.
   const page = await tabblad('/')
   zouden((await page.locator('.je-start').count()) === 0, 'het wachtscherm van index.html bleef staan')
+  await page.close()
+})
+
+// ─── De ronde van de overdrachtslijst: kalender, tabbladen, onderbalk ──────
+
+await test('de eventkalender heeft een week, markeert vandaag en houdt de kop gelijk', async () => {
+  const page = await tabblad('/?weergave=bord')
+  const kopBord = await page.locator('.je-pagehead').innerText()
+  await page.getByRole('tab', { name: 'Kalender' }).click()
+  await rustig(page)
+  // Dezelfde kop als op het bord: geen andere titel, geen verdwenen eyebrow.
+  const kopKalender = await page.locator('.je-pagehead').innerText()
+  zouden(kopKalender === kopBord, `de kop verandert bij de kalender: "${kopBord}" werd "${kopKalender}"`)
+
+  // De demodag is maandag 28 september 2026.
+  const vandaag = page.locator('.je-kal__dag--vandaag')
+  zouden((await vandaag.count()) === 1, 'vandaag is niet gemarkeerd in de maand')
+  zouden((await vandaag.innerText()).includes('28'), `de verkeerde dag is vandaag: ${await vandaag.innerText()}`)
+
+  await page.getByRole('tab', { name: 'Week' }).click()
+  await rustig(page)
+  zouden(bevat(await inhoud(page), 'Week 40'), 'de weekweergave toont het weeknummer niet')
+  zouden((await page.locator('.je-kal__raster[data-periode="week"] .je-kal__dag').count()) === 7, 'de week heeft geen zeven dagen')
+  zouden(page.url().includes('periode=week'), `de keuze staat niet in het adres: ${page.url()}`)
+
+  // Een week verder staat het trouwfeest, met uur en gasten erbij.
+  await page.getByRole('button', { name: 'Volgende week' }).click()
+  await rustig(page)
+  const chip = page.locator('.je-calchip').filter({ hasText: 'Trouw Niels en Inez' }).first()
+  zouden(bevat(await chip.innerText(), '140 pax'), `de week toont de gasten niet: ${await chip.innerText()}`)
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('op een telefoon is de kalender een agenda en staat Checklists in de onderbalk', async () => {
+  const page = await tabblad('/kalender', { breedte: 390, hoogte: 844 })
+  zouden((await page.locator('.je-kal__agenda').count()) === 1, 'de kalender toont op een telefoon geen agendalijst')
+  zouden((await page.locator('.je-kal__raster').count()) === 0, 'er staat nog een maandraster op de telefoon')
+
+  const balk = await page.locator('.je-bottomnav').innerText()
+  for (const moet of ['Dashboard', 'Events', 'Tasks', 'Checklists', 'Socials', 'Meer']) {
+    zouden(bevat(balk, moet), `"${moet}" ontbreekt in de onderbalk: ${balk}`)
+  }
+  for (const weg of ['Werklast', 'Instellingen']) {
+    zouden(!bevat(balk, weg), `"${weg}" staat nog in de onderbalk`)
+  }
+  // Wat eruit ging, staat onder Meer.
+  await page.locator('.je-bottomnav').getByText('Meer').click()
+  await rustig(page)
+  const meer = await inhoud(page)
+  for (const moet of ['Klanten', 'Werklast', 'Instellingen']) {
+    zouden(bevat(meer, moet), `"${moet}" staat niet onder Meer`)
+  }
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('lege kolommen op het eventbord zijn smal, en een kaart toont klant en bedrag', async () => {
+  const page = await tabblad('/?weergave=bord')
+  const smal = page.locator('.je-eventbord__kolom[data-smal]')
+  for (let i = 0; i < (await smal.count()); i += 1) {
+    const breed = (await smal.nth(i).boundingBox()).width
+    zouden(breed < 80, `een lege kolom is ${breed}px breed`)
+  }
+  const kaart = page.locator('.je-boardcard').filter({ hasText: 'Trouw Niels en Inez' }).first()
+  const tekst = await kaart.innerText()
+  zouden(tekst.includes('Niels & Inez') && tekst.includes('€'), `klant of bedrag ontbreekt op de kaart: ${tekst}`)
+  zouden(!(await inhoud(page)).includes('— pax'), 'er staat nog "— pax" op het bord')
+  await page.close()
+})
+
+await test('een event heeft minder tabbladen, en de oude adressen werken nog', async () => {
+  const page = await tabblad('/events/t-trouw?tab=draaiboek')
+  zouden(page.url().includes('tab=personeel'), `een oude link naar het draaiboek wordt niet omgezet: ${page.url()}`)
+  zouden(bevat(await inhoud(page), 'Opbouw tent'), 'het draaiboek staat niet onder het personeel')
+  const tabs = await page.getByRole('tab').allInnerTexts()
+  zouden(!tabs.some((x) => /^draaiboek$|^bijlagen$/i.test(x.trim())), `er staan nog losse tabbladen: ${tabs.join(', ')}`)
+  zouden(tabs.some((x) => /personeel.*· \d/i.test(x)), `personeel heeft geen teller: ${tabs.join(', ')}`)
+  // Alle tabbladen staan in beeld: niets valt er rechts af.
+  const breedte = await page.evaluate(() => document.documentElement.clientWidth)
+  for (const box of await Promise.all((await page.getByRole('tab').all()).map((t) => t.boundingBox()))) {
+    zouden(box.x + box.width <= breedte, 'een tabblad valt rechts uit beeld')
+  }
+
+  await page.goto(`${adres}/#/events/t-trouw?tab=bijlagen`, { waitUntil: 'networkidle' })
+  await rustig(page)
+  zouden(page.url().includes('tab=mail'), `een oude link naar de bijlagen wordt niet omgezet: ${page.url()}`)
+  zouden(bevat(await inhoud(page), 'Bijlagen'), 'de bijlagen staan niet bij de mail')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
+  await page.close()
+})
+
+await test('een aandachtspunt heeft de knop die het oplost, en de status staat er één keer', async () => {
+  const page = await tabblad('/events/t-ruben')
+  await page.locator('.je-aandachtkop').click()
+  await page.getByRole('button', { name: 'Klant koppelen' }).click()
+  await page.waitForTimeout(300)
+  const inKlantveld = await page.evaluate(() => Boolean(document.activeElement?.closest('[data-veld="klant"]')))
+  zouden(inKlantveld, 'Klant koppelen zet de cursor niet in het klantveld')
+  zouden((await page.locator('.je-overzicht__kop .je-badge').count()) === 0, 'de status staat nog een tweede keer in het overzicht')
+  zouden(page.fouten.length === 0, `fouten: ${page.fouten[0]}`)
   await page.close()
 })
 

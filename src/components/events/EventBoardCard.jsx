@@ -5,7 +5,7 @@ import { dayKey } from '@lib/dates'
 import { eindeVan } from '@lib/eventdagen'
 import { voorbijNietAfgerond } from '@lib/pipeline'
 import { useTaal } from '@context/TaalProvider'
-import { PlanningBadge, TeamHexes, eventOndertitel } from './parts'
+import { PlanningBadge, TeamHexes, euro, eventOndertitel } from './parts'
 
 /**
  * Eén event als kaart op het bord.
@@ -18,6 +18,8 @@ function EventBoardCard({ event, progress, profileById, planningStand, dragging,
   const { t } = useTaal()
   const einde = eindeVan(event)
   const achter = voorbijNietAfgerond(event.statusName, einde ? dayKey(einde) : null, dayKey(new Date()))
+  // `budget` is het oude ClickUp-veld; wat daar nog op staat, telt ook.
+  const bedrag = euro(Number(event.quoteAmount ?? event.budget) || null)
   return (
     <button
       type="button"
@@ -51,8 +53,18 @@ function EventBoardCard({ event, progress, profileById, planningStand, dragging,
           <Icon name="alert-triangle" size={13} /> {t('events.voorbij_niet_af')}
         </span>
       ) : null}
-      {/* Klant en gasten alleen als ze er zijn: "— pax" stond op bijna elke
-          kaart en zei niets. */}
+      {/*
+        Voor wie en voor hoeveel: de klant en het bedrag. Dat is wat je op het
+        bord wil afwegen — welke aanvraag is groot, welke offerte wacht al
+        lang — en het stond alleen op de fiche. Wat er niet is, staat er niet:
+        "— pax" stond op bijna elke kaart en zei niets.
+      */}
+      {event.customerName || bedrag ? (
+        <span className="je-boardcard__klant">
+          <span className="je-boardcard__klantnaam">{event.customerName}</span>
+          {bedrag ? <strong className="je-boardcard__bedrag">{bedrag}</strong> : null}
+        </span>
+      ) : null}
       <span
         className="je-muted-caption"
         style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}
@@ -62,9 +74,6 @@ function EventBoardCard({ event, progress, profileById, planningStand, dragging,
             <Icon name="users" size={14} />
             {event.pax} pax
           </>
-        ) : null}
-        {event.customerName ? (
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{event.customerName}</span>
         ) : null}
         <span style={{ marginLeft: 'auto' }}>
           <TeamHexes ids={event.team} profileById={profileById} size={22} />

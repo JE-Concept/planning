@@ -154,8 +154,20 @@ export function navSecties({ isAdmin, isStaff, isSocial }) {
   ]
 }
 
-/** De platte lijst die de onderbalk op een telefoon nodig heeft. */
-export function mainNav({ isAdmin, isStaff, isSocial }) {
+/**
+ * De platte lijst die de onderbalk op een telefoon nodig heeft.
+ *
+ * Wat hier staat, is wat iemand onderweg opent — niet wat op de laptop het
+ * vaakst open staat. Werklast en Instellingen stonden erin en Checklists niet,
+ * terwijl net de checklist het scherm is dat achter de bar op een telefoon
+ * geopend wordt; Werklast en Instellingen zijn bureauwerk. Ze staan nu onder
+ * Meer, en Meer staat zelf in de balk: een hamburger bovenaan in de hoek
+ * vond niemand.
+ *
+ * Zes vakken is het maximum op een smalle telefoon; met een zevende wordt elk
+ * woord te smal om te lezen. Klanten staat daarom bovenaan in Meer.
+ */
+export function mainNav({ isStaff, isSocial }) {
   if (isStaff) {
     return [
       { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
@@ -165,21 +177,35 @@ export function mainNav({ isAdmin, isStaff, isSocial }) {
   if (isSocial) return [{ to: '/social', icon: 'share-2', sleutel: 'nav.socials' }]
   return [
     { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
-    { to: '/', icon: 'kanban', sleutel: 'nav.events', end: true, match: (p) => p === '/' || p.startsWith('/events') },
-    { to: '/tasks', icon: 'check-circle', sleutel: 'nav.tasks' },
+    {
+      to: '/',
+      icon: 'kanban',
+      sleutel: 'nav.events',
+      end: true,
+      match: (p) => p === '/' || p.startsWith('/events') || p === '/kalender' || p === '/aanvragen',
+    },
+    { to: '/tasks', icon: 'check-circle', sleutel: 'nav.tasks', match: (p) => p === '/tasks' || p.startsWith('/bord') },
+    {
+      to: '/openen-sluiten',
+      icon: 'clipboard-check',
+      sleutel: 'nav.checklists',
+      match: (p) => p.startsWith('/openen-sluiten') || p.startsWith('/registraties'),
+    },
     { to: '/social', icon: 'share-2', sleutel: 'nav.socials' },
-    { to: '/werklast', icon: 'users', sleutel: 'nav.werklast' },
-    ...(isAdmin ? [{ to: '/instellingen', icon: 'settings', sleutel: 'nav.instellingen' }] : []),
+    { to: '/meer', icon: 'menu', sleutel: 'nav.meer' },
   ]
 }
 
-/** Alles wat niet in de onderbalk past, voor het scherm "Meer" op een telefoon. */
+/**
+ * Alles wat niet in de onderbalk past, voor het scherm "Meer" op een telefoon.
+ * Instellingen staat er niet in: dat is alleen voor beheerders, en `More`
+ * zet het er voor hen bij.
+ */
 export const MORE = [
-  { to: '/dashboard', icon: 'layout-dashboard', sleutel: 'nav.dashboard' },
   { to: '/klanten', icon: 'building', sleutel: 'nav.klanten' },
+  { to: '/werklast', icon: 'users', sleutel: 'nav.werklast' },
   { to: '/materiaal', icon: 'package', sleutel: 'nav.materiaal' },
   { to: '/kalender', icon: 'calendar-days', sleutel: 'nav.kalender' },
-  { to: '/openen-sluiten', icon: 'clipboard-check', sleutel: 'nav.openensluiten' },
   { to: '/registraties', icon: 'file-text', sleutel: 'nav.registraties' },
   { to: '/overleg', icon: 'messages-square', sleutel: 'nav.teamoverleg' },
   { to: '/notities', icon: 'sticky-note', sleutel: 'nav.notities' },
