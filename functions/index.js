@@ -37,6 +37,7 @@ import { maakDrive } from './drive.js'
 import { maakMessagingVerwerking } from './messaging-verwerking.js'
 import { maakHerhalingen } from './herhalingen.js'
 import { maakLinkVoorbeeld } from './linkvoorbeeld.js'
+import { maakBtwOpzoeken } from './btw-opzoeken.js'
 import { maakPloegFuncties } from './ploeg.js'
 import { maakArchiveren } from './archiveren.js'
 
@@ -819,6 +820,13 @@ export const herhalingen = maakHerhalingen({ db, region: REGION })
   opvragen. Zie `linkvoorbeeld.js`.
 */
 export const { linkVoorbeeld } = maakLinkVoorbeeld({ db, region: REGION })
+
+/*
+  Naam en adres van een klant uit VIES, met zijn btw-nummer. Ook hier omdat
+  een browser die databank niet mag lezen; geen sleutel nodig, dus geen eigen
+  codebase. Zie `btw-opzoeken.js` en, voor het leeswerk, `vies.js`.
+*/
+export const { btwOpzoeken } = maakBtwOpzoeken({ region: REGION })
 
 /*
   Aanmelden met een cijfercode, voor de ploeg: wie één zaterdag per maand komt

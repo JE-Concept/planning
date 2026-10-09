@@ -10,6 +10,7 @@ import {
   setPrimaryContact,
   vatHint,
   vatIsValid,
+  viesVoorstel,
 } from '../src/lib/klanten'
 
 // Het nummer van Stad Borgloon uit de demogegevens. De laatste twee cijfers
@@ -168,5 +169,50 @@ describe('customerHistory', () => {
 
   it('rekent een event zonder bedrag als nul in plaats van als NaN', () => {
     expect(customerHistory([taak({ id: 'leeg' })]).totaal).toBe(0)
+  })
+})
+
+describe('viesVoorstel', () => {
+  const gevonden = {
+    geldig: true,
+    naam: 'Blum België BV',
+    adres: { street: 'Kempische Steenweg 293', postalCode: '3500', city: 'Hasselt', country: 'België' },
+  }
+  const leeg = { street: '', postalCode: '', city: '', country: 'België' }
+
+  it('vult wat leeg is zonder te vragen', () => {
+    const { patch, vragen } = viesVoorstel({ name: '', address: leeg }, gevonden)
+    expect(patch).toEqual({ name: 'Blum België BV', address: gevonden.adres })
+    expect(vragen).toEqual([])
+  })
+
+  it('vraagt eerst voor het overschrijft wat er al staat', () => {
+    const klant = { name: 'Blum', address: { street: 'Oude baan 1', postalCode: '3500', city: 'Hasselt' } }
+    const { patch, vragen } = viesVoorstel(klant, gevonden)
+    expect(patch).toEqual({})
+    expect(vragen.map((v) => v.veld)).toEqual(['name', 'address'])
+    expect(vragen[0]).toEqual({ veld: 'name', nu: 'Blum', nieuw: 'Blum België BV' })
+    expect(vragen[1].nu).toBe('Oude baan 1, 3500 Hasselt')
+  })
+
+  it('vraagt niets over wat al hetzelfde is', () => {
+    const klant = { name: 'blum belgië bv', address: { ...gevonden.adres, street: 'Kempische  steenweg 293' } }
+    expect(viesVoorstel(klant, gevonden)).toEqual({ patch: {}, vragen: [] })
+  })
+
+  it('neemt het adres als één blok: een half adres wordt niet aangevuld', () => {
+    const klant = { name: 'Blum', address: { ...leeg, city: 'Genk' } }
+    const { patch, vragen } = viesVoorstel(klant, gevonden)
+    expect(patch.address).toBeUndefined()
+    expect(vragen.find((v) => v.veld === 'address')?.nieuw).toEqual(gevonden.adres)
+  })
+
+  it('doet niets met een ongeldig nummer of een land dat niets vrijgeeft', () => {
+    expect(viesVoorstel({ name: '' }, { geldig: false })).toEqual({ patch: {}, vragen: [] })
+    expect(viesVoorstel({ name: '' }, { geldig: null })).toEqual({ patch: {}, vragen: [] })
+    expect(viesVoorstel({ name: '', address: leeg }, { geldig: true, naam: '', adres: null })).toEqual({
+      patch: {},
+      vragen: [],
+    })
   })
 })

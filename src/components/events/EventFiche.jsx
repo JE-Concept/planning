@@ -6,11 +6,11 @@ import { verantwoordelijkeVan, zetVerantwoordelijke } from '@lib/eventteam'
 import { aantalDagen, eindeVan, isMeerdaags, zetDatum, zetEinddatum, zetMeerdaags } from '@lib/eventdagen'
 import { Checkbox, Icon, Input, Select } from '@components/ds'
 import { euro, longDate } from '@components/events/parts'
+import KlantKiezer from '@components/common/KlantKiezer'
 import { useTaal } from '@context/TaalProvider'
 import { useToast } from '@context/ToastProvider'
 import { useWorkspace } from '@context/WorkspaceProvider'
 import { updateEvent } from '@data/events'
-import CustomerPicker from './CustomerPicker'
 import LocatieVeld from './LocatieVeld'
 
 /**
@@ -59,10 +59,10 @@ export default function EventFiche({ ev }) {
       <div className="je-fiche__velden">
         {/* De klantkiezer brengt zijn eigen label en uitleg mee. */}
         <div className="je-fiche__cel">
-          <CustomerPicker
-            customerId={ev.customerId ?? ''}
-            customerName={ev.customerName ?? ''}
-            onChange={(klant) => bewaar({ customerId: klant.customerId || null, customerName: klant.customerName?.trim() || null })}
+          <KlantKiezer
+            id={ev.customerId ?? null}
+            naam={ev.customerName ?? ''}
+            onChange={(klant) => bewaar({ customerId: klant.id || null, customerName: klant.naam?.trim() || null })}
           />
         </div>
 

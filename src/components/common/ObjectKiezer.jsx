@@ -29,6 +29,14 @@ const Resultaten = lazy(() => import('./ObjectKiezerLijst'))
  * De gegevens worden pas opgehaald zodra er getypt wordt: de kiezer staat in
  * dialogen die vaak opengaan zonder dat iemand iets koppelt, en dan zijn zes
  * abonnementen op klanten, materiaal en uren werk dat niemand leest.
+ *
+ * Met `nieuw` staat onderaan de lijst een laatste keuze die het getypte zelf
+ * aanmaakt — "Nieuwe klant ‘Jolien en Bernd’ maken". `nieuw.maak(tekst)` maakt
+ * het object en geeft de koppeling terug, die dan gekozen wordt alsof ze er al
+ * stond. Wie zoekt en niets vindt, hoeft zo het veld niet uit om het aan te
+ * maken; dat ommetje was precies waarom er namen zonder fiche op events
+ * stonden. `naam` is wat een voorleesprogramma (en een browsertest) het veld
+ * noemt, wanneer de plaatshouder dat niet is.
  */
 export default function ObjectKiezer({
   waarde = [],
@@ -36,6 +44,8 @@ export default function ObjectKiezer({
   soorten = null,
   meerdere = true,
   plaatshouder,
+  naam,
+  nieuw = null,
   autoFocus = false,
 }) {
   const { t } = useTaal()
@@ -43,6 +53,7 @@ export default function ObjectKiezer({
   const [vraag, setVraag] = useState('')
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState(null)
+  const [maakt, setMaakt] = useState(false)
 
   const toegestaan = useMemo(
     () => KOPPELSOORTEN.filter((s) => !soorten || soorten.includes(s.soort)),
@@ -55,6 +66,24 @@ export default function ObjectKiezer({
     onChange?.(meerdere ? [...waarde, schoon] : [schoon])
     setVraag('')
     if (!meerdere) setOpen(false)
+  }
+
+  /*
+    De maker meldt zelf wat er misging (een toast in zijn eigen woorden); hier
+    gaat het er alleen om dat een mislukte poging het veld niet op slot laat.
+  */
+  const maakNieuw = async () => {
+    const tekst = vraag.trim()
+    if (!nieuw || !tekst || maakt) return
+    setMaakt(true)
+    try {
+      const k = await nieuw.maak(tekst)
+      if (k) kies(k)
+    } catch {
+      // zie hierboven
+    } finally {
+      setMaakt(false)
+    }
   }
 
   const weg = (k) => onChange?.(waarde.filter((w) => koppelsleutel(w) !== koppelsleutel(k)))
@@ -92,6 +121,7 @@ export default function ObjectKiezer({
           <input
             value={vraag}
             autoFocus={autoFocus}
+            disabled={maakt}
             onChange={(e) => {
               setVraag(e.target.value)
               setOpen(true)
@@ -105,7 +135,7 @@ export default function ObjectKiezer({
               }
             }}
             placeholder={plaatshouder ?? t('notities.kiezer.plaatshouder')}
-            aria-label={plaatshouder ?? t('notities.kiezer.plaatshouder')}
+            aria-label={naam ?? plaatshouder ?? t('notities.kiezer.plaatshouder')}
             aria-controls={`${id}-lijst`}
             aria-expanded={open && !!vraag.trim()}
             role="combobox"
@@ -119,6 +149,7 @@ export default function ObjectKiezer({
               soorten={filter ? [filter] : toegestaan.map((s) => s.soort)}
               gekozen={waarde}
               onKies={kies}
+              nieuw={nieuw ? { soort: nieuw.soort, label: nieuw.label(vraag.trim()), onMaak: maakNieuw } : null}
             />
           </Suspense>
         ) : null}

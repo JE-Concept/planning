@@ -1,5 +1,5 @@
 import { koppelsleutel } from './koppelingen'
-import { rangschik } from './zoeken'
+import { normaliseer, rangschik } from './zoeken'
 
 /**
  * Wat de objectkiezer kan vinden, in één vorm.
@@ -110,4 +110,21 @@ export function kiezerResultaten(kandidaten, vraag, { soorten = null, gekozen = 
   // Eén soort: dan is het plafond per soort het hele plafond.
   const perSoort = soorten?.length === 1 ? max : 4
   return rangschik(mag, vraag, { perSoort, totaal: max })
+}
+
+/**
+ * Mag er onderaan "Nieuwe klant ‘…’ maken" staan?
+ *
+ * Alleen wanneer er iets getypt is, en niet wanneer er al een klant precies
+ * zo heet. Met honderden klanten is "Blum" er al; wie dat letterlijk typt en
+ * op Enter drukt, bedoelt die klant — een tweede fiche met dezelfde naam is
+ * een historiek die in tweeën breekt, en niemand ziet dat tot de factuur.
+ * Hoofdletters, accenten en dubbele spaties tellen daarbij niet mee.
+ */
+export function magNieuw(kandidaten, vraag, soort) {
+  const gezocht = normaliseer(vraag).replace(/\s+/g, ' ').trim()
+  if (!gezocht) return false
+  return !kandidaten.some(
+    (k) => k.soort === soort && normaliseer(k.titel).replace(/\s+/g, ' ').trim() === gezocht
+  )
 }

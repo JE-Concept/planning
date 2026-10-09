@@ -79,6 +79,58 @@ export function vatHint(raw) {
   return 'Geen Belgisch nummer; blijft staan zoals je het typt.'
 }
 
+// ─── Naam en adres uit VIES ─────────────────────────────────────────────────
+
+const zelfde = (a, b) =>
+  (a ?? '').toString().replace(/\s+/g, ' ').trim().toLowerCase() ===
+  (b ?? '').toString().replace(/\s+/g, ' ').trim().toLowerCase()
+
+const adresLeeg = (adres) => !['street', 'postalCode', 'city'].some((veld) => (adres?.[veld] ?? '').trim())
+
+/**
+ * Wat er van een VIES-antwoord op de fiche mag, en wat eerst gevraagd moet.
+ *
+ * Een leeg veld vullen is altijd goed: daar stond niets wat iemand getypt had.
+ * Een gevuld veld overschrijven niet zonder het te vragen, want wat er staat
+ * kan juister zijn dan VIES — "Blum" is hoe het team de klant kent, en
+ * "Blum België BV" is hoe de KBO hem kent. Het adres gaat als één blok: een
+ * straat uit VIES met een gemeente die iemand eerder typte, is een adres dat
+ * niet bestaat.
+ *
+ *   { patch, vragen: [{ veld: 'name' | 'address', nu, nieuw }] }
+ *
+ * `patch` kan meteen bewaard worden; `vragen` is wat er bij een "ja" bij komt
+ * (de nieuwe waarde staat in `nieuw`). Wat hetzelfde is, komt in geen van
+ * beide — anders vraagt het scherm "Blum vervangen door Blum?".
+ */
+export function viesVoorstel(klant, gevonden) {
+  const patch = {}
+  const vragen = []
+  if (!gevonden?.geldig) return { patch, vragen }
+
+  const naam = (gevonden.naam ?? '').trim()
+  if (naam) {
+    if (!(klant?.name ?? '').trim()) patch.name = naam
+    else if (!zelfde(klant.name, naam)) vragen.push({ veld: 'name', nu: klant.name, nieuw: naam })
+  }
+
+  const nieuw = gevonden.adres
+  if (nieuw && !adresLeeg(nieuw)) {
+    const adres = {
+      street: nieuw.street ?? '',
+      postalCode: nieuw.postalCode ?? '',
+      city: nieuw.city ?? '',
+      country: nieuw.country || klant?.address?.country || 'België',
+    }
+    const nu = klant?.address ?? null
+    if (adresLeeg(nu)) patch.address = adres
+    else if (!['street', 'postalCode', 'city'].every((v) => zelfde(nu[v], adres[v]))) {
+      vragen.push({ veld: 'address', nu: addressLine(nu), nieuw: adres })
+    }
+  }
+  return { patch, vragen }
+}
+
 // ─── Contactpersonen ────────────────────────────────────────────────────────
 
 /**

@@ -216,9 +216,7 @@ export default {
     en: 'What exactly needs doing?',
   },
   'bord.toegewezen_aan': { nl: 'Toegewezen aan', en: 'Assigned to' },
-  'bord.geen_klant': { nl: 'Geen klant', en: 'No client' },
   'bord.klant_van_event': { nl: 'Klant van dit event', en: 'Client of this event' },
-  'bord.klant_uit_gebruik': { nl: 'Klant uit gebruik', en: 'Client no longer in use' },
   'bord.naar_archief': {
     nl: 'Naar het archief. Alles blijft bewaard.',
     en: 'Into the archive. Everything is kept.',
