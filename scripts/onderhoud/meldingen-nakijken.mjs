@@ -68,7 +68,8 @@ if (post.length === 0) {
   console.log(`Laatst verstuurd : ${verstuurd.length ? datum(verstuurd[0].createdAt) : 'nog nooit'}`)
 
   for (const r of mislukt.slice(0, 5)) {
-    console.log(`  mislukt ${datum(r.createdAt)} → ${r.aan}: ${r.fout ?? 'geen reden genoteerd'}`)
+    // De verzender schrijft de reden in `reden`; `fout` is de oude naam.
+    console.log(`  mislukt ${datum(r.createdAt)} → ${r.aan}: ${r.reden ?? r.fout ?? 'geen reden genoteerd'}`)
   }
 
   /*
@@ -79,7 +80,23 @@ if (post.length === 0) {
     de triggers hun rijen netjes weg en blijft alles op "wachtend" staan — geen
     fout, geen mail. Dat is precies wat je hier dan ziet.
   */
-  if (wachtend.length > 0 && verstuurd.length === 0) {
+  /*
+    Staan er rijen op "mislukt", dan is de verzender wél uitgerold: hij
+    probeerde en kreeg nee. Dan is het geheim er, maar klopt het niet — bij
+    Gmail bijna altijd een gewoon wachtwoord waar een app-wachtwoord moet.
+  */
+  if (mislukt.length > 0 && verstuurd.length === 0) {
+    console.log('')
+    console.log('De verzender is uitgerold maar elke poging mislukt. Kijk naar de reden')
+    console.log('hierboven; staat er 534/535 of "app-wachtwoord", maak dan in het Google-')
+    console.log('account van plan@jeconcept.be een app-wachtwoord aan en zet SMTP_URL opnieuw:')
+    console.log('')
+    console.log('  firebase functions:secrets:set SMTP_URL --project je-planning')
+    console.log('  smtps://plan%40jeconcept.be:<app-wachtwoord>@smtp.gmail.com:465')
+    console.log('')
+    console.log('Daarna de CI of Go live laten lopen. mailHerkansen stuurt dan wat jonger')
+    console.log('is dan een etmaal alsnog; oudere rijen krijgen de stand "verlopen".')
+  } else if (wachtend.length > 0 && verstuurd.length === 0) {
     console.log('')
     console.log('Er staat post klaar die nooit vertrokken is, en er is nooit iets verstuurd.')
     console.log('Dat betekent vrijwel zeker dat de verzender niet uitgerold is omdat het')
